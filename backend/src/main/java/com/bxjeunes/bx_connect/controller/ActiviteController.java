@@ -24,7 +24,6 @@ public class ActiviteController {
     }
 
     // ─── PUBLIC : Lister les activités publiées (V02 CDC) ───────────────────
-    // Accessible sans token — visiteurs et membres
     @GetMapping
     public ResponseEntity<List<ActiviteResponse>> listerPubliees() {
         return ResponseEntity.ok(activiteService.listerPubliees());
@@ -36,7 +35,7 @@ public class ActiviteController {
         return ResponseEntity.ok(activiteService.getById(id));
     }
 
-    // ─── PUBLIC : Recherche par mot-clé (V06 / M16 CDC) ────────────────────
+    // ─── PUBLIC : Recherche par mot-clé (V06 / M16 CDC) ─────────────────────
     @GetMapping("/recherche")
     public ResponseEntity<List<ActiviteResponse>> rechercher(@RequestParam String q) {
         return ResponseEntity.ok(activiteService.rechercher(q));
@@ -44,14 +43,14 @@ public class ActiviteController {
 
     // ─── ADMIN/REFERENT : Lister toutes les activités (tous statuts) ────────
     @GetMapping("/admin/toutes")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'REFERENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
     public ResponseEntity<List<ActiviteResponse>> listerToutes() {
         return ResponseEntity.ok(activiteService.listerToutes());
     }
 
     // ─── ADMIN/REFERENT : Créer une activité (R01 / A04 CDC) ────────────────
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'REFERENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
     public ResponseEntity<ActiviteResponse> creer(
             @Valid @RequestBody ActiviteRequest request,
             Authentication authentication) {
@@ -62,7 +61,7 @@ public class ActiviteController {
 
     // ─── ADMIN/REFERENT : Modifier une activité (R02 / A05 CDC) ────────────
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'REFERENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
     public ResponseEntity<ActiviteResponse> modifier(
             @PathVariable Long id,
             @Valid @RequestBody ActiviteRequest request) {
@@ -71,7 +70,7 @@ public class ActiviteController {
 
     // ─── ADMIN/REFERENT : Changer le statut (publier, annuler...) ───────────
     @PatchMapping("/{id}/statut")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'REFERENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
     public ResponseEntity<ActiviteResponse> changerStatut(
             @PathVariable Long id,
             @RequestParam StatutActivite statut) {
@@ -80,7 +79,7 @@ public class ActiviteController {
 
     // ─── ADMIN/REFERENT : Supprimer une activité (R03 / A06 CDC) ────────────
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'REFERENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
     public ResponseEntity<Void> supprimer(@PathVariable Long id) {
         activiteService.supprimer(id);
         return ResponseEntity.noContent().build();
