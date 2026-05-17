@@ -22,7 +22,6 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    // ── Inscription ───────────────────────────────────────
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Un compte existe déjà avec cet email.");
@@ -51,7 +50,6 @@ public class AuthService {
                 .build();
     }
 
-    // ── Connexion ─────────────────────────────────────────
     public AuthResponse login(LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(

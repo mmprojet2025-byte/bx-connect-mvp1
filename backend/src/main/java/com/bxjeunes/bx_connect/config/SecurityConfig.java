@@ -36,7 +36,6 @@ public class SecurityConfig {
     @Value("${frontend.url}")
     private String frontendUrl;
 
-    // ── Routes publiques ──────────────────────────────────
     private static final String[] PUBLIC_URLS = {
             "/api/auth/**",
             "/api/public/**",
