@@ -7,6 +7,7 @@ import Register from './pages/auth/Register'
 import Dashboard from './pages/dashboard/Dashboard'
 import Activites from './pages/activites/Activites'
 import Projets from './pages/projets/Projets'
+import Groupes from './pages/groupes/Groupes'
 import Profil from './pages/profil/Profil'
 import AdminDashboard from './pages/admin/AdminDashboard'
 
@@ -33,6 +34,7 @@ export default function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/activites" element={<Activites />} />
       <Route path="/projets" element={<Projets />} />
+      <Route path="/groupes" element={<Groupes />} />
 
       {/* Pages privées */}
       <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
