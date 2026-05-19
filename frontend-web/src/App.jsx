@@ -14,6 +14,7 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUtilisateurs from './pages/admin/AdminUtilisateurs'
 import AdminActivites from './pages/admin/AdminActivites'
 import AdminProjets from './pages/admin/AdminProjets'
+import NotFound from './pages/NotFound'
 
 // Route protégée : redirige vers /login si non connecté
 function PrivateRoute({ children }) {
@@ -33,26 +34,26 @@ export default function App() {
   return (
     <Routes>
       {/* Pages publiques */}
-      <Route path="/" element={<Accueil />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Route path="/"          element={<Accueil />} />
+      <Route path="/login"     element={<Login />} />
+      <Route path="/register"  element={<Register />} />
       <Route path="/activites" element={<Activites />} />
-      <Route path="/projets" element={<Projets />} />
+      <Route path="/projets"   element={<Projets />} />
 
       {/* Pages membres connectés */}
-      <Route path="/groupes" element={<PrivateRoute><Groupes /></PrivateRoute>} />
+      <Route path="/groupes"    element={<PrivateRoute><Groupes /></PrivateRoute>} />
       <Route path="/messagerie" element={<PrivateRoute><Messagerie /></PrivateRoute>} />
-      <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-      <Route path="/profil" element={<PrivateRoute><Profil /></PrivateRoute>} />
+      <Route path="/dashboard"  element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+      <Route path="/profil"     element={<PrivateRoute><Profil /></PrivateRoute>} />
 
       {/* Pages admin */}
-      <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-      <Route path="/admin/utilisateurs" element={<AdminRoute><AdminUtilisateurs /></AdminRoute>} />
-      <Route path="/admin/activites" element={<AdminRoute><AdminActivites /></AdminRoute>} />
-      <Route path="/admin/projets" element={<AdminRoute><AdminProjets /></AdminRoute>} />
+      <Route path="/admin"               element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/admin/utilisateurs"  element={<AdminRoute><AdminUtilisateurs /></AdminRoute>} />
+      <Route path="/admin/activites"     element={<AdminRoute><AdminActivites /></AdminRoute>} />
+      <Route path="/admin/projets"       element={<AdminRoute><AdminProjets /></AdminRoute>} />
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Page 404 — doit être en dernier */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }

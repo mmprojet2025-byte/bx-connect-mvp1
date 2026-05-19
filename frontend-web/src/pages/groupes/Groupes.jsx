@@ -1,29 +1,39 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
+import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer';
 
 export default function Groupes() {
+  const { user, isAdmin, isReferent } = useAuth();
+  const { t } = useTranslation();
+
   const [groupes, setGroupes] = useState([]);
   const [mesGroupes, setMesGroupes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [user, setUser] = useState(null);
   const [recherche, setRecherche] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ nom: '', description: '', type: 'GENERAL' });
 
+  const peutGerer = isAdmin || isReferent;
+
   useEffect(() => {
-    const stored = localStorage.getItem('user');
-    if (stored) setUser(JSON.parse(stored));
     fetchGroupes();
   }, []);
+
+  useEffect(() => {
+    if (user) fetchMesGroupes();
+  }, [user]);
 
   const fetchGroupes = async () => {
     try {
       const res = await api.get('/groupes');
       setGroupes(res.data);
     } catch {
-      setError('Impossible de charger les groupes.');
+      setError(t('groups.error_load'));
     } finally {
       setLoading(false);
     }
@@ -38,40 +48,31 @@ export default function Groupes() {
     }
   };
 
-  useEffect(() => {
-    if (user) fetchMesGroupes();
-  }, [user]);
-
   const handleRejoindre = async (groupeId) => {
-    setMessage('');
-    setError('');
+    setMessage(''); setError('');
     try {
       await api.post(`/groupes/${groupeId}/rejoindre`);
-      setMessage('✅ Vous avez rejoint le groupe !');
-      fetchGroupes();
-      fetchMesGroupes();
+      setMessage(t('groups.success_join'));
+      fetchGroupes(); fetchMesGroupes();
     } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de la demande.');
+      setError(err.response?.data?.message || t('groups.error_load'));
     }
   };
 
   const handleQuitter = async (groupeId) => {
-    setMessage('');
-    setError('');
+    setMessage(''); setError('');
     try {
       await api.delete(`/groupes/${groupeId}/quitter`);
-      setMessage('✅ Vous avez quitté le groupe.');
-      fetchGroupes();
-      fetchMesGroupes();
+      setMessage(t('groups.success_leave'));
+      fetchGroupes(); fetchMesGroupes();
     } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de la demande.');
+      setError(err.response?.data?.message || t('groups.error_load'));
     }
   };
 
   const handleCreer = async (e) => {
     e.preventDefault();
-    setMessage('');
-    setError('');
+    setMessage(''); setError('');
     try {
       await api.post('/groupes', form);
       setMessage('✅ Groupe créé avec succès !');
@@ -79,183 +80,181 @@ export default function Groupes() {
       setForm({ nom: '', description: '', type: 'GENERAL' });
       fetchGroupes();
     } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de la création.');
+      setError(err.response?.data?.message || t('common.error'));
     }
   };
 
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'REFERENT';
   const mesGroupesIds = mesGroupes.map((g) => g.id);
   const groupesFiltres = groupes.filter((g) =>
     g.nom?.toLowerCase().includes(recherche.toLowerCase())
   );
 
-  if (loading) return <p style={{ padding: '2rem' }}>Chargement des groupes...</p>;
+  const typeBadge = (type) => ({
+    ADMIN:     { bg: '#f8d7da', color: '#721c24' },
+    PROJET:    { bg: '#d4edda', color: '#155724' },
+    EVENEMENT: { bg: '#fff3cd', color: '#856404' },
+    GENERAL:   { bg: '#e2eaf0', color: '#1A3C5E' },
+  }[type] || { bg: '#e2eaf0', color: '#1A3C5E' });
 
   return (
-    <div style={{ maxWidth: '900px', margin: '2rem auto', padding: '0 1rem' }}>
-      {/* En-tête */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h1 style={{ color: '#1A3C5E', margin: 0 }}>👥 Groupes</h1>
-        {isAdmin && (
-          <button
-            onClick={() => setShowForm(!showForm)}
-            style={{ background: '#2E86AB', color: '#fff', border: 'none', borderRadius: '6px', padding: '0.6rem 1.2rem', cursor: 'pointer' }}
-          >
-            {showForm ? 'Annuler' : '+ Nouveau groupe'}
-          </button>
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <Navbar />
+
+      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-10">
+
+        {/* En-tête */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-blue-900">👥 {t('groups.title')}</h1>
+          {peutGerer && (
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition"
+            >
+              {showForm ? t('common.cancel') : '+ Nouveau groupe'}
+            </button>
+          )}
+        </div>
+
+        {/* Messages */}
+        {message && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">
+            {message}
+          </div>
         )}
-      </div>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">
+            {error}
+          </div>
+        )}
 
-      {/* Messages */}
-      {message && (
-        <div style={{ background: '#d4edda', color: '#155724', padding: '0.75rem 1rem', borderRadius: '6px', marginBottom: '1rem' }}>
-          {message}
-        </div>
-      )}
-      {error && (
-        <div style={{ background: '#f8d7da', color: '#721c24', padding: '0.75rem 1rem', borderRadius: '6px', marginBottom: '1rem' }}>
-          {error}
-        </div>
-      )}
-
-      {/* Formulaire création groupe (Admin/Référent) */}
-      {showForm && isAdmin && (
-        <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', marginBottom: '2rem' }}>
-          <h2 style={{ color: '#1A3C5E', marginTop: 0 }}>Nouveau groupe</h2>
-          <form onSubmit={handleCreer} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        {/* Formulaire création groupe */}
+        {showForm && peutGerer && (
+          <div className="bg-white rounded-2xl shadow p-6 mb-6">
+            <h2 className="text-lg font-bold text-blue-900 mb-4">Nouveau groupe</h2>
+            <form onSubmit={handleCreer} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom du groupe *</label>
+                  <input
+                    required
+                    value={form.nom}
+                    onChange={(e) => setForm({ ...form, nom: e.target.value })}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <select
+                    value={form.type}
+                    onChange={(e) => setForm({ ...form, type: e.target.value })}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    <option value="GENERAL">Général</option>
+                    <option value="PROJET">Projet</option>
+                    <option value="EVENEMENT">Événement</option>
+                    <option value="ADMIN">Admin</option>
+                  </select>
+                </div>
+              </div>
               <div>
-                <label style={{ fontSize: '0.85rem', color: '#4A6A8A' }}>Nom du groupe *</label>
-                <input
-                  required
-                  value={form.nom}
-                  onChange={(e) => setForm({ ...form, nom: e.target.value })}
-                  style={{ display: 'block', width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #ccc', marginTop: '2px', boxSizing: 'border-box' }}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  rows={3}
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-vertical"
                 />
               </div>
-              <div>
-                <label style={{ fontSize: '0.85rem', color: '#4A6A8A' }}>Type</label>
-                <select
-                  value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
-                  style={{ display: 'block', width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #ccc', marginTop: '2px', boxSizing: 'border-box' }}
-                >
-                  <option value="GENERAL">Général</option>
-                  <option value="PROJET">Projet</option>
-                  <option value="EVENEMENT">Événement</option>
-                  <option value="ADMIN">Admin</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label style={{ fontSize: '0.85rem', color: '#4A6A8A' }}>Description</label>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                rows={3}
-                style={{ display: 'block', width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #ccc', marginTop: '2px', boxSizing: 'border-box', resize: 'vertical' }}
-              />
-            </div>
-            <button
-              type="submit"
-              style={{ background: '#2E86AB', color: '#fff', border: 'none', borderRadius: '6px', padding: '0.6rem 1.5rem', cursor: 'pointer', alignSelf: 'flex-start' }}
-            >
-              Créer le groupe
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* Mes groupes */}
-      {user && mesGroupes.length > 0 && (
-        <div style={{ marginBottom: '2rem' }}>
-          <h2 style={{ color: '#1A3C5E', fontSize: '1.1rem', marginBottom: '0.75rem' }}>📌 Mes groupes</h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-            {mesGroupes.map((g) => (
-              <span
-                key={g.id}
-                style={{ background: '#2E86AB', color: '#fff', borderRadius: '20px', padding: '4px 14px', fontSize: '0.85rem' }}
+              <button
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-5 py-2 rounded-xl transition"
               >
-                {g.nom}
-              </span>
-            ))}
+                Créer le groupe
+              </button>
+            </form>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Barre de recherche */}
-      <div style={{ marginBottom: '1.5rem' }}>
+        {/* Mes groupes */}
+        {user && mesGroupes.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-base font-semibold text-blue-900 mb-3">📌 Mes groupes</h2>
+            <div className="flex flex-wrap gap-2">
+              {mesGroupes.map((g) => (
+                <span key={g.id} className="bg-blue-600 text-white text-sm px-4 py-1 rounded-full">
+                  {g.nom}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Barre de recherche */}
         <input
           type="text"
-          placeholder="🔍 Rechercher un groupe par nom..."
+          placeholder={`🔍 ${t('groups.search')}`}
           value={recherche}
           onChange={(e) => setRecherche(e.target.value)}
-          style={{ width: '100%', padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid #ccc', fontSize: '0.95rem', boxSizing: 'border-box' }}
+          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm mb-6 focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
-      </div>
 
-      {/* Liste des groupes */}
-      {groupesFiltres.length === 0 ? (
-        <p style={{ color: '#4A6A8A', textAlign: 'center', padding: '3rem' }}>
-          Aucun groupe disponible pour le moment.
-        </p>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
-          {groupesFiltres.map((groupe) => {
-            const estMembre = mesGroupesIds.includes(groupe.id);
-            const typeBadge = {
-              ADMIN: { bg: '#f8d7da', color: '#721c24' },
-              PROJET: { bg: '#d4edda', color: '#155724' },
-              EVENEMENT: { bg: '#fff3cd', color: '#856404' },
-              GENERAL: { bg: '#e2eaf0', color: '#1A3C5E' },
-            }[groupe.type] || { bg: '#e2eaf0', color: '#1A3C5E' };
+        {/* Liste des groupes */}
+        {loading ? (
+          <p className="text-gray-400 text-center py-10">{t('groups.loading')}</p>
+        ) : groupesFiltres.length === 0 ? (
+          <p className="text-gray-400 text-center py-10">{t('groups.no_groups')}</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {groupesFiltres.map((groupe) => {
+              const estMembre = mesGroupesIds.includes(groupe.id);
+              const badge = typeBadge(groupe.type);
+              return (
+                <div key={groupe.id} className="bg-white rounded-2xl shadow p-5 flex flex-col gap-3">
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-semibold text-blue-900 text-base">{groupe.nom}</h3>
+                    <span
+                      className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap"
+                      style={{ background: badge.bg, color: badge.color }}
+                    >
+                      {groupe.type || 'GÉNÉRAL'}
+                    </span>
+                  </div>
 
-            return (
-              <div
-                key={groupe.id}
-                style={{ background: '#fff', borderRadius: '12px', padding: '1.25rem', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <h3 style={{ margin: 0, color: '#1A3C5E', fontSize: '1rem' }}>{groupe.nom}</h3>
-                  <span style={{ background: typeBadge.bg, color: typeBadge.color, borderRadius: '20px', padding: '2px 8px', fontSize: '0.7rem', whiteSpace: 'nowrap' }}>
-                    {groupe.type || 'GÉNÉRAL'}
-                  </span>
-                </div>
+                  {groupe.description && (
+                    <p className="text-gray-500 text-sm leading-relaxed line-clamp-2">
+                      {groupe.description}
+                    </p>
+                  )}
 
-                {groupe.description && (
-                  <p style={{ color: '#4A6A8A', fontSize: '0.85rem', margin: 0, lineHeight: 1.4 }}>
-                    {groupe.description.length > 100 ? groupe.description.substring(0, 100) + '...' : groupe.description}
+                  <p className="text-gray-400 text-xs">
+                    👤 {groupe.nombreMembres ?? 0} {t('groups.members')}
                   </p>
-                )}
 
-                <p style={{ color: '#4A6A8A', fontSize: '0.8rem', margin: 0 }}>
-                  👤 {groupe.nombreMembres ?? 0} membre{(groupe.nombreMembres ?? 0) !== 1 ? 's' : ''}
-                </p>
-
-                {user && (
-                  <div style={{ marginTop: '0.5rem' }}>
-                    {estMembre ? (
+                  {user && (
+                    estMembre ? (
                       <button
                         onClick={() => handleQuitter(groupe.id)}
-                        style={{ background: '#f8d7da', color: '#721c24', border: 'none', borderRadius: '6px', padding: '0.4rem 1rem', cursor: 'pointer', fontSize: '0.85rem', width: '100%' }}
+                        className="w-full bg-red-50 hover:bg-red-100 text-red-700 text-sm py-1.5 rounded-xl transition border border-red-200"
                       >
-                        Quitter le groupe
+                        {t('groups.leave_btn')}
                       </button>
                     ) : (
                       <button
                         onClick={() => handleRejoindre(groupe.id)}
-                        style={{ background: '#2E86AB', color: '#fff', border: 'none', borderRadius: '6px', padding: '0.4rem 1rem', cursor: 'pointer', fontSize: '0.85rem', width: '100%' }}
+                        className="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm py-1.5 rounded-xl transition"
                       >
-                        Rejoindre
+                        {t('groups.join_btn')}
                       </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+                    )
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </main>
+
+      <Footer />
     </div>
   );
 }

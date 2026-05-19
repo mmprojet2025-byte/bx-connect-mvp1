@@ -13,18 +13,26 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // ─── Erreurs métier (RuntimeException) ──────────────────────────────────
+    // ─── Ressource introuvable (404) ─────────────────────────────────────────
+    // Toute RuntimeException dont le message contient "introuvable" → 404
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
+        String message = ex.getMessage() != null ? ex.getMessage() : "Erreur interne";
+        boolean isNotFound = message.toLowerCase().contains("introuvable")
+                || message.toLowerCase().contains("not found")
+                || message.toLowerCase().contains("existe pas");
+
+        HttpStatus status = isNotFound ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST;
+
         Map<String, Object> error = new HashMap<>();
         error.put("timestamp", LocalDateTime.now().toString());
-        error.put("status", HttpStatus.BAD_REQUEST.value());
-        error.put("error", "Bad Request");
-        error.put("message", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        error.put("status", status.value());
+        error.put("error", isNotFound ? "Not Found" : "Bad Request");
+        error.put("message", message);
+        return ResponseEntity.status(status).body(error);
     }
 
-    // ─── Erreurs de validation (@Valid) ─────────────────────────────────────
+    // ─── Erreurs de validation (@Valid) ──────────────────────────────────────
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationException(
             MethodArgumentNotValidException ex) {
@@ -42,7 +50,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
     }
 
-    // ─── Accès non autorisé ──────────────────────────────────────────────────
+    // ─── Accès non autorisé (403) ─────────────────────────────────────────────
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDenied(Exception ex) {
         Map<String, Object> error = new HashMap<>();
@@ -51,5 +59,16 @@ public class GlobalExceptionHandler {
         error.put("error", "Forbidden");
         error.put("message", "Vous n'avez pas les droits pour effectuer cette action.");
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    // ─── Erreur générique non gérée (500) ────────────────────────────────────
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("timestamp", LocalDateTime.now().toString());
+        error.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        error.put("error", "Internal Server Error");
+        error.put("message", "Une erreur inattendue est survenue.");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }

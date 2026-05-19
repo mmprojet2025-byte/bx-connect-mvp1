@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import api from '../../api/axios';
+import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer';
 
 const ROLES = ['MEMBRE', 'REFERENT', 'PARTENAIRE', 'ADMIN'];
 
 export default function AdminUtilisateurs() {
+  const { t } = useTranslation();
   const [utilisateurs, setUtilisateurs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [recherche, setRecherche] = useState('');
 
-  useEffect(() => {
-    fetchUtilisateurs();
-  }, []);
+  useEffect(() => { fetchUtilisateurs(); }, []);
 
   const fetchUtilisateurs = async () => {
     try {
@@ -29,7 +31,8 @@ export default function AdminUtilisateurs() {
     try {
       const res = await api.patch(`/admin/utilisateurs/${id}/role?role=${role}`);
       setUtilisateurs(prev => prev.map(u => u.id === id ? res.data : u));
-      setMessage(`✅ Rôle mis à jour.`);
+      setMessage('✅ Rôle mis à jour.');
+      setError('');
     } catch {
       setError('Erreur lors du changement de rôle.');
     }
@@ -40,6 +43,7 @@ export default function AdminUtilisateurs() {
       const res = await api.patch(`/admin/utilisateurs/${id}/actif`);
       setUtilisateurs(prev => prev.map(u => u.id === id ? res.data : u));
       setMessage('✅ Statut mis à jour.');
+      setError('');
     } catch {
       setError('Erreur lors de la mise à jour du statut.');
     }
@@ -51,6 +55,7 @@ export default function AdminUtilisateurs() {
       await api.delete(`/admin/utilisateurs/${id}`);
       setUtilisateurs(prev => prev.filter(u => u.id !== id));
       setMessage('✅ Utilisateur supprimé.');
+      setError('');
     } catch {
       setError('Erreur lors de la suppression.');
     }
@@ -62,136 +67,107 @@ export default function AdminUtilisateurs() {
     u.email?.toLowerCase().includes(recherche.toLowerCase())
   );
 
-  if (loading) return <p style={{ padding: '2rem' }}>Chargement...</p>;
-
   return (
-    <div style={{ maxWidth: '1100px', margin: '2rem auto', padding: '0 1rem' }}>
-      <h1 style={{ color: '#1A3C5E', marginBottom: '0.5rem' }}>👥 Gestion des utilisateurs</h1>
-      <p style={{ color: '#4A6A8A', marginBottom: '1.5rem' }}>
-        {utilisateurs.length} utilisateur(s) enregistré(s)
-      </p>
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <Navbar />
 
-      {message && (
-        <div style={{ background: '#d4edda', color: '#155724', padding: '0.75rem 1rem', borderRadius: '6px', marginBottom: '1rem' }}>
-          {message}
-        </div>
-      )}
-      {error && (
-        <div style={{ background: '#f8d7da', color: '#721c24', padding: '0.75rem 1rem', borderRadius: '6px', marginBottom: '1rem' }}>
-          {error}
-        </div>
-      )}
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
+        <h1 className="text-2xl font-bold text-blue-900 mb-1">👥 {t('admin.users_title')}</h1>
+        <p className="text-gray-500 text-sm mb-6">{utilisateurs.length} utilisateur(s) enregistré(s)</p>
 
-      {/* Barre de recherche */}
-      <input
-        type="text"
-        placeholder="🔍 Rechercher par nom, prénom ou email..."
-        value={recherche}
-        onChange={e => { setRecherche(e.target.value); setMessage(''); setError(''); }}
-        style={{
-          width: '100%', padding: '0.6rem 1rem', borderRadius: '8px',
-          border: '1px solid #ccc', marginBottom: '1.5rem',
-          fontSize: '0.95rem', boxSizing: 'border-box'
-        }}
-      />
+        {message && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>
+        )}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>
+        )}
 
-      {/* Tableau */}
-      <div style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.07)', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: '#F0F4F8' }}>
-              <th style={thStyle}>Nom</th>
-              <th style={thStyle}>Email</th>
-              <th style={thStyle}>Rôle</th>
-              <th style={thStyle}>Statut</th>
-              <th style={thStyle}>Inscription</th>
-              <th style={thStyle}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {utilisateursFiltres.length === 0 ? (
-              <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#4A6A8A' }}>
-                  Aucun utilisateur trouvé.
-                </td>
-              </tr>
-            ) : (
-              utilisateursFiltres.map((u, i) => (
-                <tr key={u.id} style={{ background: i % 2 === 0 ? '#fff' : '#F8FAFC', borderBottom: '1px solid #E2EAF0' }}>
-                  <td style={tdStyle}>
-                    <strong style={{ color: '#1A3C5E' }}>{u.prenom} {u.nom}</strong>
-                  </td>
-                  <td style={tdStyle}>{u.email}</td>
-                  <td style={tdStyle}>
-                    <select
-                      value={u.role}
-                      onChange={e => changerRole(u.id, e.target.value)}
-                      style={{
-                        padding: '0.3rem 0.5rem', borderRadius: '6px',
-                        border: '1px solid #ccc', fontSize: '0.85rem',
-                        background: roleColor(u.role), color: '#fff', cursor: 'pointer'
-                      }}
-                    >
-                      {ROLES.map(r => (
-                        <option key={r} value={r} style={{ background: '#fff', color: '#333' }}>{r}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td style={tdStyle}>
-                    <span style={{
-                      background: u.actif ? '#d4edda' : '#f8d7da',
-                      color: u.actif ? '#155724' : '#721c24',
-                      borderRadius: '20px', padding: '2px 10px', fontSize: '0.8rem'
-                    }}>
-                      {u.actif ? 'Actif' : 'Désactivé'}
-                    </span>
-                  </td>
-                  <td style={tdStyle}>
-                    {u.dateInscription ? new Date(u.dateInscription).toLocaleDateString('fr-BE') : '—'}
-                  </td>
-                  <td style={tdStyle}>
-                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <button
-                        onClick={() => toggleActif(u.id)}
-                        style={{
-                          background: u.actif ? '#ffc107' : '#28a745',
-                          color: '#fff', border: 'none', borderRadius: '6px',
-                          padding: '0.3rem 0.7rem', cursor: 'pointer', fontSize: '0.8rem'
-                        }}
-                      >
-                        {u.actif ? 'Désactiver' : 'Activer'}
-                      </button>
-                      <button
-                        onClick={() => supprimerUtilisateur(u.id, u.email)}
-                        style={{
-                          background: '#dc3545', color: '#fff', border: 'none',
-                          borderRadius: '6px', padding: '0.3rem 0.7rem',
-                          cursor: 'pointer', fontSize: '0.8rem'
-                        }}
-                      >
-                        Supprimer
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+        <input
+          type="text"
+          placeholder="🔍 Rechercher par nom, prénom ou email..."
+          value={recherche}
+          onChange={e => { setRecherche(e.target.value); setMessage(''); setError(''); }}
+          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm mb-6 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+
+        {loading ? (
+          <p className="text-gray-400 text-center py-10">{t('admin.loading')}</p>
+        ) : (
+          <div className="bg-white rounded-2xl shadow overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse" style={{ minWidth: '700px' }}>
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-100">
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Nom</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Email</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Rôle</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Statut</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Inscription</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {utilisateursFiltres.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="text-center py-10 text-gray-400 text-sm">Aucun utilisateur trouvé.</td>
+                    </tr>
+                  ) : (
+                    utilisateursFiltres.map((u, i) => (
+                      <tr key={u.id} className={`border-b border-gray-50 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                        <td className="px-4 py-3">
+                          <span className="font-medium text-blue-900 text-sm">{u.prenom} {u.nom}</span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{u.email}</td>
+                        <td className="px-4 py-3">
+                          <select
+                            value={u.role}
+                            onChange={e => changerRole(u.id, e.target.value)}
+                            className="text-xs px-2 py-1 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            style={{ background: roleColor(u.role), color: '#fff' }}
+                          >
+                            {ROLES.map(r => (
+                              <option key={r} value={r} style={{ background: '#fff', color: '#333' }}>{r}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs px-3 py-0.5 rounded-full font-medium ${u.actif ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                            {u.actif ? t('common.active') : t('common.inactive')}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-gray-400">
+                          {u.dateInscription ? new Date(u.dateInscription).toLocaleDateString('fr-BE') : '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => toggleActif(u.id)}
+                              className={`text-xs px-3 py-1 rounded-lg font-medium transition ${u.actif ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
+                            >
+                              {u.actif ? 'Désactiver' : 'Activer'}
+                            </button>
+                            <button
+                              onClick={() => supprimerUtilisateur(u.id, u.email)}
+                              className="text-xs px-3 py-1 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 font-medium transition"
+                            >
+                              {t('common.delete')}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </main>
+
+      <Footer />
     </div>
   );
 }
-
-const thStyle = {
-  padding: '0.75rem 1rem', textAlign: 'left',
-  fontSize: '0.85rem', color: '#4A6A8A',
-  fontWeight: 600, borderBottom: '2px solid #E2EAF0'
-};
-
-const tdStyle = {
-  padding: '0.75rem 1rem', fontSize: '0.9rem', color: '#333'
-};
 
 function roleColor(role) {
   switch (role) {

@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import api from '../../api/axios'
 
 export default function Dashboard() {
-  const { user } = useAuth()
+  const { user, isAdmin, isReferent } = useAuth()
+  const { t } = useTranslation()
   const [inscriptions, setInscriptions] = useState([])
   const [projets, setProjets] = useState([])
   const [loading, setLoading] = useState(true)
@@ -26,61 +28,51 @@ export default function Dashboard() {
       <Navbar />
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-10">
+
         {/* Bienvenue */}
         <div className="bg-blue-800 text-white rounded-2xl p-6 mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">
-              Bonjour, {user?.prenom} 👋
+              {t('dashboard.welcome')}, {user?.prenom} 👋
             </h1>
             <p className="text-blue-200 mt-1 text-sm">
-              Rôle : <span className="font-semibold uppercase">{user?.role}</span>
+              {t('dashboard.role')} : <span className="font-semibold uppercase">{user?.role}</span>
             </p>
           </div>
           <Link
             to="/profil"
             className="bg-white text-blue-800 text-sm font-semibold px-4 py-2 rounded-full hover:bg-blue-100 transition"
           >
-            Mon profil
+            {t('nav.profile')}
           </Link>
         </div>
 
         {/* Raccourcis */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-          <Link to="/activites" className="bg-white rounded-2xl shadow p-4 text-center hover:shadow-md transition">
-            <div className="text-3xl mb-2">🎯</div>
-            <p className="text-sm font-medium text-gray-700">Activités</p>
-          </Link>
-          <Link to="/projets" className="bg-white rounded-2xl shadow p-4 text-center hover:shadow-md transition">
-            <div className="text-3xl mb-2">🚀</div>
-            <p className="text-sm font-medium text-gray-700">Projets</p>
-          </Link>
-          <Link to="/profil" className="bg-white rounded-2xl shadow p-4 text-center hover:shadow-md transition">
-            <div className="text-3xl mb-2">👤</div>
-            <p className="text-sm font-medium text-gray-700">Mon profil</p>
-          </Link>
-          {(user?.role === 'ADMIN' || user?.role === 'REFERENT') && (
-            <Link to="/admin" className="bg-white rounded-2xl shadow p-4 text-center hover:shadow-md transition">
-              <div className="text-3xl mb-2">⚙️</div>
-              <p className="text-sm font-medium text-gray-700">Admin</p>
-            </Link>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
+          <ShortcutCard to="/activites"  icon="🎯" label={t('nav.activities')} />
+          <ShortcutCard to="/projets"    icon="🚀" label={t('nav.projects')} />
+          <ShortcutCard to="/groupes"    icon="👥" label={t('nav.groups')} />
+          <ShortcutCard to="/messagerie" icon="💬" label={t('nav.messaging')} />
+          <ShortcutCard to="/profil"     icon="👤" label={t('nav.profile')} />
+          {(isAdmin || isReferent) && (
+            <ShortcutCard to="/admin" icon="⚙️" label={t('nav.admin')} highlight />
           )}
         </div>
 
+        {/* Contenu principal */}
         {loading ? (
-          <p className="text-gray-400 text-center">Chargement...</p>
+          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
             {/* Mes inscriptions */}
             <div className="bg-white rounded-2xl shadow p-6">
-              <h2 className="text-lg font-bold text-gray-800 mb-4">Mes inscriptions</h2>
+              <h2 className="text-lg font-bold text-gray-800 mb-4">{t('dashboard.my_activities')}</h2>
               {inscriptions.length === 0 ? (
                 <div className="text-center py-6">
-                  <p className="text-gray-400 text-sm mb-3">Aucune inscription pour le moment.</p>
-                  <Link
-                    to="/activites"
-                    className="text-blue-700 text-sm font-medium hover:underline"
-                  >
-                    Découvrir les activités →
+                  <p className="text-gray-400 text-sm mb-3">{t('dashboard.no_activities')}</p>
+                  <Link to="/activites" className="text-blue-700 text-sm font-medium hover:underline">
+                    {t('dashboard.see_activities')} →
                   </Link>
                 </div>
               ) : (
@@ -102,15 +94,12 @@ export default function Dashboard() {
 
             {/* Mes projets */}
             <div className="bg-white rounded-2xl shadow p-6">
-              <h2 className="text-lg font-bold text-gray-800 mb-4">Mes projets</h2>
+              <h2 className="text-lg font-bold text-gray-800 mb-4">{t('dashboard.my_projects')}</h2>
               {projets.length === 0 ? (
                 <div className="text-center py-6">
-                  <p className="text-gray-400 text-sm mb-3">Aucun projet pour le moment.</p>
-                  <Link
-                    to="/projets"
-                    className="text-blue-700 text-sm font-medium hover:underline"
-                  >
-                    Voir les projets →
+                  <p className="text-gray-400 text-sm mb-3">{t('dashboard.no_projects')}</p>
+                  <Link to="/projets" className="text-blue-700 text-sm font-medium hover:underline">
+                    {t('dashboard.see_projects')} →
                   </Link>
                 </div>
               ) : (
@@ -129,11 +118,24 @@ export default function Dashboard() {
                 </ul>
               )}
             </div>
+
           </div>
         )}
       </main>
 
       <Footer />
     </div>
+  )
+}
+
+function ShortcutCard({ to, icon, label, highlight }) {
+  return (
+    <Link
+      to={to}
+      className={`rounded-2xl shadow p-4 text-center hover:shadow-md transition ${highlight ? 'bg-yellow-50 border border-yellow-200' : 'bg-white'}`}
+    >
+      <div className="text-3xl mb-2">{icon}</div>
+      <p className={`text-xs font-medium ${highlight ? 'text-yellow-700' : 'text-gray-700'}`}>{label}</p>
+    </Link>
   )
 }
