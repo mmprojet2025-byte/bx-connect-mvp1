@@ -11,6 +11,9 @@ import Groupes from './pages/groupes/Groupes'
 import Messagerie from './pages/messagerie/Messagerie'
 import Profil from './pages/profil/Profil'
 import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminUtilisateurs from './pages/admin/AdminUtilisateurs'
+import AdminActivites from './pages/admin/AdminActivites'
+import AdminProjets from './pages/admin/AdminProjets'
 
 // Route protégée : redirige vers /login si non connecté
 function PrivateRoute({ children }) {
@@ -35,12 +38,18 @@ export default function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/activites" element={<Activites />} />
       <Route path="/projets" element={<Projets />} />
-      
+
+      {/* Pages membres connectés */}
+      <Route path="/groupes" element={<PrivateRoute><Groupes /></PrivateRoute>} />
+      <Route path="/messagerie" element={<PrivateRoute><Messagerie /></PrivateRoute>} />
       <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
       <Route path="/profil" element={<PrivateRoute><Profil /></PrivateRoute>} />
 
       {/* Pages admin */}
       <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/admin/utilisateurs" element={<AdminRoute><AdminUtilisateurs /></AdminRoute>} />
+      <Route path="/admin/activites" element={<AdminRoute><AdminActivites /></AdminRoute>} />
+      <Route path="/admin/projets" element={<AdminRoute><AdminProjets /></AdminRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

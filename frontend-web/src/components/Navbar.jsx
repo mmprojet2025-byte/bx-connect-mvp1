@@ -13,6 +13,7 @@ export default function Navbar() {
   return (
     <nav className="bg-blue-900 text-white px-4 py-3 shadow-md">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
+
         {/* Logo */}
         <Link to="/" className="text-xl font-bold tracking-tight hover:text-blue-200 transition">
           BX-CONNECT
@@ -23,9 +24,16 @@ export default function Navbar() {
           <Link to="/" className="hover:text-blue-200 transition">Accueil</Link>
           <Link to="/activites" className="hover:text-blue-200 transition">Activités</Link>
           <Link to="/projets" className="hover:text-blue-200 transition">Projets</Link>
-          
+
+          {isAuthenticated && (
+            <>
+              <Link to="/groupes" className="hover:text-blue-200 transition">👥 Groupes</Link>
+              <Link to="/messagerie" className="hover:text-blue-200 transition">💬 Messagerie</Link>
+            </>
+          )}
+
           {(isAdmin || isReferent) && (
-            <Link to="/admin" className="hover:text-blue-200 transition text-yellow-300">
+            <Link to="/admin" className="hover:text-blue-200 transition text-yellow-300 font-semibold">
               ⚙️ Admin
             </Link>
           )}
