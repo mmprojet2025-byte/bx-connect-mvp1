@@ -23,10 +23,7 @@ export default function Navbar() {
           <Link to="/" className="hover:text-blue-200 transition">Accueil</Link>
           <Link to="/activites" className="hover:text-blue-200 transition">Activités</Link>
           <Link to="/projets" className="hover:text-blue-200 transition">Projets</Link>
-          <Link to="/groupes" className="hover:text-blue-200 transition">Groupes</Link>
-          {isAuthenticated && (
-            <Link to="/dashboard" className="hover:text-blue-200 transition">Tableau de bord</Link>
-          )}
+          
           {(isAdmin || isReferent) && (
             <Link to="/admin" className="hover:text-blue-200 transition text-yellow-300">
               ⚙️ Admin

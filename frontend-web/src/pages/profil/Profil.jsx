@@ -1,327 +1,230 @@
-import { useEffect, useState } from 'react'
-import { useAuth } from '../../context/AuthContext'
-import Navbar from '../../components/Navbar'
-import Footer from '../../components/Footer'
-import api from '../../api/axios'
-
-const LANGUES = ['FR', 'NL', 'EN']
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../../api/axios';
+import ImageUpload from '../../components/ImageUpload';
 
 export default function Profil() {
-  const { user, login } = useAuth()
-  const [onglet, setOnglet] = useState('profil')
-  const [message, setMessage] = useState(null)
-
-  // Formulaire profil
-  const [form, setForm] = useState({
-    prenom: '',
-    nom: '',
-    languePreference: 'FR',
-  })
-
-  // Formulaire mot de passe
-  const [mdp, setMdp] = useState({
-    ancienMotDePasse: '',
-    nouveauMotDePasse: '',
-    confirmation: '',
-  })
-
-  // Données activités / projets
-  const [inscriptions, setInscriptions] = useState([])
-  const [projets, setProjets] = useState([])
-  const [loadingData, setLoadingData] = useState(false)
+  const navigate = useNavigate();
+  const [profil, setProfil] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [form, setForm] = useState({ prenom: '', nom: '', languePreference: 'FR' });
+  const [avatarUrl, setAvatarUrl] = useState(null);
+  const [passwordForm, setPasswordForm] = useState({ ancienMotDePasse: '', nouveauMotDePasse: '' });
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    fetchProfil();
+  }, []);
+
+  const fetchProfil = async () => {
+    try {
+      const res = await api.get('/users/me');
+      setProfil(res.data);
       setForm({
-        prenom: user.prenom || '',
-        nom: user.nom || '',
-        languePreference: user.languePreference || 'FR',
-      })
+        prenom: res.data.prenom,
+        nom: res.data.nom,
+        languePreference: res.data.languePreference || 'FR',
+      });
+      setAvatarUrl(res.data.avatarUrl || null);
+    } catch {
+      setError('Impossible de charger le profil.');
+    } finally {
+      setLoading(false);
     }
-  }, [user])
+  };
 
-  useEffect(() => {
-    if (onglet === 'activites') {
-      setLoadingData(true)
-      api.get('/inscriptions/mes-inscriptions')
-        .then(res => setInscriptions(res.data))
-        .catch(() => setInscriptions([]))
-        .finally(() => setLoadingData(false))
+  const handleSaveProfil = async (e) => {
+    e.preventDefault();
+    setMessage('');
+    setError('');
+    try {
+      const res = await api.put('/users/me', { ...form, avatarUrl });
+      setProfil(res.data);
+      setEditMode(false);
+      setMessage('✅ Profil mis à jour avec succès !');
+    } catch {
+      setError('Erreur lors de la mise à jour du profil.');
     }
-    if (onglet === 'projets') {
-      setLoadingData(true)
-      api.get('/projets/mes-projets')
-        .then(res => setProjets(res.data))
-        .catch(() => setProjets([]))
-        .finally(() => setLoadingData(false))
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setMessage('');
+    setError('');
+    try {
+      await api.put('/users/me/password', passwordForm);
+      setMessage('✅ Mot de passe changé avec succès !');
+      setShowPasswordForm(false);
+      setPasswordForm({ ancienMotDePasse: '', nouveauMotDePasse: '' });
+    } catch {
+      setError('Ancien mot de passe incorrect ou erreur serveur.');
     }
-  }, [onglet])
+  };
 
-  const showMessage = (type, text) => {
-    setMessage({ type, text })
-    setTimeout(() => setMessage(null), 4000)
-  }
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/');
+  };
 
-  const sauvegarderProfil = (e) => {
-    e.preventDefault()
-    api.put('/users/me', form)
-      .then(res => {
-        // Mettre à jour le contexte avec les nouvelles infos
-        const token = localStorage.getItem('token')
-        login(token, res.data)
-        showMessage('success', '✅ Profil mis à jour avec succès !')
-      })
-      .catch(() => showMessage('error', '❌ Erreur lors de la mise à jour.'))
-  }
-
-  const changerMotDePasse = (e) => {
-    e.preventDefault()
-    if (mdp.nouveauMotDePasse !== mdp.confirmation) {
-      showMessage('error', '❌ Les mots de passe ne correspondent pas.')
-      return
-    }
-    api.put('/users/me/password', {
-      ancienMotDePasse: mdp.ancienMotDePasse,
-      nouveauMotDePasse: mdp.nouveauMotDePasse,
-    })
-      .then(() => {
-        showMessage('success', '✅ Mot de passe changé avec succès !')
-        setMdp({ ancienMotDePasse: '', nouveauMotDePasse: '', confirmation: '' })
-      })
-      .catch(err => {
-        const msg = err.response?.data?.message || 'Erreur lors du changement.'
-        showMessage('error', `❌ ${msg}`)
-      })
-  }
-
-  const ONGLETS = [
-    { id: 'profil', label: '👤 Profil' },
-    { id: 'activites', label: '🎯 Mes activités' },
-    { id: 'projets', label: '🚀 Mes projets' },
-    { id: 'securite', label: '🔒 Sécurité' },
-  ]
+  if (loading) return <p style={{ padding: '2rem' }}>Chargement du profil...</p>;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar />
+    <div style={{ maxWidth: '700px', margin: '2rem auto', padding: '0 1rem' }}>
+      <h1 style={{ color: '#1A3C5E', marginBottom: '1.5rem' }}>Mon Profil</h1>
 
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-10">
-        {/* En-tête profil */}
-        <div className="bg-blue-800 text-white rounded-2xl p-6 mb-8 flex items-center gap-5">
-          <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-2xl font-bold">
-            {user?.prenom?.[0]}{user?.nom?.[0]}
-          </div>
-          <div>
-            <h1 className="text-xl font-bold">{user?.prenom} {user?.nom}</h1>
-            <p className="text-blue-200 text-sm">{user?.email}</p>
-            <span className="mt-1 inline-block text-xs bg-blue-600 px-2 py-0.5 rounded-full font-medium uppercase">
-              {user?.role}
-            </span>
-          </div>
+      {message && (
+        <div style={{ background: '#d4edda', color: '#155724', padding: '0.75rem 1rem', borderRadius: '6px', marginBottom: '1rem' }}>
+          {message}
         </div>
-
-        {/* Message flash */}
-        {message && (
-          <div className={`mb-6 px-4 py-3 rounded-xl text-sm font-medium ${
-            message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-          }`}>
-            {message.text}
-          </div>
-        )}
-
-        {/* Onglets */}
-        <div className="flex gap-2 mb-8 flex-wrap">
-          {ONGLETS.map(o => (
-            <button
-              key={o.id}
-              onClick={() => setOnglet(o.id)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                onglet === o.id
-                  ? 'bg-blue-700 text-white'
-                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              {o.label}
-            </button>
-          ))}
+      )}
+      {error && (
+        <div style={{ background: '#f8d7da', color: '#721c24', padding: '0.75rem 1rem', borderRadius: '6px', marginBottom: '1rem' }}>
+          {error}
         </div>
+      )}
 
-        {/* Onglet : Profil */}
-        {onglet === 'profil' && (
-          <div className="bg-white rounded-2xl shadow p-6">
-            <h2 className="text-lg font-bold text-gray-800 mb-6">Modifier mon profil</h2>
-            <form onSubmit={sauvegarderProfil} className="space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
-                  <input
-                    type="text"
-                    required
-                    value={form.prenom}
-                    onChange={e => setForm({ ...form, prenom: e.target.value })}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
-                  <input
-                    type="text"
-                    required
-                    value={form.nom}
-                    onChange={e => setForm({ ...form, nom: e.target.value })}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
-                </div>
-              </div>
+      {/* Carte profil */}
+      <div style={{ background: '#fff', borderRadius: '12px', padding: '2rem', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={user?.email || ''}
-                  disabled
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
-                />
-                <p className="text-xs text-gray-400 mt-1">L'email ne peut pas être modifié.</p>
-              </div>
+          {/* Avatar */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+            <ImageUpload
+              type="avatar"
+              currentUrl={avatarUrl}
+              onUploadSuccess={(url) => setAvatarUrl(url)}
+              shape="circle"
+              label="Changer l'avatar"
+            />
+          </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Langue préférée</label>
-                <select
-                  value={form.languePreference}
-                  onChange={e => setForm({ ...form, languePreference: e.target.value })}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          {/* Infos */}
+          <div style={{ flex: 1 }}>
+            {!editMode ? (
+              <>
+                <h2 style={{ margin: '0 0 0.25rem', color: '#1A3C5E' }}>
+                  {profil?.prenom} {profil?.nom}
+                </h2>
+                <span style={{
+                  display: 'inline-block',
+                  background: '#2E86AB',
+                  color: '#fff',
+                  borderRadius: '20px',
+                  padding: '2px 12px',
+                  fontSize: '0.8rem',
+                  marginBottom: '0.75rem',
+                }}>
+                  {profil?.role}
+                </span>
+                <p style={{ margin: '0.25rem 0', color: '#4A6A8A' }}>📧 {profil?.email}</p>
+                <p style={{ margin: '0.25rem 0', color: '#4A6A8A' }}>🌐 Langue : {profil?.languePreference}</p>
+                <p style={{ margin: '0.25rem 0', color: '#4A6A8A', fontSize: '0.85rem' }}>
+                  Membre depuis le {new Date(profil?.dateInscription).toLocaleDateString('fr-BE')}
+                </p>
+                <button
+                  onClick={() => setEditMode(true)}
+                  style={{ marginTop: '1rem', background: '#2E86AB', color: '#fff', border: 'none', borderRadius: '6px', padding: '0.5rem 1.2rem', cursor: 'pointer' }}
                 >
-                  {LANGUES.map(l => (
-                    <option key={l} value={l}>
-                      {l === 'FR' ? '🇫🇷 Français' : l === 'NL' ? '🇧🇪 Néerlandais' : '🇬🇧 Anglais'}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <button
-                type="submit"
-                className="bg-blue-700 hover:bg-blue-600 text-white font-semibold px-6 py-2 rounded-xl transition"
-              >
-                Sauvegarder
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* Onglet : Mes activités */}
-        {onglet === 'activites' && (
-          <div className="bg-white rounded-2xl shadow p-6">
-            <h2 className="text-lg font-bold text-gray-800 mb-6">Mes inscriptions aux activités</h2>
-            {loadingData ? (
-              <p className="text-gray-400 text-center py-10">Chargement...</p>
-            ) : inscriptions.length === 0 ? (
-              <div className="text-center py-10">
-                <p className="text-gray-400 mb-3">Aucune inscription pour le moment.</p>
-                <a href="/activites" className="text-blue-700 text-sm font-medium hover:underline">
-                  Découvrir les activités →
-                </a>
-              </div>
+                  ✏️ Modifier le profil
+                </button>
+              </>
             ) : (
-              <ul className="divide-y">
-                {inscriptions.map(ins => (
-                  <li key={ins.id} className="py-4 flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-800">{ins.activiteTitre || 'Activité'}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        Inscrit le {new Date(ins.dateInscription).toLocaleDateString('fr-BE')}
-                      </p>
-                    </div>
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
-                      {ins.statut || 'Inscrit'}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <form onSubmit={handleSaveProfil} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: '#4A6A8A' }}>Prénom</label>
+                  <input
+                    value={form.prenom}
+                    onChange={(e) => setForm({ ...form, prenom: e.target.value })}
+                    style={{ display: 'block', width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #ccc', marginTop: '2px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: '#4A6A8A' }}>Nom</label>
+                  <input
+                    value={form.nom}
+                    onChange={(e) => setForm({ ...form, nom: e.target.value })}
+                    style={{ display: 'block', width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #ccc', marginTop: '2px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: '#4A6A8A' }}>Langue</label>
+                  <select
+                    value={form.languePreference}
+                    onChange={(e) => setForm({ ...form, languePreference: e.target.value })}
+                    style={{ display: 'block', width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #ccc', marginTop: '2px' }}
+                  >
+                    <option value="FR">Français</option>
+                    <option value="NL">Néerlandais</option>
+                    <option value="EN">Anglais</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button type="submit" style={{ background: '#2E86AB', color: '#fff', border: 'none', borderRadius: '6px', padding: '0.5rem 1.2rem', cursor: 'pointer' }}>
+                    💾 Sauvegarder
+                  </button>
+                  <button type="button" onClick={() => setEditMode(false)} style={{ background: '#ccc', color: '#333', border: 'none', borderRadius: '6px', padding: '0.5rem 1.2rem', cursor: 'pointer' }}>
+                    Annuler
+                  </button>
+                </div>
+              </form>
             )}
           </div>
-        )}
+        </div>
+      </div>
 
-        {/* Onglet : Mes projets */}
-        {onglet === 'projets' && (
-          <div className="bg-white rounded-2xl shadow p-6">
-            <h2 className="text-lg font-bold text-gray-800 mb-6">Mes projets</h2>
-            {loadingData ? (
-              <p className="text-gray-400 text-center py-10">Chargement...</p>
-            ) : projets.length === 0 ? (
-              <div className="text-center py-10">
-                <p className="text-gray-400 mb-3">Aucun projet pour le moment.</p>
-                <a href="/projets" className="text-blue-700 text-sm font-medium hover:underline">
-                  Voir les projets →
-                </a>
-              </div>
-            ) : (
-              <ul className="divide-y">
-                {projets.map(p => (
-                  <li key={p.id} className="py-4 flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-800">{p.titre}</p>
-                      <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{p.description}</p>
-                    </div>
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium ml-4">
-                      {p.statut}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-
-        {/* Onglet : Sécurité */}
-        {onglet === 'securite' && (
-          <div className="bg-white rounded-2xl shadow p-6">
-            <h2 className="text-lg font-bold text-gray-800 mb-6">Changer mon mot de passe</h2>
-            <form onSubmit={changerMotDePasse} className="space-y-5 max-w-md">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ancien mot de passe</label>
-                <input
-                  type="password"
-                  required
-                  value={mdp.ancienMotDePasse}
-                  onChange={e => setMdp({ ...mdp, ancienMotDePasse: e.target.value })}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nouveau mot de passe</label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={mdp.nouveauMotDePasse}
-                  onChange={e => setMdp({ ...mdp, nouveauMotDePasse: e.target.value })}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Confirmer le nouveau mot de passe</label>
-                <input
-                  type="password"
-                  required
-                  value={mdp.confirmation}
-                  onChange={e => setMdp({ ...mdp, confirmation: e.target.value })}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
-              </div>
-              <button
-                type="submit"
-                className="bg-blue-700 hover:bg-blue-600 text-white font-semibold px-6 py-2 rounded-xl transition"
-              >
-                Changer le mot de passe
+      {/* Changer mot de passe */}
+      <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', marginBottom: '1.5rem' }}>
+        <h3 style={{ margin: '0 0 1rem', color: '#1A3C5E' }}>🔒 Sécurité</h3>
+        {!showPasswordForm ? (
+          <button
+            onClick={() => setShowPasswordForm(true)}
+            style={{ background: '#F4A261', color: '#fff', border: 'none', borderRadius: '6px', padding: '0.5rem 1.2rem', cursor: 'pointer' }}
+          >
+            Changer le mot de passe
+          </button>
+        ) : (
+          <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxWidth: '350px' }}>
+            <div>
+              <label style={{ fontSize: '0.85rem', color: '#4A6A8A' }}>Ancien mot de passe</label>
+              <input
+                type="password"
+                value={passwordForm.ancienMotDePasse}
+                onChange={(e) => setPasswordForm({ ...passwordForm, ancienMotDePasse: e.target.value })}
+                style={{ display: 'block', width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #ccc', marginTop: '2px' }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.85rem', color: '#4A6A8A' }}>Nouveau mot de passe</label>
+              <input
+                type="password"
+                value={passwordForm.nouveauMotDePasse}
+                onChange={(e) => setPasswordForm({ ...passwordForm, nouveauMotDePasse: e.target.value })}
+                style={{ display: 'block', width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #ccc', marginTop: '2px' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button type="submit" style={{ background: '#2E86AB', color: '#fff', border: 'none', borderRadius: '6px', padding: '0.5rem 1.2rem', cursor: 'pointer' }}>
+                Confirmer
               </button>
-            </form>
-          </div>
+              <button type="button" onClick={() => setShowPasswordForm(false)} style={{ background: '#ccc', color: '#333', border: 'none', borderRadius: '6px', padding: '0.5rem 1.2rem', cursor: 'pointer' }}>
+                Annuler
+              </button>
+            </div>
+          </form>
         )}
-      </main>
+      </div>
 
-      <Footer />
+      {/* Déconnexion */}
+      <button
+        onClick={handleLogout}
+        style={{ background: '#e74c3c', color: '#fff', border: 'none', borderRadius: '6px', padding: '0.6rem 1.5rem', cursor: 'pointer', fontSize: '0.95rem' }}
+      >
+        🚪 Se déconnecter
+      </button>
     </div>
-  )
+  );
 }

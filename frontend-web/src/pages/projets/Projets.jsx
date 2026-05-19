@@ -1,286 +1,253 @@
-import { useEffect, useState } from 'react'
-import { useAuth } from '../../context/AuthContext'
-import Navbar from '../../components/Navbar'
-import Footer from '../../components/Footer'
-import api from '../../api/axios'
-
-const STATUT_COLORS = {
-  BROUILLON: 'bg-gray-100 text-gray-600',
-  SOUMIS: 'bg-yellow-100 text-yellow-700',
-  APPROUVE: 'bg-green-100 text-green-700',
-  EN_COURS: 'bg-blue-100 text-blue-700',
-  TERMINE: 'bg-purple-100 text-purple-700',
-  REJETE: 'bg-red-100 text-red-600',
-}
-
-const STATUT_LABELS = {
-  BROUILLON: 'Brouillon',
-  SOUMIS: 'En attente',
-  APPROUVE: 'Approuvé',
-  EN_COURS: 'En cours',
-  TERMINE: 'Terminé',
-  REJETE: 'Rejeté',
-}
+import { useState, useEffect } from 'react';
+import api from '../../api/axios';
+import ImageUpload from '../../components/ImageUpload';
 
 export default function Projets() {
-  const { isAuthenticated, isMembre, isAdmin, isReferent } = useAuth()
-  const [projets, setProjets] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [recherche, setRecherche] = useState('')
-  const [message, setMessage] = useState(null)
-  const [showForm, setShowForm] = useState(false)
+  const [projets, setProjets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [user, setUser] = useState(null);
+
   const [form, setForm] = useState({
     titre: '',
     description: '',
     budgetDemande: '',
-    objectifs: '',
-  })
-
-  const chargerProjets = () => {
-    const url = (isAdmin || isReferent) ? '/projets/admin/tous' : '/projets'
-    api.get(url)
-      .then(res => setProjets(res.data))
-      .catch(() => setProjets([]))
-      .finally(() => setLoading(false))
-  }
+    imageUrl: '',
+  });
 
   useEffect(() => {
-    chargerProjets()
-  }, [])
+    const stored = localStorage.getItem('user');
+    if (stored) setUser(JSON.parse(stored));
+    fetchProjets();
+  }, []);
 
-  const rejoindre = (id) => {
-    api.post(`/projets/${id}/rejoindre`)
-      .then(() => {
-        setMessage({ type: 'success', text: '✅ Tu as rejoint ce projet !' })
-        setTimeout(() => setMessage(null), 3000)
-      })
-      .catch(err => {
-        const msg = err.response?.data?.message || 'Erreur.'
-        setMessage({ type: 'error', text: `❌ ${msg}` })
-        setTimeout(() => setMessage(null), 4000)
-      })
-  }
+  const fetchProjets = async () => {
+    try {
+      const res = await api.get('/projets');
+      setProjets(res.data);
+    } catch {
+      setError('Impossible de charger les projets.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const soumettre = (id) => {
-    api.patch(`/projets/${id}/soumettre`)
-      .then(() => {
-        setMessage({ type: 'success', text: '✅ Projet soumis pour validation !' })
-        chargerProjets()
-        setTimeout(() => setMessage(null), 3000)
-      })
-      .catch(() => setMessage({ type: 'error', text: '❌ Erreur lors de la soumission.' }))
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMessage('');
+    setError('');
+    try {
+      await api.post('/projets', {
+        ...form,
+        budgetDemande: parseFloat(form.budgetDemande) || 0,
+      });
+      setMessage('✅ Projet soumis avec succès !');
+      setShowForm(false);
+      setForm({ titre: '', description: '', budgetDemande: '', imageUrl: '' });
+      fetchProjets();
+    } catch {
+      setError('Erreur lors de la soumission du projet.');
+    }
+  };
 
-  const valider = (id, approuver) => {
-    api.patch(`/projets/${id}/valider?approuver=${approuver}`)
-      .then(() => {
-        setMessage({ type: 'success', text: approuver ? '✅ Projet approuvé !' : '✅ Projet rejeté.' })
-        chargerProjets()
-        setTimeout(() => setMessage(null), 3000)
-      })
-      .catch(() => setMessage({ type: 'error', text: '❌ Erreur.' }))
-  }
+  const getStatutStyle = (statut) => {
+    const styles = {
+      BROUILLON:  { background: '#e2e3e5', color: '#383d41' },
+      SOUMIS:     { background: '#fff3cd', color: '#856404' },
+      APPROUVE:   { background: '#d4edda', color: '#155724' },
+      EN_COURS:   { background: '#cce5ff', color: '#004085' },
+      TERMINE:    { background: '#d1ecf1', color: '#0c5460' },
+      REJETE:     { background: '#f8d7da', color: '#721c24' },
+    };
+    return styles[statut] || { background: '#e2e3e5', color: '#383d41' };
+  };
 
-  const proposer = (e) => {
-    e.preventDefault()
-    api.post('/projets', {
-      titre: form.titre,
-      description: form.description,
-      budgetDemande: parseFloat(form.budgetDemande) || 0,
-      objectifs: form.objectifs,
-    })
-      .then(() => {
-        setMessage({ type: 'success', text: '✅ Projet proposé avec succès !' })
-        setShowForm(false)
-        setForm({ titre: '', description: '', budgetDemande: '', objectifs: '' })
-        chargerProjets()
-        setTimeout(() => setMessage(null), 3000)
-      })
-      .catch(err => {
-        const msg = err.response?.data?.message || 'Erreur lors de la proposition.'
-        setMessage({ type: 'error', text: `❌ ${msg}` })
-        setTimeout(() => setMessage(null), 4000)
-      })
-  }
-
-  const filtres = projets.filter(p =>
-    p.titre.toLowerCase().includes(recherche.toLowerCase())
-  )
+  if (loading) return <p style={{ padding: '2rem' }}>Chargement des projets...</p>;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar />
-
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-10">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-          <h1 className="text-2xl font-bold text-gray-800">Projets collaboratifs</h1>
-          <div className="flex gap-3 flex-wrap">
-            <input
-              type="text"
-              placeholder="Rechercher un projet..."
-              value={recherche}
-              onChange={e => setRecherche(e.target.value)}
-              className="border border-gray-300 rounded-full px-4 py-2 text-sm w-full md:w-60 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-            {isAuthenticated && (isMembre || isAdmin || isReferent) && (
-              <button
-                onClick={() => setShowForm(!showForm)}
-                className="bg-blue-700 hover:bg-blue-600 text-white text-sm px-5 py-2 rounded-full transition font-medium"
-              >
-                {showForm ? 'Annuler' : '+ Proposer un projet'}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Message flash */}
-        {message && (
-          <div className={`mb-6 px-4 py-3 rounded-xl text-sm font-medium ${
-            message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-          }`}>
-            {message.text}
-          </div>
+    <div style={{ maxWidth: '900px', margin: '2rem auto', padding: '0 1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <h1 style={{ color: '#1A3C5E', margin: 0 }}>🚀 Projets</h1>
+        {user && (
+          <button
+            onClick={() => setShowForm(!showForm)}
+            style={{ background: '#2E86AB', color: '#fff', border: 'none', borderRadius: '6px', padding: '0.6rem 1.2rem', cursor: 'pointer' }}
+          >
+            {showForm ? 'Annuler' : '+ Proposer un projet'}
+          </button>
         )}
+      </div>
 
-        {/* Formulaire proposition */}
-        {showForm && (
-          <form onSubmit={proposer} className="bg-white rounded-2xl shadow p-6 mb-8 space-y-4">
-            <h2 className="text-lg font-bold text-gray-800 mb-2">Proposer un nouveau projet</h2>
+      {message && (
+        <div style={{ background: '#d4edda', color: '#155724', padding: '0.75rem 1rem', borderRadius: '6px', marginBottom: '1rem' }}>
+          {message}
+        </div>
+      )}
+      {error && (
+        <div style={{ background: '#f8d7da', color: '#721c24', padding: '0.75rem 1rem', borderRadius: '6px', marginBottom: '1rem' }}>
+          {error}
+        </div>
+      )}
+
+      {/* Formulaire nouveau projet */}
+      {showForm && user && (
+        <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', marginBottom: '2rem' }}>
+          <h2 style={{ color: '#1A3C5E', marginTop: 0 }}>Proposer un projet</h2>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+            {/* Image de couverture */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Titre *</label>
+              <label style={{ fontSize: '0.85rem', color: '#4A6A8A', display: 'block', marginBottom: '0.5rem' }}>
+                📷 Image de couverture du projet
+              </label>
+              <ImageUpload
+                type="projet"
+                currentUrl={form.imageUrl || null}
+                onUploadSuccess={(url) => setForm({ ...form, imageUrl: url })}
+                shape="rectangle"
+                label="Ajouter une image de couverture"
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.85rem', color: '#4A6A8A' }}>Titre du projet *</label>
               <input
-                type="text"
                 required
                 value={form.titre}
-                onChange={e => setForm({ ...form, titre: e.target.value })}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                placeholder="Titre du projet"
+                onChange={(e) => setForm({ ...form, titre: e.target.value })}
+                placeholder="Ex: Atelier numérique pour jeunes"
+                style={{ display: 'block', width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #ccc', marginTop: '2px', boxSizing: 'border-box' }}
               />
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+              <label style={{ fontSize: '0.85rem', color: '#4A6A8A' }}>Description *</label>
               <textarea
                 required
-                rows={3}
                 value={form.description}
-                onChange={e => setForm({ ...form, description: e.target.value })}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                placeholder="Décris ton projet..."
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                rows={4}
+                placeholder="Décrivez votre projet, ses objectifs et son impact..."
+                style={{ display: 'block', width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #ccc', marginTop: '2px', boxSizing: 'border-box', resize: 'vertical' }}
               />
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Objectifs</label>
-              <input
-                type="text"
-                value={form.objectifs}
-                onChange={e => setForm({ ...form, objectifs: e.target.value })}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                placeholder="Objectifs du projet"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Budget demandé (€)</label>
+              <label style={{ fontSize: '0.85rem', color: '#4A6A8A' }}>Budget demandé (€)</label>
               <input
                 type="number"
                 min="0"
                 step="0.01"
                 value={form.budgetDemande}
-                onChange={e => setForm({ ...form, budgetDemande: e.target.value })}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                onChange={(e) => setForm({ ...form, budgetDemande: e.target.value })}
                 placeholder="0.00"
+                style={{ display: 'block', width: '200px', padding: '0.5rem', borderRadius: '6px', border: '1px solid #ccc', marginTop: '2px' }}
               />
             </div>
+
             <button
               type="submit"
-              className="bg-blue-700 hover:bg-blue-600 text-white font-semibold px-6 py-2 rounded-xl transition"
+              style={{ background: '#2E86AB', color: '#fff', border: 'none', borderRadius: '6px', padding: '0.6rem 1.5rem', cursor: 'pointer', alignSelf: 'flex-start' }}
             >
-              Proposer le projet
+              Soumettre le projet
             </button>
           </form>
-        )}
+        </div>
+      )}
 
-        {/* Liste projets */}
-        {loading ? (
-          <p className="text-gray-400 text-center py-20">Chargement...</p>
-        ) : filtres.length === 0 ? (
-          <p className="text-gray-400 text-center py-20">Aucun projet trouvé.</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filtres.map(p => (
-              <div key={p.id} className="bg-white rounded-2xl shadow hover:shadow-md transition p-5 flex flex-col">
-                {/* Statut */}
-                <div className="flex items-center justify-between mb-3">
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUT_COLORS[p.statut] || 'bg-gray-100 text-gray-500'}`}>
-                    {STATUT_LABELS[p.statut] || p.statut}
-                  </span>
-                  {p.budgetDemande > 0 && (
-                    <span className="text-xs text-gray-400">💶 {p.budgetDemande} € demandés</span>
+      {/* Liste des projets */}
+      {projets.length === 0 ? (
+        <p style={{ color: '#4A6A8A', textAlign: 'center', padding: '3rem' }}>
+          Aucun projet disponible pour le moment.
+        </p>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+          {projets.map((projet) => {
+            const statutStyle = getStatutStyle(projet.statut);
+            const progression = projet.budgetDemande > 0
+              ? Math.min(100, Math.round(((projet.budgetRecu || 0) / projet.budgetDemande) * 100))
+              : 0;
+
+            return (
+              <div
+                key={projet.id}
+                style={{ background: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}
+              >
+                {projet.imageUrl ? (
+                  <img
+                    src={projet.imageUrl}
+                    alt={projet.titre}
+                    style={{ width: '100%', height: '160px', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <div style={{ width: '100%', height: '160px', background: '#E2EAF0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4A6A8A', fontSize: '2rem' }}>
+                    🚀
+                  </div>
+                )}
+
+                <div style={{ padding: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                    <h3 style={{ margin: 0, color: '#1A3C5E', fontSize: '1rem' }}>{projet.titre}</h3>
+                    <span style={{
+                      ...statutStyle,
+                      borderRadius: '20px',
+                      padding: '2px 8px',
+                      fontSize: '0.75rem',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {projet.statut}
+                    </span>
+                  </div>
+
+                  {projet.description && (
+                    <p style={{ color: '#4A6A8A', fontSize: '0.85rem', margin: '0 0 0.75rem', lineHeight: 1.4 }}>
+                      {projet.description.length > 90 ? projet.description.substring(0, 90) + '...' : projet.description}
+                    </p>
                   )}
-                </div>
 
-                {/* Titre & description */}
-                <h3 className="font-semibold text-gray-800 mb-1">{p.titre}</h3>
-                <p className="text-gray-500 text-sm mb-3 flex-1 line-clamp-3">{p.description}</p>
-
-                {/* Porteur */}
-                <p className="text-xs text-gray-400 mb-4">
-                  Porteur : {p.porteurPrenom} {p.porteurNom}
-                </p>
-
-                {/* Actions */}
-                <div className="flex flex-col gap-2">
-                  {/* Membre : rejoindre un projet approuvé/en cours */}
-                  {isAuthenticated && isMembre && ['APPROUVE', 'EN_COURS'].includes(p.statut) && (
-                    <button
-                      onClick={() => rejoindre(p.id)}
-                      className="bg-blue-700 hover:bg-blue-600 text-white text-sm py-2 rounded-xl transition font-medium"
-                    >
-                      Rejoindre ce projet
-                    </button>
-                  )}
-
-                  {/* Porteur : soumettre un brouillon */}
-                  {isAuthenticated && p.statut === 'BROUILLON' && (
-                    <button
-                      onClick={() => soumettre(p.id)}
-                      className="bg-yellow-500 hover:bg-yellow-400 text-white text-sm py-2 rounded-xl transition font-medium"
-                    >
-                      Soumettre pour validation
-                    </button>
-                  )}
-
-                  {/* Admin/Référent : valider un projet soumis */}
-                  {(isAdmin || isReferent) && p.statut === 'SOUMIS' && (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => valider(p.id, true)}
-                        className="flex-1 bg-green-600 hover:bg-green-500 text-white text-sm py-2 rounded-xl transition font-medium"
-                      >
-                        ✅ Approuver
-                      </button>
-                      <button
-                        onClick={() => valider(p.id, false)}
-                        className="flex-1 bg-red-500 hover:bg-red-400 text-white text-sm py-2 rounded-xl transition font-medium"
-                      >
-                        ❌ Rejeter
-                      </button>
+                  {projet.budgetDemande > 0 && (
+                    <div style={{ marginBottom: '0.75rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#4A6A8A', marginBottom: '4px' }}>
+                        <span>💶 {projet.budgetRecu || 0} € reçus</span>
+                        <span>Objectif : {projet.budgetDemande} €</span>
+                      </div>
+                      <div style={{ background: '#E2EAF0', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
+                        <div style={{
+                          background: '#2E86AB',
+                          height: '100%',
+                          width: `${progression}%`,
+                          borderRadius: '4px',
+                          transition: 'width 0.3s ease',
+                        }} />
+                      </div>
+                      <p style={{ fontSize: '0.75rem', color: '#4A6A8A', margin: '4px 0 0', textAlign: 'right' }}>
+                        {progression}%
+                      </p>
                     </div>
                   )}
 
-                  {!isAuthenticated && (
-                    <p className="text-xs text-center text-gray-400">
-                      <a href="/login" className="text-blue-600 hover:underline">Connecte-toi</a> pour participer
+                  {projet.porteurPrenom && (
+                    <p style={{ color: '#4A6A8A', fontSize: '0.8rem', margin: '0 0 0.75rem' }}>
+                      👤 {projet.porteurPrenom} {projet.porteurNom}
                     </p>
+                  )}
+
+                  {user && projet.statut === 'APPROUVE' && (
+                    <button
+                      onClick={() => setMessage(`Redirection vers le paiement pour "${projet.titre}"...`)}
+                      style={{ background: '#F4A261', color: '#fff', border: 'none', borderRadius: '6px', padding: '0.4rem 1rem', cursor: 'pointer', fontSize: '0.85rem', width: '100%' }}
+                    >
+                      💛 Soutenir ce projet
+                    </button>
                   )}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </main>
-
-      <Footer />
+            );
+          })}
+        </div>
+      )}
     </div>
-  )
+  );
 }
