@@ -17,8 +17,10 @@ import GroupesScreen       from '../screens/GroupesScreen';
 import MessagerieScreen    from '../screens/MessagerieScreen';
 import ProjectsScreen        from '../screens/ProjectsScreen';
 import NotificationsScreen   from '../screens/NotificationsScreen';
-import PaymentScreen         from '../screens/PaymentScreen';
-import PaymentHistoryScreen  from '../screens/PaymentHistoryScreen';
+import PaymentScreen           from '../screens/PaymentScreen';
+import PaymentHistoryScreen    from '../screens/PaymentHistoryScreen';
+import AnnoncesScreen          from '../screens/AnnoncesScreen';
+import PrestationsMobileScreen from '../screens/PrestationsMobileScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -81,8 +83,10 @@ function PrivateTabs() {
   const MessagerieStack    = makeStack(MessagerieScreen,    'Messagerie',       logout);
   const NotificationsStack  = makeStack(NotificationsScreen,  'Notifications',    logout);
   const PaymentStack        = makeStack(PaymentScreen,        'Paiement',         logout);
-  const PaymentHistoryStack = makeStack(PaymentHistoryScreen, 'Mes paiements',    logout);
-  const ProfileStack        = makeStack(ProfileScreen,        'Mon profil',       logout);
+  const PaymentHistoryStack    = makeStack(PaymentHistoryScreen,    'Mes paiements',  logout);
+  const AnnoncesStack          = makeStack(AnnoncesScreen,          'Annonces',       logout);
+  const PrestationsStack       = makeStack(PrestationsMobileScreen, 'Bénévolat',      logout);
+  const ProfileStack           = makeStack(ProfileScreen,           'Mon profil',     logout);
 
   return (
     <Tab.Navigator
@@ -128,6 +132,16 @@ function PrivateTabs() {
         name="TabNotifications"
         component={NotificationsStack}
         options={{ tabBarLabel: 'Alertes', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔔</Text> }}
+      />
+      <Tab.Screen
+        name="TabAnnonces"
+        component={AnnoncesStack}
+        options={{ tabBarLabel: 'Annonces', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📢</Text> }}
+      />
+      <Tab.Screen
+        name="TabPrestations"
+        component={PrestationsStack}
+        options={{ tabBarLabel: 'Bénévolat', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🤝</Text> }}
       />
       <Tab.Screen
         name="TabPayments"

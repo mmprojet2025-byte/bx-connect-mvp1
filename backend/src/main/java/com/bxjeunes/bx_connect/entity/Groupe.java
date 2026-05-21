@@ -22,12 +22,33 @@ public class Groupe {
     @Column(length = 100)
     private String categorie;
 
+    // ─── Nouveaux champs logique métier ──────────────────────────────────────
+    @Column(length = 100)
+    private String theme;           // Thème du groupe (Numérique, Culture, Sport...)
+
+    @Column(columnDefinition = "TEXT")
+    private String objectif;        // Objectif du groupe
+
+    @Column(nullable = false)
+    private int capaciteMax = 0;    // 0 = illimité
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StatutGroupe statut = StatutGroupe.EN_ATTENTE; // Validation admin obligatoire
+
+    @Column(columnDefinition = "TEXT")
+    private String motifRefus;      // Motif si refusé par l'admin
+
+    private LocalDateTime dateValidation;  // Date de validation par l'admin
+
+    // ─── Champ legacy (compatibilité) ────────────────────────────────────────
     @Column(nullable = false)
     private boolean actif = true;
 
     @Column(nullable = false)
     private LocalDateTime dateCreation = LocalDateTime.now();
 
+    // ─── Relations ────────────────────────────────────────────────────────────
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "referent_id", nullable = false)
     private User referent;
@@ -35,12 +56,10 @@ public class Groupe {
     @OneToMany(mappedBy = "groupe", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MembreGroupe> membres = new ArrayList<>();
 
-    // ─── Constructeurs ───────────────────────────────────────────────────────
-
+    // ─── Constructeurs ────────────────────────────────────────────────────────
     public Groupe() {}
 
-    // ─── Getters & Setters ───────────────────────────────────────────────────
-
+    // ─── Getters & Setters ────────────────────────────────────────────────────
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -52,6 +71,24 @@ public class Groupe {
 
     public String getCategorie() { return categorie; }
     public void setCategorie(String categorie) { this.categorie = categorie; }
+
+    public String getTheme() { return theme; }
+    public void setTheme(String theme) { this.theme = theme; }
+
+    public String getObjectif() { return objectif; }
+    public void setObjectif(String objectif) { this.objectif = objectif; }
+
+    public int getCapaciteMax() { return capaciteMax; }
+    public void setCapaciteMax(int capaciteMax) { this.capaciteMax = capaciteMax; }
+
+    public StatutGroupe getStatut() { return statut; }
+    public void setStatut(StatutGroupe statut) { this.statut = statut; }
+
+    public String getMotifRefus() { return motifRefus; }
+    public void setMotifRefus(String motifRefus) { this.motifRefus = motifRefus; }
+
+    public LocalDateTime getDateValidation() { return dateValidation; }
+    public void setDateValidation(LocalDateTime dateValidation) { this.dateValidation = dateValidation; }
 
     public boolean isActif() { return actif; }
     public void setActif(boolean actif) { this.actif = actif; }

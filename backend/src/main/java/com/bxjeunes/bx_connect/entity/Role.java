@@ -5,5 +5,6 @@ public enum Role {
     MEMBRE,
     REFERENT,
     PARTENAIRE,
-    ADMIN
+    ADMIN,
+    SUPER_ADMIN  // Contrôle technique de la plateforme
 }

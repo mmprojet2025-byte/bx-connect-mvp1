@@ -53,6 +53,9 @@ public class SecurityConfig {
         "/api/partenaire/projets-ouverts",
         "/api/partenaire/activites-ouvertes",
 
+        // Annonces globales (public)
+        "/api/annonces/globales",
+
         // Paiements — callbacks PayPal
         "/api/paiements/confirmer",
         "/api/paiements/annuler",

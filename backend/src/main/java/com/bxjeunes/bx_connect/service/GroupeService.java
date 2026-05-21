@@ -10,6 +10,7 @@ import com.bxjeunes.bx_connect.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,44 +21,44 @@ public class GroupeService {
     private final GroupeRepository groupeRepository;
     private final MembreGroupeRepository membreGroupeRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public GroupeService(GroupeRepository groupeRepository,
                          MembreGroupeRepository membreGroupeRepository,
-                         UserRepository userRepository) {
-        this.groupeRepository = groupeRepository;
+                         UserRepository userRepository,
+                         NotificationService notificationService) {
+        this.groupeRepository       = groupeRepository;
         this.membreGroupeRepository = membreGroupeRepository;
-        this.userRepository = userRepository;
+        this.userRepository         = userRepository;
+        this.notificationService    = notificationService;
     }
 
-    // ─── Lister tous les groupes actifs (public) ─────────────────────────────
-
+    // ─── Lister groupes validés (public) ─────────────────────────────────────
     public List<GroupeResponse> listerGroupes() {
-        return groupeRepository.findByActifTrue()
+        return groupeRepository.findByStatut(StatutGroupe.VALIDE)
                 .stream()
                 .map(GroupeResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
-    // ─── Rechercher un groupe par nom (M17) ──────────────────────────────────
-
+    // ─── Rechercher un groupe par nom (public) ────────────────────────────────
     public List<GroupeResponse> rechercherParNom(String nom) {
-        return groupeRepository.findByActifTrueAndNomContainingIgnoreCase(nom)
+        return groupeRepository.findByStatutAndNomContainingIgnoreCase(StatutGroupe.VALIDE, nom)
                 .stream()
                 .map(GroupeResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
     // ─── Détail d'un groupe ───────────────────────────────────────────────────
-
     public GroupeResponse getGroupe(Long id) {
         Groupe groupe = groupeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Groupe introuvable"));
+                .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + id));
         return GroupeResponse.fromEntity(groupe);
     }
 
-    // ─── Créer un groupe (REFERENT / ADMIN) ──────────────────────────────────
-
-    public GroupeResponse creerGroupe(GroupeRequest request, String emailReferent) {
+    // ─── Proposer un groupe (RÉFÉRENT) ────────────────────────────────────────
+    // Statut initial : EN_ATTENTE — validation admin obligatoire
+    public GroupeResponse proposerGroupe(GroupeRequest request, String emailReferent) {
         User referent = userRepository.findByEmail(emailReferent)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
 
@@ -65,142 +66,224 @@ public class GroupeService {
         groupe.setNom(request.getNom());
         groupe.setDescription(request.getDescription());
         groupe.setCategorie(request.getCategorie());
+        groupe.setTheme(request.getTheme());
+        groupe.setObjectif(request.getObjectif());
+        groupe.setCapaciteMax(request.getCapaciteMax());
         groupe.setReferent(referent);
+        groupe.setStatut(StatutGroupe.EN_ATTENTE); // ✅ Validation admin obligatoire
+        groupe.setActif(false); // Pas encore visible
 
         Groupe saved = groupeRepository.save(groupe);
+
+        // Notifier les admins (simplifié — notifie le référent de la soumission)
+        notificationService.creer(referent,
+            "Groupe soumis",
+            "Votre groupe \"" + groupe.getNom() + "\" a été soumis et attend la validation de l'administrateur.",
+            "VALIDATION_GROUPE");
+
         return GroupeResponse.fromEntity(saved);
     }
 
-    // ─── Modifier un groupe (REFERENT propriétaire / ADMIN) ──────────────────
-
-    public GroupeResponse modifierGroupe(Long id, GroupeRequest request, String emailUser) {
-        Groupe groupe = groupeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Groupe introuvable"));
-
-        User user = userRepository.findByEmail(emailUser)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
-
-        // Vérification : seul le référent du groupe ou un admin peut modifier
-        boolean isAdmin = user.getRole() == Role.ADMIN;
-        boolean isReferent = groupe.getReferent().getId().equals(user.getId());
-        if (!isAdmin && !isReferent) {
-            throw new RuntimeException("Accès refusé");
-        }
-
-        groupe.setNom(request.getNom());
-        groupe.setDescription(request.getDescription());
-        groupe.setCategorie(request.getCategorie());
-
-        return GroupeResponse.fromEntity(groupeRepository.save(groupe));
-    }
-
-    // ─── Supprimer un groupe (ADMIN) ─────────────────────────────────────────
-
-    public void supprimerGroupe(Long id) {
-        Groupe groupe = groupeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Groupe introuvable"));
-        groupe.setActif(false);
-        groupeRepository.save(groupe);
-    }
-
-    // ─── Rejoindre un groupe (M18) ────────────────────────────────────────────
-
-    public MembreGroupeResponse rejoindrGroupe(Long groupeId, String emailUser) {
-        User user = userRepository.findByEmail(emailUser)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+    // ─── Admin : Valider un groupe ────────────────────────────────────────────
+    public GroupeResponse validerGroupe(Long groupeId) {
         Groupe groupe = groupeRepository.findById(groupeId)
-                .orElseThrow(() -> new RuntimeException("Groupe introuvable"));
+                .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + groupeId));
 
-        if (membreGroupeRepository.existsByUserIdAndGroupeId(user.getId(), groupeId)) {
-            throw new RuntimeException("Vous avez déjà une demande ou êtes déjà membre de ce groupe");
-        }
+        groupe.setStatut(StatutGroupe.VALIDE);
+        groupe.setActif(true);
+        groupe.setDateValidation(LocalDateTime.now());
 
-        MembreGroupe mg = new MembreGroupe(user, groupe);
-        return MembreGroupeResponse.fromEntity(membreGroupeRepository.save(mg));
+        Groupe saved = groupeRepository.save(groupe);
+
+        // Notifier le référent
+        notificationService.creer(groupe.getReferent(),
+            "Groupe validé ✅",
+            "Votre groupe \"" + groupe.getNom() + "\" a été validé par l'administrateur. Il est maintenant visible.",
+            "VALIDATION_GROUPE",
+            "/groupes/" + groupe.getId());
+
+        return GroupeResponse.fromEntity(saved);
     }
 
-    // ─── Quitter un groupe (M19) ──────────────────────────────────────────────
-
-    public void quitterGroupe(Long groupeId, String emailUser) {
-        User user = userRepository.findByEmail(emailUser)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
-
-        MembreGroupe mg = membreGroupeRepository.findByUserIdAndGroupeId(user.getId(), groupeId)
-                .orElseThrow(() -> new RuntimeException("Vous n'êtes pas membre de ce groupe"));
-
-        mg.setStatut(StatutMembre.QUITTE);
-        membreGroupeRepository.save(mg);
-    }
-
-    // ─── Consulter les membres d'un groupe (M20) ─────────────────────────────
-
-    public List<MembreGroupeResponse> getMembresAcceptes(Long groupeId) {
-        return membreGroupeRepository.findByGroupeIdAndStatut(groupeId, StatutMembre.ACCEPTE)
-                .stream()
-                .map(MembreGroupeResponse::fromEntity)
-                .collect(Collectors.toList());
-    }
-
-    // ─── Demandes en attente (R04) ────────────────────────────────────────────
-
-    public List<MembreGroupeResponse> getDemandesEnAttente(Long groupeId, String emailReferent) {
+    // ─── Admin : Refuser un groupe ────────────────────────────────────────────
+    public GroupeResponse refuserGroupe(Long groupeId, String motif) {
         Groupe groupe = groupeRepository.findById(groupeId)
-                .orElseThrow(() -> new RuntimeException("Groupe introuvable"));
-        User referent = userRepository.findByEmail(emailReferent)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+                .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + groupeId));
 
-        boolean isAdmin = referent.getRole() == Role.ADMIN;
-        boolean isReferent = groupe.getReferent().getId().equals(referent.getId());
-        if (!isAdmin && !isReferent) {
-            throw new RuntimeException("Accès refusé");
-        }
+        groupe.setStatut(StatutGroupe.REFUSE);
+        groupe.setMotifRefus(motif);
 
-        return membreGroupeRepository.findByGroupeIdAndStatut(groupeId, StatutMembre.EN_ATTENTE)
+        Groupe saved = groupeRepository.save(groupe);
+
+        // Notifier le référent
+        notificationService.creer(groupe.getReferent(),
+            "Groupe refusé ❌",
+            "Votre groupe \"" + groupe.getNom() + "\" a été refusé. Motif : " + motif,
+            "REFUS_GROUPE");
+
+        return GroupeResponse.fromEntity(saved);
+    }
+
+    // ─── Admin : Tous les groupes ─────────────────────────────────────────────
+    public List<GroupeResponse> tousLesGroupes() {
+        return groupeRepository.findAll()
                 .stream()
-                .map(MembreGroupeResponse::fromEntity)
+                .map(GroupeResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
-    // ─── Accepter ou refuser une demande (R04) ────────────────────────────────
-
-    public MembreGroupeResponse traiterDemande(Long membreGroupeId, boolean accepter, String emailReferent) {
-        MembreGroupe mg = membreGroupeRepository.findById(membreGroupeId)
-                .orElseThrow(() -> new RuntimeException("Demande introuvable"));
-
-        User referent = userRepository.findByEmail(emailReferent)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
-
-        Groupe groupe = mg.getGroupe();
-        boolean isAdmin = referent.getRole() == Role.ADMIN;
-        boolean isReferent = groupe.getReferent().getId().equals(referent.getId());
-        if (!isAdmin && !isReferent) {
-            throw new RuntimeException("Accès refusé");
-        }
-
-        mg.setStatut(accepter ? StatutMembre.ACCEPTE : StatutMembre.REFUSE);
-        return MembreGroupeResponse.fromEntity(membreGroupeRepository.save(mg));
-    }
-
-    // ─── Mes groupes (membre connecté) ───────────────────────────────────────
-
-    public List<GroupeResponse> mesGroupes(String emailUser) {
-        User user = userRepository.findByEmail(emailUser)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
-
-        return membreGroupeRepository.findByUserIdAndStatut(user.getId(), StatutMembre.ACCEPTE)
+    // ─── Admin : Groupes en attente ───────────────────────────────────────────
+    public List<GroupeResponse> groupesEnAttente() {
+        return groupeRepository.findByStatutOrderByDateCreationAsc(StatutGroupe.EN_ATTENTE)
                 .stream()
-                .map(mg -> GroupeResponse.fromEntity(mg.getGroupe()))
+                .map(GroupeResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
-    // ─── Groupes gérés par un référent ───────────────────────────────────────
-
-    public List<GroupeResponse> groupesParReferent(String emailReferent) {
+    // ─── Référent : Mes groupes ───────────────────────────────────────────────
+    public List<GroupeResponse> mesGroupes(String emailReferent) {
         User referent = userRepository.findByEmail(emailReferent)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
         return groupeRepository.findByReferentId(referent.getId())
                 .stream()
                 .map(GroupeResponse::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    // ─── Rejoindre un groupe (MEMBRE) ─────────────────────────────────────────
+    // ✅ RÈGLE MÉTIER : Un membre = un seul groupe actif
+    public MembreGroupeResponse rejoindreGroupe(Long groupeId, String emailMembre) {
+        User membre = userRepository.findByEmail(emailMembre)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+
+        // ✅ Vérifier règle 1 membre = 1 groupe
+        if (membreGroupeRepository.estDejaMembreActif(membre.getId())) {
+            throw new RuntimeException("Vous êtes déjà membre d'un groupe. Un membre ne peut appartenir qu'à un seul groupe.");
+        }
+
+        Groupe groupe = groupeRepository.findById(groupeId)
+                .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + groupeId));
+
+        if (groupe.getStatut() != StatutGroupe.VALIDE) {
+            throw new RuntimeException("Ce groupe n'est pas disponible.");
+        }
+
+        // Vérifier capacité
+        if (groupe.getCapaciteMax() > 0) {
+            long membresActifs = membreGroupeRepository.countByGroupeIdAndStatut(groupeId, StatutMembre.ACCEPTE);
+            if (membresActifs >= groupe.getCapaciteMax()) {
+                throw new RuntimeException("Ce groupe a atteint sa capacité maximale.");
+            }
+        }
+
+        // Vérifier si déjà une demande en cours
+        membreGroupeRepository.findByUserIdAndGroupeId(membre.getId(), groupeId)
+                .ifPresent(mg -> { throw new RuntimeException("Vous avez déjà une demande pour ce groupe."); });
+
+        MembreGroupe membreGroupe = new MembreGroupe(membre, groupe);
+        membreGroupe.setStatut(StatutMembre.EN_ATTENTE);
+        MembreGroupe saved = membreGroupeRepository.save(membreGroupe);
+
+        // Notifier le référent
+        notificationService.creer(groupe.getReferent(),
+            "Nouvelle demande d'adhésion",
+            membre.getPrenom() + " " + membre.getNom() + " souhaite rejoindre votre groupe \"" + groupe.getNom() + "\".",
+            "ADHESION",
+            "/referent/adhesions");
+
+        return MembreGroupeResponse.fromEntity(saved);
+    }
+
+    // ─── Référent : Accepter une demande d'adhésion ───────────────────────────
+    public MembreGroupeResponse accepterAdhesion(Long membreGroupeId) {
+        MembreGroupe mg = membreGroupeRepository.findById(membreGroupeId)
+                .orElseThrow(() -> new RuntimeException("Demande introuvable"));
+
+        mg.setStatut(StatutMembre.ACCEPTE);
+        MembreGroupe saved = membreGroupeRepository.save(mg);
+
+        // Notifier le membre
+        notificationService.creer(mg.getUser(),
+            "Adhésion acceptée ✅",
+            "Votre demande d'adhésion au groupe \"" + mg.getGroupe().getNom() + "\" a été acceptée !",
+            "ADHESION_ACCEPTEE",
+            "/groupes/" + mg.getGroupe().getId());
+
+        return MembreGroupeResponse.fromEntity(saved);
+    }
+
+    // ─── Référent : Refuser une demande d'adhésion ────────────────────────────
+    public MembreGroupeResponse refuserAdhesion(Long membreGroupeId) {
+        MembreGroupe mg = membreGroupeRepository.findById(membreGroupeId)
+                .orElseThrow(() -> new RuntimeException("Demande introuvable"));
+
+        mg.setStatut(StatutMembre.REFUSE);
+        MembreGroupe saved = membreGroupeRepository.save(mg);
+
+        // Notifier le membre
+        notificationService.creer(mg.getUser(),
+            "Adhésion refusée",
+            "Votre demande d'adhésion au groupe \"" + mg.getGroupe().getNom() + "\" a été refusée.",
+            "ADHESION_REFUSEE");
+
+        return MembreGroupeResponse.fromEntity(saved);
+    }
+
+    // ─── Quitter un groupe ────────────────────────────────────────────────────
+    public void quitterGroupe(Long groupeId, String emailMembre) {
+        User membre = userRepository.findByEmail(emailMembre)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+
+        MembreGroupe mg = membreGroupeRepository.findByUserIdAndGroupeId(membre.getId(), groupeId)
+                .orElseThrow(() -> new RuntimeException("Vous n'êtes pas membre de ce groupe."));
+
+        membreGroupeRepository.delete(mg);
+    }
+
+    // ─── Membres d'un groupe ──────────────────────────────────────────────────
+    public List<MembreGroupeResponse> getMembres(Long groupeId) {
+        return membreGroupeRepository.findByGroupeId(groupeId)
+                .stream()
+                .map(MembreGroupeResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    // ─── Mes groupes (membre) ─────────────────────────────────────────────────
+    public List<GroupeResponse> mesGroupesMembre(String emailMembre) {
+        User membre = userRepository.findByEmail(emailMembre)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        return membreGroupeRepository.findByUserId(membre.getId())
+                .stream()
+                .map(mg -> GroupeResponse.fromEntity(mg.getGroupe()))
+                .collect(Collectors.toList());
+    }
+
+    // ─── Demandes en attente pour un groupe (référent) ────────────────────────
+    public List<MembreGroupeResponse> demandesEnAttente(Long groupeId) {
+        return membreGroupeRepository
+                .findByGroupeIdAndStatutOrderByDateAdhesionAsc(groupeId, StatutMembre.EN_ATTENTE)
+                .stream()
+                .map(MembreGroupeResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    // ─── Modifier un groupe (référent propriétaire / admin) ───────────────────
+    public GroupeResponse modifierGroupe(Long id, GroupeRequest request, String emailUser) {
+        Groupe groupe = groupeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Groupe introuvable"));
+
+        groupe.setNom(request.getNom());
+        groupe.setDescription(request.getDescription());
+        groupe.setCategorie(request.getCategorie());
+        if (request.getTheme() != null)    groupe.setTheme(request.getTheme());
+        if (request.getObjectif() != null) groupe.setObjectif(request.getObjectif());
+        if (request.getCapaciteMax() >= 0) groupe.setCapaciteMax(request.getCapaciteMax());
+
+        return GroupeResponse.fromEntity(groupeRepository.save(groupe));
+    }
+
+    // ─── Supprimer un groupe (admin) ──────────────────────────────────────────
+    public void supprimerGroupe(Long id) {
+        groupeRepository.deleteById(id);
     }
 }

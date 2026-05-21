@@ -12,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/groupes")
@@ -23,63 +24,134 @@ public class GroupeController {
         this.groupeService = groupeService;
     }
 
-    // ─── GET /api/groupes — Liste publique ───────────────────────────────────
+    // ─── PUBLIC ───────────────────────────────────────────────────────────────
+
+    // GET /api/groupes — Groupes validés (public)
     @GetMapping
-    public ResponseEntity<List<GroupeResponse>> listerGroupes() {
+    public ResponseEntity<List<GroupeResponse>> listerGroupes(
+            @RequestParam(required = false) String q) {
+        if (q != null && !q.isBlank()) {
+            return ResponseEntity.ok(groupeService.rechercherParNom(q));
+        }
         return ResponseEntity.ok(groupeService.listerGroupes());
     }
 
-    // ─── GET /api/groupes/recherche?q=nom — Recherche (M17) ─────────────────
-    @GetMapping("/recherche")
-    public ResponseEntity<List<GroupeResponse>> rechercher(@RequestParam String q) {
-        return ResponseEntity.ok(groupeService.rechercherParNom(q));
-    }
-
-    // ─── GET /api/groupes/{id} — Détail ─────────────────────────────────────
+    // GET /api/groupes/{id} — Détail d'un groupe (public)
     @GetMapping("/{id}")
     public ResponseEntity<GroupeResponse> getGroupe(@PathVariable Long id) {
         return ResponseEntity.ok(groupeService.getGroupe(id));
     }
 
-    // ─── POST /api/groupes — Créer (REFERENT / ADMIN) ────────────────────────
+    // GET /api/groupes/{id}/membres — Membres d'un groupe
+    @GetMapping("/{id}/membres")
+    public ResponseEntity<List<MembreGroupeResponse>> getMembres(@PathVariable Long id) {
+        return ResponseEntity.ok(groupeService.getMembres(id));
+    }
+
+    // ─── RÉFÉRENT / ADMIN ─────────────────────────────────────────────────────
+
+    // POST /api/groupes — Référent propose un groupe (statut EN_ATTENTE)
     @PostMapping
-    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN')")
-    public ResponseEntity<GroupeResponse> creerGroupe(
+    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<GroupeResponse> proposerGroupe(
             @Valid @RequestBody GroupeRequest request,
             Authentication auth) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(groupeService.creerGroupe(request, auth.getName()));
+                .body(groupeService.proposerGroupe(request, auth.getName()));
     }
 
-    // ─── PUT /api/groupes/{id} — Modifier (REFERENT propriétaire / ADMIN) ───
+    // PUT /api/groupes/{id} — Modifier un groupe
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN')")
-    public ResponseEntity<GroupeResponse> modifierGroupe(
+    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<GroupeResponse> modifier(
             @PathVariable Long id,
             @Valid @RequestBody GroupeRequest request,
             Authentication auth) {
         return ResponseEntity.ok(groupeService.modifierGroupe(id, request, auth.getName()));
     }
 
-    // ─── DELETE /api/groupes/{id} — Supprimer (ADMIN) ────────────────────────
+    // GET /api/groupes/referent/mes-groupes — Mes groupes (référent)
+    @GetMapping("/referent/mes-groupes")
+    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<List<GroupeResponse>> mesGroupes(Authentication auth) {
+        return ResponseEntity.ok(groupeService.mesGroupes(auth.getName()));
+    }
+
+    // GET /api/groupes/{id}/demandes — Demandes d'adhésion en attente (référent)
+    @GetMapping("/{id}/demandes")
+    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<List<MembreGroupeResponse>> demandesEnAttente(@PathVariable Long id) {
+        return ResponseEntity.ok(groupeService.demandesEnAttente(id));
+    }
+
+    // PATCH /api/groupes/adhesions/{id}/accepter — Accepter une adhésion
+    @PatchMapping("/adhesions/{id}/accepter")
+    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<MembreGroupeResponse> accepterAdhesion(@PathVariable Long id) {
+        return ResponseEntity.ok(groupeService.accepterAdhesion(id));
+    }
+
+    // PATCH /api/groupes/adhesions/{id}/refuser — Refuser une adhésion
+    @PatchMapping("/adhesions/{id}/refuser")
+    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<MembreGroupeResponse> refuserAdhesion(@PathVariable Long id) {
+        return ResponseEntity.ok(groupeService.refuserAdhesion(id));
+    }
+
+    // ─── ADMIN ────────────────────────────────────────────────────────────────
+
+    // GET /api/groupes/admin/tous — Tous les groupes (admin)
+    @GetMapping("/admin/tous")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<List<GroupeResponse>> tousLesGroupes() {
+        return ResponseEntity.ok(groupeService.tousLesGroupes());
+    }
+
+    // GET /api/groupes/admin/en-attente — Groupes en attente de validation
+    @GetMapping("/admin/en-attente")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<List<GroupeResponse>> groupesEnAttente() {
+        return ResponseEntity.ok(groupeService.groupesEnAttente());
+    }
+
+    // PATCH /api/groupes/{id}/valider — Admin valide un groupe
+    @PatchMapping("/{id}/valider")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<GroupeResponse> valider(@PathVariable Long id) {
+        return ResponseEntity.ok(groupeService.validerGroupe(id));
+    }
+
+    // PATCH /api/groupes/{id}/refuser — Admin refuse un groupe
+    @PatchMapping("/{id}/refuser")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<GroupeResponse> refuser(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, String> body) {
+        String motif = body != null ? body.getOrDefault("motif", "Non précisé") : "Non précisé";
+        return ResponseEntity.ok(groupeService.refuserGroupe(id, motif));
+    }
+
+    // DELETE /api/groupes/{id} — Supprimer un groupe (admin)
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> supprimerGroupe(@PathVariable Long id) {
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<Void> supprimer(@PathVariable Long id) {
         groupeService.supprimerGroupe(id);
         return ResponseEntity.noContent().build();
     }
 
-    // ─── POST /api/groupes/{id}/rejoindre — Rejoindre (M18) ─────────────────
+    // ─── MEMBRE ───────────────────────────────────────────────────────────────
+
+    // POST /api/groupes/{id}/rejoindre — Membre demande à rejoindre
     @PostMapping("/{id}/rejoindre")
     @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT', 'ADMIN')")
     public ResponseEntity<MembreGroupeResponse> rejoindre(
             @PathVariable Long id,
             Authentication auth) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(groupeService.rejoindrGroupe(id, auth.getName()));
+                .body(groupeService.rejoindreGroupe(id, auth.getName()));
     }
 
-    // ─── DELETE /api/groupes/{id}/quitter — Quitter (M19) ───────────────────
+    // DELETE /api/groupes/{id}/quitter — Membre quitte un groupe
     @DeleteMapping("/{id}/quitter")
     @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT', 'ADMIN')")
     public ResponseEntity<Void> quitter(
@@ -89,43 +161,10 @@ public class GroupeController {
         return ResponseEntity.noContent().build();
     }
 
-    // ─── GET /api/groupes/{id}/membres — Membres acceptés (M20) ─────────────
-    @GetMapping("/{id}/membres")
-    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT', 'ADMIN')")
-    public ResponseEntity<List<MembreGroupeResponse>> getMembres(@PathVariable Long id) {
-        return ResponseEntity.ok(groupeService.getMembresAcceptes(id));
-    }
-
-    // ─── GET /api/groupes/{id}/demandes — Demandes en attente (R04) ──────────
-    @GetMapping("/{id}/demandes")
-    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN')")
-    public ResponseEntity<List<MembreGroupeResponse>> getDemandesEnAttente(
-            @PathVariable Long id,
-            Authentication auth) {
-        return ResponseEntity.ok(groupeService.getDemandesEnAttente(id, auth.getName()));
-    }
-
-    // ─── PATCH /api/groupes/demandes/{membreGroupeId} — Accepter/Refuser (R04)
-    @PatchMapping("/demandes/{membreGroupeId}")
-    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN')")
-    public ResponseEntity<MembreGroupeResponse> traiterDemande(
-            @PathVariable Long membreGroupeId,
-            @RequestParam boolean accepter,
-            Authentication auth) {
-        return ResponseEntity.ok(groupeService.traiterDemande(membreGroupeId, accepter, auth.getName()));
-    }
-
-    // ─── GET /api/groupes/mes-groupes — Mes groupes (membre connecté) ────────
+    // GET /api/groupes/mes-groupes — Mes groupes (membre connecté)
     @GetMapping("/mes-groupes")
-    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT', 'ADMIN')")
-    public ResponseEntity<List<GroupeResponse>> mesGroupes(Authentication auth) {
-        return ResponseEntity.ok(groupeService.mesGroupes(auth.getName()));
-    }
-
-    // ─── GET /api/groupes/mes-groupes-referent — Groupes gérés ──────────────
-    @GetMapping("/mes-groupes-referent")
-    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN')")
-    public ResponseEntity<List<GroupeResponse>> mesGroupesReferent(Authentication auth) {
-        return ResponseEntity.ok(groupeService.groupesParReferent(auth.getName()));
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<GroupeResponse>> mesGroupesMembre(Authentication auth) {
+        return ResponseEntity.ok(groupeService.mesGroupesMembre(auth.getName()));
     }
 }

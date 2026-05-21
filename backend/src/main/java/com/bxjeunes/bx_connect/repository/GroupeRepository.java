@@ -1,6 +1,7 @@
 package com.bxjeunes.bx_connect.repository;
 
 import com.bxjeunes.bx_connect.entity.Groupe;
+import com.bxjeunes.bx_connect.entity.StatutGroupe;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -9,15 +10,22 @@ import java.util.List;
 @Repository
 public interface GroupeRepository extends JpaRepository<Groupe, Long> {
 
-    // Tous les groupes actifs
-    List<Groupe> findByActifTrue();
+    // Groupes validés (public)
+    List<Groupe> findByStatut(StatutGroupe statut);
 
-    // Recherche par nom (M17)
-    List<Groupe> findByActifTrueAndNomContainingIgnoreCase(String nom);
+    // Groupes validés + recherche par nom
+    List<Groupe> findByStatutAndNomContainingIgnoreCase(StatutGroupe statut, String nom);
 
-    // Groupes gérés par un référent
+    // Groupes d'un référent
     List<Groupe> findByReferentId(Long referentId);
 
-    // Groupes actifs par catégorie
-    List<Groupe> findByActifTrueAndCategorie(String categorie);
+    // Groupes d'un référent par statut
+    List<Groupe> findByReferentIdAndStatut(Long referentId, StatutGroupe statut);
+
+    // Groupes en attente de validation (admin)
+    List<Groupe> findByStatutOrderByDateCreationAsc(StatutGroupe statut);
+
+    // Legacy : groupes actifs (compatibilité)
+    List<Groupe> findByActifTrue();
+    List<Groupe> findByActifTrueAndNomContainingIgnoreCase(String nom);
 }

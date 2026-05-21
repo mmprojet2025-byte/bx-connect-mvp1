@@ -1,6 +1,7 @@
 package com.bxjeunes.bx_connect.dto;
 
 import com.bxjeunes.bx_connect.entity.Groupe;
+import com.bxjeunes.bx_connect.entity.StatutGroupe;
 
 import java.time.LocalDateTime;
 
@@ -10,41 +11,61 @@ public class GroupeResponse {
     private String nom;
     private String description;
     private String categorie;
+    private String theme;
+    private String objectif;
+    private int capaciteMax;
+    private StatutGroupe statut;
+    private String motifRefus;
     private boolean actif;
     private LocalDateTime dateCreation;
+    private LocalDateTime dateValidation;
     private String referentPrenom;
     private String referentNom;
+    private Long referentId;
     private int nombreMembres;
 
     // ─── Factory depuis entité ────────────────────────────────────────────────
-
     public static GroupeResponse fromEntity(Groupe groupe) {
-        GroupeResponse response = new GroupeResponse();
-        response.id = groupe.getId();
-        response.nom = groupe.getNom();
-        response.description = groupe.getDescription();
-        response.categorie = groupe.getCategorie();
-        response.actif = groupe.isActif();
-        response.dateCreation = groupe.getDateCreation();
+        GroupeResponse r = new GroupeResponse();
+        r.id            = groupe.getId();
+        r.nom           = groupe.getNom();
+        r.description   = groupe.getDescription();
+        r.categorie     = groupe.getCategorie();
+        r.theme         = groupe.getTheme();
+        r.objectif      = groupe.getObjectif();
+        r.capaciteMax   = groupe.getCapaciteMax();
+        r.statut        = groupe.getStatut();
+        r.motifRefus    = groupe.getMotifRefus();
+        r.actif         = groupe.isActif();
+        r.dateCreation  = groupe.getDateCreation();
+        r.dateValidation = groupe.getDateValidation();
+
         if (groupe.getReferent() != null) {
-            response.referentPrenom = groupe.getReferent().getPrenom();
-            response.referentNom = groupe.getReferent().getNom();
+            r.referentId     = groupe.getReferent().getId();
+            r.referentPrenom = groupe.getReferent().getPrenom();
+            r.referentNom    = groupe.getReferent().getNom();
         }
-        response.nombreMembres = (int) groupe.getMembres().stream()
+        r.nombreMembres = (int) groupe.getMembres().stream()
                 .filter(m -> m.getStatut().name().equals("ACCEPTE"))
                 .count();
-        return response;
+        return r;
     }
 
-    // ─── Getters ─────────────────────────────────────────────────────────────
-
-    public Long getId() { return id; }
-    public String getNom() { return nom; }
-    public String getDescription() { return description; }
-    public String getCategorie() { return categorie; }
-    public boolean isActif() { return actif; }
+    // ─── Getters ──────────────────────────────────────────────────────────────
+    public Long getId()                    { return id; }
+    public String getNom()                 { return nom; }
+    public String getDescription()         { return description; }
+    public String getCategorie()           { return categorie; }
+    public String getTheme()               { return theme; }
+    public String getObjectif()            { return objectif; }
+    public int getCapaciteMax()            { return capaciteMax; }
+    public StatutGroupe getStatut()        { return statut; }
+    public String getMotifRefus()          { return motifRefus; }
+    public boolean isActif()               { return actif; }
     public LocalDateTime getDateCreation() { return dateCreation; }
-    public String getReferentPrenom() { return referentPrenom; }
-    public String getReferentNom() { return referentNom; }
-    public int getNombreMembres() { return nombreMembres; }
+    public LocalDateTime getDateValidation() { return dateValidation; }
+    public Long getReferentId()            { return referentId; }
+    public String getReferentPrenom()      { return referentPrenom; }
+    public String getReferentNom()         { return referentNom; }
+    public int getNombreMembres()          { return nombreMembres; }
 }
