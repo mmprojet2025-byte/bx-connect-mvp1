@@ -1,5 +1,6 @@
 package com.bxjeunes.bx_connect.service;
 
+import com.bxjeunes.bx_connect.dto.ActiviteFiltreRequest;
 import com.bxjeunes.bx_connect.dto.ActiviteRequest;
 import com.bxjeunes.bx_connect.dto.ActiviteResponse;
 import com.bxjeunes.bx_connect.entity.Activite;
@@ -10,6 +11,7 @@ import com.bxjeunes.bx_connect.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -18,13 +20,13 @@ public class ActiviteService {
     private final ActiviteRepository activiteRepository;
     private final UserRepository userRepository;
 
-    public ActiviteService(ActiviteRepository activiteRepository, UserRepository userRepository) {
+    public ActiviteService(ActiviteRepository activiteRepository,
+                           UserRepository userRepository) {
         this.activiteRepository = activiteRepository;
         this.userRepository = userRepository;
     }
 
-    // ─── Créer une activité ──────────────────────────────────────────────────
-
+    // ─── Créer une activité ───────────────────────────────────────────────────
     public ActiviteResponse creer(ActiviteRequest request, String emailCreateur) {
         User createur = userRepository.findByEmail(emailCreateur)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + emailCreateur));
@@ -46,8 +48,7 @@ public class ActiviteService {
         return ActiviteResponse.fromEntity(activiteRepository.save(activite));
     }
 
-    // ─── Lister toutes les activités publiées (public) ──────────────────────
-
+    // ─── Lister activités publiées (public) ───────────────────────────────────
     public List<ActiviteResponse> listerPubliees() {
         return activiteRepository.findByStatut(StatutActivite.PUBLIEE)
                 .stream()
@@ -55,8 +56,7 @@ public class ActiviteService {
                 .collect(Collectors.toList());
     }
 
-    // ─── Lister toutes les activités (admin/référent) ────────────────────────
-
+    // ─── Lister toutes les activités (admin/référent) ─────────────────────────
     public List<ActiviteResponse> listerToutes() {
         return activiteRepository.findAll()
                 .stream()
@@ -64,16 +64,102 @@ public class ActiviteService {
                 .collect(Collectors.toList());
     }
 
-    // ─── Consulter le détail d'une activité ─────────────────────────────────
-
+    // ─── Détail d'une activité (V04) ──────────────────────────────────────────
     public ActiviteResponse getById(Long id) {
         Activite activite = activiteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
         return ActiviteResponse.fromEntity(activite);
     }
 
-    // ─── Modifier une activité ───────────────────────────────────────────────
+    // ─── Recherche par mot-clé (V06 / M16) ───────────────────────────────────
+    public List<ActiviteResponse> rechercher(String motCle) {
+        return activiteRepository
+                .rechercherMultiChamps(StatutActivite.PUBLIEE, motCle)
+                .stream()
+                .map(ActiviteResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
 
+    // ─── Filtres avancés (V03) ────────────────────────────────────────────────
+    public List<ActiviteResponse> filtrer(ActiviteFiltreRequest filtre) {
+        List<Activite> resultats;
+
+        // Recherche mot-clé multi-champs
+        if (filtre.getQ() != null && !filtre.getQ().isBlank()) {
+            resultats = activiteRepository.rechercherMultiChamps(
+                StatutActivite.PUBLIEE, filtre.getQ().trim()
+            );
+        }
+        // Filtre par date
+        else if (filtre.getDateDebut() != null && filtre.getDateFin() != null) {
+            resultats = activiteRepository.findByStatutAndDateDebutBetween(
+                StatutActivite.PUBLIEE,
+                filtre.getDateDebut(),
+                filtre.getDateFin()
+            );
+        }
+        // Filtre catégorie + thème
+        else if (filtre.getCategorie() != null && filtre.getTheme() != null) {
+            resultats = activiteRepository.findByStatutAndCategorieAndTheme(
+                StatutActivite.PUBLIEE,
+                filtre.getCategorie(),
+                filtre.getTheme()
+            );
+        }
+        // Filtre catégorie seule
+        else if (filtre.getCategorie() != null) {
+            resultats = activiteRepository.findByStatutAndCategorie(
+                StatutActivite.PUBLIEE, filtre.getCategorie()
+            );
+        }
+        // Filtre thème seul
+        else if (filtre.getTheme() != null) {
+            resultats = activiteRepository.findByStatutAndTheme(
+                StatutActivite.PUBLIEE, filtre.getTheme()
+            );
+        }
+        // Filtre lieu
+        else if (filtre.getLieu() != null && !filtre.getLieu().isBlank()) {
+            resultats = activiteRepository.findByStatutAndLieuContainingIgnoreCase(
+                StatutActivite.PUBLIEE, filtre.getLieu()
+            );
+        }
+        // Filtre gratuit/payant
+        else if (filtre.getGratuite() != null) {
+            resultats = activiteRepository.findByStatutAndGratuite(
+                StatutActivite.PUBLIEE, filtre.getGratuite()
+            );
+        }
+        // Aucun filtre → toutes les publiées
+        else {
+            resultats = activiteRepository.findByStatut(StatutActivite.PUBLIEE);
+        }
+
+        return resultats.stream()
+                .map(ActiviteResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    // ─── Options de filtres (catégories, thèmes, lieux disponibles) ──────────
+    public Map<String, List<String>> getOptionsFiltre() {
+        return Map.of(
+            "categories", activiteRepository.findDistinctCategories(),
+            "themes",     activiteRepository.findDistinctThemes(),
+            "lieux",      activiteRepository.findDistinctLieux()
+        );
+    }
+
+    // ─── Activités du référent ────────────────────────────────────────────────
+    public List<ActiviteResponse> mesActivites(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + email));
+        return activiteRepository.findByCreateurId(user.getId())
+                .stream()
+                .map(ActiviteResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    // ─── Modifier une activité ────────────────────────────────────────────────
     public ActiviteResponse modifier(Long id, ActiviteRequest request) {
         Activite activite = activiteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
@@ -92,8 +178,7 @@ public class ActiviteService {
         return ActiviteResponse.fromEntity(activiteRepository.save(activite));
     }
 
-    // ─── Changer le statut (publier, annuler, terminer) ─────────────────────
-
+    // ─── Changer le statut ────────────────────────────────────────────────────
     public ActiviteResponse changerStatut(Long id, StatutActivite nouveauStatut) {
         Activite activite = activiteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
@@ -101,22 +186,11 @@ public class ActiviteService {
         return ActiviteResponse.fromEntity(activiteRepository.save(activite));
     }
 
-    // ─── Supprimer une activité ──────────────────────────────────────────────
-
+    // ─── Supprimer une activité ───────────────────────────────────────────────
     public void supprimer(Long id) {
         if (!activiteRepository.existsById(id)) {
             throw new RuntimeException("Activité introuvable : " + id);
         }
         activiteRepository.deleteById(id);
-    }
-
-    // ─── Recherche par mot-clé (V06 / M16 du CDC) ───────────────────────────
-
-    public List<ActiviteResponse> rechercher(String motCle) {
-        return activiteRepository
-                .findByStatutAndTitreContainingIgnoreCase(StatutActivite.PUBLIEE, motCle)
-                .stream()
-                .map(ActiviteResponse::fromEntity)
-                .collect(Collectors.toList());
     }
 }

@@ -9,7 +9,7 @@ const LANGUAGES = [
 ]
 
 export default function Navbar() {
-  const { isAuthenticated, isAdmin, isReferent, user, logout } = useAuth()
+  const { isAuthenticated, isAdmin, isReferent, isPartenaire, user, logout } = useAuth()
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
 
@@ -33,20 +33,36 @@ export default function Navbar() {
         </Link>
 
         {/* Liens principaux */}
-        <div className="hidden md:flex items-center gap-6 text-sm font-medium">
-          <Link to="/" className="hover:text-blue-200 transition">{t('nav.home')}</Link>
+        <div className="hidden md:flex items-center gap-5 text-sm font-medium">
+          <Link to="/"          className="hover:text-blue-200 transition">{t('nav.home')}</Link>
           <Link to="/activites" className="hover:text-blue-200 transition">{t('nav.activities')}</Link>
-          <Link to="/projets" className="hover:text-blue-200 transition">{t('nav.projects')}</Link>
+          <Link to="/projets"   className="hover:text-blue-200 transition">{t('nav.projects')}</Link>
+          <Link to="/a-propos"  className="hover:text-blue-200 transition">À propos</Link>
 
           {isAuthenticated && (
             <>
-              <Link to="/groupes" className="hover:text-blue-200 transition">👥 {t('nav.groups')}</Link>
+              <Link to="/groupes"    className="hover:text-blue-200 transition">👥 {t('nav.groups')}</Link>
               <Link to="/messagerie" className="hover:text-blue-200 transition">💬 {t('nav.messaging')}</Link>
             </>
           )}
 
-          {(isAdmin || isReferent) && (
-            <Link to="/admin" className="hover:text-blue-200 transition text-yellow-300 font-semibold">
+          {/* Lien Partenaire */}
+          {isPartenaire && (
+            <Link to="/partenaire" className="hover:text-orange-300 transition text-orange-300 font-semibold">
+              🤝 Espace Partenaire
+            </Link>
+          )}
+
+          {/* Lien Référent */}
+          {isReferent && !isAdmin && (
+            <Link to="/referent" className="hover:text-teal-300 transition text-teal-300 font-semibold">
+              👤 Référent
+            </Link>
+          )}
+
+          {/* Lien Admin */}
+          {isAdmin && (
+            <Link to="/admin" className="hover:text-yellow-300 transition text-yellow-300 font-semibold">
               ⚙️ {t('nav.admin')}
             </Link>
           )}
@@ -63,12 +79,8 @@ export default function Navbar() {
                 onClick={() => changeLanguage(lang.code)}
                 style={{
                   background: i18n.language === lang.code ? 'rgba(255,255,255,0.25)' : 'transparent',
-                  border: 'none',
-                  color: '#fff',
-                  borderRadius: '20px',
-                  padding: '2px 8px',
-                  cursor: 'pointer',
-                  fontSize: '0.8rem',
+                  border: 'none', color: '#fff', borderRadius: '20px',
+                  padding: '2px 8px', cursor: 'pointer', fontSize: '0.8rem',
                   fontWeight: i18n.language === lang.code ? 700 : 400,
                   transition: 'background 0.2s',
                 }}

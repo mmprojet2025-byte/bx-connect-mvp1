@@ -4,34 +4,26 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
-public class PaiementRequest {
+public class SoutienRequest {
 
     @NotNull(message = "Le montant est obligatoire")
-    @DecimalMin(value = "1.00", message = "Le montant minimum est de 1€")
+    @DecimalMin(value = "1.0", message = "Le montant minimum est 1€")
     private BigDecimal montant;
 
-    // Cible du paiement (au moins un des deux doit être fourni)
-    private Long activiteId;  // Soutien à une activité
-    private Long projetId;    // Soutien à un projet
+    private Long projetId;    // Soutien à un projet (P05)
+    private Long activiteId;  // Soutien à une activité (P06)
 
-    // Fournisseur : 'PAYPAL' ou 'STRIPE' (défaut : STRIPE)
-    private String fournisseur = "STRIPE";
-
-    // Message optionnel du donateur/partenaire
-    private String message;
+    private String message;   // Message d'intention du partenaire
 
     // ─── Getters & Setters ────────────────────────────────────────────────────
     public BigDecimal getMontant() { return montant; }
     public void setMontant(BigDecimal montant) { this.montant = montant; }
 
-    public Long getActiviteId() { return activiteId; }
-    public void setActiviteId(Long activiteId) { this.activiteId = activiteId; }
-
     public Long getProjetId() { return projetId; }
     public void setProjetId(Long projetId) { this.projetId = projetId; }
 
-    public String getFournisseur() { return fournisseur; }
-    public void setFournisseur(String fournisseur) { this.fournisseur = fournisseur; }
+    public Long getActiviteId() { return activiteId; }
+    public void setActiviteId(Long activiteId) { this.activiteId = activiteId; }
 
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }

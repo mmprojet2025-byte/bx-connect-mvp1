@@ -32,18 +32,42 @@ public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
 
-    // ─── Routes publiques ────────────────────────────────────────────────────
+    // ─── Routes publiques ─────────────────────────────────────────────────────
     private static final String[] PUBLIC_URLS = {
+        // Auth
         "/api/auth/**",
+
+        // Activités — lecture publique (V02, V03, V04, V06)
         "/api/activites",
-        "/api/activites/**",
+        "/api/activites/{id}",
+        "/api/activites/recherche",
+        "/api/activites/filtrer",
+        "/api/activites/options-filtres",
+
+        // Projets — lecture publique
         "/api/projets",
-        "/api/projets/**",
+        "/api/projets/{id}",
+        "/api/projets/{id}/commentaires",
+
+        // Partenaire — lecture publique (P03, P04)
+        "/api/partenaire/projets-ouverts",
+        "/api/partenaire/activites-ouvertes",
+
+        // Paiements — callbacks PayPal
         "/api/paiements/confirmer",
         "/api/paiements/annuler",
+
+        // Stripe — config publique + webhook
+        "/api/stripe/config",
+        "/api/stripe/webhook",
+
+        // Swagger / OpenAPI
         "/swagger-ui/**",
         "/swagger-ui.html",
-        "/v3/api-docs/**"
+        "/v3/api-docs/**",
+
+        // Upload — accès aux fichiers statiques
+        "/uploads/**"
     };
 
     @Bean
@@ -68,7 +92,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // ✅ Accepte tous les ports locaux (5173, 5174, 5175, 5176...)
+        // ✅ Accepte tous les ports locaux (5173, 5174, 8081...)
         config.setAllowedOriginPatterns(List.of(
             "http://localhost:*",
             "http://127.0.0.1:*"

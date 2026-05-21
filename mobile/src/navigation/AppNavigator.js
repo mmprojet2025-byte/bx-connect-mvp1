@@ -15,8 +15,10 @@ import DashboardScreen     from '../screens/DashboardScreen';
 import ProfileScreen       from '../screens/ProfileScreen';
 import GroupesScreen       from '../screens/GroupesScreen';
 import MessagerieScreen    from '../screens/MessagerieScreen';
-import ProjectsScreen      from '../screens/ProjectsScreen';
-import NotificationsScreen from '../screens/NotificationsScreen';
+import ProjectsScreen        from '../screens/ProjectsScreen';
+import NotificationsScreen   from '../screens/NotificationsScreen';
+import PaymentScreen         from '../screens/PaymentScreen';
+import PaymentHistoryScreen  from '../screens/PaymentHistoryScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -77,8 +79,10 @@ function PrivateTabs() {
   const ProjectsStack      = makeStack(ProjectsScreen,      'Projets',          logout);
   const GroupesStack       = makeStack(GroupesScreen,       'Groupes',          logout);
   const MessagerieStack    = makeStack(MessagerieScreen,    'Messagerie',       logout);
-  const NotificationsStack = makeStack(NotificationsScreen, 'Notifications',    logout);
-  const ProfileStack       = makeStack(ProfileScreen,       'Mon profil',       logout);
+  const NotificationsStack  = makeStack(NotificationsScreen,  'Notifications',    logout);
+  const PaymentStack        = makeStack(PaymentScreen,        'Paiement',         logout);
+  const PaymentHistoryStack = makeStack(PaymentHistoryScreen, 'Mes paiements',    logout);
+  const ProfileStack        = makeStack(ProfileScreen,        'Mon profil',       logout);
 
   return (
     <Tab.Navigator
@@ -124,6 +128,11 @@ function PrivateTabs() {
         name="TabNotifications"
         component={NotificationsStack}
         options={{ tabBarLabel: 'Alertes', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔔</Text> }}
+      />
+      <Tab.Screen
+        name="TabPayments"
+        component={PaymentHistoryStack}
+        options={{ tabBarLabel: 'Paiements', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>💳</Text> }}
       />
       <Tab.Screen
         name="TabProfile"
