@@ -1,16 +1,19 @@
 package com.bxjeunes.bx_connect.dto;
 
-import com.bxjeunes.bx_connect.entity.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+/**
+ * DTO inscription publique.
+ * SECURITE : Le champ role a ete supprime.
+ * AuthService force toujours Role.MEMBRE.
+ */
 @Data
 public class RegisterRequest {
 
-    @NotBlank(message = "Le prénom est obligatoire")
+    @NotBlank(message = "Le prenom est obligatoire")
     @Size(max = 50)
     private String prenom;
 
@@ -23,9 +26,10 @@ public class RegisterRequest {
     private String email;
 
     @NotBlank(message = "Le mot de passe est obligatoire")
-    @Size(min = 8, message = "Le mot de passe doit contenir au moins 8 caractères")
+    @Size(min = 8, message = "Le mot de passe doit contenir au moins 8 caracteres")
     private String motDePasse;
 
-    @NotNull(message = "Le rôle est obligatoire")
-    private Role role;
+    // SUPPRIME : private Role role;
+    // Le role n'est plus accepte depuis le client.
+    // AuthService force toujours Role.MEMBRE.
 }
