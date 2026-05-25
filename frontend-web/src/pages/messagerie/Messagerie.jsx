@@ -64,7 +64,8 @@ export default function Messagerie() {
     e.preventDefault();
     if (!nouveauMessage.trim()) return;
     try {
-      await api.post(`/messagerie/fils/${filActif.id}/messages`, {
+      await api.post('/messagerie/messages', {
+        filId: filActif.id,
         contenu: nouveauMessage.trim(),
       });
       setNouveauMessage('');

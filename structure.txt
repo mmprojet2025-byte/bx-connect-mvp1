@@ -1,0 +1,62 @@
+.
+├── backend
+│   ├── HELP.md
+│   ├── mvnw
+│   ├── mvnw.cmd
+│   ├── pom.xml
+│   ├── src
+│   │   ├── main
+│   │   └── test
+│   └── uploads
+│       ├── avatars
+│       └── projets
+├── frontend-web
+│   ├── README.md
+│   ├── dist
+│   │   ├── assets
+│   │   ├── favicon.svg
+│   │   ├── icons.svg
+│   │   └── index.html
+│   ├── eslint.config.js
+│   ├── index.html
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── public
+│   │   ├── favicon.svg
+│   │   └── icons.svg
+│   ├── src
+│   │   ├── App.jsx
+│   │   ├── api
+│   │   ├── components
+│   │   ├── context
+│   │   ├── hooks
+│   │   ├── i18n
+│   │   ├── index.css
+│   │   ├── main.jsx
+│   │   └── pages
+│   └── vite.config.js
+├── mobile
+│   ├── AGENTS.md
+│   ├── App.js
+│   ├── CLAUDE.md
+│   ├── INSTALL.md
+│   ├── app.json
+│   ├── assets
+│   │   ├── android-icon-background.png
+│   │   ├── android-icon-foreground.png
+│   │   ├── android-icon-monochrome.png
+│   │   ├── favicon.png
+│   │   ├── icon.png
+│   │   └── splash-icon.png
+│   ├── index.js
+│   ├── package-lock.json
+│   ├── package.json
+│   └── src
+│       ├── api
+│       ├── components
+│       ├── context
+│       ├── navigation
+│       └── screens
+└── structure.txt
+
+27 directories, 33 files

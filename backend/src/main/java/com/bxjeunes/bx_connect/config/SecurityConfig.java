@@ -39,15 +39,14 @@ public class SecurityConfig {
 
         // Activités — lecture publique (V02, V03, V04, V06)
         "/api/activites",
-        "/api/activites/{id}",
+        "/api/activites/**",
         "/api/activites/recherche",
         "/api/activites/filtrer",
         "/api/activites/options-filtres",
 
         // Projets — lecture publique
         "/api/projets",
-        "/api/projets/{id}",
-        "/api/projets/{id}/commentaires",
+        "/api/projets/**",
 
         // Partenaire — lecture publique (P03, P04)
         "/api/partenaire/projets-ouverts",
