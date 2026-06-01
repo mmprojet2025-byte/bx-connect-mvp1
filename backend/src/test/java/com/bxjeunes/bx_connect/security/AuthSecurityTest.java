@@ -5,7 +5,6 @@ import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.repository.UserRepository;
 import com.bxjeunes.bx_connect.service.AuthService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,8 +35,7 @@ class AuthSecurityTest {
     @InjectMocks
     private AuthService authService;
 
-    @BeforeEach
-    void setUp() {
+    private void mockSuccessfulRegistration() {
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("$2a$12$hashed");
         when(jwtService.generateToken(any(User.class))).thenReturn("fake.jwt.token");
@@ -47,6 +45,8 @@ class AuthSecurityTest {
     @Test
     @DisplayName("L'inscription publique cree toujours un compte MEMBRE")
     void inscription_publique_cree_toujours_un_membre() {
+        mockSuccessfulRegistration();
+
         var response = authService.register(buildRequest("lucas@test.be"));
         assertThat(response.getRole()).isEqualTo(Role.MEMBRE);
     }
@@ -54,6 +54,8 @@ class AuthSecurityTest {
     @Test
     @DisplayName("Le role sauvegarde est toujours MEMBRE")
     void role_sauvegarde_est_toujours_membre() {
+        mockSuccessfulRegistration();
+
         authService.register(buildRequest("nouveau@test.be"));
         org.mockito.Mockito.verify(userRepository).save(
             org.mockito.ArgumentMatchers.argThat(user -> user.getRole() == Role.MEMBRE)
@@ -63,6 +65,8 @@ class AuthSecurityTest {
     @Test
     @DisplayName("Aucun role ADMIN ne peut etre cree via l'inscription publique")
     void inscription_ne_cree_jamais_admin() {
+        mockSuccessfulRegistration();
+
         var response = authService.register(buildRequest("test@test.be"));
         assertThat(response.getRole()).isNotEqualTo(Role.ADMIN);
         assertThat(response.getRole()).isNotEqualTo(Role.SUPER_ADMIN);

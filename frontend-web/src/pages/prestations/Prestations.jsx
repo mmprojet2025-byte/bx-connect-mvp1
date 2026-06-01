@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
@@ -7,7 +6,6 @@ import api from '../../api/axios';
 const TYPES = ['ANIMATION', 'LOGISTIQUE', 'COMMUNICATION', 'FORMATION', 'AUTRE'];
 
 export default function Prestations() {
-  const { user, isReferent, isAdmin } = useAuth();
   const [prestations, setPrestations] = useState([]);
   const [mesGroupes, setMesGroupes] = useState([]);
   const [loading, setLoading] = useState(true);

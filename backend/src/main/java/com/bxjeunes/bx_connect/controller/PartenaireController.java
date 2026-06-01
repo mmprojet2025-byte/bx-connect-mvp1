@@ -71,21 +71,21 @@ public class PartenaireController {
 
     // ─── Admin : Tous les soutiens (A24) ─────────────────────────────────────
     @GetMapping("/admin/tous")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<List<SoutienResponse>> tousLesSoutiens() {
         return ResponseEntity.ok(partenaireService.tousLesSoutiens());
     }
 
     // ─── Admin : Valider un soutien (A25) ────────────────────────────────────
     @PatchMapping("/admin/{id}/valider")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<SoutienResponse> valider(@PathVariable Long id) {
         return ResponseEntity.ok(partenaireService.validerSoutien(id));
     }
 
     // ─── Admin : Refuser un soutien (A25) ────────────────────────────────────
     @PatchMapping("/admin/{id}/refuser")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<SoutienResponse> refuser(@PathVariable Long id) {
         return ResponseEntity.ok(partenaireService.refuserSoutien(id));
     }

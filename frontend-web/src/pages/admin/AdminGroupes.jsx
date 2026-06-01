@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
 
 export default function AdminGroupes() {
-  const { t } = useTranslation();
   const [groupes, setGroupes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');

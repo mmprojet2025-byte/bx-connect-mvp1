@@ -56,7 +56,9 @@ public class NotificationService {
 
     // ─── Marquer une notification comme lue ──────────────────────────────────
     public void marquerLue(Long notifId, String email) {
-        Notification notif = notificationRepository.findById(notifId)
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        Notification notif = notificationRepository.findByIdAndDestinataireId(notifId, user.getId())
                 .orElseThrow(() -> new RuntimeException("Notification introuvable"));
         notif.setLue(true);
         notificationRepository.save(notif);
@@ -70,8 +72,12 @@ public class NotificationService {
     }
 
     // ─── Supprimer une notification ───────────────────────────────────────────
-    public void supprimer(Long notifId) {
-        notificationRepository.deleteById(notifId);
+    public void supprimer(Long notifId, String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        notificationRepository.findByIdAndDestinataireId(notifId, user.getId())
+                .orElseThrow(() -> new RuntimeException("Notification introuvable"));
+        notificationRepository.deleteByIdAndDestinataireId(notifId, user.getId());
     }
 
     // ─── Convertir en Map ─────────────────────────────────────────────────────

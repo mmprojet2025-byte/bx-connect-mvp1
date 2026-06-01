@@ -5,7 +5,7 @@ import Footer from '../../components/Footer';
 import api from '../../api/axios';
 
 export default function Annonces() {
-  const { isAuthenticated, isAdmin, isReferent, user } = useAuth();
+  const { isAuthenticated, isAdmin, isReferent } = useAuth();
   const [annonces, setAnnonces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');

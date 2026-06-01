@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
@@ -22,9 +23,16 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     // Compter les non lues (pour le badge)
     long countByDestinataireIdAndLueFalse(Long destinataireId);
 
+    // Une notification precise appartenant a un utilisateur
+    Optional<Notification> findByIdAndDestinataireId(Long id, Long destinataireId);
+
     // Marquer toutes comme lues
     @Modifying
     @Transactional
     @Query("UPDATE Notification n SET n.lue = true WHERE n.destinataire.id = :destinataireId")
     void marquerToutesLues(@Param("destinataireId") Long destinataireId);
+
+    // Supprimer uniquement si la notification appartient a l'utilisateur
+    @Transactional
+    void deleteByIdAndDestinataireId(Long id, Long destinataireId);
 }

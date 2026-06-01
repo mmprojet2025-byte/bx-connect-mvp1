@@ -155,6 +155,15 @@ public class ProjetService {
         return ProjetResponse.fromEntity(projetRepository.save(projet));
     }
 
+    // ─── Supprimer un projet (ADMIN) ─────────────────────────────────────────
+
+    public void supprimerProjet(Long id) {
+        if (!projetRepository.existsById(id)) {
+            throw new RuntimeException("Projet introuvable");
+        }
+        projetRepository.deleteById(id);
+    }
+
     // ─── Rejoindre un projet (M26) ────────────────────────────────────────────
 
     public void rejoindrProjet(Long projetId, String emailUser) {

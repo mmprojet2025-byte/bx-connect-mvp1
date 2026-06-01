@@ -107,6 +107,15 @@ public class ProjetController {
         return ResponseEntity.ok(projetService.changerStatut(id, statut, authentication.getName()));
     }
 
+    // ─── DELETE /api/projets/{id} — Supprimer un projet (ADMIN uniquement) ───
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<Void> supprimerProjet(@PathVariable Long id) {
+        projetService.supprimerProjet(id);
+        return ResponseEntity.noContent().build();
+    }
+
     // ─── POST /api/projets/{id}/rejoindre — Rejoindre un projet (M26) ────────
 
     @PostMapping("/{id}/rejoindre")

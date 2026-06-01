@@ -75,7 +75,7 @@ public class MessagerieController {
      * Désactiver un fil (ADMIN uniquement)
      */
     @DeleteMapping("/fils/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<Void> supprimerFil(@PathVariable Long id) {
         messagerieService.supprimerFil(id);
         return ResponseEntity.noContent().build();

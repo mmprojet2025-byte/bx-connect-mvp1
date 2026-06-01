@@ -9,7 +9,7 @@ import api from '../../api/axios';
 export default function ActiviteDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, isAdmin, isReferent } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { t } = useTranslation();
 
   const [activite, setActivite] = useState(null);

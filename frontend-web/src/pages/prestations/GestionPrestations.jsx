@@ -28,7 +28,7 @@ export default function GestionPrestations() {
 
   const fetchMesGroupes = async () => {
     try {
-      const res = await api.get('/referent/mes-activites');
+      await api.get('/referent/mes-activites');
       // Récupérer les groupes du référent
       const gRes = await api.get('/groupes/referent/mes-groupes');
       setMesGroupes(gRes.data);

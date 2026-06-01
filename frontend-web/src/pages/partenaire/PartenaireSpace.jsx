@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
@@ -7,7 +6,6 @@ import api from '../../api/axios';
 
 export default function PartenaireSpace() {
   const { user } = useAuth();
-  const { t } = useTranslation();
 
   const [stats, setStats] = useState(null);
   const [mesSoutiens, setMesSoutiens] = useState([]);

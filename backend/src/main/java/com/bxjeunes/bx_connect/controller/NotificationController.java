@@ -49,8 +49,8 @@ public class NotificationController {
 
     // DELETE /api/notifications/{id} — Supprimer
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> supprimer(@PathVariable Long id) {
-        notificationService.supprimer(id);
+    public ResponseEntity<Void> supprimer(@PathVariable Long id, Authentication auth) {
+        notificationService.supprimer(id, auth.getName());
         return ResponseEntity.noContent().build();
     }
 }
