@@ -16,6 +16,10 @@ public interface MembreGroupeRepository extends JpaRepository<MembreGroupe, Long
     // Tous les groupes d'un membre
     List<MembreGroupe> findByUserId(Long userId);
 
+    Optional<MembreGroupe> findFirstByUserIdAndStatut(Long userId, StatutMembre statut);
+
+    boolean existsByUserIdAndStatut(Long userId, StatutMembre statut);
+
     // Membres d'un groupe
     List<MembreGroupe> findByGroupeId(Long groupeId);
 

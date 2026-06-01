@@ -4,7 +4,7 @@ import api from '../../api/axios';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 
-const ROLES = ['MEMBRE', 'REFERENT', 'PARTENAIRE', 'ADMIN'];
+const ROLES = ['MEMBRE', 'REFERENT', 'PARTENAIRE'];
 
 export default function AdminUtilisateurs() {
   const { t } = useTranslation();
@@ -67,6 +67,8 @@ export default function AdminUtilisateurs() {
     u.email?.toLowerCase().includes(recherche.toLowerCase())
   );
 
+  const peutModifier = (user) => user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN';
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
@@ -119,16 +121,25 @@ export default function AdminUtilisateurs() {
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">{u.email}</td>
                         <td className="px-4 py-3">
-                          <select
-                            value={u.role}
-                            onChange={e => changerRole(u.id, e.target.value)}
-                            className="text-xs px-2 py-1 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            style={{ background: roleColor(u.role), color: '#fff' }}
-                          >
-                            {ROLES.map(r => (
-                              <option key={r} value={r} style={{ background: '#fff', color: '#333' }}>{r}</option>
-                            ))}
-                          </select>
+                          {peutModifier(u) ? (
+                            <select
+                              value={u.role}
+                              onChange={e => changerRole(u.id, e.target.value)}
+                              className="text-xs px-2 py-1 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                              style={{ background: roleColor(u.role), color: '#fff' }}
+                            >
+                              {ROLES.map(r => (
+                                <option key={r} value={r} style={{ background: '#fff', color: '#333' }}>{r}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span
+                              className="text-xs px-2 py-1 rounded-lg font-semibold text-white"
+                              style={{ background: roleColor(u.role) }}
+                            >
+                              {u.role}
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <span className={`text-xs px-3 py-0.5 rounded-full font-medium ${u.actif ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -140,18 +151,24 @@ export default function AdminUtilisateurs() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-2">
-                            <button
-                              onClick={() => toggleActif(u.id)}
-                              className={`text-xs px-3 py-1 rounded-lg font-medium transition ${u.actif ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
-                            >
-                              {u.actif ? 'Désactiver' : 'Activer'}
-                            </button>
-                            <button
-                              onClick={() => supprimerUtilisateur(u.id, u.email)}
-                              className="text-xs px-3 py-1 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 font-medium transition"
-                            >
-                              {t('common.delete')}
-                            </button>
+                            {peutModifier(u) ? (
+                              <>
+                                <button
+                                  onClick={() => toggleActif(u.id)}
+                                  className={`text-xs px-3 py-1 rounded-lg font-medium transition ${u.actif ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
+                                >
+                                  {u.actif ? 'Désactiver' : 'Activer'}
+                                </button>
+                                <button
+                                  onClick={() => supprimerUtilisateur(u.id, u.email)}
+                                  className="text-xs px-3 py-1 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 font-medium transition"
+                                >
+                                  {t('common.delete')}
+                                </button>
+                              </>
+                            ) : (
+                              <span className="text-xs text-gray-400">Lecture seule</span>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -172,6 +189,7 @@ export default function AdminUtilisateurs() {
 function roleColor(role) {
   switch (role) {
     case 'ADMIN':      return '#dc3545';
+    case 'SUPER_ADMIN': return '#7c3aed';
     case 'REFERENT':   return '#17a2b8';
     case 'PARTENAIRE': return '#fd7e14';
     default:           return '#1A3C5E';

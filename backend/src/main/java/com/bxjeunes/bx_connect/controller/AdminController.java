@@ -2,6 +2,8 @@ package com.bxjeunes.bx_connect.controller;
 
 import com.bxjeunes.bx_connect.dto.GroupeResponse;
 import com.bxjeunes.bx_connect.dto.UserResponse;
+import com.bxjeunes.bx_connect.dto.admin.AdminGroupeRequest;
+import com.bxjeunes.bx_connect.dto.admin.CreateReferentRequest;
 import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.StatutGroupe;
 import com.bxjeunes.bx_connect.entity.User;
@@ -10,8 +12,11 @@ import com.bxjeunes.bx_connect.repository.GroupeRepository;
 import com.bxjeunes.bx_connect.repository.InscriptionRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
 import com.bxjeunes.bx_connect.service.GroupeService;
+import com.bxjeunes.bx_connect.service.AdminReferentService;
 import com.bxjeunes.bx_connect.service.PrestationService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,7 +26,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
-@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 
     private final UserRepository userRepository;
@@ -29,6 +34,7 @@ public class AdminController {
     private final InscriptionRepository inscriptionRepository;
     private final GroupeRepository groupeRepository;
     private final GroupeService groupeService;
+    private final AdminReferentService adminReferentService;
     private final PrestationService prestationService;
 
     public AdminController(UserRepository userRepository,
@@ -36,12 +42,14 @@ public class AdminController {
                            InscriptionRepository inscriptionRepository,
                            GroupeRepository groupeRepository,
                            GroupeService groupeService,
+                           AdminReferentService adminReferentService,
                            PrestationService prestationService) {
         this.userRepository       = userRepository;
         this.activiteRepository   = activiteRepository;
         this.inscriptionRepository = inscriptionRepository;
         this.groupeRepository     = groupeRepository;
         this.groupeService        = groupeService;
+        this.adminReferentService = adminReferentService;
         this.prestationService    = prestationService;
     }
 
@@ -92,7 +100,14 @@ public class AdminController {
             @RequestParam String role) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
-        user.setRole(Role.valueOf(role.toUpperCase()));
+        verifierUtilisateurModifiableParAdmin(user);
+
+        Role nouveauRole = Role.valueOf(role.toUpperCase());
+        if (nouveauRole == Role.ADMIN || nouveauRole == Role.SUPER_ADMIN) {
+            throw new AccessDeniedException("Un ADMIN ne peut pas creer ou promouvoir un ADMIN/SUPER_ADMIN.");
+        }
+
+        user.setRole(nouveauRole);
         userRepository.save(user);
         return ResponseEntity.ok(UserResponse.fromEntity(user));
     }
@@ -101,6 +116,7 @@ public class AdminController {
     public ResponseEntity<UserResponse> toggleActif(@PathVariable Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        verifierUtilisateurModifiableParAdmin(user);
         user.setActif(!user.isActif());
         userRepository.save(user);
         return ResponseEntity.ok(UserResponse.fromEntity(user));
@@ -108,11 +124,56 @@ public class AdminController {
 
     @DeleteMapping("/utilisateurs/{id}")
     public ResponseEntity<Void> supprimerUtilisateur(@PathVariable Long id) {
-        userRepository.deleteById(id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        verifierUtilisateurModifiableParAdmin(user);
+        userRepository.delete(user);
         return ResponseEntity.noContent().build();
     }
 
+    // ─── Gestion des referents ───────────────────────────────────────────────
+
+    @GetMapping("/referents")
+    public ResponseEntity<List<UserResponse>> listerReferents() {
+        return ResponseEntity.ok(adminReferentService.listerReferents());
+    }
+
+    @PostMapping("/referents")
+    public ResponseEntity<UserResponse> creerReferent(
+            @Valid @RequestBody CreateReferentRequest request) {
+        return ResponseEntity.ok(adminReferentService.creerReferent(request));
+    }
+
+    @PatchMapping("/utilisateurs/{id}/nommer-referent")
+    public ResponseEntity<UserResponse> nommerReferent(@PathVariable Long id) {
+        return ResponseEntity.ok(adminReferentService.nommerReferent(id));
+    }
+
+    private void verifierUtilisateurModifiableParAdmin(User user) {
+        if (user.getRole() == Role.ADMIN || user.getRole() == Role.SUPER_ADMIN) {
+            throw new AccessDeniedException("Un ADMIN ne peut pas modifier un ADMIN ou un SUPER_ADMIN.");
+        }
+    }
+
     // ─── Gestion des groupes ──────────────────────────────────────────────────
+
+    @GetMapping("/groupes")
+    public ResponseEntity<List<GroupeResponse>> tousLesGroupesAdmin() {
+        return ResponseEntity.ok(groupeService.tousLesGroupes());
+    }
+
+    @PostMapping("/groupes")
+    public ResponseEntity<GroupeResponse> creerGroupe(
+            @Valid @RequestBody AdminGroupeRequest request) {
+        return ResponseEntity.ok(groupeService.creerGroupeParAdmin(request));
+    }
+
+    @PatchMapping("/groupes/{groupeId}/referent/{referentId}")
+    public ResponseEntity<GroupeResponse> assignerReferent(
+            @PathVariable Long groupeId,
+            @PathVariable Long referentId) {
+        return ResponseEntity.ok(groupeService.assignerReferent(groupeId, referentId));
+    }
 
     // GET /api/admin/groupes/en-attente — Groupes en attente de validation
     @GetMapping("/groupes/en-attente")

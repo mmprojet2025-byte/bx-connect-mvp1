@@ -19,6 +19,8 @@ public interface FilDiscussionRepository extends JpaRepository<FilDiscussion, Lo
     // Fils d'un groupe
     List<FilDiscussion> findByGroupeIdAndActifTrueOrderByDateCreationDesc(Long groupeId);
 
+    java.util.Optional<FilDiscussion> findFirstByGroupeIdAndActifTrueOrderByDateCreationDesc(Long groupeId);
+
     // Fils d'un projet
     List<FilDiscussion> findByProjetIdAndActifTrueOrderByDateCreationDesc(Long projetId);
 

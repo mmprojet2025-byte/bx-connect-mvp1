@@ -3,6 +3,7 @@ package com.bxjeunes.bx_connect.service;
 import com.bxjeunes.bx_connect.dto.GroupeRequest;
 import com.bxjeunes.bx_connect.dto.GroupeResponse;
 import com.bxjeunes.bx_connect.dto.MembreGroupeResponse;
+import com.bxjeunes.bx_connect.dto.admin.AdminGroupeRequest;
 import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.GroupeRepository;
 import com.bxjeunes.bx_connect.repository.MembreGroupeRepository;
@@ -66,6 +67,33 @@ public class GroupeService {
         notificationService.creer(referent, "Groupe soumis",
             "Votre groupe attend la validation.", "VALIDATION_GROUPE");
         return GroupeResponse.fromEntity(saved);
+    }
+
+    public GroupeResponse creerGroupeParAdmin(AdminGroupeRequest request) {
+        User referent = getReferent(request.getReferentId());
+
+        Groupe groupe = new Groupe();
+        groupe.setNom(request.getNom());
+        groupe.setDescription(request.getDescription());
+        groupe.setCategorie(request.getCategorie());
+        groupe.setTheme(request.getTheme());
+        groupe.setObjectif(request.getObjectif());
+        groupe.setCapaciteMax(request.getCapaciteMax());
+        groupe.setReferent(referent);
+        groupe.setStatut(StatutGroupe.VALIDE);
+        groupe.setActif(true);
+        groupe.setDateValidation(LocalDateTime.now());
+
+        return GroupeResponse.fromEntity(groupeRepository.save(groupe));
+    }
+
+    public GroupeResponse assignerReferent(Long groupeId, Long referentId) {
+        Groupe groupe = groupeRepository.findById(groupeId)
+                .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + groupeId));
+        User referent = getReferent(referentId);
+
+        groupe.setReferent(referent);
+        return GroupeResponse.fromEntity(groupeRepository.save(groupe));
     }
 
     /**
@@ -218,6 +246,11 @@ public class GroupeService {
                 .stream().map(MembreGroupeResponse::fromEntity).collect(Collectors.toList());
     }
 
+    public List<MembreGroupeResponse> getMembresReferent(Long groupeId, String emailReferent) {
+        verifierReferentDuGroupe(groupeId, emailReferent);
+        return getMembres(groupeId);
+    }
+
     public List<GroupeResponse> mesGroupesMembre(String emailMembre) {
         User membre = userRepository.findByEmail(emailMembre)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
@@ -229,5 +262,43 @@ public class GroupeService {
         return membreGroupeRepository
                 .findByGroupeIdAndStatutOrderByDateAdhesionAsc(groupeId, StatutMembre.EN_ATTENTE)
                 .stream().map(MembreGroupeResponse::fromEntity).collect(Collectors.toList());
+    }
+
+    public List<MembreGroupeResponse> demandesEnAttenteReferent(Long groupeId, String emailReferent) {
+        verifierReferentDuGroupe(groupeId, emailReferent);
+        return demandesEnAttente(groupeId);
+    }
+
+    public void verifierDemandeDansGroupe(Long membreGroupeId, Long groupeId) {
+        MembreGroupe mg = membreGroupeRepository.findById(membreGroupeId)
+                .orElseThrow(() -> new RuntimeException("Demande introuvable : " + membreGroupeId));
+        if (!mg.getGroupe().getId().equals(groupeId)) {
+            throw new AccessDeniedException("Cette demande n'appartient pas a ce groupe.");
+        }
+    }
+
+    private User getReferent(Long referentId) {
+        User referent = userRepository.findById(referentId)
+                .orElseThrow(() -> new RuntimeException("Referent introuvable"));
+        if (referent.getRole() != Role.REFERENT) {
+            throw new AccessDeniedException("L'utilisateur choisi doit avoir le role REFERENT.");
+        }
+        if (!referent.isActif()) {
+            throw new AccessDeniedException("Impossible d'assigner un REFERENT inactif.");
+        }
+        return referent;
+    }
+
+    private void verifierReferentDuGroupe(Long groupeId, String emailReferent) {
+        Groupe groupe = groupeRepository.findById(groupeId)
+                .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + groupeId));
+        User referent = userRepository.findByEmail(emailReferent)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+
+        if (referent.getRole() != Role.REFERENT ||
+                groupe.getReferent() == null ||
+                !groupe.getReferent().getId().equals(referent.getId())) {
+            throw new AccessDeniedException("Vous n'etes pas le referent de ce groupe.");
+        }
     }
 }

@@ -39,7 +39,7 @@ export function AuthProvider({ children }) {
 
   const isAuthenticated = !!token && !!user
   const isSuperAdmin = user?.role === 'SUPER_ADMIN'
-  const isAdmin      = user?.role === 'ADMIN' || isSuperAdmin
+  const isAdmin      = user?.role === 'ADMIN'
   const isReferent   = user?.role === 'REFERENT'
   const isMembre     = user?.role === 'MEMBRE'
   const isPartenaire = user?.role === 'PARTENAIRE'

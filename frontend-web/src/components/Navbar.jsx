@@ -11,7 +11,7 @@ const LANGUAGES = [
 ]
 
 export default function Navbar() {
-  const { isAuthenticated, isAdmin, isReferent, isPartenaire, user, logout } = useAuth()
+  const { isAuthenticated, isAdmin, isSuperAdmin, isReferent, isMembre, isPartenaire, user, logout } = useAuth()
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const [notifCount, setNotifCount] = useState(0)
@@ -46,17 +46,46 @@ export default function Navbar() {
 
         {/* Liens principaux */}
         <div className="hidden md:flex items-center gap-4 text-sm font-medium">
-          <Link to="/"          className="hover:text-blue-200 transition">{t('nav.home')}</Link>
-          <Link to="/activites" className="hover:text-blue-200 transition">{t('nav.activities')}</Link>
-          <Link to="/projets"   className="hover:text-blue-200 transition">{t('nav.projects')}</Link>
-          <Link to="/annonces"  className="hover:text-blue-200 transition">📢 Annonces</Link>
-          <Link to="/a-propos"  className="hover:text-blue-200 transition">À propos</Link>
-
-          {isAuthenticated && (
+          {isSuperAdmin ? (
             <>
-              <Link to="/groupes"    className="hover:text-blue-200 transition">👥 {t('nav.groups')}</Link>
-              <Link to="/messagerie" className="hover:text-blue-200 transition">💬 {t('nav.messaging')}</Link>
-              <Link to="/prestations" className="hover:text-blue-200 transition">🤝 Bénévolat</Link>
+              <Link to="/super-admin/dashboard" className="hover:text-blue-200 transition">Dashboard</Link>
+              <Link to="/super-admin/admins" className="hover:text-blue-200 transition">Administrateurs</Link>
+              <Link to="/super-admin/logs" className="hover:text-blue-200 transition">Logs</Link>
+            </>
+          ) : isAdmin ? (
+            <>
+              <Link to="/admin" className="hover:text-blue-200 transition">Tableau de bord</Link>
+              <Link to="/admin/utilisateurs" className="hover:text-blue-200 transition">Utilisateurs</Link>
+              <Link to="/admin/referents" className="hover:text-blue-200 transition">Référents</Link>
+              <Link to="/admin/groupes" className="hover:text-blue-200 transition">Groupes</Link>
+              <Link to="/admin/activites" className="hover:text-blue-200 transition">Activités</Link>
+              <Link to="/admin/projets" className="hover:text-blue-200 transition">Projets</Link>
+            </>
+          ) : isReferent ? (
+            <>
+              <Link to="/referent/dashboard" className="hover:text-blue-200 transition">Dashboard</Link>
+              <Link to="/referent/groupes" className="hover:text-blue-200 transition">Mes groupes</Link>
+              <Link to="/referent/membres" className="hover:text-blue-200 transition">Membres</Link>
+              <Link to="/referent/demandes" className="hover:text-blue-200 transition">Demandes</Link>
+              <Link to="/referent/activites" className="hover:text-blue-200 transition">Activités</Link>
+              <Link to="/referent/messagerie" className="hover:text-blue-200 transition">Messagerie</Link>
+            </>
+          ) : isMembre ? (
+            <>
+              <Link to="/" className="hover:text-blue-200 transition">{t('nav.home')}</Link>
+              <Link to="/activites" className="hover:text-blue-200 transition">{t('nav.activities')}</Link>
+              <Link to="/groupes" className="hover:text-blue-200 transition">{t('nav.groups')}</Link>
+              <Link to="/projets" className="hover:text-blue-200 transition">{t('nav.projects')}</Link>
+              <Link to="/messagerie" className="hover:text-blue-200 transition">{t('nav.messaging')}</Link>
+              <Link to="/profil" className="hover:text-blue-200 transition">{t('nav.profile')}</Link>
+            </>
+          ) : (
+            <>
+              <Link to="/"          className="hover:text-blue-200 transition">{t('nav.home')}</Link>
+              <Link to="/activites" className="hover:text-blue-200 transition">{t('nav.activities')}</Link>
+              <Link to="/projets"   className="hover:text-blue-200 transition">{t('nav.projects')}</Link>
+              <Link to="/annonces"  className="hover:text-blue-200 transition">📢 Annonces</Link>
+              <Link to="/a-propos"  className="hover:text-blue-200 transition">À propos</Link>
             </>
           )}
 
@@ -67,17 +96,10 @@ export default function Navbar() {
             </Link>
           )}
 
-          {/* Référent */}
-          {isReferent && !isAdmin && (
-            <Link to="/referent" className="text-teal-300 hover:text-teal-200 transition font-semibold">
-              👤 Référent
-            </Link>
-          )}
-
-          {/* Admin */}
-          {isAdmin && (
-            <Link to="/admin" className="text-yellow-300 hover:text-yellow-200 transition font-semibold">
-              ⚙️ {t('nav.admin')}
+          {/* SUPER_ADMIN */}
+          {isSuperAdmin && (
+            <Link to="/super-admin/dashboard" className="text-yellow-300 hover:text-yellow-200 transition font-semibold">
+              🛡️ SUPER_ADMIN
             </Link>
           )}
         </div>
@@ -105,26 +127,39 @@ export default function Navbar() {
 
           {isAuthenticated ? (
             <>
-              {/* Badge notifications */}
-              <Link to="/notifications" className="relative p-1.5 hover:bg-blue-800 rounded-full transition">
-                <span className="text-lg">🔔</span>
-                {notifCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                    {notifCount > 9 ? '9+' : notifCount}
-                  </span>
-                )}
-              </Link>
+              {!isSuperAdmin && (
+                <>
+                  {/* Badge notifications */}
+                  <Link to="/notifications" className="relative p-1.5 hover:bg-blue-800 rounded-full transition">
+                    <span className="text-lg">🔔</span>
+                    {notifCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                        {notifCount > 9 ? '9+' : notifCount}
+                      </span>
+                    )}
+                  </Link>
 
-              {/* Profil */}
-              <Link
-                to="/profil"
-                className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 px-3 py-1.5 rounded-full transition"
-              >
-                <span className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold">
-                  {user?.prenom?.[0]}{user?.nom?.[0]}
+                  {/* Profil */}
+                  <Link
+                    to="/profil"
+                    className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 px-3 py-1.5 rounded-full transition"
+                  >
+                    <span className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold">
+                      {user?.prenom?.[0]}{user?.nom?.[0]}
+                    </span>
+                    <span className="hidden md:inline text-sm">{user?.prenom}</span>
+                  </Link>
+                </>
+              )}
+
+              {isSuperAdmin && (
+                <span className="flex items-center gap-2 bg-blue-700 px-3 py-1.5 rounded-full">
+                  <span className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold">
+                    {user?.prenom?.[0]}{user?.nom?.[0]}
+                  </span>
+                  <span className="hidden md:inline text-sm">{user?.prenom}</span>
                 </span>
-                <span className="hidden md:inline text-sm">{user?.prenom}</span>
-              </Link>
+              )}
 
               <button
                 onClick={handleLogout}

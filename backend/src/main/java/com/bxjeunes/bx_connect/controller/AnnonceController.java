@@ -42,14 +42,14 @@ public class AnnonceController {
 
     // GET /api/annonces/admin/toutes — Toutes les annonces (admin)
     @GetMapping("/admin/toutes")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Map<String, Object>>> toutesLesAnnonces() {
         return ResponseEntity.ok(annonceService.toutesLesAnnonces());
     }
 
     // POST /api/annonces — Créer une annonce (Admin ou Référent)
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
     public ResponseEntity<Map<String, Object>> creer(
             @RequestBody Map<String, Object> request,
             Authentication auth) {
@@ -59,14 +59,14 @@ public class AnnonceController {
 
     // PATCH /api/annonces/{id}/epingler — Épingler/désépingler (Admin)
     @PatchMapping("/{id}/epingler")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, Object>> epingler(@PathVariable Long id) {
         return ResponseEntity.ok(annonceService.toggleEpingler(id));
     }
 
     // DELETE /api/annonces/{id} — Supprimer
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
     public ResponseEntity<Void> supprimer(@PathVariable Long id) {
         annonceService.supprimer(id);
         return ResponseEntity.noContent().build();

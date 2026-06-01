@@ -76,21 +76,21 @@ public class PrestationController {
 
     // GET /api/prestations/admin/toutes — Admin voit tout
     @GetMapping("/admin/toutes")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Map<String, Object>>> toutesLesPrestations() {
         return ResponseEntity.ok(prestationService.toutesLesPrestations());
     }
 
     // GET /api/prestations/admin/stats — Statistiques bénévolat
     @GetMapping("/admin/stats")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, Object>> statistiques() {
         return ResponseEntity.ok(prestationService.statistiques());
     }
 
     // GET /api/prestations/membre/{id}/stats — Stats d'un membre
     @GetMapping("/membre/{membreId}/stats")
-    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN')")
     public ResponseEntity<Map<String, Object>> statsMembre(@PathVariable Long membreId) {
         return ResponseEntity.ok(prestationService.statsMembre(membreId));
     }

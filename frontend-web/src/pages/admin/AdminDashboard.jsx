@@ -52,6 +52,8 @@ export default function AdminDashboard() {
         <h2 className="text-lg font-bold text-blue-900 mb-4">{t('admin.manage')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <NavCard to="/admin/utilisateurs" icon="👥" title={t('admin.users_title')}      description={t('admin.users_desc')}      color="#2E86AB" />
+          <NavCard to="/admin/referents"    icon="👤" title="Référents"                   description="Créer et suivre les référents des groupes" color="#0d9488" />
+          <NavCard to="/admin/groupes"      icon="🧩" title="Groupes"                     description="Créer les groupes et assigner les référents" color="#7c3aed" />
           <NavCard to="/admin/activites"    icon="🎯" title={t('admin.activities_title')} description={t('admin.activities_desc')} color="#F4A261" />
           <NavCard to="/admin/projets"      icon="🚀" title={t('admin.projects_title')}   description={t('admin.projects_desc')}   color="#28a745" />
         </div>

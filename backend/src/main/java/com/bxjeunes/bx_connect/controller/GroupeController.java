@@ -43,7 +43,7 @@ public class GroupeController {
 
     // REFERENT / ADMIN
     @PostMapping
-    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN')")
     public ResponseEntity<GroupeResponse> proposerGroupe(
             @Valid @RequestBody GroupeRequest request, Authentication auth) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -52,27 +52,27 @@ public class GroupeController {
 
     // SECURITE : auth.getName() transmis — GroupeService verifie le perimetre
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN')")
     public ResponseEntity<GroupeResponse> modifier(
             @PathVariable Long id, @Valid @RequestBody GroupeRequest request, Authentication auth) {
         return ResponseEntity.ok(groupeService.modifierGroupe(id, request, auth.getName()));
     }
 
     @GetMapping("/referent/mes-groupes")
-    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN')")
     public ResponseEntity<List<GroupeResponse>> mesGroupes(Authentication auth) {
         return ResponseEntity.ok(groupeService.mesGroupes(auth.getName()));
     }
 
     @GetMapping("/{id}/demandes")
-    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN')")
     public ResponseEntity<List<MembreGroupeResponse>> demandesEnAttente(@PathVariable Long id) {
         return ResponseEntity.ok(groupeService.demandesEnAttente(id));
     }
 
     // SECURITE : auth.getName() transmis — verifie que le referent gere bien ce groupe
     @PatchMapping("/adhesions/{id}/accepter")
-    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN')")
     public ResponseEntity<MembreGroupeResponse> accepterAdhesion(
             @PathVariable Long id, Authentication auth) {
         return ResponseEntity.ok(groupeService.accepterAdhesion(id, auth.getName()));
@@ -80,7 +80,7 @@ public class GroupeController {
 
     // SECURITE : auth.getName() transmis — verifie que le referent gere bien ce groupe
     @PatchMapping("/adhesions/{id}/refuser")
-    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN')")
     public ResponseEntity<MembreGroupeResponse> refuserAdhesion(
             @PathVariable Long id, Authentication auth) {
         return ResponseEntity.ok(groupeService.refuserAdhesion(id, auth.getName()));
@@ -88,25 +88,25 @@ public class GroupeController {
 
     // ADMIN
     @GetMapping("/admin/tous")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<GroupeResponse>> tousLesGroupes() {
         return ResponseEntity.ok(groupeService.tousLesGroupes());
     }
 
     @GetMapping("/admin/en-attente")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<GroupeResponse>> groupesEnAttente() {
         return ResponseEntity.ok(groupeService.groupesEnAttente());
     }
 
     @PatchMapping("/{id}/valider")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<GroupeResponse> valider(@PathVariable Long id) {
         return ResponseEntity.ok(groupeService.validerGroupe(id));
     }
 
     @PatchMapping("/{id}/refuser")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<GroupeResponse> refuser(
             @PathVariable Long id,
             @RequestBody(required = false) Map<String, String> body) {
@@ -115,7 +115,7 @@ public class GroupeController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> supprimer(@PathVariable Long id) {
         groupeService.supprimerGroupe(id);
         return ResponseEntity.noContent().build();

@@ -2,6 +2,7 @@ package com.bxjeunes.bx_connect.controller;
 
 import com.bxjeunes.bx_connect.dto.FilDiscussionRequest;
 import com.bxjeunes.bx_connect.dto.FilDiscussionResponse;
+import com.bxjeunes.bx_connect.dto.GroupeResponse;
 import com.bxjeunes.bx_connect.dto.MessageRequest;
 import com.bxjeunes.bx_connect.dto.MessageResponse;
 import com.bxjeunes.bx_connect.entity.TypeFil;
@@ -29,22 +30,24 @@ public class MessagerieController {
 
     /**
      * GET /api/messagerie/fils
-     * Liste tous les fils actifs (MEMBRE, PARTENAIRE, ADMIN, REFERENT)
+     * Liste les fils de groupe accessibles a l'utilisateur connecte.
      */
     @GetMapping("/fils")
-    @PreAuthorize("hasAnyRole('MEMBRE', 'PARTENAIRE', 'ADMIN', 'REFERENT')")
-    public ResponseEntity<List<FilDiscussionResponse>> listerFils() {
-        return ResponseEntity.ok(messagerieService.listerTousLesFils());
+    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT')")
+    public ResponseEntity<List<FilDiscussionResponse>> listerFils(Principal principal) {
+        return ResponseEntity.ok(messagerieService.listerTousLesFils(principal.getName()));
     }
 
     /**
      * GET /api/messagerie/fils/type/{type}
-     * Liste les fils par type (GENERAL, PROJET, EVENEMENT, ADMIN)
+     * Liste les fils accessibles par type.
      */
     @GetMapping("/fils/type/{type}")
-    @PreAuthorize("hasAnyRole('MEMBRE', 'PARTENAIRE', 'ADMIN', 'REFERENT')")
-    public ResponseEntity<List<FilDiscussionResponse>> listerFilsParType(@PathVariable TypeFil type) {
-        return ResponseEntity.ok(messagerieService.listerFilsParType(type));
+    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT')")
+    public ResponseEntity<List<FilDiscussionResponse>> listerFilsParType(
+            @PathVariable TypeFil type,
+            Principal principal) {
+        return ResponseEntity.ok(messagerieService.listerFilsParType(type, principal.getName()));
     }
 
     /**
@@ -52,17 +55,17 @@ public class MessagerieController {
      * Détail d'un fil
      */
     @GetMapping("/fils/{id}")
-    @PreAuthorize("hasAnyRole('MEMBRE', 'PARTENAIRE', 'ADMIN', 'REFERENT')")
-    public ResponseEntity<FilDiscussionResponse> getFilById(@PathVariable Long id) {
-        return ResponseEntity.ok(messagerieService.getFilById(id));
+    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT')")
+    public ResponseEntity<FilDiscussionResponse> getFilById(@PathVariable Long id, Principal principal) {
+        return ResponseEntity.ok(messagerieService.getFilById(id, principal.getName()));
     }
 
     /**
      * POST /api/messagerie/fils
-     * Créer un nouveau fil (ADMIN, REFERENT uniquement)
+     * Créer un nouveau fil de groupe (REFERENT du groupe uniquement)
      */
     @PostMapping("/fils")
-    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
+    @PreAuthorize("hasRole('REFERENT')")
     public ResponseEntity<FilDiscussionResponse> creerFil(
             @Valid @RequestBody FilDiscussionRequest request,
             Principal principal) {
@@ -72,13 +75,27 @@ public class MessagerieController {
 
     /**
      * DELETE /api/messagerie/fils/{id}
-     * Désactiver un fil (ADMIN uniquement)
+     * Désactiver un fil de groupe (REFERENT du groupe uniquement)
      */
     @DeleteMapping("/fils/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
-    public ResponseEntity<Void> supprimerFil(@PathVariable Long id) {
-        messagerieService.supprimerFil(id);
+    @PreAuthorize("hasRole('REFERENT')")
+    public ResponseEntity<Void> supprimerFil(@PathVariable Long id, Principal principal) {
+        messagerieService.supprimerFil(id, principal.getName());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/mon-groupe")
+    @PreAuthorize("hasRole('MEMBRE')")
+    public ResponseEntity<GroupeResponse> monGroupe(Principal principal) {
+        return ResponseEntity.ok(messagerieService.monGroupe(principal.getName()));
+    }
+
+    @GetMapping("/groupes/{groupeId}/fil")
+    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT')")
+    public ResponseEntity<FilDiscussionResponse> getFilGroupe(
+            @PathVariable Long groupeId,
+            Principal principal) {
+        return ResponseEntity.ok(messagerieService.getFilGroupe(groupeId, principal.getName()));
     }
 
     // ─── Messages ────────────────────────────────────────────────────────────
@@ -88,9 +105,11 @@ public class MessagerieController {
      * Lister les messages d'un fil
      */
     @GetMapping("/fils/{filId}/messages")
-    @PreAuthorize("hasAnyRole('MEMBRE', 'PARTENAIRE', 'ADMIN', 'REFERENT')")
-    public ResponseEntity<List<MessageResponse>> listerMessages(@PathVariable Long filId) {
-        return ResponseEntity.ok(messagerieService.listerMessages(filId));
+    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT')")
+    public ResponseEntity<List<MessageResponse>> listerMessages(
+            @PathVariable Long filId,
+            Principal principal) {
+        return ResponseEntity.ok(messagerieService.listerMessages(filId, principal.getName()));
     }
 
     /**
@@ -98,11 +117,24 @@ public class MessagerieController {
      * Envoyer un message dans un fil
      */
     @PostMapping("/messages")
-    @PreAuthorize("hasAnyRole('MEMBRE', 'PARTENAIRE', 'ADMIN', 'REFERENT')")
+    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT')")
     public ResponseEntity<MessageResponse> envoyerMessage(
             @Valid @RequestBody MessageRequest request,
             Principal principal) {
         MessageResponse response = messagerieService.envoyerMessage(request, principal.getName());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/groupes/{groupeId}/messages")
+    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT')")
+    public ResponseEntity<MessageResponse> envoyerMessageGroupe(
+            @PathVariable Long groupeId,
+            @RequestBody MessageRequest request,
+            Principal principal) {
+        MessageResponse response = messagerieService.envoyerMessageGroupe(
+                groupeId,
+                request.getContenu(),
+                principal.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -111,7 +143,7 @@ public class MessagerieController {
      * Marquer un message comme lu
      */
     @PatchMapping("/messages/{id}/lu")
-    @PreAuthorize("hasAnyRole('MEMBRE', 'PARTENAIRE', 'ADMIN', 'REFERENT')")
+    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT')")
     public ResponseEntity<Void> marquerCommeLu(@PathVariable Long id, Principal principal) {
         messagerieService.marquerCommeLu(id, principal.getName());
         return ResponseEntity.noContent().build();
@@ -122,8 +154,8 @@ public class MessagerieController {
      * Compter les messages non lus d'un fil
      */
     @GetMapping("/fils/{filId}/non-lus")
-    @PreAuthorize("hasAnyRole('MEMBRE', 'PARTENAIRE', 'ADMIN', 'REFERENT')")
-    public ResponseEntity<Long> compterNonLus(@PathVariable Long filId) {
-        return ResponseEntity.ok(messagerieService.compterMessagesNonLus(filId));
+    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT')")
+    public ResponseEntity<Long> compterNonLus(@PathVariable Long filId, Principal principal) {
+        return ResponseEntity.ok(messagerieService.compterMessagesNonLus(filId, principal.getName()));
     }
 }

@@ -1,0 +1,38 @@
+import { Link } from 'react-router-dom'
+
+export default function MemberReferentCard({ referent, groupe, messagerieDisponible }) {
+  return (
+    <section className="bg-white rounded-2xl shadow p-5">
+      <h2 className="text-lg font-bold text-blue-900 mb-4">Mon référent</h2>
+      {referent && groupe?.statutAdhesion === 'ACCEPTE' ? (
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center font-bold">
+              {initiales(referent)}
+            </div>
+            <div>
+              <p className="font-semibold text-blue-900">{referent.prenom} {referent.nom}</p>
+              <p className="text-xs text-gray-500">Référent du {groupe.nom}</p>
+            </div>
+          </div>
+          {referent.email && <p className="text-sm text-gray-500 mb-4">{referent.email}</p>}
+          {messagerieDisponible && (
+            <Link to="/messagerie" className="inline-block bg-teal-700 hover:bg-teal-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
+              Ouvrir la messagerie
+            </Link>
+          )}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-400">
+          {groupe?.statutAdhesion === 'EN_ATTENTE'
+            ? 'Le référent sera disponible après validation de ta demande.'
+            : 'Ton référent apparaîtra ici après ton entrée dans un groupe.'}
+        </p>
+      )}
+    </section>
+  )
+}
+
+function initiales(referent) {
+  return `${referent.prenom?.[0] || ''}${referent.nom?.[0] || ''}`.toUpperCase() || '?'
+}

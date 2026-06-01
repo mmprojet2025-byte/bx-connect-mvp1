@@ -110,7 +110,7 @@ public class ProjetController {
     // ─── DELETE /api/projets/{id} — Supprimer un projet (ADMIN uniquement) ───
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> supprimerProjet(@PathVariable Long id) {
         projetService.supprimerProjet(id);
         return ResponseEntity.noContent().build();

@@ -21,7 +21,17 @@ export default function Login() {
       const res = await api.post('/auth/login', form)
       const { token, prenom, nom, email, role } = res.data
       login(token, { prenom, nom, email, role })
-      navigate('/dashboard')
+      if (role === 'SUPER_ADMIN') {
+        navigate('/super-admin/dashboard')
+      } else if (role === 'ADMIN') {
+        navigate('/admin')
+      } else if (role === 'REFERENT') {
+        navigate('/referent/dashboard')
+      } else if (role === 'PARTENAIRE') {
+        navigate('/partenaire')
+      } else {
+        navigate('/dashboard')
+      }
     } catch (err) {
       setErreur(err.response?.data?.message || t('auth.error_login'))
     } finally {

@@ -1,12 +1,11 @@
 package com.bxjeunes.bx_connect.controller;
 
-import com.bxjeunes.bx_connect.dto.ActiviteRequest;
 import com.bxjeunes.bx_connect.dto.ActiviteResponse;
+import com.bxjeunes.bx_connect.dto.GroupeResponse;
+import com.bxjeunes.bx_connect.dto.MembreGroupeResponse;
 import com.bxjeunes.bx_connect.dto.ProjetResponse;
-import com.bxjeunes.bx_connect.service.ActiviteService;
+import com.bxjeunes.bx_connect.service.GroupeService;
 import com.bxjeunes.bx_connect.service.ReferentService;
-import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -17,16 +16,16 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/referent")
-@PreAuthorize("hasAnyRole('REFERENT', 'ADMIN')")
+@PreAuthorize("hasRole('REFERENT')")
 public class ReferentController {
 
     private final ReferentService referentService;
-    private final ActiviteService activiteService;
+    private final GroupeService groupeService;
 
     public ReferentController(ReferentService referentService,
-                              ActiviteService activiteService) {
+                              GroupeService groupeService) {
         this.referentService = referentService;
-        this.activiteService = activiteService;
+        this.groupeService = groupeService;
     }
 
     // ─── Dashboard référent ───────────────────────────────────────────────────
@@ -39,6 +38,44 @@ public class ReferentController {
     @GetMapping("/mes-activites")
     public ResponseEntity<List<ActiviteResponse>> mesActivites(Authentication auth) {
         return ResponseEntity.ok(referentService.mesActivites(auth.getName()));
+    }
+
+    // ─── Groupes du referent ─────────────────────────────────────────────────
+    @GetMapping("/groupes")
+    public ResponseEntity<List<GroupeResponse>> mesGroupes(Authentication auth) {
+        return ResponseEntity.ok(groupeService.mesGroupes(auth.getName()));
+    }
+
+    @GetMapping("/groupes/{groupeId}/membres")
+    public ResponseEntity<List<MembreGroupeResponse>> membresGroupe(
+            @PathVariable Long groupeId,
+            Authentication auth) {
+        return ResponseEntity.ok(groupeService.getMembresReferent(groupeId, auth.getName()));
+    }
+
+    @GetMapping("/groupes/{groupeId}/demandes")
+    public ResponseEntity<List<MembreGroupeResponse>> demandesGroupe(
+            @PathVariable Long groupeId,
+            Authentication auth) {
+        return ResponseEntity.ok(groupeService.demandesEnAttenteReferent(groupeId, auth.getName()));
+    }
+
+    @PatchMapping("/groupes/{groupeId}/demandes/{demandeId}/accepter")
+    public ResponseEntity<MembreGroupeResponse> accepterDemande(
+            @PathVariable Long groupeId,
+            @PathVariable Long demandeId,
+            Authentication auth) {
+        groupeService.verifierDemandeDansGroupe(demandeId, groupeId);
+        return ResponseEntity.ok(groupeService.accepterAdhesion(demandeId, auth.getName()));
+    }
+
+    @PatchMapping("/groupes/{groupeId}/demandes/{demandeId}/refuser")
+    public ResponseEntity<MembreGroupeResponse> refuserDemande(
+            @PathVariable Long groupeId,
+            @PathVariable Long demandeId,
+            Authentication auth) {
+        groupeService.verifierDemandeDansGroupe(demandeId, groupeId);
+        return ResponseEntity.ok(groupeService.refuserAdhesion(demandeId, auth.getName()));
     }
 
     // ─── R11 : Taux de remplissage ────────────────────────────────────────────
