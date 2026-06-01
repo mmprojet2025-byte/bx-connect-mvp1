@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../api/axios'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
+import Alert from '../../components/ui/Alert'
+import EmptyState from '../../components/ui/EmptyState'
 
 export default function Messagerie() {
   const { user } = useAuth()
@@ -92,14 +93,19 @@ export default function Messagerie() {
         {loading ? (
           <p className="text-gray-400 text-center py-10">Chargement de la messagerie...</p>
         ) : emptyState ? (
-          <EmptyState>
-            <p>{emptyState}</p>
-            <Link to="/groupes" className="inline-block mt-4 bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
-              Voir les groupes
-            </Link>
-          </EmptyState>
+          <EmptyState
+            title={emptyState}
+            description="Rejoins un groupe pour accéder à sa discussion et échanger avec ton référent."
+            actionLabel="Découvrir les groupes"
+            actionTo="/groupes"
+          />
         ) : !fil ? (
-          <EmptyState>La discussion de votre groupe n’est pas encore disponible.</EmptyState>
+          <EmptyState
+            title="Discussion indisponible"
+            description="La discussion de votre groupe n’est pas encore ouverte."
+            actionLabel="Retour au dashboard"
+            actionTo="/dashboard"
+          />
         ) : (
           <section className="bg-white rounded-2xl shadow overflow-hidden flex flex-col" style={{ height: '70vh' }}>
             <div className="px-5 py-4 border-b border-gray-100">
@@ -166,18 +172,6 @@ function MessageBubble({ message, currentUser }) {
       </div>
     </div>
   )
-}
-
-function Alert({ type, children }) {
-  const styles = type === 'error'
-    ? 'bg-red-50 border-red-200 text-red-700'
-    : 'bg-green-50 border-green-200 text-green-700'
-
-  return <div className={`border px-4 py-3 rounded-xl mb-5 text-sm ${styles}`}>{children}</div>
-}
-
-function EmptyState({ children }) {
-  return <div className="bg-white rounded-2xl shadow p-10 text-center text-gray-500 text-sm">{children}</div>
 }
 
 function getAccessError(err) {

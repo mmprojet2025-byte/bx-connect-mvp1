@@ -80,7 +80,7 @@ public class ActiviteController {
 
     // ─── ADMIN/REFERENT : Lister toutes les activités ────────────────────────
     @GetMapping("/admin/toutes")
-    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ActiviteResponse>> listerToutes() {
         return ResponseEntity.ok(activiteService.listerToutes());
     }
@@ -107,8 +107,9 @@ public class ActiviteController {
     @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
     public ResponseEntity<ActiviteResponse> modifier(
             @PathVariable Long id,
-            @Valid @RequestBody ActiviteRequest request) {
-        return ResponseEntity.ok(activiteService.modifier(id, request));
+            @Valid @RequestBody ActiviteRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(activiteService.modifier(id, request, authentication.getName()));
     }
 
     // ─── ADMIN/REFERENT : Changer le statut ──────────────────────────────────
@@ -116,15 +117,16 @@ public class ActiviteController {
     @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
     public ResponseEntity<ActiviteResponse> changerStatut(
             @PathVariable Long id,
-            @RequestParam StatutActivite statut) {
-        return ResponseEntity.ok(activiteService.changerStatut(id, statut));
+            @RequestParam StatutActivite statut,
+            Authentication authentication) {
+        return ResponseEntity.ok(activiteService.changerStatut(id, statut, authentication.getName()));
     }
 
     // ─── ADMIN/REFERENT : Supprimer une activité (R03 / A06) ─────────────────
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
-    public ResponseEntity<Void> supprimer(@PathVariable Long id) {
-        activiteService.supprimer(id);
+    public ResponseEntity<Void> supprimer(@PathVariable Long id, Authentication authentication) {
+        activiteService.supprimer(id, authentication.getName());
         return ResponseEntity.noContent().build();
     }
 }

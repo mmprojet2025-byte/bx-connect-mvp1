@@ -9,6 +9,8 @@ public class MembreGroupeResponse {
 
     private Long id;
     private Long userId;
+    private Long groupeId;
+    private String groupeNom;
     private String prenom;
     private String nom;
     private String email;
@@ -20,6 +22,10 @@ public class MembreGroupeResponse {
     public static MembreGroupeResponse fromEntity(MembreGroupe mg) {
         MembreGroupeResponse response = new MembreGroupeResponse();
         response.id = mg.getId();
+        if (mg.getGroupe() != null) {
+            response.groupeId = mg.getGroupe().getId();
+            response.groupeNom = mg.getGroupe().getNom();
+        }
         if (mg.getUser() != null) {
             response.userId = mg.getUser().getId();
             response.prenom = mg.getUser().getPrenom();
@@ -35,6 +41,8 @@ public class MembreGroupeResponse {
 
     public Long getId() { return id; }
     public Long getUserId() { return userId; }
+    public Long getGroupeId() { return groupeId; }
+    public String getGroupeNom() { return groupeNom; }
     public String getPrenom() { return prenom; }
     public String getNom() { return nom; }
     public String getEmail() { return email; }

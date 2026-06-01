@@ -127,7 +127,7 @@ export default function ReferentMessagerie() {
         ) : groupes.length === 0 ? (
           <EmptyState>Aucun groupe ne vous est assigné.</EmptyState>
         ) : (
-          <div className="grid gap-4" style={{ gridTemplateColumns: '300px 1fr', height: '70vh' }}>
+          <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 min-h-[70vh]">
             <aside className="bg-white rounded-2xl shadow flex flex-col overflow-hidden">
               <div className="px-4 py-3 border-b border-gray-100">
                 <span className="font-semibold text-blue-900 text-sm">Mes groupes</span>

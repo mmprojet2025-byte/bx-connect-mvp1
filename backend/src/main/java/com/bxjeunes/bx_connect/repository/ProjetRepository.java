@@ -19,6 +19,9 @@ public interface ProjetRepository extends JpaRepository<Projet, Long> {
     // Projets d'un groupe
     List<Projet> findByGroupeId(Long groupeId);
 
+    // Projets des groupes encadres par un referent
+    List<Projet> findByGroupeReferentEmail(String email);
+
     // Projets par statut (admin)
     List<Projet> findByStatut(StatutProjet statut);
 

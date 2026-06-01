@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import api from '../api/axios';
+import Alert from '../components/ui/Alert';
+import EmptyState from '../components/ui/EmptyState';
 
 export default function Notifications() {
   const { isAuthenticated } = useAuth();
@@ -83,20 +86,24 @@ export default function Notifications() {
           )}
         </div>
 
-        {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>}
+        {error && <Alert type="error">{error}</Alert>}
 
         {!isAuthenticated ? (
-          <div className="text-center py-12 bg-white rounded-2xl shadow">
-            <div className="text-4xl mb-2">🔐</div>
-            <p className="text-gray-400 text-sm">Connectez-vous pour voir vos notifications.</p>
-          </div>
+          <EmptyState
+            title="Connectez-vous pour voir vos notifications"
+            description="Les informations importantes liées à vos groupes, activités et projets apparaîtront ici."
+            actionLabel="Connexion"
+            actionTo="/login"
+          />
         ) : loading ? (
           <p className="text-gray-400 text-center py-10">Chargement...</p>
         ) : notifications.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-2xl shadow">
-            <div className="text-4xl mb-2">🔔</div>
-            <p className="text-gray-400 text-sm">Aucune notification pour le moment.</p>
-          </div>
+          <EmptyState
+            title="Aucune notification pour le moment"
+            description="Tu es à jour. Les nouvelles informations importantes apparaîtront ici."
+            actionLabel="Retour au dashboard"
+            actionTo="/dashboard"
+          />
         ) : (
           <div className="space-y-3">
             {notifications.map(n => (
@@ -115,6 +122,15 @@ export default function Notifications() {
                     {n.titre}
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{n.message}</p>
+                  {n.lienAction && (
+                    <Link
+                      to={n.lienAction}
+                      onClick={e => { e.stopPropagation(); if (!n.lue) handleMarquerLue(n.id); }}
+                      className="inline-flex mt-2 text-xs font-semibold text-blue-700 hover:underline"
+                    >
+                      Ouvrir
+                    </Link>
+                  )}
                   <p className="text-xs text-gray-400 mt-1">
                     {new Date(n.dateCreation).toLocaleDateString('fr-BE', {
                       day: '2-digit', month: '2-digit', year: 'numeric',

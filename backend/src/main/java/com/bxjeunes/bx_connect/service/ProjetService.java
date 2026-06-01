@@ -19,17 +19,20 @@ public class ProjetService {
     private final CommentaireProjetRepository commentaireRepository;
     private final UserRepository userRepository;
     private final GroupeRepository groupeRepository;
+    private final MembreGroupeRepository membreGroupeRepository;
 
     public ProjetService(ProjetRepository projetRepository,
                          ParticipationProjetRepository participationRepository,
                          CommentaireProjetRepository commentaireRepository,
                          UserRepository userRepository,
-                         GroupeRepository groupeRepository) {
+                         GroupeRepository groupeRepository,
+                         MembreGroupeRepository membreGroupeRepository) {
         this.projetRepository = projetRepository;
         this.participationRepository = participationRepository;
         this.commentaireRepository = commentaireRepository;
         this.userRepository = userRepository;
         this.groupeRepository = groupeRepository;
+        this.membreGroupeRepository = membreGroupeRepository;
     }
 
     // ─── Lister les projets publics (APPROUVE + EN_COURS) ────────────────────
@@ -64,6 +67,12 @@ public class ProjetService {
     public ProjetResponse proposerProjet(ProjetRequest request, String emailPorteur) {
         User porteur = userRepository.findByEmail(emailPorteur)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        if (porteur.getRole() != Role.MEMBRE) {
+            throw new RuntimeException("Seuls les membres peuvent proposer un projet.");
+        }
+        MembreGroupe adhesionActive = membreGroupeRepository
+                .findFirstByUserIdAndStatut(porteur.getId(), StatutMembre.ACCEPTE)
+                .orElseThrow(() -> new RuntimeException("Vous devez etre accepte dans un groupe pour proposer un projet."));
 
         Projet projet = new Projet();
         projet.setTitre(request.getTitre());
@@ -71,13 +80,8 @@ public class ProjetService {
         projet.setObjectifs(request.getObjectifs());
         projet.setBudgetDemande(request.getBudgetDemande());
         projet.setPorteur(porteur);
+        projet.setGroupe(adhesionActive.getGroupe());
         projet.setStatut(StatutProjet.BROUILLON);
-
-        if (request.getGroupeId() != null) {
-            Groupe groupe = groupeRepository.findById(request.getGroupeId())
-                    .orElseThrow(() -> new RuntimeException("Groupe introuvable"));
-            projet.setGroupe(groupe);
-        }
 
         return ProjetResponse.fromEntity(projetRepository.save(projet));
     }
@@ -227,6 +231,18 @@ public class ProjetService {
 
     public List<ProjetResponse> projetsSoumis() {
         return projetRepository.findByStatut(StatutProjet.SOUMIS)
+                .stream()
+                .map(ProjetResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    public List<ProjetResponse> projetsGroupesReferent(String emailReferent) {
+        User referent = userRepository.findByEmail(emailReferent)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        if (referent.getRole() != Role.REFERENT) {
+            throw new RuntimeException("Seuls les referents peuvent consulter les projets de leurs groupes.");
+        }
+        return projetRepository.findByGroupeReferentEmail(emailReferent)
                 .stream()
                 .map(ProjetResponse::fromEntity)
                 .collect(Collectors.toList());

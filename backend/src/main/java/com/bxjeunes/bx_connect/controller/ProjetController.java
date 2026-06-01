@@ -32,7 +32,7 @@ public class ProjetController {
     // ─── GET /api/projets/admin/tous — Tous les projets (ADMIN / REFERENT) ───
 
     @GetMapping("/admin/tous")
-    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ProjetResponse>> listerTousProjets() {
         return ResponseEntity.ok(projetService.listerTousProjets());
     }
@@ -40,9 +40,15 @@ public class ProjetController {
     // ─── GET /api/projets/admin/soumis — Projets en attente de validation ────
 
     @GetMapping("/admin/soumis")
-    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ProjetResponse>> projetsSoumis() {
         return ResponseEntity.ok(projetService.projetsSoumis());
+    }
+
+    @GetMapping("/referent/mes-groupes")
+    @PreAuthorize("hasRole('REFERENT')")
+    public ResponseEntity<List<ProjetResponse>> projetsGroupesReferent(Authentication authentication) {
+        return ResponseEntity.ok(projetService.projetsGroupesReferent(authentication.getName()));
     }
 
     // ─── GET /api/projets/{id} — Détail d'un projet ──────────────────────────
@@ -55,7 +61,7 @@ public class ProjetController {
     // ─── POST /api/projets — Proposer un projet (M24) ────────────────────────
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT', 'ADMIN')")
+    @PreAuthorize("hasRole('MEMBRE')")
     public ResponseEntity<ProjetResponse> proposerProjet(
             @Valid @RequestBody ProjetRequest request,
             Authentication authentication) {
@@ -87,7 +93,7 @@ public class ProjetController {
     // ─── PATCH /api/projets/{id}/valider — Approuver ou rejeter (A09, R13) ───
 
     @PatchMapping("/{id}/valider")
-    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProjetResponse> validerProjet(
             @PathVariable Long id,
             @RequestParam boolean approuver,
@@ -99,7 +105,7 @@ public class ProjetController {
     // ─── PATCH /api/projets/{id}/statut — Changer le statut (A10) ────────────
 
     @PatchMapping("/{id}/statut")
-    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProjetResponse> changerStatut(
             @PathVariable Long id,
             @RequestParam StatutProjet statut,

@@ -1,254 +1,165 @@
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../context/AuthContext';
-import api from '../../api/axios';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { useAuth } from '../../context/AuthContext'
+import api from '../../api/axios'
+import Navbar from '../../components/Navbar'
+import Footer from '../../components/Footer'
+import Alert from '../../components/ui/Alert'
+import EmptyState from '../../components/ui/EmptyState'
+import StatusBadge from '../../components/ui/StatusBadge'
+
+const STATUS_LABELS = {
+  ACCEPTE: 'Mon groupe',
+  EN_ATTENTE: 'Demande en attente',
+  REFUSE: 'Demande refusée',
+}
 
 export default function Groupes() {
-  const { user, isAdmin, isReferent } = useAuth();
-  const { t } = useTranslation();
+  const { isAuthenticated, isMembre } = useAuth()
+  const { t } = useTranslation()
 
-  const [groupes, setGroupes] = useState([]);
-  const [mesGroupes, setMesGroupes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
-  const [recherche, setRecherche] = useState('');
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ nom: '', description: '', type: 'GENERAL' });
-
-  const peutGerer = isAdmin || isReferent;
+  const [groupes, setGroupes] = useState([])
+  const [adhesions, setAdhesions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+  const [recherche, setRecherche] = useState('')
+  const [actionLoading, setActionLoading] = useState(null)
 
   useEffect(() => {
-    fetchGroupes();
-  }, []);
+    fetchGroupes()
+  }, [])
 
   useEffect(() => {
-    if (user) fetchMesGroupes();
-  }, [user]);
+    if (isAuthenticated && isMembre) fetchAdhesions()
+  }, [isAuthenticated, isMembre])
 
   const fetchGroupes = async () => {
+    setLoading(true)
+    setError('')
     try {
-      const res = await api.get('/groupes');
-      setGroupes(res.data);
+      const res = await api.get('/groupes')
+      setGroupes(res.data)
     } catch {
-      setError(t('groups.error_load'));
+      setError(t('groups.error_load'))
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const fetchMesGroupes = async () => {
+  const fetchAdhesions = async () => {
     try {
-      const res = await api.get('/groupes/mes-groupes');
-      setMesGroupes(res.data);
+      const res = await api.get('/groupes/mes-adhesions')
+      setAdhesions(res.data)
     } catch {
-      // silencieux si pas connecté
+      setAdhesions([])
     }
-  };
+  }
 
   const handleRejoindre = async (groupeId) => {
-    setMessage(''); setError('');
+    setMessage('')
+    setError('')
+    setActionLoading(groupeId)
     try {
-      await api.post(`/groupes/${groupeId}/rejoindre`);
-      setMessage(t('groups.success_join'));
-      fetchGroupes(); fetchMesGroupes();
+      await api.post(`/groupes/${groupeId}/rejoindre`)
+      setMessage('Votre demande a été envoyée au référent du groupe.')
+      await Promise.all([fetchGroupes(), fetchAdhesions()])
     } catch (err) {
-      setError(err.response?.data?.message || t('groups.error_load'));
+      setError(err.response?.data?.message || t('groups.error_load'))
+    } finally {
+      setActionLoading(null)
     }
-  };
+  }
 
   const handleQuitter = async (groupeId) => {
-    setMessage(''); setError('');
+    setMessage('')
+    setError('')
+    setActionLoading(groupeId)
     try {
-      await api.delete(`/groupes/${groupeId}/quitter`);
-      setMessage(t('groups.success_leave'));
-      fetchGroupes(); fetchMesGroupes();
+      await api.delete(`/groupes/${groupeId}/quitter`)
+      setMessage(t('groups.success_leave'))
+      await Promise.all([fetchGroupes(), fetchAdhesions()])
     } catch (err) {
-      setError(err.response?.data?.message || t('groups.error_load'));
+      setError(err.response?.data?.message || t('groups.error_load'))
+    } finally {
+      setActionLoading(null)
     }
-  };
+  }
 
-  const handleCreer = async (e) => {
-    e.preventDefault();
-    setMessage(''); setError('');
-    try {
-      await api.post('/groupes', form);
-      setMessage('✅ Groupe créé avec succès !');
-      setShowForm(false);
-      setForm({ nom: '', description: '', type: 'GENERAL' });
-      fetchGroupes();
-    } catch (err) {
-      setError(err.response?.data?.message || t('common.error'));
-    }
-  };
+  const adhesionParGroupe = useMemo(() => {
+    return adhesions.reduce((acc, adhesion) => {
+      acc[adhesion.groupeId] = adhesion
+      return acc
+    }, {})
+  }, [adhesions])
 
-  const mesGroupesIds = mesGroupes.map((g) => g.id);
-  const groupesFiltres = groupes.filter((g) =>
-    g.nom?.toLowerCase().includes(recherche.toLowerCase())
-  );
+  const adhesionActive = adhesions.find((adhesion) => adhesion.statut === 'ACCEPTE')
+  const adhesionEnAttente = adhesions.find((adhesion) => adhesion.statut === 'EN_ATTENTE')
+  const bloqueNouvelleDemande = !!adhesionActive || !!adhesionEnAttente
 
-  const typeBadge = (type) => ({
-    ADMIN:     { bg: '#f8d7da', color: '#721c24' },
-    PROJET:    { bg: '#d4edda', color: '#155724' },
-    EVENEMENT: { bg: '#fff3cd', color: '#856404' },
-    GENERAL:   { bg: '#e2eaf0', color: '#1A3C5E' },
-  }[type] || { bg: '#e2eaf0', color: '#1A3C5E' });
+  const groupesFiltres = groupes.filter((groupe) =>
+    groupe.nom?.toLowerCase().includes(recherche.toLowerCase())
+  )
+
+  const intro = isAuthenticated && isMembre
+    ? t('ux.groups.memberIntro')
+    : t('ux.groups.visitorIntro')
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-10">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
+        <header className="mb-6">
+          <p className="text-sm font-semibold text-blue-700 uppercase tracking-wide">{t('ux.groups.community')}</p>
+          <h1 className="text-3xl font-bold text-blue-900 mt-1">{t('groups.title')}</h1>
+          <p className="text-gray-500 text-sm mt-2 max-w-2xl">{intro}</p>
+        </header>
 
-        {/* En-tête */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-blue-900">👥 {t('groups.title')}</h1>
-          {peutGerer && (
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition"
-            >
-              {showForm ? t('common.cancel') : '+ Nouveau groupe'}
-            </button>
-          )}
+        {isAuthenticated && isMembre && (
+          <MemberGroupSummary adhesionActive={adhesionActive} adhesionEnAttente={adhesionEnAttente} />
+        )}
+
+        {message && <Alert type="success">{message}</Alert>}
+        {error && <Alert type="error">{error}</Alert>}
+
+        <div className="bg-white rounded-2xl shadow p-4 mb-6">
+          <input
+            type="text"
+            placeholder={t('groups.search')}
+            value={recherche}
+            onChange={(e) => setRecherche(e.target.value)}
+            className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
         </div>
 
-        {/* Messages */}
-        {message && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">
-            {message}
-          </div>
-        )}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">
-            {error}
-          </div>
-        )}
-
-        {/* Formulaire création groupe */}
-        {showForm && peutGerer && (
-          <div className="bg-white rounded-2xl shadow p-6 mb-6">
-            <h2 className="text-lg font-bold text-blue-900 mb-4">Nouveau groupe</h2>
-            <form onSubmit={handleCreer} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom du groupe *</label>
-                  <input
-                    required
-                    value={form.nom}
-                    onChange={(e) => setForm({ ...form, nom: e.target.value })}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                  <select
-                    value={form.type}
-                    onChange={(e) => setForm({ ...form, type: e.target.value })}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  >
-                    <option value="GENERAL">Général</option>
-                    <option value="PROJET">Projet</option>
-                    <option value="EVENEMENT">Événement</option>
-                    <option value="ADMIN">Admin</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  rows={3}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-vertical"
-                />
-              </div>
-              <button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-5 py-2 rounded-xl transition"
-              >
-                Créer le groupe
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* Mes groupes */}
-        {user && mesGroupes.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-base font-semibold text-blue-900 mb-3">📌 Mes groupes</h2>
-            <div className="flex flex-wrap gap-2">
-              {mesGroupes.map((g) => (
-                <span key={g.id} className="bg-blue-600 text-white text-sm px-4 py-1 rounded-full">
-                  {g.nom}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Barre de recherche */}
-        <input
-          type="text"
-          placeholder={`🔍 ${t('groups.search')}`}
-          value={recherche}
-          onChange={(e) => setRecherche(e.target.value)}
-          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm mb-6 focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
-
-        {/* Liste des groupes */}
         {loading ? (
           <p className="text-gray-400 text-center py-10">{t('groups.loading')}</p>
         ) : groupesFiltres.length === 0 ? (
-          <p className="text-gray-400 text-center py-10">{t('groups.no_groups')}</p>
+          <EmptyState
+            title={t('ux.groups.noAvailableTitle')}
+            description={t('ux.groups.noAvailableDescription')}
+            actionLabel="Voir les activités"
+            actionTo="/activites"
+          />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
             {groupesFiltres.map((groupe) => {
-              const estMembre = mesGroupesIds.includes(groupe.id);
-              const badge = typeBadge(groupe.type);
+              const adhesion = adhesionParGroupe[groupe.id]
               return (
-                <div key={groupe.id} className="bg-white rounded-2xl shadow p-5 flex flex-col gap-3">
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-semibold text-blue-900 text-base">{groupe.nom}</h3>
-                    <span
-                      className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap"
-                      style={{ background: badge.bg, color: badge.color }}
-                    >
-                      {groupe.type || 'GÉNÉRAL'}
-                    </span>
-                  </div>
-
-                  {groupe.description && (
-                    <p className="text-gray-500 text-sm leading-relaxed line-clamp-2">
-                      {groupe.description}
-                    </p>
-                  )}
-
-                  <p className="text-gray-400 text-xs">
-                    👤 {groupe.nombreMembres ?? 0} {t('groups.members')}
-                  </p>
-
-                  {user && (
-                    estMembre ? (
-                      <button
-                        onClick={() => handleQuitter(groupe.id)}
-                        className="w-full bg-red-50 hover:bg-red-100 text-red-700 text-sm py-1.5 rounded-xl transition border border-red-200"
-                      >
-                        {t('groups.leave_btn')}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleRejoindre(groupe.id)}
-                        className="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm py-1.5 rounded-xl transition"
-                      >
-                        {t('groups.join_btn')}
-                      </button>
-                    )
-                  )}
-                </div>
-              );
+                <GroupCard
+                  key={groupe.id}
+                  groupe={groupe}
+                  adhesion={adhesion}
+                  isAuthenticated={isAuthenticated}
+                  isMembre={isMembre}
+                  bloqueNouvelleDemande={bloqueNouvelleDemande}
+                  actionLoading={actionLoading === groupe.id}
+                  onJoin={() => handleRejoindre(groupe.id)}
+                  onLeave={() => handleQuitter(groupe.id)}
+                />
+              )
             })}
           </div>
         )}
@@ -256,5 +167,122 @@ export default function Groupes() {
 
       <Footer />
     </div>
-  );
+  )
+}
+
+function MemberGroupSummary({ adhesionActive, adhesionEnAttente }) {
+  if (adhesionActive) {
+    return (
+      <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-6">
+        <p className="text-green-800 font-semibold text-sm">Vous êtes membre du groupe {adhesionActive.groupeNom}.</p>
+        <p className="text-green-700 text-sm mt-1">La messagerie de groupe est disponible depuis votre espace membre.</p>
+      </div>
+    )
+  }
+
+  if (adhesionEnAttente) {
+    return (
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6">
+        <p className="text-amber-900 font-semibold text-sm">Votre demande pour {adhesionEnAttente.groupeNom} est en attente.</p>
+        <p className="text-amber-700 text-sm mt-1">Vous pourrez rejoindre la messagerie quand le référent aura accepté votre demande.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
+      <p className="text-blue-900 font-semibold text-sm">Vous n’avez pas encore rejoint de groupe.</p>
+      <p className="text-blue-700 text-sm mt-1">Choisissez un groupe ci-dessous pour envoyer une demande d’adhésion.</p>
+    </div>
+  )
+}
+
+function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelleDemande, actionLoading, onJoin, onLeave }) {
+  const { t } = useTranslation()
+  const isAccepted = adhesion?.statut === 'ACCEPTE'
+  const isPending = adhesion?.statut === 'EN_ATTENTE'
+  const referent = [groupe.referentPrenom, groupe.referentNom].filter(Boolean).join(' ')
+  const placesLabel = groupe.capaciteMax > 0
+    ? `${groupe.nombreMembres ?? 0}/${groupe.capaciteMax} membres`
+    : `${groupe.nombreMembres ?? 0} membre(s)`
+
+  return (
+    <article className={`bg-white rounded-2xl shadow p-5 flex flex-col gap-4 border ${isAccepted ? 'border-green-300' : 'border-transparent'}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-semibold text-blue-900 text-lg">{groupe.nom}</h2>
+          {referent && <p className="text-xs text-gray-500 mt-1">Référent : {referent}</p>}
+        </div>
+        {adhesion?.statut && <GroupStatusBadge statut={adhesion.statut} />}
+      </div>
+
+      <p className="text-gray-500 text-sm leading-relaxed min-h-[44px]">
+        {groupe.description || 'Ce groupe accueillera bientôt une description complète.'}
+      </p>
+
+      <div className="flex flex-wrap gap-2 text-xs">
+        <span className="bg-blue-50 text-blue-800 px-2.5 py-1 rounded-full">{placesLabel}</span>
+        {groupe.theme && <span className="bg-teal-50 text-teal-800 px-2.5 py-1 rounded-full">{groupe.theme}</span>}
+        {groupe.categorie && <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full">{groupe.categorie}</span>}
+      </div>
+
+      <div className="mt-auto">
+        {!isAuthenticated ? (
+          <Link
+            to="/login"
+            className="block w-full text-center bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold py-2 rounded-xl transition"
+          >
+            {t('ux.groups.joinLogin')}
+          </Link>
+        ) : !isMembre ? null : isAccepted ? (
+          <div className="grid grid-cols-2 gap-2">
+            <Link
+              to="/dashboard"
+              className="text-center bg-green-700 hover:bg-green-600 text-white text-sm font-semibold py-2 rounded-xl transition"
+            >
+              {t('ux.groups.openMyGroup')}
+            </Link>
+            <button
+              type="button"
+              onClick={onLeave}
+              disabled={actionLoading}
+              className="border border-red-200 text-red-700 hover:bg-red-50 text-sm font-semibold py-2 rounded-xl transition disabled:opacity-60"
+            >
+              {t('groups.leave_btn')}
+            </button>
+          </div>
+        ) : isPending ? (
+          <button
+            type="button"
+            disabled
+            className="w-full bg-amber-100 text-amber-800 text-sm font-semibold py-2 rounded-xl"
+          >
+            {t('ux.groups.pending')}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onJoin}
+            disabled={bloqueNouvelleDemande || actionLoading}
+            className="w-full bg-blue-700 hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-600 text-white text-sm font-semibold py-2 rounded-xl transition"
+          >
+            {bloqueNouvelleDemande ? t('ux.groups.oneGroupOnly') : actionLoading ? 'Envoi...' : t('ux.groups.joinGroup')}
+          </button>
+        )}
+      </div>
+    </article>
+  )
+}
+
+function GroupStatusBadge({ statut }) {
+  const variants = {
+    ACCEPTE: 'success',
+    EN_ATTENTE: 'warning',
+    REFUSE: 'danger',
+  }
+  return (
+    <StatusBadge variant={variants[statut] || 'neutral'}>
+      {STATUS_LABELS[statut] || statut}
+    </StatusBadge>
+  )
 }

@@ -123,7 +123,7 @@ public class GroupeController {
 
     // MEMBRE
     @PostMapping("/{id}/rejoindre")
-    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT', 'ADMIN')")
+    @PreAuthorize("hasRole('MEMBRE')")
     public ResponseEntity<MembreGroupeResponse> rejoindre(
             @PathVariable Long id, Authentication auth) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -131,15 +131,21 @@ public class GroupeController {
     }
 
     @DeleteMapping("/{id}/quitter")
-    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT', 'ADMIN')")
+    @PreAuthorize("hasRole('MEMBRE')")
     public ResponseEntity<Void> quitter(@PathVariable Long id, Authentication auth) {
         groupeService.quitterGroupe(id, auth.getName());
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/mes-groupes")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('MEMBRE')")
     public ResponseEntity<List<GroupeResponse>> mesGroupesMembre(Authentication auth) {
         return ResponseEntity.ok(groupeService.mesGroupesMembre(auth.getName()));
+    }
+
+    @GetMapping("/mes-adhesions")
+    @PreAuthorize("hasRole('MEMBRE')")
+    public ResponseEntity<List<MembreGroupeResponse>> mesAdhesionsMembre(Authentication auth) {
+        return ResponseEntity.ok(groupeService.mesAdhesionsMembre(auth.getName()));
     }
 }

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 
-export default function MemberGroupCard({ groupe, messagerieDisponible }) {
+export default function MemberGroupCard({ groupe, referent, messagerieDisponible }) {
   const statut = groupe?.statutAdhesion
 
   if (!groupe) {
@@ -23,6 +23,8 @@ export default function MemberGroupCard({ groupe, messagerieDisponible }) {
   }
 
   const demandeEnAttente = statut === 'EN_ATTENTE'
+  const statutLabel = demandeEnAttente ? 'Demande en attente' : 'Membre accepté'
+  const referentLabel = referent ? `${referent.prenom} ${referent.nom}` : 'Référent à confirmer'
 
   return (
     <section className="bg-white rounded-2xl shadow overflow-hidden">
@@ -31,9 +33,13 @@ export default function MemberGroupCard({ groupe, messagerieDisponible }) {
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div>
             <span className={`text-xs px-3 py-1 rounded-full font-semibold ${demandeEnAttente ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
-              {demandeEnAttente ? 'Demande en attente' : 'Membre accepté'}
+              {statutLabel}
             </span>
             <h2 className="text-2xl font-bold text-blue-900 mt-4">{groupe.nom}</h2>
+            <div className="flex flex-wrap gap-2 mt-3 text-xs">
+              <InfoPill label="Statut" value={statutLabel} />
+              <InfoPill label="Référent" value={referentLabel} />
+            </div>
             {groupe.description && (
               <p className="text-gray-500 text-sm mt-2 max-w-2xl">{groupe.description}</p>
             )}
@@ -56,6 +62,14 @@ export default function MemberGroupCard({ groupe, messagerieDisponible }) {
         </div>
       </div>
     </section>
+  )
+}
+
+function InfoPill({ label, value }) {
+  return (
+    <span className="bg-gray-50 border border-gray-100 text-gray-600 rounded-full px-3 py-1">
+      <strong className="text-gray-800">{label} :</strong> {value}
+    </span>
   )
 }
 

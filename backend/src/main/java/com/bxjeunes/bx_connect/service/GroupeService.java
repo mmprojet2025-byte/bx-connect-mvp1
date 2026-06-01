@@ -211,6 +211,9 @@ public class GroupeService {
     public MembreGroupeResponse rejoindreGroupe(Long groupeId, String emailMembre) {
         User membre = userRepository.findByEmail(emailMembre)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        if (membre.getRole() != Role.MEMBRE) {
+            throw new AccessDeniedException("Seuls les membres peuvent rejoindre un groupe.");
+        }
         if (membreGroupeRepository.estDejaMembreActif(membre.getId()))
             throw new RuntimeException("Vous etes deja membre d'un groupe.");
         Groupe groupe = groupeRepository.findById(groupeId)
@@ -236,6 +239,9 @@ public class GroupeService {
     public void quitterGroupe(Long groupeId, String emailMembre) {
         User membre = userRepository.findByEmail(emailMembre)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        if (membre.getRole() != Role.MEMBRE) {
+            throw new AccessDeniedException("Seuls les membres peuvent quitter un groupe.");
+        }
         MembreGroupe mg = membreGroupeRepository.findByUserIdAndGroupeId(membre.getId(), groupeId)
                 .orElseThrow(() -> new RuntimeException("Vous n'etes pas membre de ce groupe."));
         membreGroupeRepository.delete(mg);
@@ -256,6 +262,16 @@ public class GroupeService {
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
         return membreGroupeRepository.findByUserId(membre.getId())
                 .stream().map(mg -> GroupeResponse.fromEntity(mg.getGroupe())).collect(Collectors.toList());
+    }
+
+    public List<MembreGroupeResponse> mesAdhesionsMembre(String emailMembre) {
+        User membre = userRepository.findByEmail(emailMembre)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        if (membre.getRole() != Role.MEMBRE) {
+            throw new AccessDeniedException("Seuls les membres ont des adhesions groupe.");
+        }
+        return membreGroupeRepository.findByUserId(membre.getId())
+                .stream().map(MembreGroupeResponse::fromEntity).collect(Collectors.toList());
     }
 
     public List<MembreGroupeResponse> demandesEnAttente(Long groupeId) {

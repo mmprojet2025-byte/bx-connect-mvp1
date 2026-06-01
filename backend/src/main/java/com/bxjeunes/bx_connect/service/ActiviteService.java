@@ -4,10 +4,12 @@ import com.bxjeunes.bx_connect.dto.ActiviteFiltreRequest;
 import com.bxjeunes.bx_connect.dto.ActiviteRequest;
 import com.bxjeunes.bx_connect.dto.ActiviteResponse;
 import com.bxjeunes.bx_connect.entity.Activite;
+import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.StatutActivite;
 import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.repository.ActiviteRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -160,9 +162,10 @@ public class ActiviteService {
     }
 
     // ─── Modifier une activité ────────────────────────────────────────────────
-    public ActiviteResponse modifier(Long id, ActiviteRequest request) {
+    public ActiviteResponse modifier(Long id, ActiviteRequest request, String emailUser) {
         Activite activite = activiteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
+        verifierDroitGestion(activite, emailUser);
 
         activite.setTitre(request.getTitre());
         activite.setDescription(request.getDescription());
@@ -179,18 +182,33 @@ public class ActiviteService {
     }
 
     // ─── Changer le statut ────────────────────────────────────────────────────
-    public ActiviteResponse changerStatut(Long id, StatutActivite nouveauStatut) {
+    public ActiviteResponse changerStatut(Long id, StatutActivite nouveauStatut, String emailUser) {
         Activite activite = activiteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
+        verifierDroitGestion(activite, emailUser);
         activite.setStatut(nouveauStatut);
         return ActiviteResponse.fromEntity(activiteRepository.save(activite));
     }
 
     // ─── Supprimer une activité ───────────────────────────────────────────────
-    public void supprimer(Long id) {
-        if (!activiteRepository.existsById(id)) {
-            throw new RuntimeException("Activité introuvable : " + id);
+    public void supprimer(Long id, String emailUser) {
+        Activite activite = activiteRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
+        verifierDroitGestion(activite, emailUser);
+        activiteRepository.delete(activite);
+    }
+
+    private void verifierDroitGestion(Activite activite, String emailUser) {
+        User user = userRepository.findByEmail(emailUser)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + emailUser));
+        if (user.getRole() == Role.ADMIN) {
+            return;
         }
-        activiteRepository.deleteById(id);
+        if (user.getRole() == Role.REFERENT &&
+                activite.getCreateur() != null &&
+                activite.getCreateur().getId().equals(user.getId())) {
+            return;
+        }
+        throw new AccessDeniedException("Vous ne pouvez gerer que vos propres activites.");
     }
 }

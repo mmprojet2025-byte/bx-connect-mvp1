@@ -1,90 +1,187 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import api from '../../api/axios';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import api from '../../api/axios'
+import Navbar from '../../components/Navbar'
+import Footer from '../../components/Footer'
+import Alert from '../../components/ui/Alert'
+import EmptyState from '../../components/ui/EmptyState'
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const { t } = useTranslation();
+  const [stats, setStats] = useState(null)
+  const [groupes, setGroupes] = useState([])
+  const [groupesEnAttente, setGroupesEnAttente] = useState([])
+  const [referents, setReferents] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const { t } = useTranslation()
 
-  useEffect(() => {
-    api.get('/admin/stats')
-      .then(res => setStats(res.data))
-      .catch(() => setError(t('admin.error_load')))
-      .finally(() => setLoading(false));
-  }, [t]);
+  const fetchDashboard = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const [statsRes, groupesRes, attenteRes, referentsRes] = await Promise.all([
+        api.get('/admin/stats'),
+        api.get('/admin/groupes'),
+        api.get('/admin/groupes/en-attente'),
+        api.get('/admin/referents'),
+      ])
+      setStats(statsRes.data)
+      setGroupes(groupesRes.data)
+      setGroupesEnAttente(attenteRes.data)
+      setReferents(referentsRes.data)
+    } catch {
+      setError(t('admin.error_load'))
+    } finally {
+      setLoading(false)
+    }
+  }, [t])
+
+  useEffect(() => { fetchDashboard() }, [fetchDashboard])
+
+  const groupesSansReferent = useMemo(
+    () => groupes.filter(groupe => !groupe.referentId),
+    [groupes]
+  )
+  const referentsActifs = referents.filter(referent => referent.actif).length
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-10">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-blue-900">🛡️ {t('admin.title')}</h1>
-          <p className="text-gray-500 mt-1 text-sm">{t('admin.subtitle')}</p>
-        </div>
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
+        <header className="mb-8">
+          <p className="text-sm font-semibold text-blue-700 uppercase tracking-wide">{t('ux.adminDashboard.eyebrow')}</p>
+          <h1 className="text-3xl font-bold text-blue-900 mt-1">{t('ux.adminDashboard.title')}</h1>
+          <p className="text-gray-500 mt-2 text-sm">
+            {t('ux.adminDashboard.intro')}
+          </p>
+        </header>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 text-sm">
-            {error}
-          </div>
-        )}
+        {error && <Alert type="error">{error}</Alert>}
 
         {loading ? (
           <p className="text-gray-400 text-center py-10">{t('admin.loading')}</p>
-        ) : stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-            <StatCard label={t('admin.stats_total_users')}   value={stats.totalUtilisateurs} color="#2E86AB" icon="👥" />
-            <StatCard label={t('admin.stats_active')}        value={stats.membresActifs}      color="#28a745" icon="✅" />
-            <StatCard label={t('admin.stats_activities')}    value={stats.totalActivites}     color="#F4A261" icon="🎯" />
-            <StatCard label={t('admin.stats_registrations')} value={stats.totalInscriptions}  color="#6f42c1" icon="📋" />
-            <StatCard label={t('admin.stats_admins')}        value={stats.totalAdmins}        color="#dc3545" icon="🛡️" />
-            <StatCard label={t('admin.stats_referents')}     value={stats.totalReferents}     color="#17a2b8" icon="👤" />
-            <StatCard label={t('admin.stats_members')}       value={stats.totalMembres}       color="#1A3C5E" icon="🙋" />
-            <StatCard label={t('admin.stats_partners')}      value={stats.totalPartenaires}   color="#fd7e14" icon="🤝" />
-          </div>
-        )}
+        ) : (
+          <>
+            {stats && (
+              <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <StatCard label={t('admin.stats_total_users')} value={stats.totalUtilisateurs} color="#2E86AB" />
+                <StatCard label="Référents actifs" value={referentsActifs} color="#0d9488" />
+                <StatCard label="Groupes" value={groupes.length} color="#7c3aed" />
+                <StatCard label={t('admin.stats_activities')} value={stats.totalActivites} color="#F4A261" />
+              </section>
+            )}
 
-        <h2 className="text-lg font-bold text-blue-900 mb-4">{t('admin.manage')}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <NavCard to="/admin/utilisateurs" icon="👥" title={t('admin.users_title')}      description={t('admin.users_desc')}      color="#2E86AB" />
-          <NavCard to="/admin/referents"    icon="👤" title="Référents"                   description="Créer et suivre les référents des groupes" color="#0d9488" />
-          <NavCard to="/admin/groupes"      icon="🧩" title="Groupes"                     description="Créer les groupes et assigner les référents" color="#7c3aed" />
-          <NavCard to="/admin/activites"    icon="🎯" title={t('admin.activities_title')} description={t('admin.activities_desc')} color="#F4A261" />
-          <NavCard to="/admin/projets"      icon="🚀" title={t('admin.projects_title')}   description={t('admin.projects_desc')}   color="#28a745" />
-        </div>
+            <section className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 mb-8">
+              <div className="bg-white rounded-2xl shadow p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-lg font-bold text-blue-900">{t('ux.adminDashboard.priority')}</h2>
+                    <p className="text-sm text-gray-500">{t('ux.adminDashboard.priorityDesc')}</p>
+                  </div>
+                  <Link to="/admin/groupes" className="text-blue-700 text-sm font-semibold hover:underline">
+                    Voir groupes
+                  </Link>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-4">
+                  <PriorityCard
+                    label={t('ux.adminDashboard.groupsWithoutReferent')}
+                    value={groupesSansReferent.length}
+                    description="Assignez un référent pour chaque groupe."
+                    to="/admin/groupes"
+                    alert={groupesSansReferent.length > 0}
+                  />
+                  <PriorityCard
+                    label={t('ux.adminDashboard.pendingGroups')}
+                    value={groupesEnAttente.length}
+                    description="Validez ou refusez les groupes en attente."
+                    to="/admin/groupes"
+                    alert={groupesEnAttente.length > 0}
+                  />
+                  <PriorityCard
+                    label={t('ux.adminDashboard.activeReferents')}
+                    value={referentsActifs}
+                    description="Gardez une équipe référente opérationnelle."
+                    to="/admin/referents"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow p-6">
+                <h2 className="text-lg font-bold text-blue-900 mb-4">{t('ux.adminDashboard.quickActions')}</h2>
+                <div className="grid gap-3">
+                  <QuickAction to="/admin/groupes" label={t('ux.adminDashboard.createGroup')} />
+                  <QuickAction to="/admin/referents" label={t('ux.adminDashboard.createReferent')} />
+                  <QuickAction to="/admin/groupes" label={t('ux.adminDashboard.processRequests')} />
+                  <QuickAction to="/admin/activites" label={t('ux.adminDashboard.createActivity')} />
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-bold text-blue-900 mb-4">{t('admin.manage')}</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                <NavCard to="/admin/utilisateurs" title={t('admin.users_title')} description={t('admin.users_desc')} color="#2E86AB" />
+                <NavCard to="/admin/referents" title="Référents" description="Créer et suivre les référents des groupes" color="#0d9488" />
+                <NavCard to="/admin/groupes" title="Groupes" description="Créer les groupes et assigner les référents" color="#7c3aed" />
+                <NavCard to="/admin/activites" title={t('admin.activities_title')} description={t('admin.activities_desc')} color="#F4A261" />
+                <NavCard to="/admin/projets" title={t('admin.projects_title')} description={t('admin.projects_desc')} color="#28a745" />
+              </div>
+            </section>
+
+            {groupes.length === 0 && (
+              <div className="mt-8">
+                <EmptyState
+                  title="Aucun groupe créé"
+                  description="Commencez par créer les groupes de l’association, puis assignez un référent actif."
+                  actionLabel="Créer un groupe"
+                  actionTo="/admin/groupes"
+                />
+              </div>
+            )}
+          </>
+        )}
       </main>
 
       <Footer />
     </div>
-  );
+  )
 }
 
-function StatCard({ label, value, color, icon }) {
+function StatCard({ label, value, color }) {
   return (
-    <div className="bg-white rounded-2xl shadow p-5" style={{ borderLeft: `4px solid ${color}` }}>
-      <div className="text-3xl mb-2">{icon}</div>
-      <div className="text-2xl font-bold" style={{ color }}>{value}</div>
+    <div className="bg-white rounded-2xl shadow p-5 border-l-4" style={{ borderLeftColor: color }}>
+      <div className="text-2xl font-bold" style={{ color }}>{value ?? 0}</div>
       <div className="text-xs text-gray-500 mt-1">{label}</div>
     </div>
-  );
+  )
 }
 
-function NavCard({ to, icon, title, description, color }) {
+function PriorityCard({ label, value, description, to, alert = false }) {
   return (
-    <Link to={to} className="no-underline">
-      <div
-        className="bg-white rounded-2xl shadow p-6 cursor-pointer transition hover:-translate-y-1"
-        style={{ borderTop: `3px solid ${color}` }}
-      >
-        <div className="text-3xl mb-3">{icon}</div>
-        <h3 className="font-semibold text-blue-900 mb-1">{title}</h3>
-        <p className="text-gray-500 text-sm">{description}</p>
-      </div>
+    <Link to={to} className={`rounded-2xl border p-4 transition hover:shadow-sm ${alert ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-100'}`}>
+      <div className={`text-2xl font-bold ${alert ? 'text-amber-800' : 'text-blue-900'}`}>{value}</div>
+      <h3 className="text-sm font-semibold text-blue-900 mt-1">{label}</h3>
+      <p className="text-xs text-gray-500 mt-1">{description}</p>
     </Link>
-  );
+  )
+}
+
+function QuickAction({ to, label }) {
+  return (
+    <Link to={to} className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition text-center">
+      {label}
+    </Link>
+  )
+}
+
+function NavCard({ to, title, description, color }) {
+  return (
+    <Link to={to} className="bg-white rounded-2xl shadow p-6 transition hover:-translate-y-1 border-t-4" style={{ borderTopColor: color }}>
+      <h3 className="font-semibold text-blue-900 mb-1">{title}</h3>
+      <p className="text-gray-500 text-sm">{description}</p>
+    </Link>
+  )
 }

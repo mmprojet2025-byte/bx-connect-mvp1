@@ -5,6 +5,16 @@ import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
+import Alert from '../../components/ui/Alert';
+import EmptyState from '../../components/ui/EmptyState';
+import StatusBadge from '../../components/ui/StatusBadge';
+
+const STATUTS = {
+  PUBLIEE: { label: 'Confirmée', variant: 'success' },
+  BROUILLON: { label: 'Brouillon', variant: 'neutral' },
+  ANNULEE: { label: 'Annulée', variant: 'danger' },
+  TERMINEE: { label: 'Terminée', variant: 'neutral' },
+}
 
 export default function Activites() {
   const { isAuthenticated, isAdmin, isReferent } = useAuth();
@@ -151,8 +161,8 @@ export default function Activites() {
         </div>
 
         {/* Messages */}
-        {message && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>}
-        {error   && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>}
+        {message && <Alert>{message}</Alert>}
+        {error && <Alert type="error">{error}</Alert>}
 
         {/* ── Filtres (V03) ── */}
         <div className="bg-white rounded-2xl shadow p-5 mb-6">
@@ -284,10 +294,12 @@ export default function Activites() {
         {loading ? (
           <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
         ) : activites.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
-            <div className="text-5xl mb-4">🎯</div>
-            <p>{t('activities.no_activities')}</p>
-          </div>
+          <EmptyState
+            title={t('activities.no_activities')}
+            description="Les activités publiées par l’association apparaîtront ici."
+            actionLabel="Découvrir les groupes"
+            actionTo="/groupes"
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {activites.map(a => (
@@ -302,11 +314,9 @@ export default function Activites() {
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-bold text-blue-900 text-base leading-tight flex-1 mr-2">{a.titre}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full text-white whitespace-nowrap ${
-                      a.statut === 'PUBLIEE' ? 'bg-green-500' :
-                      a.statut === 'ANNULEE' ? 'bg-red-500' :
-                      a.statut === 'TERMINEE' ? 'bg-gray-500' : 'bg-yellow-500'
-                    }`}>{a.statut}</span>
+                    <StatusBadge variant={STATUTS[a.statut]?.variant || 'neutral'}>
+                      {STATUTS[a.statut]?.label || a.statut}
+                    </StatusBadge>
                   </div>
 
                   {a.description && (
@@ -317,6 +327,9 @@ export default function Activites() {
                     {a.lieu && <p className="text-xs text-gray-500">📍 {a.lieu}</p>}
                     {a.dateDebut && <p className="text-xs text-gray-500">📅 {new Date(a.dateDebut).toLocaleDateString('fr-BE')}</p>}
                     {a.categorie && <p className="text-xs text-gray-500">🏷️ {a.categorie}</p>}
+                    <p className="text-xs text-gray-500">
+                      Places : {a.capaciteMax > 0 ? `${a.capaciteMax} maximum` : 'illimitées'}
+                    </p>
                     <p className="text-xs text-gray-500">{a.gratuite ? '🆓 Gratuit' : `💶 ${a.prix} €`}</p>
                   </div>
 

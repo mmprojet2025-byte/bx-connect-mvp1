@@ -21,6 +21,7 @@ public class ProjetResponse {
     private String commentaireAdmin;
     private String porteurPrenom;
     private String porteurNom;
+    private Long groupeId;
     private String groupeNom;
     private int nombreParticipants;
     private int nombreCommentaires;
@@ -45,6 +46,7 @@ public class ProjetResponse {
             r.porteurNom = projet.getPorteur().getNom();
         }
         if (projet.getGroupe() != null) {
+            r.groupeId = projet.getGroupe().getId();
             r.groupeNom = projet.getGroupe().getNom();
         }
         r.nombreParticipants = projet.getParticipants() != null ? projet.getParticipants().size() : 0;
@@ -67,6 +69,7 @@ public class ProjetResponse {
     public String getCommentaireAdmin() { return commentaireAdmin; }
     public String getPorteurPrenom() { return porteurPrenom; }
     public String getPorteurNom() { return porteurNom; }
+    public Long getGroupeId() { return groupeId; }
     public String getGroupeNom() { return groupeNom; }
     public int getNombreParticipants() { return nombreParticipants; }
     public int getNombreCommentaires() { return nombreCommentaires; }

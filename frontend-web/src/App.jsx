@@ -49,39 +49,45 @@ import SuperAdminRoute      from './routes/SuperAdminRoute'
 import SuperAdminDashboard  from './pages/super-admin/SuperAdminDashboard'
 import SuperAdminAdmins     from './pages/super-admin/SuperAdminAdmins'
 import SuperAdminLogs       from './pages/super-admin/SuperAdminLogs'
+import { getDefaultRouteForRole } from './routes/roleRoutes'
 
 // ─── Guards ───────────────────────────────────────────────────────────────────
 function PrivateRoute({ children }) {
-  const { isAuthenticated, isSuperAdmin } = useAuth()
-  if (isAuthenticated && isSuperAdmin) return <Navigate to="/super-admin/dashboard" replace />
+  const { isAuthenticated } = useAuth()
   return isAuthenticated ? children : <Navigate to="/login" replace />
 }
 
 function AdminRoute({ children }) {
-  const { isAuthenticated, isAdmin } = useAuth()
+  const { isAuthenticated, isAdmin, user } = useAuth()
   if (!isAuthenticated) return <Navigate to="/login" replace />
-  if (!isAdmin) return <Navigate to="/dashboard" replace />
+  if (!isAdmin) return <Navigate to={getDefaultRouteForRole(user?.role)} replace />
   return children
 }
 
 function PartenaireRoute({ children }) {
-  const { isAuthenticated, isPartenaire, isAdmin } = useAuth()
+  const { isAuthenticated, isPartenaire, user } = useAuth()
   if (!isAuthenticated) return <Navigate to="/login" replace />
-  if (!isPartenaire && !isAdmin) return <Navigate to="/dashboard" replace />
+  if (!isPartenaire) return <Navigate to={getDefaultRouteForRole(user?.role)} replace />
   return children
 }
 
 function ReferentRoute({ children }) {
-  const { isAuthenticated, isReferent } = useAuth()
+  const { isAuthenticated, isReferent, user } = useAuth()
   if (!isAuthenticated) return <Navigate to="/login" replace />
-  if (!isReferent) return <Navigate to="/dashboard" replace />
+  if (!isReferent) return <Navigate to={getDefaultRouteForRole(user?.role)} replace />
   return children
 }
 
 function MembreRoute({ children }) {
-  const { isAuthenticated, isMembre } = useAuth()
+  const { isAuthenticated, isMembre, user } = useAuth()
   if (!isAuthenticated) return <Navigate to="/login" replace />
-  if (!isMembre) return <Navigate to="/dashboard" replace />
+  if (!isMembre) return <Navigate to={getDefaultRouteForRole(user?.role)} replace />
+  return children
+}
+
+function PublicOrMembreRoute({ children }) {
+  const { isAuthenticated, isMembre, user } = useAuth()
+  if (isAuthenticated && !isMembre) return <Navigate to={getDefaultRouteForRole(user?.role)} replace />
   return children
 }
 
@@ -93,15 +99,15 @@ export default function App() {
       <Route path="/a-propos"      element={<APropos />} />
       <Route path="/login"         element={<Login />} />
       <Route path="/register"      element={<Register />} />
-      <Route path="/activites"     element={<Activites />} />
-      <Route path="/activites/:id" element={<ActiviteDetail />} />
-      <Route path="/projets"       element={<Projets />} />
+      <Route path="/activites"     element={<PublicOrMembreRoute><Activites /></PublicOrMembreRoute>} />
+      <Route path="/activites/:id" element={<PublicOrMembreRoute><ActiviteDetail /></PublicOrMembreRoute>} />
+      <Route path="/groupes"       element={<PublicOrMembreRoute><Groupes /></PublicOrMembreRoute>} />
+      <Route path="/projets"       element={<PublicOrMembreRoute><Projets /></PublicOrMembreRoute>} />
       <Route path="/annonces"      element={<Annonces />} />
 
       {/* ── Pages membres connectés ── */}
-      <Route path="/groupes"       element={<PrivateRoute><Groupes /></PrivateRoute>} />
       <Route path="/messagerie"    element={<MembreRoute><Messagerie /></MembreRoute>} />
-      <Route path="/dashboard"     element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+      <Route path="/dashboard"     element={<MembreRoute><Dashboard /></MembreRoute>} />
       <Route path="/profil"        element={<PrivateRoute><Profil /></PrivateRoute>} />
       <Route path="/prestations"   element={<PrivateRoute><Prestations /></PrivateRoute>} />
       <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
@@ -126,7 +132,8 @@ export default function App() {
       <Route path="/referent/prestations" element={<ReferentRoute><GestionPrestations /></ReferentRoute>} />
 
       {/* ── Pages Admin ── */}
-      <Route path="/admin"               element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/admin"               element={<Navigate to="/admin/dashboard" replace />} />
+      <Route path="/admin/dashboard"     element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/utilisateurs"  element={<AdminRoute><AdminUtilisateurs /></AdminRoute>} />
       <Route path="/admin/referents"     element={<AdminRoute><AdminReferents /></AdminRoute>} />
       <Route path="/admin/activites"     element={<AdminRoute><AdminActivites /></AdminRoute>} />

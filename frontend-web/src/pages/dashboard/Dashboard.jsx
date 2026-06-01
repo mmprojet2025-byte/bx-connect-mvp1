@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
+import MemberStatusCard from '../../components/member/MemberStatusCard'
 import MemberGroupCard from '../../components/member/MemberGroupCard'
 import MemberReferentCard from '../../components/member/MemberReferentCard'
 import MemberNextActions from '../../components/member/MemberNextActions'
@@ -11,6 +12,7 @@ import MemberMessagingCard from '../../components/member/MemberMessagingCard'
 import MemberNotificationsCard from '../../components/member/MemberNotificationsCard'
 import MemberProjectsCard from '../../components/member/MemberProjectsCard'
 import MemberEngagementCard from '../../components/member/MemberEngagementCard'
+import MemberStatsCard from '../../components/member/MemberStatsCard'
 import api from '../../api/axios'
 
 export default function Dashboard() {
@@ -57,7 +59,12 @@ export default function Dashboard() {
           <p className="text-gray-400 text-center py-10">Chargement...</p>
         ) : dashboard ? (
           <div className="space-y-6">
-            <MemberGroupCard groupe={groupe} messagerieDisponible={messagerieDisponible} />
+            <MemberStatusCard groupe={groupe} messagerieDisponible={messagerieDisponible} />
+            <MemberGroupCard
+              groupe={groupe}
+              referent={referent}
+              messagerieDisponible={messagerieDisponible}
+            />
 
             <div className="grid lg:grid-cols-2 gap-6">
               <MemberReferentCard
@@ -78,7 +85,13 @@ export default function Dashboard() {
               <MemberProjectsCard projets={dashboard.projets || []} />
             </div>
 
-            <MemberEngagementCard implication={dashboard.implication} />
+            <div className="grid lg:grid-cols-2 gap-6">
+              <MemberStatsCard
+                implication={dashboard.implication}
+                notifications={dashboard.notifications || []}
+              />
+              <MemberEngagementCard implication={dashboard.implication} />
+            </div>
           </div>
         ) : (
           <div className="bg-white rounded-2xl shadow p-10 text-center">

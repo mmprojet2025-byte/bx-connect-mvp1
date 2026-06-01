@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import api from '../../api/axios'
+import Alert from '../../components/ui/Alert'
+import EmptyState from '../../components/ui/EmptyState'
 
 export default function ReferentDemandes() {
   const [demandes, setDemandes] = useState([])
@@ -59,7 +61,12 @@ export default function ReferentDemandes() {
         {loading ? (
           <p className="text-gray-400 text-center py-10">Chargement...</p>
         ) : demandes.length === 0 ? (
-          <EmptyState>Aucune demande en attente.</EmptyState>
+          <EmptyState
+            title="Aucune demande en attente"
+            description="Toutes les demandes de vos groupes ont été traitées."
+            actionLabel="Voir mes groupes"
+            actionTo="/referent/groupes"
+          />
         ) : (
           <div className="space-y-4">
             {demandes.map(demande => (
@@ -93,18 +100,6 @@ export default function ReferentDemandes() {
       <Footer />
     </div>
   )
-}
-
-function Alert({ type, children }) {
-  const styles = type === 'error'
-    ? 'bg-red-50 border-red-200 text-red-700'
-    : 'bg-green-50 border-green-200 text-green-700'
-
-  return <div className={`border px-4 py-3 rounded-xl mb-5 text-sm ${styles}`}>{children}</div>
-}
-
-function EmptyState({ children }) {
-  return <div className="bg-white rounded-2xl shadow p-10 text-center text-gray-400 text-sm">{children}</div>
 }
 
 function formatDate(value) {
