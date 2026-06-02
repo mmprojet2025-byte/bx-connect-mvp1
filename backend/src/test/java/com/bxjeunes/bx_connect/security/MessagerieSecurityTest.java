@@ -30,6 +30,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -165,6 +167,71 @@ class MessagerieSecurityTest {
                 .isEqualTo("Bonjour groupe A");
     }
 
+    @Test
+    @DisplayName("Un membre ne peut pas marquer comme lu un message d'un autre groupe")
+    void membre_ne_marque_pas_lu_message_autre_groupe() {
+        Message message = message(600L, "Message groupe B", membreA, filB);
+
+        when(messageRepository.findById(600L)).thenReturn(Optional.of(message));
+        when(filRepository.findById(200L)).thenReturn(Optional.of(filB));
+        when(userRepository.findByEmail(membreA.getEmail())).thenReturn(Optional.of(membreA));
+        when(groupeRepository.findById(20L)).thenReturn(Optional.of(groupeB));
+        when(membreGroupeRepository.findFirstByUserIdAndStatut(1L, StatutMembre.ACCEPTE))
+                .thenReturn(Optional.of(adhesion(membreA, groupeA)));
+
+        assertThatThrownBy(() -> messagerieService.marquerCommeLu(600L, membreA.getEmail()))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("pas acces");
+        verify(messageRepository, never()).save(any(Message.class));
+    }
+
+    @Test
+    @DisplayName("Un referent ne peut pas marquer comme lu un message d'un autre groupe")
+    void referent_ne_marque_pas_lu_message_autre_groupe() {
+        Message message = message(600L, "Message groupe B", membreA, filB);
+
+        when(messageRepository.findById(600L)).thenReturn(Optional.of(message));
+        when(filRepository.findById(200L)).thenReturn(Optional.of(filB));
+        when(userRepository.findByEmail(referentA.getEmail())).thenReturn(Optional.of(referentA));
+        when(groupeRepository.findById(20L)).thenReturn(Optional.of(groupeB));
+
+        assertThatThrownBy(() -> messagerieService.marquerCommeLu(600L, referentA.getEmail()))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("referent");
+        verify(messageRepository, never()).save(any(Message.class));
+    }
+
+    @Test
+    @DisplayName("Un membre ne peut pas consulter les non-lus d'un autre groupe")
+    void membre_ne_consulte_pas_non_lus_autre_groupe() {
+        when(userRepository.findByEmail(membreA.getEmail())).thenReturn(Optional.of(membreA));
+        when(filRepository.findById(200L)).thenReturn(Optional.of(filB));
+        when(groupeRepository.findById(20L)).thenReturn(Optional.of(groupeB));
+        when(membreGroupeRepository.findFirstByUserIdAndStatut(1L, StatutMembre.ACCEPTE))
+                .thenReturn(Optional.of(adhesion(membreA, groupeA)));
+
+        assertThatThrownBy(() -> messagerieService.compterMessagesNonLus(200L, membreA.getEmail()))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("pas acces");
+    }
+
+    @Test
+    @DisplayName("Un referent ne peut pas creer un fil pour un groupe d'autrui")
+    void referent_ne_cree_pas_fil_groupe_autrui() {
+        when(userRepository.findByEmail(referentA.getEmail())).thenReturn(Optional.of(referentA));
+        when(groupeRepository.findById(20L)).thenReturn(Optional.of(groupeB));
+
+        com.bxjeunes.bx_connect.dto.FilDiscussionRequest request =
+                new com.bxjeunes.bx_connect.dto.FilDiscussionRequest();
+        request.setTitre("Discussion interdite");
+        request.setGroupeId(20L);
+
+        assertThatThrownBy(() -> messagerieService.creerFil(request, referentA.getEmail()))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("referent");
+        verify(filRepository, never()).save(any(FilDiscussion.class));
+    }
+
     private User user(Long id, String email, Role role) {
         User user = new User();
         user.setId(id);
@@ -203,5 +270,14 @@ class MessagerieSecurityTest {
         adhesion.setGroupe(groupe);
         adhesion.setStatut(StatutMembre.ACCEPTE);
         return adhesion;
+    }
+
+    private Message message(Long id, String contenu, User auteur, FilDiscussion fil) {
+        Message message = new Message();
+        message.setId(id);
+        message.setContenu(contenu);
+        message.setAuteur(auteur);
+        message.setFil(fil);
+        return message;
     }
 }

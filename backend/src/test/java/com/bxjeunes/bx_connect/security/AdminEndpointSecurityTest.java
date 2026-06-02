@@ -17,7 +17,9 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -53,17 +55,46 @@ class AdminEndpointSecurityTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("ADMIN recoit 403 sur les endpoints messagerie groupe")
     void admin_recoit_403_sur_messagerie_groupe() throws Exception {
+        assertMessagerieEndpointsForbidden();
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    @DisplayName("SUPER_ADMIN recoit 403 sur les endpoints messagerie groupe")
+    void super_admin_recoit_403_sur_messagerie_groupe() throws Exception {
+        assertMessagerieEndpointsForbidden();
+    }
+
+    private void assertMessagerieEndpointsForbidden() throws Exception {
         mockMvc.perform(get("/api/messagerie/fils"))
                 .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/messagerie/fils/type/GENERAL"))
+                .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/messagerie/fils/1"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/messagerie/fils")
+                        .contentType("application/json")
+                        .content("{\"titre\":\"Discussion\",\"groupeId\":1}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/messagerie/fils/1"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/messagerie/mon-groupe"))
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/messagerie/fils/1/messages"))
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/messagerie/groupes/1/fil"))
                 .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/messagerie/messages")
+                        .contentType("application/json")
+                        .content("{\"contenu\":\"Test\",\"filId\":1}"))
+                .andExpect(status().isForbidden());
         mockMvc.perform(post("/api/messagerie/groupes/1/messages")
                         .contentType("application/json")
                         .content("{\"contenu\":\"Test\"}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(patch("/api/messagerie/messages/1/lu"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/messagerie/fils/1/non-lus"))
                 .andExpect(status().isForbidden());
     }
 }
