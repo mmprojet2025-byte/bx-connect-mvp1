@@ -3,10 +3,12 @@ import {
   View, Text, StyleSheet, FlatList,
   TouchableOpacity, ActivityIndicator, Linking
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 export default function NotificationsScreen({ navigation }) {
+  const { t, i18n } = useTranslation();
   const { isMembre, isReferent, isAdmin, isSuperAdmin } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +29,7 @@ export default function NotificationsScreen({ navigation }) {
       setNotifications(res.data);
     } catch (err) {
       setNotifications([]);
-      setError(getApiError(err, 'Impossible de charger les notifications.'));
+      setError(getApiError(err, t, t('notifications.errorLoad')));
     } finally {
       setLoading(false);
     }
@@ -41,7 +43,7 @@ export default function NotificationsScreen({ navigation }) {
         prev.map(n => n.id === id ? { ...n, lue: true } : n)
       );
     } catch (err) {
-      setError(getApiError(err, 'Impossible de marquer cette notification comme lue.'));
+      setError(getApiError(err, t, t('notifications.errorMarkAsRead')));
     }
   };
 
@@ -52,9 +54,9 @@ export default function NotificationsScreen({ navigation }) {
     try {
       await api.patch('/notifications/toutes-lues');
       setNotifications(prev => prev.map(n => ({ ...n, lue: true })));
-      setMessage('Toutes les notifications sont marquées comme lues.');
+      setMessage(t('notifications.allMarkedAsRead'));
     } catch (err) {
-      setError(getApiError(err, 'Impossible de marquer toutes les notifications comme lues.'));
+      setError(getApiError(err, t, t('notifications.errorMarkAllAsRead')));
     } finally {
       setActionLoading(false);
     }
@@ -66,7 +68,7 @@ export default function NotificationsScreen({ navigation }) {
       await api.delete(`/notifications/${id}`);
       setNotifications(prev => prev.filter(n => n.id !== id));
     } catch (err) {
-      setError(getApiError(err, 'Impossible de supprimer cette notification.'));
+      setError(getApiError(err, t, t('notifications.errorDelete')));
     }
   };
 
@@ -83,7 +85,7 @@ export default function NotificationsScreen({ navigation }) {
     });
 
     if (!target) {
-      setMessage('Action disponible depuis le web.');
+      setMessage(t('notifications.actionAvailableWeb'));
       return;
     }
 
@@ -113,10 +115,10 @@ export default function NotificationsScreen({ navigation }) {
       <View style={styles.notifContent}>
         <View style={styles.titleRow}>
           <Text style={[styles.notifTitle, !item.lue && styles.notifTitleUnread]} numberOfLines={2}>
-            {item.titre || item.message || 'Notification'}
+            {item.titre || item.message || t('notifications.title')}
           </Text>
           <Text style={[styles.readBadge, !item.lue && styles.unreadBadge]}>
-            {item.lue ? 'Lue' : 'Non lue'}
+            {item.lue ? t('notifications.read') : t('notifications.unread')}
           </Text>
         </View>
 
@@ -129,17 +131,18 @@ export default function NotificationsScreen({ navigation }) {
             style={styles.actionButton}
             onPress={() => handleAction(item)}
           >
-            <Text style={styles.actionButtonText}>{"Ouvrir l'action"}</Text>
+            <Text style={styles.actionButtonText}>{t('notifications.openAction')}</Text>
           </TouchableOpacity>
         )}
 
-        <Text style={styles.notifDate}>{formatDate(item.dateCreation || item.date)}</Text>
+        <Text style={styles.notifDate}>{formatDate(item.dateCreation || item.date, i18n.language, t)}</Text>
       </View>
 
       <TouchableOpacity
         style={styles.deleteBtn}
         onPress={() => handleSupprimer(item.id)}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        accessibilityLabel={t('common.delete')}
       >
         <Text style={styles.deleteBtnText}>×</Text>
       </TouchableOpacity>
@@ -150,14 +153,14 @@ export default function NotificationsScreen({ navigation }) {
     <View style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>Notifications</Text>
+          <Text style={styles.headerTitle}>{t('notifications.title')}</Text>
           <Text style={styles.headerSub}>
-            {nonLues > 0 ? `${nonLues} non lue${nonLues > 1 ? 's' : ''}` : 'Tout est à jour'}
+            {nonLues > 0 ? t('notifications.unreadCount', { count: nonLues }) : t('notifications.allCaughtUp')}
           </Text>
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.btnLight} onPress={fetchNotifications}>
-            <Text style={styles.btnLightText}>Réessayer</Text>
+            <Text style={styles.btnLightText}>{t('common.retry')}</Text>
           </TouchableOpacity>
           {nonLues > 0 && (
             <TouchableOpacity
@@ -167,7 +170,7 @@ export default function NotificationsScreen({ navigation }) {
             >
               {actionLoading
                 ? <ActivityIndicator color="#2563eb" size="small" />
-                : <Text style={styles.btnToutesLuesText}>Tout lire</Text>
+                : <Text style={styles.btnToutesLuesText}>{t('notifications.markAllAsReadShort')}</Text>
               }
             </TouchableOpacity>
           )}
@@ -189,17 +192,17 @@ export default function NotificationsScreen({ navigation }) {
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#1e3a5f" />
-          <Text style={styles.loadingText}>Chargement des notifications...</Text>
+          <Text style={styles.loadingText}>{t('notifications.loading')}</Text>
         </View>
       ) : notifications.length === 0 ? (
         <View style={styles.centered}>
           <Text style={styles.emptyIcon}>🔔</Text>
-          <Text style={styles.emptyTitle}>Aucune notification</Text>
+          <Text style={styles.emptyTitle}>{t('notifications.emptyShort')}</Text>
           <Text style={styles.emptyText}>
-            Vos notifications apparaîtront ici dès qu’une action importante concerne votre compte.
+            {t('notifications.emptyDescriptionMobile')}
           </Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchNotifications}>
-            <Text style={styles.retryButtonText}>Réessayer</Text>
+            <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -302,9 +305,9 @@ function getAvailableTabs({ isMembre, isReferent, isAdmin, isSuperAdmin }) {
   return new Set(['TabDashboard', 'TabProfile']);
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return 'Date non renseignée';
-  return new Date(dateStr).toLocaleDateString('fr-BE', {
+function formatDate(dateStr, language, t) {
+  if (!dateStr) return t('notifications.dateNotProvided');
+  return new Date(dateStr).toLocaleDateString(language || 'fr-BE', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -313,12 +316,12 @@ function formatDate(dateStr) {
   });
 }
 
-function getApiError(err, fallback) {
+function getApiError(err, t, fallback) {
   if (err.response?.status === 401) {
-    return 'Session expirée. Reconnectez-vous.';
+    return t('errors.session_expired');
   }
   if (err.response?.status === 403) {
-    return 'Accès non autorisé.';
+    return t('errors.forbidden');
   }
   return err.response?.data?.message || fallback;
 }

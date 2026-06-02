@@ -3,10 +3,12 @@ import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   TextInput, ActivityIndicator, Platform, KeyboardAvoidingView
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 export default function MessagerieScreen() {
+  const { t, i18n } = useTranslation();
   const { user, isMembre, isReferent, isAdmin, isSuperAdmin } = useAuth();
 
   const [groupes, setGroupes] = useState([]);
@@ -49,7 +51,7 @@ export default function MessagerieScreen() {
       return;
     }
 
-    setEmptyMessage('La messagerie groupe est réservée aux membres et référents.');
+    setEmptyMessage(t('messaging.groupReserved'));
     setLoading(false);
   };
 
@@ -59,7 +61,7 @@ export default function MessagerieScreen() {
       setGroupeActif(groupeRes.data);
       await chargerFilEtMessages(groupeRes.data);
     } catch (err) {
-      setEmptyMessage(getMemberEmptyMessage(err));
+      setEmptyMessage(getMemberEmptyMessage(err, t));
     } finally {
       setLoading(false);
     }
@@ -71,13 +73,13 @@ export default function MessagerieScreen() {
       setGroupes(res.data);
 
       if (res.data.length === 0) {
-        setEmptyMessage('Aucun groupe ne vous est assigné pour le moment.');
+        setEmptyMessage(t('messaging.noAssignedGroups'));
         return;
       }
 
       await selectionnerGroupe(res.data[0], false);
     } catch (err) {
-      setError(getAccessError(err, 'Impossible de charger vos groupes.'));
+      setError(getAccessError(err, t, t('messaging.errorGroups')));
     } finally {
       setLoading(false);
     }
@@ -97,7 +99,7 @@ export default function MessagerieScreen() {
     try {
       await chargerFilEtMessages(groupe);
     } catch (err) {
-      setEmptyMessage(getFilEmptyMessage(err));
+      setEmptyMessage(getFilEmptyMessage(err, t));
     } finally {
       if (showLoader) {
         setLoadingMessages(false);
@@ -119,7 +121,7 @@ export default function MessagerieScreen() {
       setMessages(res.data);
     } catch (err) {
       setMessages([]);
-      setError(getAccessError(err, 'Impossible de charger les messages.'));
+      setError(getAccessError(err, t, t('messaging.errorLoad')));
     } finally {
       setLoadingMessages(false);
     }
@@ -138,7 +140,7 @@ export default function MessagerieScreen() {
       setNouveauMessage('');
       await chargerMessages(filActif.id);
     } catch (err) {
-      setError(getAccessError(err, "Erreur lors de l'envoi du message."));
+      setError(getAccessError(err, t, t('messaging.errorSend')));
     } finally {
       setSending(false);
     }
@@ -147,8 +149,8 @@ export default function MessagerieScreen() {
   if (isAdmin || isSuperAdmin) {
     return (
       <ForbiddenState
-        title="Messagerie indisponible"
-        text="La messagerie groupe est réservée aux membres et référents."
+        title={t('messaging.unavailableTitle')}
+        text={t('messaging.groupReserved')}
       />
     );
   }
@@ -157,7 +159,7 @@ export default function MessagerieScreen() {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#1e3a5f" />
-        <Text style={styles.loadingText}>Chargement de la messagerie...</Text>
+        <Text style={styles.loadingText}>{t('messaging.loadingMessaging')}</Text>
       </View>
     );
   }
@@ -170,13 +172,13 @@ export default function MessagerieScreen() {
     >
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>Messagerie de groupe</Text>
+          <Text style={styles.headerTitle}>{t('messaging.groupMessaging')}</Text>
           <Text style={styles.headerSub}>
-            {groupeActif?.nom || 'Discussion réservée à votre groupe'}
+            {groupeActif?.nom || t('messaging.groupDiscussionReserved')}
           </Text>
         </View>
         <TouchableOpacity style={styles.retrySmall} onPress={initialiserMessagerie}>
-          <Text style={styles.retrySmallText}>Réessayer</Text>
+          <Text style={styles.retrySmallText}>{t('common.retry')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -185,6 +187,7 @@ export default function MessagerieScreen() {
           groupes={groupes}
           groupeActif={groupeActif}
           onSelect={selectionnerGroupe}
+          t={t}
         />
       )}
 
@@ -196,24 +199,24 @@ export default function MessagerieScreen() {
 
       {emptyMessage ? (
         <EmptyState
-          title="Discussion indisponible"
+          title={t('messaging.threadUnavailable')}
           text={emptyMessage}
           onRetry={initialiserMessagerie}
         />
       ) : !filActif ? (
         <EmptyState
-          title="Aucun fil de discussion"
-          text="Le fil de discussion de ce groupe n'est pas encore créé."
+          title={t('messaging.noThread')}
+          text={t('messaging.threadNotCreated')}
           onRetry={initialiserMessagerie}
         />
       ) : (
         <>
-          <ConversationHeader fil={filActif} groupe={groupeActif} messagesCount={messages.length} />
+          <ConversationHeader fil={filActif} groupe={groupeActif} messagesCount={messages.length} t={t} />
 
           {loadingMessages ? (
             <View style={styles.messagesLoading}>
               <ActivityIndicator color="#1e3a5f" />
-              <Text style={styles.loadingText}>Chargement des messages...</Text>
+              <Text style={styles.loadingText}>{t('messaging.loadingMessages')}</Text>
             </View>
           ) : (
             <FlatList
@@ -224,11 +227,11 @@ export default function MessagerieScreen() {
               ListEmptyComponent={
                 <View style={styles.emptyMessages}>
                   <Text style={styles.emptyIcon}>💬</Text>
-                  <Text style={styles.emptyText}>Aucun message dans ce groupe.</Text>
+                  <Text style={styles.emptyText}>{t('messaging.noMessages')}</Text>
                 </View>
               }
               renderItem={({ item }) => (
-                <MessageBubble message={item} currentUser={user} />
+                <MessageBubble message={item} currentUser={user} language={i18n.language} />
               )}
             />
           )}
@@ -236,7 +239,7 @@ export default function MessagerieScreen() {
           <View style={styles.inputRow}>
             <TextInput
               style={styles.messageInput}
-              placeholder="Écrire un message..."
+              placeholder={t('messaging.type_message')}
               placeholderTextColor="#94a3b8"
               value={nouveauMessage}
               onChangeText={setNouveauMessage}
@@ -265,7 +268,7 @@ export default function MessagerieScreen() {
   );
 }
 
-function GroupSelector({ groupes, groupeActif, onSelect }) {
+function GroupSelector({ groupes, groupeActif, onSelect, t }) {
   return (
     <View style={styles.groupSelector}>
       <FlatList
@@ -286,7 +289,7 @@ function GroupSelector({ groupes, groupeActif, onSelect }) {
                 {item.nom}
               </Text>
               <Text style={[styles.groupChipSub, actif && styles.groupChipSubActive]}>
-                {item.nombreMembres ?? 0} membre{(item.nombreMembres ?? 0) > 1 ? 's' : ''}
+                {t('groups.members_count', { count: item.nombreMembres ?? 0 })}
               </Text>
             </TouchableOpacity>
           );
@@ -296,7 +299,7 @@ function GroupSelector({ groupes, groupeActif, onSelect }) {
   );
 }
 
-function ConversationHeader({ fil, groupe, messagesCount }) {
+function ConversationHeader({ fil, groupe, messagesCount, t }) {
   return (
     <View style={styles.conversationHeader}>
       <View style={styles.filAvatar}>
@@ -306,17 +309,17 @@ function ConversationHeader({ fil, groupe, messagesCount }) {
       </View>
       <View style={styles.conversationInfo}>
         <Text style={styles.conversationTitle} numberOfLines={1}>
-          {fil?.titre || `Discussion - ${groupe?.nom || 'Groupe'}`}
+          {fil?.titre || t('messaging.discussionForGroup', { group: groupe?.nom || t('groups.title') })}
         </Text>
         <Text style={styles.conversationSub}>
-          {messagesCount} message{messagesCount !== 1 ? 's' : ''}
+          {t('messaging.messagesCount', { count: messagesCount })}
         </Text>
       </View>
     </View>
   );
 }
 
-function MessageBubble({ message, currentUser }) {
+function MessageBubble({ message, currentUser, language }) {
   const estMoi =
     (message.auteurPrenom === currentUser?.prenom && message.auteurNom === currentUser?.nom) ||
     message.auteurId === currentUser?.id;
@@ -343,7 +346,7 @@ function MessageBubble({ message, currentUser }) {
           </Text>
         </View>
         <Text style={[styles.msgTime, estMoi ? styles.msgTimeRight : styles.msgTimeLeft]}>
-          {formatDate(message.dateEnvoi)}
+          {formatDate(message.dateEnvoi, language)}
         </Text>
       </View>
 
@@ -369,38 +372,39 @@ function ForbiddenState({ title, text }) {
 }
 
 function EmptyState({ title, text, onRetry }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.centered}>
       <Text style={styles.emptyIcon}>💬</Text>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyText}>{text}</Text>
       <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-        <Text style={styles.retryButtonText}>Réessayer</Text>
+        <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-function getMemberEmptyMessage(err) {
+function getMemberEmptyMessage(err, t) {
   if (err.response?.status === 403) {
-    return "Vous n'avez pas encore de groupe actif. Si une demande est en attente, la messagerie sera disponible après acceptation.";
+    return t('messaging.noGroupPendingHint');
   }
-  return getAccessError(err, 'Impossible de charger votre groupe actif.');
+  return getAccessError(err, t, t('messaging.errorActiveGroup'));
 }
 
-function getFilEmptyMessage(err) {
+function getFilEmptyMessage(err, t) {
   if (err.response?.status === 403) {
-    return 'Accès non autorisé à cette messagerie.';
+    return t('messaging.accessDenied');
   }
-  return "Le fil de discussion de ce groupe n'est pas encore créé.";
+  return t('messaging.threadNotCreated');
 }
 
-function getAccessError(err, fallback) {
+function getAccessError(err, t, fallback) {
   if (err.response?.status === 401) {
-    return 'Session expirée. Reconnectez-vous.';
+    return t('errors.session_expired');
   }
   if (err.response?.status === 403) {
-    return 'Accès non autorisé à cette messagerie.';
+    return t('messaging.accessDenied');
   }
   return err.response?.data?.message || fallback;
 }
@@ -409,10 +413,10 @@ function getInitiales(prenom, nom) {
   return ((prenom?.[0] || '') + (nom?.[0] || '')).toUpperCase() || '?';
 }
 
-function formatDate(dateStr) {
+function formatDate(dateStr, language) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
-  return `${d.toLocaleDateString('fr-BE')} ${d.toLocaleTimeString('fr-BE', {
+  return `${d.toLocaleDateString(language || 'fr-BE')} ${d.toLocaleTimeString(language || 'fr-BE', {
     hour: '2-digit',
     minute: '2-digit',
   })}`;

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -8,6 +9,7 @@ import Alert from '../components/ui/Alert';
 import EmptyState from '../components/ui/EmptyState';
 
 export default function Notifications() {
+  const { t, i18n } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +24,7 @@ export default function Notifications() {
     try {
       const res = await api.get('/notifications');
       setNotifications(res.data);
-    } catch { setError('Impossible de charger les notifications.'); }
+    } catch { setError(t('notifications.errorLoad')); }
     finally { setLoading(false); }
   };
 
@@ -73,15 +75,15 @@ export default function Notifications() {
 
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-blue-900">🔔 Notifications</h1>
+            <h1 className="text-2xl font-bold text-blue-900">🔔 {t('notifications.title')}</h1>
             {nonLues > 0 && (
-              <p className="text-blue-600 text-sm mt-1">{nonLues} non lue{nonLues > 1 ? 's' : ''}</p>
+              <p className="text-blue-600 text-sm mt-1">{t('notifications.unreadCount', { count: nonLues })}</p>
             )}
           </div>
           {nonLues > 0 && (
             <button onClick={handleToutesLues}
               className="bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm font-semibold px-4 py-2 rounded-xl transition">
-              Tout marquer lu
+              {t('notifications.markAllAsRead')}
             </button>
           )}
         </div>
@@ -90,18 +92,18 @@ export default function Notifications() {
 
         {!isAuthenticated ? (
           <EmptyState
-            title="Connectez-vous pour voir vos notifications"
-            description="Les informations importantes liées à vos groupes, activités et projets apparaîtront ici."
-            actionLabel="Connexion"
+            title={t('notifications.loginRequiredTitle')}
+            description={t('notifications.loginRequiredDescription')}
+            actionLabel={t('nav.login')}
             actionTo="/login"
           />
         ) : loading ? (
-          <p className="text-gray-400 text-center py-10">Chargement...</p>
+          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
         ) : notifications.length === 0 ? (
           <EmptyState
-            title="Aucune notification pour le moment"
-            description="Tu es à jour. Les nouvelles informations importantes apparaîtront ici."
-            actionLabel="Retour au dashboard"
+            title={t('notifications.emptyTitle')}
+            description={t('notifications.emptyDescription')}
+            actionLabel={t('nav.dashboard')}
             actionTo="/dashboard"
           />
         ) : (
@@ -128,21 +130,25 @@ export default function Notifications() {
                       onClick={e => { e.stopPropagation(); if (!n.lue) handleMarquerLue(n.id); }}
                       className="inline-flex mt-2 text-xs font-semibold text-blue-700 hover:underline"
                     >
-                      Ouvrir
+                      {t('common.open')}
                     </Link>
                   )}
                   <p className="text-xs text-gray-400 mt-1">
-                    {new Date(n.dateCreation).toLocaleDateString('fr-BE', {
+                    {new Date(n.dateCreation).toLocaleDateString(i18n.language || 'fr-BE', {
                       day: '2-digit', month: '2-digit', year: 'numeric',
                       hour: '2-digit', minute: '2-digit'
                     })}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                  <span className={`text-[10px] font-semibold rounded-full px-2 py-0.5 ${n.lue ? 'bg-gray-100 text-gray-500' : 'bg-blue-100 text-blue-700'}`}>
+                    {n.lue ? t('notifications.read') : t('notifications.unread')}
+                  </span>
                   {!n.lue && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
                   <button
                     onClick={e => { e.stopPropagation(); handleSupprimer(n.id); }}
                     className="text-gray-300 hover:text-red-400 text-lg leading-none"
+                    aria-label={t('common.delete')}
                   >
                     ✕
                   </button>
