@@ -219,8 +219,16 @@ export default function SuperAdminAdmins() {
 function formatCreationError(err, fallback) {
   if (err.response?.status === 401) return 'Session expirée. Reconnectez-vous.'
   if (err.response?.status === 403) return 'Action réservée au SUPER_ADMIN.'
-  if (err.response?.status === 400) {
-    const message = err.response?.data?.message || ''
+  if (err.response?.status === 400 || err.response?.status === 422) {
+    const data = err.response?.data || {}
+    const fields = data.fields || {}
+    const fieldMessages = Object.entries(fields)
+      .map(([field, message]) => formatFieldError(field, message))
+      .filter(Boolean)
+
+    if (fieldMessages.length > 0) return fieldMessages.join(' ')
+
+    const message = data.message || ''
     if (message.toLowerCase().includes('email')) return 'Email invalide ou déjà utilisé.'
     if (message.toLowerCase().includes('mot') || message.toLowerCase().includes('password')) {
       return 'Le mot de passe temporaire doit contenir au moins 8 caractères.'
@@ -228,6 +236,21 @@ function formatCreationError(err, fallback) {
     return message || 'Vérifiez les champs du formulaire.'
   }
   return err.response?.data?.message || fallback
+}
+
+function formatFieldError(field, message) {
+  if (field === 'motDePasseTemporaire' || field === 'nouveauMotDePasseTemporaire') {
+    return 'Le mot de passe temporaire doit contenir au moins 8 caractères.'
+  }
+  if (field === 'email') {
+    return message?.toLowerCase().includes('blank')
+      ? 'L’email est obligatoire.'
+      : 'Email invalide ou déjà utilisé.'
+  }
+  if (['prenom', 'nom'].includes(field)) {
+    return `${field === 'prenom' ? 'Le prénom' : 'Le nom'} est obligatoire.`
+  }
+  return message || null
 }
 
 function Input({ label, value, onChange, type = 'text' }) {

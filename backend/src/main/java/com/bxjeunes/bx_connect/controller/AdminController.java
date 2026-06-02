@@ -89,6 +89,7 @@ public class AdminController {
     public ResponseEntity<List<UserResponse>> getAllUtilisateurs() {
         return ResponseEntity.ok(
             userRepository.findAll().stream()
+                .filter(user -> user.getRole() != Role.ADMIN && user.getRole() != Role.SUPER_ADMIN)
                 .map(UserResponse::fromEntity)
                 .toList()
         );
