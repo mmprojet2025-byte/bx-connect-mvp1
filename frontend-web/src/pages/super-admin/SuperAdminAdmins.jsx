@@ -47,7 +47,7 @@ export default function SuperAdminAdmins() {
       setForm(emptyForm)
       setMessage('ADMIN créé avec succès.')
     } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de la création ADMIN.')
+      setError(formatCreationError(err, 'Erreur lors de la création ADMIN.'))
     } finally {
       setSaving(false)
     }
@@ -214,6 +214,20 @@ export default function SuperAdminAdmins() {
       )}
     </SuperAdminLayout>
   )
+}
+
+function formatCreationError(err, fallback) {
+  if (err.response?.status === 401) return 'Session expirée. Reconnectez-vous.'
+  if (err.response?.status === 403) return 'Action réservée au SUPER_ADMIN.'
+  if (err.response?.status === 400) {
+    const message = err.response?.data?.message || ''
+    if (message.toLowerCase().includes('email')) return 'Email invalide ou déjà utilisé.'
+    if (message.toLowerCase().includes('mot') || message.toLowerCase().includes('password')) {
+      return 'Le mot de passe temporaire doit contenir au moins 8 caractères.'
+    }
+    return message || 'Vérifiez les champs du formulaire.'
+  }
+  return err.response?.data?.message || fallback
 }
 
 function Input({ label, value, onChange, type = 'text' }) {

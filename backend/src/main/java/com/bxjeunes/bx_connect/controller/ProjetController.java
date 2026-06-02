@@ -61,7 +61,7 @@ public class ProjetController {
     // ─── POST /api/projets — Proposer un projet (M24) ────────────────────────
 
     @PostMapping
-    @PreAuthorize("hasRole('MEMBRE')")
+    @PreAuthorize("hasAnyRole('MEMBRE', 'ADMIN')")
     public ResponseEntity<ProjetResponse> proposerProjet(
             @Valid @RequestBody ProjetRequest request,
             Authentication authentication) {

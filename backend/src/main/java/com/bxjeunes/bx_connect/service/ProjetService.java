@@ -67,12 +67,6 @@ public class ProjetService {
     public ProjetResponse proposerProjet(ProjetRequest request, String emailPorteur) {
         User porteur = userRepository.findByEmail(emailPorteur)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
-        if (porteur.getRole() != Role.MEMBRE) {
-            throw new RuntimeException("Seuls les membres peuvent proposer un projet.");
-        }
-        MembreGroupe adhesionActive = membreGroupeRepository
-                .findFirstByUserIdAndStatut(porteur.getId(), StatutMembre.ACCEPTE)
-                .orElseThrow(() -> new RuntimeException("Vous devez etre accepte dans un groupe pour proposer un projet."));
 
         Projet projet = new Projet();
         projet.setTitre(request.getTitre());
@@ -80,8 +74,16 @@ public class ProjetService {
         projet.setObjectifs(request.getObjectifs());
         projet.setBudgetDemande(request.getBudgetDemande());
         projet.setPorteur(porteur);
-        projet.setGroupe(adhesionActive.getGroupe());
         projet.setStatut(StatutProjet.BROUILLON);
+
+        if (porteur.getRole() == Role.MEMBRE) {
+            MembreGroupe adhesionActive = membreGroupeRepository
+                    .findFirstByUserIdAndStatut(porteur.getId(), StatutMembre.ACCEPTE)
+                    .orElseThrow(() -> new RuntimeException("Vous devez etre accepte dans un groupe pour proposer un projet."));
+            projet.setGroupe(adhesionActive.getGroupe());
+        } else if (porteur.getRole() != Role.ADMIN) {
+            throw new RuntimeException("Seuls les membres acceptes dans un groupe et les ADMIN peuvent creer un projet.");
+        }
 
         return ProjetResponse.fromEntity(projetRepository.save(projet));
     }

@@ -5,6 +5,7 @@ import com.bxjeunes.bx_connect.dto.GroupeResponse;
 import com.bxjeunes.bx_connect.dto.MembreGroupeResponse;
 import com.bxjeunes.bx_connect.dto.ProjetResponse;
 import com.bxjeunes.bx_connect.service.GroupeService;
+import com.bxjeunes.bx_connect.service.ProjetService;
 import com.bxjeunes.bx_connect.service.ReferentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,11 +22,14 @@ public class ReferentController {
 
     private final ReferentService referentService;
     private final GroupeService groupeService;
+    private final ProjetService projetService;
 
     public ReferentController(ReferentService referentService,
-                              GroupeService groupeService) {
+                              GroupeService groupeService,
+                              ProjetService projetService) {
         this.referentService = referentService;
         this.groupeService = groupeService;
+        this.projetService = projetService;
     }
 
     // ─── Dashboard référent ───────────────────────────────────────────────────
@@ -94,18 +98,20 @@ public class ReferentController {
 
     // ─── R13 : Projets soumis en attente ─────────────────────────────────────
     @GetMapping("/projets-soumis")
-    public ResponseEntity<List<ProjetResponse>> projetsSoumis() {
-        return ResponseEntity.ok(referentService.projetsSoumis());
+    public ResponseEntity<List<ProjetResponse>> projetsSoumis(Authentication auth) {
+        return ResponseEntity.ok(projetService.projetsGroupesReferent(auth.getName()));
     }
 
     // ─── R13 : Valider un projet ──────────────────────────────────────────────
     @PatchMapping("/projets/{id}/valider")
+    @PreAuthorize("denyAll()")
     public ResponseEntity<ProjetResponse> validerProjet(@PathVariable Long id) {
         return ResponseEntity.ok(referentService.validerProjet(id));
     }
 
     // ─── R13 : Refuser un projet ──────────────────────────────────────────────
     @PatchMapping("/projets/{id}/refuser")
+    @PreAuthorize("denyAll()")
     public ResponseEntity<ProjetResponse> refuserProjet(@PathVariable Long id) {
         return ResponseEntity.ok(referentService.refuserProjet(id));
     }

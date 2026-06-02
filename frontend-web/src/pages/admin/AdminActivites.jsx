@@ -5,6 +5,18 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 
 const STATUTS = ['BROUILLON', 'PUBLIEE', 'ANNULEE', 'TERMINEE'];
+const emptyForm = {
+  titre: '',
+  description: '',
+  dateDebut: '',
+  dateFin: '',
+  lieu: '',
+  gratuite: true,
+  prix: '',
+  capaciteMax: 0,
+  categorie: '',
+  theme: '',
+};
 
 export default function AdminActivites() {
   const { t } = useTranslation();
@@ -14,6 +26,9 @@ export default function AdminActivites() {
   const [message, setMessage] = useState('');
   const [recherche, setRecherche] = useState('');
   const [filtreStatut, setFiltreStatut] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState(emptyForm);
 
   useEffect(() => { fetchActivites(); }, []);
 
@@ -25,6 +40,28 @@ export default function AdminActivites() {
       setError(t('admin.error_load'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const creerActivite = async (e) => {
+    e.preventDefault();
+    setCreating(true);
+    setMessage('');
+    setError('');
+    try {
+      const res = await api.post('/activites', {
+        ...form,
+        prix: form.gratuite ? null : Number(form.prix),
+        capaciteMax: Number(form.capaciteMax) || 0,
+      });
+      setActivites(prev => [res.data, ...prev]);
+      setForm(emptyForm);
+      setShowForm(false);
+      setMessage('✅ Activité créée.');
+    } catch (err) {
+      setError(formatApiError(err, "Erreur lors de la création de l'activité."));
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -63,14 +100,62 @@ export default function AdminActivites() {
       <Navbar />
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
-        <h1 className="text-2xl font-bold text-blue-900 mb-1">🎯 {t('admin.activities_title')}</h1>
-        <p className="text-gray-500 text-sm mb-6">{activites.length} activité(s) au total</p>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-blue-900 mb-1">🎯 {t('admin.activities_title')}</h1>
+            <p className="text-gray-500 text-sm">{activites.length} activité(s) au total</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowForm(prev => !prev)}
+            className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
+          >
+            {showForm ? t('common.cancel') : 'Créer une activité'}
+          </button>
+        </div>
 
         {message && (
           <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>
         )}
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>
+        )}
+
+        {showForm && (
+          <form onSubmit={creerActivite} className="bg-white rounded-2xl shadow p-5 mb-6 grid md:grid-cols-2 gap-4">
+            <Input label="Titre" value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
+            <Input label="Lieu" value={form.lieu} onChange={value => setForm({ ...form, lieu: value })} />
+            <Input label="Date début" type="datetime-local" value={form.dateDebut} onChange={value => setForm({ ...form, dateDebut: value })} required />
+            <Input label="Date fin" type="datetime-local" value={form.dateFin} onChange={value => setForm({ ...form, dateFin: value })} required />
+            <Input label="Catégorie" value={form.categorie} onChange={value => setForm({ ...form, categorie: value })} />
+            <Input label="Thème" value={form.theme} onChange={value => setForm({ ...form, theme: value })} />
+            <Input label="Capacité maximale" type="number" min="0" value={form.capaciteMax} onChange={value => setForm({ ...form, capaciteMax: value })} />
+            <label className="flex items-center gap-2 text-sm text-gray-700 pt-7">
+              <input type="checkbox" checked={form.gratuite} onChange={e => setForm({ ...form, gratuite: e.target.checked })} />
+              Activité gratuite
+            </label>
+            {!form.gratuite && (
+              <Input label="Prix" type="number" min="0" value={form.prix} onChange={value => setForm({ ...form, prix: value })} />
+            )}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
+              <textarea
+                value={form.description}
+                onChange={e => setForm({ ...form, description: e.target.value })}
+                rows={3}
+                className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+              />
+            </div>
+            <div className="md:col-span-2 flex justify-end">
+              <button
+                type="submit"
+                disabled={creating}
+                className="bg-blue-700 hover:bg-blue-600 disabled:bg-gray-300 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition"
+              >
+                {creating ? 'Création...' : 'Créer l’activité'}
+              </button>
+            </div>
+          </form>
         )}
 
         {/* Filtres */}
@@ -161,6 +246,28 @@ export default function AdminActivites() {
       <Footer />
     </div>
   );
+}
+
+function Input({ label, value, onChange, type = 'text', required = false, min }) {
+  return (
+    <label className="block">
+      <span className="block text-sm font-semibold text-gray-700 mb-1">{label}</span>
+      <input
+        type={type}
+        min={min}
+        required={required}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+    </label>
+  );
+}
+
+function formatApiError(err, fallback) {
+  if (err.response?.status === 401) return 'Session expirée. Reconnectez-vous.';
+  if (err.response?.status === 403) return 'Accès refusé pour ce rôle.';
+  return err.response?.data?.message || fallback;
 }
 
 function statutColor(statut) {

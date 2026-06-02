@@ -45,7 +45,7 @@ export default function AdminReferents() {
       setForm(emptyForm)
       setMessage('Référent créé avec succès.')
     } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de la création du référent.')
+      setError(formatCreationError(err, 'Erreur lors de la création du référent.'))
     } finally {
       setSaving(false)
     }
@@ -127,6 +127,20 @@ export default function AdminReferents() {
       <Footer />
     </div>
   )
+}
+
+function formatCreationError(err, fallback) {
+  if (err.response?.status === 401) return 'Session expirée. Reconnectez-vous.'
+  if (err.response?.status === 403) return 'Action réservée à un ADMIN.'
+  if (err.response?.status === 400) {
+    const message = err.response?.data?.message || ''
+    if (message.toLowerCase().includes('email')) return 'Email invalide ou déjà utilisé.'
+    if (message.toLowerCase().includes('mot') || message.toLowerCase().includes('password')) {
+      return 'Le mot de passe temporaire doit contenir au moins 8 caractères.'
+    }
+    return message || 'Vérifiez les champs du formulaire.'
+  }
+  return err.response?.data?.message || fallback
 }
 
 function Input({ label, value, onChange, type = 'text' }) {

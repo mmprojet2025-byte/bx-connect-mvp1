@@ -5,6 +5,7 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 
 const STATUTS = ['BROUILLON', 'SOUMIS', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE'];
+const emptyForm = { titre: '', description: '', budgetDemande: '' };
 
 export default function AdminProjets() {
   const { t } = useTranslation();
@@ -14,6 +15,9 @@ export default function AdminProjets() {
   const [message, setMessage] = useState('');
   const [recherche, setRecherche] = useState('');
   const [filtreStatut, setFiltreStatut] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState(emptyForm);
 
   useEffect(() => { fetchProjets(); }, []);
 
@@ -25,6 +29,27 @@ export default function AdminProjets() {
       setError(t('admin.error_load'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const creerProjet = async (e) => {
+    e.preventDefault();
+    setCreating(true);
+    setMessage('');
+    setError('');
+    try {
+      const res = await api.post('/projets', {
+        ...form,
+        budgetDemande: parseFloat(form.budgetDemande) || 0,
+      });
+      setProjets(prev => [res.data, ...prev]);
+      setForm(emptyForm);
+      setShowForm(false);
+      setMessage('✅ Projet institutionnel créé.');
+    } catch (err) {
+      setError(formatApiError(err, 'Erreur lors de la création du projet.'));
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -62,14 +87,50 @@ export default function AdminProjets() {
       <Navbar />
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
-        <h1 className="text-2xl font-bold text-blue-900 mb-1">🚀 {t('admin.projects_title')}</h1>
-        <p className="text-gray-500 text-sm mb-6">{projets.length} projet(s) au total</p>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-blue-900 mb-1">🚀 {t('admin.projects_title')}</h1>
+            <p className="text-gray-500 text-sm">{projets.length} projet(s) au total</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowForm(prev => !prev)}
+            className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
+          >
+            {showForm ? t('common.cancel') : 'Créer un projet'}
+          </button>
+        </div>
 
         {message && (
           <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>
         )}
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>
+        )}
+
+        {showForm && (
+          <form onSubmit={creerProjet} className="bg-white rounded-2xl shadow p-5 mb-6 grid md:grid-cols-2 gap-4">
+            <Input label="Titre du projet" value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
+            <Input label="Budget demandé (€)" value={form.budgetDemande} onChange={value => setForm({ ...form, budgetDemande: value })} type="number" min="0" />
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
+              <textarea
+                value={form.description}
+                onChange={e => setForm({ ...form, description: e.target.value })}
+                rows={3}
+                className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+              />
+            </div>
+            <div className="md:col-span-2 flex justify-end">
+              <button
+                type="submit"
+                disabled={creating}
+                className="bg-blue-700 hover:bg-blue-600 disabled:bg-gray-300 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition"
+              >
+                {creating ? 'Création...' : 'Créer le projet'}
+              </button>
+            </div>
+          </form>
         )}
 
         {/* Badges statuts */}
@@ -167,6 +228,28 @@ export default function AdminProjets() {
       <Footer />
     </div>
   );
+}
+
+function Input({ label, value, onChange, type = 'text', required = false, min }) {
+  return (
+    <label className="block">
+      <span className="block text-sm font-semibold text-gray-700 mb-1">{label}</span>
+      <input
+        type={type}
+        min={min}
+        required={required}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+    </label>
+  );
+}
+
+function formatApiError(err, fallback) {
+  if (err.response?.status === 401) return 'Session expirée. Reconnectez-vous.';
+  if (err.response?.status === 403) return 'Accès refusé pour ce rôle.';
+  return err.response?.data?.message || fallback;
 }
 
 function statutColor(statut) {
