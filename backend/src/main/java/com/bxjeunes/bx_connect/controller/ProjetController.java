@@ -54,8 +54,8 @@ public class ProjetController {
     // ─── GET /api/projets/{id} — Détail d'un projet ──────────────────────────
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProjetResponse> getProjet(@PathVariable Long id) {
-        return ResponseEntity.ok(projetService.getProjet(id));
+    public ResponseEntity<ProjetResponse> getProjet(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(projetService.getProjet(id, emailAuthentifie(authentication)));
     }
 
     // ─── POST /api/projets — Proposer un projet (M24) ────────────────────────
@@ -125,7 +125,7 @@ public class ProjetController {
     // ─── POST /api/projets/{id}/rejoindre — Rejoindre un projet (M26) ────────
 
     @PostMapping("/{id}/rejoindre")
-    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT', 'ADMIN')")
+    @PreAuthorize("hasRole('MEMBRE')")
     public ResponseEntity<Void> rejoindrProjet(
             @PathVariable Long id,
             Authentication authentication) {
@@ -148,8 +148,10 @@ public class ProjetController {
     // ─── GET /api/projets/{id}/commentaires — Commentaires d'un projet ────────
 
     @GetMapping("/{id}/commentaires")
-    public ResponseEntity<List<CommentaireResponse>> getCommentaires(@PathVariable Long id) {
-        return ResponseEntity.ok(projetService.getCommentaires(id));
+    public ResponseEntity<List<CommentaireResponse>> getCommentaires(
+            @PathVariable Long id,
+            Authentication authentication) {
+        return ResponseEntity.ok(projetService.getCommentaires(id, emailAuthentifie(authentication)));
     }
 
     // ─── GET /api/projets/mes-projets — Mes projets (porteur) — M28 ──────────
@@ -166,5 +168,13 @@ public class ProjetController {
     @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT', 'ADMIN')")
     public ResponseEntity<List<ProjetResponse>> mesProjetsParticipation(Authentication authentication) {
         return ResponseEntity.ok(projetService.mesProjetsParticipation(authentication.getName()));
+    }
+
+    private String emailAuthentifie(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getName())) {
+            return null;
+        }
+        return authentication.getName();
     }
 }

@@ -3,11 +3,13 @@ package com.bxjeunes.bx_connect.service;
 import com.bxjeunes.bx_connect.dto.*;
 import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.*;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -57,8 +59,13 @@ public class ProjetService {
     // ─── Détail d'un projet ───────────────────────────────────────────────────
 
     public ProjetResponse getProjet(Long id) {
+        return getProjet(id, null);
+    }
+
+    public ProjetResponse getProjet(Long id, String emailUser) {
         Projet projet = projetRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Projet introuvable"));
+        verifierAccesProjet(projet, emailUser);
         return ProjetResponse.fromEntity(projet);
     }
 
@@ -96,6 +103,7 @@ public class ProjetService {
         User porteur = userRepository.findByEmail(emailPorteur)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
 
+        verifierAccesProjet(projet, porteur);
         if (!projet.getPorteur().getId().equals(porteur.getId())) {
             throw new RuntimeException("Seul le porteur peut soumettre ce projet");
         }
@@ -116,10 +124,11 @@ public class ProjetService {
         User user = userRepository.findByEmail(emailUser)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
 
+        verifierAccesProjet(projet, user);
         boolean isAdmin = user.getRole() == Role.ADMIN;
         boolean isPorteur = projet.getPorteur().getId().equals(user.getId());
         if (!isAdmin && !isPorteur) {
-            throw new RuntimeException("Accès refusé");
+            throw new AccessDeniedException("Accès refusé");
         }
 
         projet.setTitre(request.getTitre());
@@ -178,6 +187,13 @@ public class ProjetService {
         Projet projet = projetRepository.findById(projetId)
                 .orElseThrow(() -> new RuntimeException("Projet introuvable"));
 
+        if (user.getRole() != Role.MEMBRE) {
+            throw new AccessDeniedException("Seuls les membres peuvent rejoindre un projet.");
+        }
+        verifierAccesProjet(projet, user);
+        if (projet.getGroupe() == null || !membreAppartientAuGroupeActif(user, projet.getGroupe())) {
+            throw new AccessDeniedException("Vous ne pouvez rejoindre que les projets de votre groupe actif.");
+        }
         if (participationRepository.existsByUserIdAndProjetId(user.getId(), projetId)) {
             throw new RuntimeException("Vous participez déjà à ce projet");
         }
@@ -194,6 +210,7 @@ public class ProjetService {
         Projet projet = projetRepository.findById(projetId)
                 .orElseThrow(() -> new RuntimeException("Projet introuvable"));
 
+        verifierAccesProjet(projet, user);
         CommentaireProjet commentaire = new CommentaireProjet(request.getContenu(), user, projet);
         return CommentaireResponse.fromEntity(commentaireRepository.save(commentaire));
     }
@@ -201,6 +218,13 @@ public class ProjetService {
     // ─── Commentaires d'un projet ─────────────────────────────────────────────
 
     public List<CommentaireResponse> getCommentaires(Long projetId) {
+        return getCommentaires(projetId, null);
+    }
+
+    public List<CommentaireResponse> getCommentaires(Long projetId, String emailUser) {
+        Projet projet = projetRepository.findById(projetId)
+                .orElseThrow(() -> new RuntimeException("Projet introuvable"));
+        verifierAccesProjet(projet, emailUser);
         return commentaireRepository.findByProjetIdOrderByDateCommentaireAsc(projetId)
                 .stream()
                 .map(CommentaireResponse::fromEntity)
@@ -248,5 +272,68 @@ public class ProjetService {
                 .stream()
                 .map(ProjetResponse::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    private void verifierAccesProjet(Projet projet, String emailUser) {
+        if (estProjetPublic(projet)) {
+            return;
+        }
+        if (emailUser == null) {
+            throw new AccessDeniedException("Acces refuse au projet.");
+        }
+        User user = userRepository.findByEmail(emailUser)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        verifierAccesProjet(projet, user);
+    }
+
+    private void verifierAccesProjet(Projet projet, User user) {
+        if (estProjetPublic(projet)) {
+            return;
+        }
+        if (user.getRole() == Role.ADMIN) {
+            return;
+        }
+        if (user.getRole() == Role.SUPER_ADMIN) {
+            throw new AccessDeniedException("Acces refuse au projet.");
+        }
+        if (user.getRole() == Role.MEMBRE) {
+            boolean isPorteur = projet.getPorteur() != null
+                    && projet.getPorteur().getId() != null
+                    && projet.getPorteur().getId().equals(user.getId());
+            if (isPorteur || (projet.getGroupe() != null && membreAppartientAuGroupeActif(user, projet.getGroupe()))) {
+                return;
+            }
+        }
+        if (user.getRole() == Role.REFERENT && referentEncadreProjet(user, projet)) {
+            return;
+        }
+        throw new AccessDeniedException("Acces refuse au projet.");
+    }
+
+    private boolean estProjetPublic(Projet projet) {
+        return List.of(StatutProjet.APPROUVE, StatutProjet.EN_COURS, StatutProjet.TERMINE)
+                .contains(projet.getStatut());
+    }
+
+    private boolean membreAppartientAuGroupeActif(User user, Groupe groupe) {
+        if (groupe == null || groupe.getId() == null) {
+            return false;
+        }
+        Optional<MembreGroupe> adhesionActive = membreGroupeRepository
+                .findFirstByUserIdAndStatut(user.getId(), StatutMembre.ACCEPTE);
+        return adhesionActive
+                .map(MembreGroupe::getGroupe)
+                .map(Groupe::getId)
+                .map(groupe.getId()::equals)
+                .orElse(false);
+    }
+
+    private boolean referentEncadreProjet(User referent, Projet projet) {
+        if (projet.getGroupe() == null
+                || projet.getGroupe().getReferent() == null
+                || projet.getGroupe().getReferent().getId() == null) {
+            return false;
+        }
+        return projet.getGroupe().getReferent().getId().equals(referent.getId());
     }
 }
