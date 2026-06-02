@@ -3,10 +3,12 @@ import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   TextInput, ActivityIndicator
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 export default function ActivitiesScreen() {
+  const { t, i18n } = useTranslation();
   const {
     isAuthenticated,
     isMembre,
@@ -59,7 +61,7 @@ export default function ActivitiesScreen() {
         setInscriptions([]);
       }
     } catch (err) {
-      setError(getApiError(err, 'Impossible de charger les activités.'));
+      setError(getApiError(err, t, t('activities.error_load')));
     } finally {
       setLoading(false);
     }
@@ -73,10 +75,10 @@ export default function ActivitiesScreen() {
     setMessage('');
     try {
       await api.post('/inscriptions', { activiteId });
-      setMessage('Inscription réussie.');
+      setMessage(t('activities.success_register'));
       await chargerActivites();
     } catch (err) {
-      setError(getApiError(err, "Impossible de s'inscrire à cette activité."));
+      setError(getApiError(err, t, t('activities.error_register_this')));
     } finally {
       setActionLoadingId(null);
     }
@@ -90,8 +92,8 @@ export default function ActivitiesScreen() {
   if (isAdmin) {
     return (
       <RoleBlockedState
-        title="Activités"
-        text="La gestion des activités se fait depuis le web."
+        title={t('activities.title')}
+        text={t('activities.mobile_admin_web')}
       />
     );
   }
@@ -99,8 +101,8 @@ export default function ActivitiesScreen() {
   if (isSuperAdmin) {
     return (
       <RoleBlockedState
-        title="Activités métier"
-        text="Le SUPER_ADMIN ne gère pas les activités de l’association sur mobile V1."
+        title={t('activities.business_activities')}
+        text={t('activities.mobile_super_admin_no_access')}
       />
     );
   }
@@ -110,22 +112,22 @@ export default function ActivitiesScreen() {
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Rechercher une activité..."
+          placeholder={t('activities.search_mobile')}
           placeholderTextColor="#94a3b8"
           value={recherche}
           onChangeText={setRecherche}
         />
         <TouchableOpacity style={styles.retrySmall} onPress={chargerActivites}>
-          <Text style={styles.retrySmallText}>Réessayer</Text>
+          <Text style={styles.retrySmallText}>{t('common.retry')}</Text>
         </TouchableOpacity>
       </View>
 
       {!isAuthenticated && (
-        <InfoBox text="Connecte-toi pour t’inscrire à une activité." />
+        <InfoBox text={t('activities.login_to_register_mobile')} />
       )}
 
       {isReferent && (
-        <InfoBox text="Mobile V1 affiche vos activités en lecture simple. La gestion complète se fait depuis le web." />
+        <InfoBox text={t('activities.referent_mobile_info')} />
       )}
 
       {message !== '' && (
@@ -143,14 +145,14 @@ export default function ActivitiesScreen() {
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#1e3a5f" />
-          <Text style={styles.loadingText}>Chargement des activités...</Text>
+          <Text style={styles.loadingText}>{t('activities.loading')}</Text>
         </View>
       ) : activitesFiltrees.length === 0 ? (
         <EmptyState
-          title={recherche ? 'Aucune activité trouvée' : 'Aucune activité disponible'}
+          title={recherche ? t('activities.no_search_results') : t('activities.no_activities')}
           text={isReferent
-            ? "Vos activités apparaîtront ici lorsqu'elles seront créées."
-            : "Les activités publiées apparaîtront ici."}
+            ? t('activities.no_referent_activities')
+            : t('activities.empty_description')}
           onRetry={chargerActivites}
         />
       ) : (
@@ -166,6 +168,8 @@ export default function ActivitiesScreen() {
               inscription={inscriptions.find((ins) => ins.activiteId === item.id)}
               actionLoading={actionLoadingId === item.id}
               onInscrire={() => handleInscrire(item.id)}
+              t={t}
+              language={i18n.language}
             />
           )}
           contentContainerStyle={styles.listContent}
@@ -186,18 +190,20 @@ function ActivityCard({
   inscription,
   actionLoading,
   onInscrire,
+  t,
+  language,
 }) {
   const complete = isActiviteComplete(activite);
   const alreadyRegistered = !!inscription && inscription.statut !== 'ANNULEE';
   const canRegister = isMembre && activite.statut === 'PUBLIEE' && !alreadyRegistered && !complete;
-  const status = getActivityStatus({ activite, inscription, complete });
+  const status = getActivityStatus({ activite, inscription, complete }, t);
 
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <View style={styles.cardTitleWrap}>
           <Text style={styles.cardTitle} numberOfLines={2}>{activite.titre}</Text>
-          <Text style={styles.cardSub}>{formatDateRange(activite.dateDebut, activite.dateFin)}</Text>
+          <Text style={styles.cardSub}>{formatDateRange(activite.dateDebut, activite.dateFin, language, t)}</Text>
         </View>
         <StatusBadge label={status.label} color={status.color} />
       </View>
@@ -207,33 +213,33 @@ function ActivityCard({
       )}
 
       <View style={styles.metaBox}>
-        <MetaRow label="Lieu" value={activite.lieu || 'À confirmer'} />
-        <MetaRow label="Prix" value={activite.gratuite ? 'Gratuit' : `${activite.prix ?? 0} €`} />
-        <MetaRow label="Capacité" value={formatCapacite(activite)} />
-        {activite.theme && <MetaRow label="Thème" value={activite.theme} />}
+        <MetaRow label={t('activities.form_place')} value={activite.lieu || t('activities.to_confirm')} />
+        <MetaRow label={t('activities.price')} value={activite.gratuite ? t('activities.free') : t('activities.price_value', { price: activite.prix ?? 0 })} />
+        <MetaRow label={t('activities.capacity')} value={formatCapacite(activite, t)} />
+        {activite.theme && <MetaRow label={t('activities.form_theme')} value={activite.theme} />}
         {isReferent && activite.createurPrenom && (
           <MetaRow
-            label="Créée par"
+            label={t('activities.created_by')}
             value={`${activite.createurPrenom || ''} ${activite.createurNom || ''}`.trim()}
           />
         )}
       </View>
 
       {!isAuthenticated && (
-        <Text style={styles.visitorHint}>Connecte-toi pour t’inscrire.</Text>
+        <Text style={styles.visitorHint}>{t('activities.login_to_register_short')}</Text>
       )}
 
       {isMembre && (
         <View style={styles.actions}>
           {alreadyRegistered ? (
             <StatusLine
-              text={`Votre inscription : ${translateInscription(inscription.statut)}`}
+              text={t('activities.your_registration', { status: translateInscription(inscription.statut, t) })}
               color={status.color}
             />
           ) : complete ? (
-            <StatusLine text="Cette activité est complète." color="#dc2626" />
+            <StatusLine text={t('activities.full')} color="#dc2626" />
           ) : activite.statut !== 'PUBLIEE' ? (
-            <StatusLine text="Inscription indisponible pour cette activité." color="#64748b" />
+            <StatusLine text={t('activities.registration_unavailable')} color="#64748b" />
           ) : (
             <TouchableOpacity
               style={[styles.btnPrimary, (!canRegister || actionLoading) && styles.btnDisabled]}
@@ -242,7 +248,7 @@ function ActivityCard({
             >
               {actionLoading
                 ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={styles.btnPrimaryText}>{"S'inscrire"}</Text>
+                : <Text style={styles.btnPrimaryText}>{t('activities.register_btn')}</Text>
               }
             </TouchableOpacity>
           )}
@@ -263,13 +269,14 @@ function RoleBlockedState({ title, text }) {
 }
 
 function EmptyState({ title, text, onRetry }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.centered}>
       <Text style={styles.emptyIcon}>🎯</Text>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyText}>{text}</Text>
       <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-        <Text style={styles.retryButtonText}>Réessayer</Text>
+        <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -304,23 +311,23 @@ function MetaRow({ label, value }) {
   );
 }
 
-function getActivityStatus({ activite, inscription, complete }) {
+function getActivityStatus({ activite, inscription, complete }, t) {
   if (inscription?.statut === 'CONFIRMEE') {
-    return { label: 'Inscrit', color: '#16a34a' };
+    return { label: t('activities.registered'), color: '#16a34a' };
   }
   if (inscription?.statut === 'EN_ATTENTE_PAIEMENT') {
-    return { label: 'Paiement en attente', color: '#d97706' };
+    return { label: t('statuses.EN_ATTENTE_PAIEMENT'), color: '#d97706' };
   }
   if (inscription?.statut === 'ANNULEE') {
-    return { label: 'Annulée', color: '#64748b' };
+    return { label: t('statuses.ANNULEE'), color: '#64748b' };
   }
   if (complete) {
-    return { label: 'Complète', color: '#dc2626' };
+    return { label: t('activities.full_status'), color: '#dc2626' };
   }
   if (activite.statut === 'PUBLIEE') {
-    return { label: 'Disponible', color: '#2563eb' };
+    return { label: t('activities.available'), color: '#2563eb' };
   }
-  return { label: translateActiviteStatut(activite.statut), color: statusColor(activite.statut) };
+  return { label: translateActiviteStatut(activite.statut, t), color: statusColor(activite.statut) };
 }
 
 function isActiviteComplete(activite) {
@@ -331,41 +338,30 @@ function isActiviteComplete(activite) {
   return activite.capaciteMax > 0 && typeof inscrits === 'number' && inscrits >= activite.capaciteMax;
 }
 
-function formatCapacite(activite) {
+function formatCapacite(activite, t) {
   if (!activite.capaciteMax || activite.capaciteMax <= 0) {
-    return 'Illimitée';
+    return t('activities.unlimited_capacity');
   }
 
   if (typeof activite.placesRestantes === 'number' && activite.placesRestantes >= 0) {
-    return `${activite.placesRestantes} place${activite.placesRestantes > 1 ? 's' : ''} restante${activite.placesRestantes > 1 ? 's' : ''}`;
+    return t('activities.remaining_places', { count: activite.placesRestantes });
   }
 
   const inscrits = activite.nombreInscrits ?? activite.inscrits ?? activite.nombreParticipants;
   if (typeof inscrits === 'number') {
     const restantes = Math.max(activite.capaciteMax - inscrits, 0);
-    return `${restantes} place${restantes > 1 ? 's' : ''} restante${restantes > 1 ? 's' : ''}`;
+    return t('activities.remaining_places', { count: restantes });
   }
 
-  return `${activite.capaciteMax} place${activite.capaciteMax > 1 ? 's' : ''} maximum`;
+  return t('activities.max_places', { count: activite.capaciteMax });
 }
 
-function translateInscription(statut) {
-  switch (statut) {
-    case 'CONFIRMEE': return 'Confirmée';
-    case 'EN_ATTENTE_PAIEMENT': return 'Paiement en attente';
-    case 'ANNULEE': return 'Annulée';
-    default: return statut || 'Inconnue';
-  }
+function translateInscription(statut, t) {
+  return t(`statuses.${statut}`, { defaultValue: statut || t('statuses.UNKNOWN') });
 }
 
-function translateActiviteStatut(statut) {
-  switch (statut) {
-    case 'BROUILLON': return 'Brouillon';
-    case 'PUBLIEE': return 'Disponible';
-    case 'ANNULEE': return 'Annulée';
-    case 'TERMINEE': return 'Terminée';
-    default: return statut || 'Activité';
-  }
+function translateActiviteStatut(statut, t) {
+  return t(`statuses.${statut}`, { defaultValue: statut || t('activities.fallback_activity') });
 }
 
 function statusColor(statut) {
@@ -377,29 +373,29 @@ function statusColor(statut) {
   }
 }
 
-function formatDateRange(dateDebut, dateFin) {
-  if (!dateDebut) return 'Date à confirmer';
+function formatDateRange(dateDebut, dateFin, language, t) {
+  if (!dateDebut) return t('activities.date_to_confirm');
   const debut = new Date(dateDebut);
-  const date = debut.toLocaleDateString('fr-BE', {
+  const date = debut.toLocaleDateString(language || 'fr-BE', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
   });
-  const heureDebut = debut.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
+  const heureDebut = debut.toLocaleTimeString(language || 'fr-BE', { hour: '2-digit', minute: '2-digit' });
 
   if (!dateFin) return `${date} · ${heureDebut}`;
 
   const fin = new Date(dateFin);
-  const heureFin = fin.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
+  const heureFin = fin.toLocaleTimeString(language || 'fr-BE', { hour: '2-digit', minute: '2-digit' });
   return `${date} · ${heureDebut} - ${heureFin}`;
 }
 
-function getApiError(err, fallback) {
+function getApiError(err, t, fallback) {
   if (err.response?.status === 401) {
-    return 'Session expirée. Reconnectez-vous.';
+    return t('errors.session_expired');
   }
   if (err.response?.status === 403) {
-    return 'Accès non autorisé.';
+    return t('errors.forbidden');
   }
   return err.response?.data?.message || fallback;
 }

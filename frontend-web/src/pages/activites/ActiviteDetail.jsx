@@ -10,7 +10,7 @@ export default function ActiviteDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [activite, setActivite] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -27,7 +27,7 @@ export default function ActiviteDetail() {
       const res = await api.get(`/activites/${id}`);
       setActivite(res.data);
     } catch {
-      setError('Activité introuvable.');
+      setError(t('activities.not_found'));
     } finally {
       setLoading(false);
     }
@@ -40,10 +40,10 @@ export default function ActiviteDetail() {
     }
     try {
       await api.post('/inscriptions', { activiteId: parseInt(id) });
-      setMessage('✅ Inscription réussie !');
+      setMessage(t('activities.success_register'));
       setInscrit(true);
     } catch (err) {
-      setError(err.response?.data?.message || "Erreur lors de l'inscription.");
+      setError(err.response?.data?.message || t('activities.error_register'));
     }
   };
 
@@ -65,7 +65,7 @@ export default function ActiviteDetail() {
           <div className="text-5xl mb-4">😕</div>
           <p className="text-gray-500">{error}</p>
           <button onClick={() => navigate('/activites')} className="mt-4 text-blue-700 hover:underline text-sm">
-            ← Retour aux activités
+            {t('activities.back_to_activities')}
           </button>
         </div>
       </main>
@@ -84,7 +84,7 @@ export default function ActiviteDetail() {
           onClick={() => navigate('/activites')}
           className="text-blue-700 hover:underline text-sm mb-6 flex items-center gap-1"
         >
-          ← Retour aux activités
+          {t('activities.back_to_activities')}
         </button>
 
         {/* Messages */}
@@ -107,7 +107,7 @@ export default function ActiviteDetail() {
                 activite.statut === 'PUBLIEE' ? 'bg-green-500' :
                 activite.statut === 'ANNULEE' ? 'bg-red-500' :
                 activite.statut === 'TERMINEE' ? 'bg-gray-500' : 'bg-yellow-500'
-              }`}>{activite.statut}</span>
+              }`}>{t(`statuses.${activite.statut}`, { defaultValue: activite.statut })}</span>
             </div>
 
             {/* Badges */}
@@ -125,7 +125,7 @@ export default function ActiviteDetail() {
               <span className={`text-xs px-3 py-1 rounded-full font-medium ${
                 activite.gratuite ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
               }`}>
-                {activite.gratuite ? '🆓 Gratuit' : `💶 ${activite.prix} €`}
+                {activite.gratuite ? t('activities.free') : t('activities.price_value', { price: activite.prix })}
               </span>
             </div>
 
@@ -133,15 +133,15 @@ export default function ActiviteDetail() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
               {activite.lieu && (
                 <div>
-                  <p className="text-xs text-gray-400 font-semibold uppercase mb-1">Lieu</p>
+                  <p className="text-xs text-gray-400 font-semibold uppercase mb-1">{t('activities.form_place')}</p>
                   <p className="text-sm text-gray-700">📍 {activite.lieu}</p>
                 </div>
               )}
               {activite.dateDebut && (
                 <div>
-                  <p className="text-xs text-gray-400 font-semibold uppercase mb-1">Date de début</p>
+                  <p className="text-xs text-gray-400 font-semibold uppercase mb-1">{t('activities.start_date')}</p>
                   <p className="text-sm text-gray-700">
-                    📅 {new Date(activite.dateDebut).toLocaleDateString('fr-BE', {
+                    📅 {new Date(activite.dateDebut).toLocaleDateString(i18n.language || 'fr-BE', {
                       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
                       hour: '2-digit', minute: '2-digit'
                     })}
@@ -150,9 +150,9 @@ export default function ActiviteDetail() {
               )}
               {activite.dateFin && (
                 <div>
-                  <p className="text-xs text-gray-400 font-semibold uppercase mb-1">Date de fin</p>
+                  <p className="text-xs text-gray-400 font-semibold uppercase mb-1">{t('activities.end_date')}</p>
                   <p className="text-sm text-gray-700">
-                    🏁 {new Date(activite.dateFin).toLocaleDateString('fr-BE', {
+                    🏁 {new Date(activite.dateFin).toLocaleDateString(i18n.language || 'fr-BE', {
                       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
                       hour: '2-digit', minute: '2-digit'
                     })}
@@ -161,13 +161,13 @@ export default function ActiviteDetail() {
               )}
               {activite.capaciteMax > 0 && (
                 <div>
-                  <p className="text-xs text-gray-400 font-semibold uppercase mb-1">Capacité</p>
-                  <p className="text-sm text-gray-700">👥 {activite.capaciteMax} personnes max</p>
+                  <p className="text-xs text-gray-400 font-semibold uppercase mb-1">{t('activities.capacity')}</p>
+                  <p className="text-sm text-gray-700">👥 {t('activities.people_max', { count: activite.capaciteMax })}</p>
                 </div>
               )}
               {activite.createurPrenom && (
                 <div>
-                  <p className="text-xs text-gray-400 font-semibold uppercase mb-1">Organisateur</p>
+                  <p className="text-xs text-gray-400 font-semibold uppercase mb-1">{t('activities.organizer')}</p>
                   <p className="text-sm text-gray-700">
                     👤 {activite.createurPrenom} {activite.createurNom}
                   </p>
@@ -178,7 +178,7 @@ export default function ActiviteDetail() {
             {/* Description */}
             {activite.description && (
               <div className="mb-6">
-                <h2 className="text-base font-bold text-blue-900 mb-2">Description</h2>
+                <h2 className="text-base font-bold text-blue-900 mb-2">{t('activities.form_description')}</h2>
                 <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
                   {activite.description}
                 </p>
@@ -193,12 +193,12 @@ export default function ActiviteDetail() {
                   onClick={handleInscrire}
                   className="bg-blue-700 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl transition"
                 >
-                  {isAuthenticated ? "✅ S'inscrire à cette activité" : "🔐 Se connecter pour s'inscrire"}
+                  {isAuthenticated ? t('activities.register_this') : t('activities.login_to_register')}
                 </button>
               )}
               {inscrit && (
                 <div className="bg-green-50 border border-green-200 text-green-700 px-6 py-3 rounded-xl text-sm font-semibold">
-                  ✅ Vous êtes inscrit à cette activité
+                  {t('activities.already_registered')}
                 </div>
               )}
 
@@ -207,7 +207,7 @@ export default function ActiviteDetail() {
                 onClick={() => navigate('/activites')}
                 className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-xl transition"
               >
-                ← Retour à la liste
+                {t('activities.back_to_list')}
               </button>
             </div>
           </div>

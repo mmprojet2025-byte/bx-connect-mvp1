@@ -3,10 +3,12 @@ import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   TextInput, ActivityIndicator, Modal, ScrollView
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 export default function ProjectsScreen() {
+  const { t, i18n } = useTranslation();
   const {
     isAuthenticated,
     isMembre,
@@ -76,7 +78,7 @@ export default function ProjectsScreen() {
         setMembreDashboard(null);
       }
     } catch (err) {
-      setError(getApiError(err, 'Impossible de charger les projets.'));
+      setError(getApiError(err, t, t('projects.error_load')));
     } finally {
       setLoading(false);
     }
@@ -84,11 +86,11 @@ export default function ProjectsScreen() {
 
   const handleProposer = async () => {
     if (!canProposeProject) {
-      setError('Rejoins un groupe pour proposer un projet.');
+      setError(t('projects.needGroup'));
       return;
     }
     if (!form.titre.trim()) {
-      setError('Le titre est obligatoire.');
+      setError(t('projects.error_title_required'));
       return;
     }
 
@@ -102,12 +104,12 @@ export default function ProjectsScreen() {
         objectifs: form.objectifs.trim(),
         budgetDemande: form.budgetDemande ? parseFloat(form.budgetDemande) : null,
       });
-      setMessage('Projet proposé avec succès.');
+      setMessage(t('projects.project_submitted_mobile'));
       setShowForm(false);
       setForm({ titre: '', description: '', objectifs: '', budgetDemande: '' });
       await chargerProjets();
     } catch (err) {
-      setError(getApiError(err, 'Erreur lors de la proposition du projet.'));
+      setError(getApiError(err, t, t('projects.error_submit')));
     } finally {
       setCreating(false);
     }
@@ -126,8 +128,8 @@ export default function ProjectsScreen() {
   if (isAdmin) {
     return (
       <RoleBlockedState
-        title="Projets"
-        text="La gestion des projets se fait depuis le web."
+        title={t('projects.title')}
+        text={t('projects.mobile_admin_web')}
       />
     );
   }
@@ -135,8 +137,8 @@ export default function ProjectsScreen() {
   if (isSuperAdmin) {
     return (
       <RoleBlockedState
-        title="Projets métier"
-        text="Le SUPER_ADMIN ne gère pas les projets de l’association sur mobile V1."
+        title={t('projects.business_projects')}
+        text={t('projects.mobile_super_admin_no_access')}
       />
     );
   }
@@ -146,7 +148,7 @@ export default function ProjectsScreen() {
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Rechercher un projet..."
+          placeholder={t('projects.search_mobile')}
           placeholderTextColor="#94a3b8"
           value={recherche}
           onChangeText={setRecherche}
@@ -154,7 +156,7 @@ export default function ProjectsScreen() {
         {isMembre && (
           <TouchableOpacity
             style={[styles.btnNew, !canProposeProject && styles.btnNewDisabled]}
-            onPress={() => canProposeProject ? setShowForm(true) : setError('Rejoins un groupe pour proposer un projet.')}
+            onPress={() => canProposeProject ? setShowForm(true) : setError(t('projects.needGroup'))}
           >
             <Text style={styles.btnNewText}>+</Text>
           </TouchableOpacity>
@@ -162,19 +164,19 @@ export default function ProjectsScreen() {
       </View>
 
       {!isAuthenticated && (
-        <InfoBox text="Connecte-toi pour proposer un projet." />
+        <InfoBox text={t('projects.login_to_propose')} />
       )}
 
       {isMembre && !canProposeProject && (
-        <InfoBox text="Rejoins un groupe pour proposer un projet." />
+        <InfoBox text={t('projects.needGroup')} />
       )}
 
       {isMembre && canProposeProject && (
-        <InfoBox text={`Vous pouvez proposer un projet pour votre groupe : ${groupeActif.nom}.`} />
+        <InfoBox text={t('projects.can_propose_for_group', { group: groupeActif.nom })} />
       )}
 
       {isReferent && (
-        <InfoBox text="Mobile V1 affiche les projets de vos groupes en lecture simple. La validation se fait depuis le web admin." />
+        <InfoBox text={t('projects.referent_mobile_info')} />
       )}
 
       {message !== '' && (
@@ -192,21 +194,21 @@ export default function ProjectsScreen() {
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#1e3a5f" />
-          <Text style={styles.loadingText}>Chargement des projets...</Text>
+          <Text style={styles.loadingText}>{t('projects.loading')}</Text>
         </View>
       ) : projetsFiltres.length === 0 ? (
         <EmptyState
-          title={recherche ? 'Aucun projet trouvé' : 'Aucun projet disponible'}
+          title={recherche ? t('projects.no_search_results') : t('projects.no_projects')}
           text={isReferent
-            ? "Aucun projet n'est lié à vos groupes pour le moment."
-            : "Les projets publics apparaîtront ici."}
+            ? t('projects.no_referent_projects')
+            : t('projects.public_will_appear')}
           onRetry={chargerProjets}
         />
       ) : (
         <FlatList
           data={projetsFiltres}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => <ProjectCard projet={item} />}
+          renderItem={({ item }) => <ProjectCard projet={item} t={t} language={i18n.language} />}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           onRefresh={chargerProjets}
@@ -222,20 +224,21 @@ export default function ProjectsScreen() {
         onClose={() => setShowForm(false)}
         onSubmit={handleProposer}
         groupeNom={groupeActif?.nom}
+        t={t}
       />
     </View>
   );
 }
 
-function ProjectCard({ projet }) {
+function ProjectCard({ projet, t, language }) {
   return (
     <View style={[styles.card, { borderTopColor: statusColor(projet.statut) }]}>
       <View style={styles.cardHeader}>
         <View style={styles.cardTitleWrap}>
           <Text style={styles.cardTitle} numberOfLines={2}>{projet.titre}</Text>
-          <Text style={styles.cardSub}>{formatDate(projet.dateCreation)}</Text>
+          <Text style={styles.cardSub}>{formatDate(projet.dateCreation, language, t)}</Text>
         </View>
-        <StatusBadge label={translateProjetStatut(projet.statut)} color={statusColor(projet.statut)} />
+        <StatusBadge label={translateProjetStatut(projet.statut, t)} color={statusColor(projet.statut)} />
       </View>
 
       {projet.description && (
@@ -243,16 +246,16 @@ function ProjectCard({ projet }) {
       )}
 
       <View style={styles.metaBox}>
-        {projet.groupeNom && <MetaRow label="Groupe" value={projet.groupeNom} />}
+        {projet.groupeNom && <MetaRow label={t('groups.title')} value={projet.groupeNom} />}
         <MetaRow
-          label="Porteur"
+          label={t('projects.owner')}
           value={projet.porteurPrenom || projet.porteurNom
             ? `${projet.porteurPrenom || ''} ${projet.porteurNom || ''}`.trim()
-            : 'Association'}
+            : t('projects.association')}
         />
-        <MetaRow label="Budget" value={projet.budgetDemande ? `${projet.budgetDemande} €` : 'Non renseigné'} />
-        <MetaRow label="Participants" value={`${projet.nombreParticipants ?? 0}`} />
-        <MetaRow label="Commentaires" value={`${projet.nombreCommentaires ?? 0}`} />
+        <MetaRow label={t('projects.budget')} value={projet.budgetDemande ? `${projet.budgetDemande} €` : t('projects.not_provided')} />
+        <MetaRow label={t('projects.participants')} value={`${projet.nombreParticipants ?? 0}`} />
+        <MetaRow label={t('projects.comments')} value={`${projet.nombreCommentaires ?? 0}`} />
       </View>
     </View>
   );
@@ -266,6 +269,7 @@ function ProjectFormModal({
   onClose,
   onSubmit,
   groupeNom,
+  t,
 }) {
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -273,8 +277,8 @@ function ProjectFormModal({
         <View style={styles.modalCard}>
           <View style={styles.modalHeader}>
             <View>
-              <Text style={styles.modalTitle}>Proposer un projet</Text>
-              {groupeNom && <Text style={styles.modalSub}>Groupe : {groupeNom}</Text>}
+              <Text style={styles.modalTitle}>{t('projects.propose')}</Text>
+              {groupeNom && <Text style={styles.modalSub}>{t('projects.group_label', { group: groupeNom })}</Text>}
             </View>
             <TouchableOpacity onPress={onClose}>
               <Text style={styles.modalClose}>×</Text>
@@ -282,19 +286,19 @@ function ProjectFormModal({
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false}>
-            <Text style={styles.label}>Titre *</Text>
+            <Text style={styles.label}>{t('projects.form_title')}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Titre du projet"
+              placeholder={t('projects.title_placeholder')}
               placeholderTextColor="#94a3b8"
               value={form.titre}
               onChangeText={(val) => setForm({ ...form, titre: val })}
             />
 
-            <Text style={styles.label}>Description</Text>
+            <Text style={styles.label}>{t('projects.form_description_short')}</Text>
             <TextInput
               style={[styles.input, styles.inputMultiline]}
-              placeholder="Décris ton projet..."
+              placeholder={t('projects.description_placeholder')}
               placeholderTextColor="#94a3b8"
               value={form.description}
               onChangeText={(val) => setForm({ ...form, description: val })}
@@ -302,10 +306,10 @@ function ProjectFormModal({
               numberOfLines={4}
             />
 
-            <Text style={styles.label}>Objectifs</Text>
+            <Text style={styles.label}>{t('projects.objectives')}</Text>
             <TextInput
               style={[styles.input, styles.inputMultiline]}
-              placeholder="Quels sont les objectifs ?"
+              placeholder={t('projects.objectives_placeholder')}
               placeholderTextColor="#94a3b8"
               value={form.objectifs}
               onChangeText={(val) => setForm({ ...form, objectifs: val })}
@@ -313,7 +317,7 @@ function ProjectFormModal({
               numberOfLines={3}
             />
 
-            <Text style={styles.label}>Budget demandé (€)</Text>
+            <Text style={styles.label}>{t('projects.form_budget')}</Text>
             <TextInput
               style={styles.input}
               placeholder="Ex: 500"
@@ -330,7 +334,7 @@ function ProjectFormModal({
             >
               {creating
                 ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={styles.btnCreateText}>Soumettre le projet</Text>
+                : <Text style={styles.btnCreateText}>{t('projects.submit_project')}</Text>
               }
             </TouchableOpacity>
           </ScrollView>
@@ -351,13 +355,14 @@ function RoleBlockedState({ title, text }) {
 }
 
 function EmptyState({ title, text, onRetry }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.centered}>
       <Text style={styles.emptyIcon}>🚀</Text>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyText}>{text}</Text>
       <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-        <Text style={styles.retryButtonText}>Réessayer</Text>
+        <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -388,16 +393,8 @@ function MetaRow({ label, value }) {
   );
 }
 
-function translateProjetStatut(statut) {
-  switch (statut) {
-    case 'BROUILLON': return 'Brouillon';
-    case 'SOUMIS': return 'Soumis';
-    case 'APPROUVE': return 'Approuvé';
-    case 'EN_COURS': return 'En cours';
-    case 'TERMINE': return 'Terminé';
-    case 'REJETE': return 'Rejeté';
-    default: return statut || 'Projet';
-  }
+function translateProjetStatut(statut, t) {
+  return t(`statuses.${statut}`, { defaultValue: statut || t('projects.fallback_project') });
 }
 
 function statusColor(statut) {
@@ -411,21 +408,21 @@ function statusColor(statut) {
   }
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return 'Date non renseignée';
-  return new Date(dateStr).toLocaleDateString('fr-BE', {
+function formatDate(dateStr, language, t) {
+  if (!dateStr) return t('projects.date_not_provided');
+  return new Date(dateStr).toLocaleDateString(language || 'fr-BE', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
   });
 }
 
-function getApiError(err, fallback) {
+function getApiError(err, t, fallback) {
   if (err.response?.status === 401) {
-    return 'Session expirée. Reconnectez-vous.';
+    return t('errors.session_expired');
   }
   if (err.response?.status === 403) {
-    return 'Accès non autorisé.';
+    return t('errors.forbidden');
   }
   return err.response?.data?.message || fallback;
 }

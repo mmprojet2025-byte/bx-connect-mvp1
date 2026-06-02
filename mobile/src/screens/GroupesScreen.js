@@ -3,10 +3,12 @@ import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   TextInput, ActivityIndicator
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 export default function GroupesScreen() {
+  const { t } = useTranslation();
   const {
     isAuthenticated,
     isMembre,
@@ -58,7 +60,7 @@ export default function GroupesScreen() {
         }
       }
     } catch (err) {
-      setError(getApiError(err, 'Impossible de charger les groupes.'));
+      setError(getApiError(err, t, t('groups.error_load')));
     } finally {
       setLoading(false);
     }
@@ -72,10 +74,10 @@ export default function GroupesScreen() {
     setMessage('');
     try {
       await api.post(`/groupes/${groupeId}/rejoindre`);
-      setMessage('Demande envoyée. Elle doit encore être acceptée.');
+      setMessage(t('groups.request_sent_pending'));
       await chargerGroupes();
     } catch (err) {
-      setError(getApiError(err, "Impossible d'envoyer la demande d'adhésion."));
+      setError(getApiError(err, t, t('groups.error_join_request')));
     } finally {
       setActionLoadingId(null);
     }
@@ -89,10 +91,10 @@ export default function GroupesScreen() {
     setMessage('');
     try {
       await api.delete(`/groupes/${groupeId}/quitter`);
-      setMessage('Vous avez quitté le groupe.');
+      setMessage(t('groups.success_leave'));
       await chargerGroupes();
     } catch (err) {
-      setError(getApiError(err, 'Impossible de quitter ce groupe.'));
+      setError(getApiError(err, t, t('groups.error_leave')));
     } finally {
       setActionLoadingId(null);
     }
@@ -110,8 +112,8 @@ export default function GroupesScreen() {
   if (isAdmin) {
     return (
       <RoleBlockedState
-        title="Groupes"
-        text="La gestion des groupes se fait depuis le web."
+        title={t('groups.title')}
+        text={t('groups.mobile_admin_web')}
       />
     );
   }
@@ -119,8 +121,8 @@ export default function GroupesScreen() {
   if (isSuperAdmin) {
     return (
       <RoleBlockedState
-        title="Groupes métier"
-        text="Le SUPER_ADMIN ne gère pas les groupes de l’association sur mobile V1."
+        title={t('groups.business_groups')}
+        text={t('groups.mobile_super_admin_no_access')}
       />
     );
   }
@@ -130,13 +132,13 @@ export default function GroupesScreen() {
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Rechercher un groupe..."
+          placeholder={t('groups.search')}
           placeholderTextColor="#94a3b8"
           value={recherche}
           onChangeText={setRecherche}
         />
         <TouchableOpacity style={styles.retrySmall} onPress={chargerGroupes}>
-          <Text style={styles.retrySmallText}>Réessayer</Text>
+          <Text style={styles.retrySmallText}>{t('common.retry')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -144,15 +146,16 @@ export default function GroupesScreen() {
         <MemberStatus
           adhesionAcceptee={adhesionAcceptee}
           adhesionEnAttente={adhesionEnAttente}
+          t={t}
         />
       )}
 
       {!isAuthenticated && (
-        <InfoBox text="Connecte-toi pour rejoindre un groupe." />
+        <InfoBox text={t('groups.login_to_join')} />
       )}
 
       {isReferent && (
-        <InfoBox text="Vous voyez uniquement les groupes qui vous sont assignés. La gestion avancée se fait depuis l’espace web." />
+        <InfoBox text={t('groups.referent_mobile_info')} />
       )}
 
       {message !== '' && (
@@ -170,14 +173,14 @@ export default function GroupesScreen() {
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#1e3a5f" />
-          <Text style={styles.loadingText}>Chargement des groupes...</Text>
+          <Text style={styles.loadingText}>{t('groups.loading')}</Text>
         </View>
       ) : groupesFiltres.length === 0 ? (
         <EmptyState
-          title={recherche ? 'Aucun groupe trouvé' : 'Aucun groupe disponible'}
+          title={recherche ? t('groups.no_search_results') : t('groups.no_groups')}
           text={isReferent
-            ? "Aucun groupe ne vous est assigné pour le moment."
-            : "Les groupes disponibles apparaîtront ici."}
+            ? t('groups.no_referent_groups')
+            : t('groups.available_will_appear')}
           onRetry={chargerGroupes}
         />
       ) : (
@@ -195,6 +198,7 @@ export default function GroupesScreen() {
               actionLoading={actionLoadingId === item.id}
               onRejoindre={() => handleRejoindre(item.id)}
               onQuitter={() => handleQuitter(item.id)}
+              t={t}
             />
           )}
           contentContainerStyle={styles.listContent}
@@ -207,22 +211,22 @@ export default function GroupesScreen() {
   );
 }
 
-function MemberStatus({ adhesionAcceptee, adhesionEnAttente }) {
-  let title = 'Aucun groupe';
-  let text = 'Vous pouvez envoyer une demande pour rejoindre un groupe.';
+function MemberStatus({ adhesionAcceptee, adhesionEnAttente, t }) {
+  let title = t('statuses.AUCUN_GROUPE', { defaultValue: t('memberDashboard.status.noGroupLabel') });
+  let text = t('groups.can_request_group');
   let color = '#2563eb';
   let bg = '#dbeafe';
 
   if (adhesionEnAttente) {
-    title = 'Demande en attente';
-    text = `Votre demande pour ${adhesionEnAttente.groupeNom} attend une validation.`;
+    title = t('statuses.EN_ATTENTE');
+    text = t('groups.request_waiting_validation', { group: adhesionEnAttente.groupeNom });
     color = '#d97706';
     bg = '#fef3c7';
   }
 
   if (adhesionAcceptee) {
-    title = 'Membre accepté';
-    text = `Vous faites partie du groupe ${adhesionAcceptee.groupeNom}.`;
+    title = t('statuses.ACCEPTE');
+    text = t('groups.member_of', { group: adhesionAcceptee.groupeNom });
     color = '#16a34a';
     bg = '#dcfce7';
   }
@@ -245,6 +249,7 @@ function GroupeCard({
   actionLoading,
   onRejoindre,
   onQuitter,
+  t,
 }) {
   const acceptedHere = adhesion?.statut === 'ACCEPTE';
   const pendingHere = adhesion?.statut === 'EN_ATTENTE';
@@ -257,10 +262,10 @@ function GroupeCard({
         <View style={styles.cardTitleWrap}>
           <Text style={styles.cardTitle} numberOfLines={1}>{groupe.nom}</Text>
           <Text style={styles.cardSub}>
-            {groupe.nombreMembres ?? 0} membre{(groupe.nombreMembres ?? 0) > 1 ? 's' : ''}
+            {t('groups.members_count', { count: groupe.nombreMembres ?? 0 })}
           </Text>
         </View>
-        <StatusBadge label={translateGroupeStatut(groupe.statut)} color={groupe.statut === 'VALIDE' ? '#16a34a' : '#d97706'} />
+        <StatusBadge label={translateGroupeStatut(groupe.statut, t)} color={groupe.statut === 'VALIDE' ? '#16a34a' : '#d97706'} />
       </View>
 
       {groupe.description && (
@@ -268,26 +273,26 @@ function GroupeCard({
       )}
 
       <View style={styles.metaBox}>
-        {groupe.theme && <MetaRow label="Thème" value={groupe.theme} />}
-        {groupe.categorie && <MetaRow label="Catégorie" value={groupe.categorie} />}
+        {groupe.theme && <MetaRow label={t('groups.theme')} value={groupe.theme} />}
+        {groupe.categorie && <MetaRow label={t('groups.category')} value={groupe.categorie} />}
         <MetaRow
-          label="Référent"
+          label={t('groups.referent')}
           value={groupe.referentPrenom || groupe.referentNom
             ? `${groupe.referentPrenom || ''} ${groupe.referentNom || ''}`.trim()
-            : 'Non assigné'}
+            : t('groups.not_assigned')}
         />
       </View>
 
       {isReferent && (
         <View style={styles.notice}>
           <Text style={styles.noticeText}>
-            Membres et demandes sont gérés depuis l’espace web référent pour Mobile V1.
+            {t('groups.referent_web_members_requests')}
           </Text>
         </View>
       )}
 
       {!isAuthenticated && (
-        <Text style={styles.visitorHint}>Connecte-toi pour rejoindre un groupe.</Text>
+        <Text style={styles.visitorHint}>{t('groups.login_to_join')}</Text>
       )}
 
       {isMembre && (
@@ -300,17 +305,17 @@ function GroupeCard({
             >
               {actionLoading
                 ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={styles.btnDangerText}>Quitter le groupe</Text>
+                : <Text style={styles.btnDangerText}>{t('groups.leave_btn')}</Text>
               }
             </TouchableOpacity>
           )}
 
           {pendingHere && (
-            <StatusLine text="Demande en attente pour ce groupe." color="#d97706" />
+            <StatusLine text={t('groups.pending_for_group')} color="#d97706" />
           )}
 
           {refusedHere && !hasActiveOrPendingAdhesion && (
-            <StatusLine text="Votre précédente demande a été refusée." color="#dc2626" />
+            <StatusLine text={t('groups.previous_refused')} color="#dc2626" />
           )}
 
           {!acceptedHere && !pendingHere && (
@@ -322,7 +327,7 @@ function GroupeCard({
               {actionLoading
                 ? <ActivityIndicator color="#fff" size="small" />
                 : <Text style={styles.btnPrimaryText}>
-                    {canRequest ? 'Demander à rejoindre' : 'Déjà inscrit dans un groupe'}
+                    {canRequest ? t('groups.request_to_join') : t('groups.already_in_group')}
                   </Text>
               }
             </TouchableOpacity>
@@ -344,13 +349,14 @@ function RoleBlockedState({ title, text }) {
 }
 
 function EmptyState({ title, text, onRetry }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.centered}>
       <Text style={styles.emptyIcon}>👥</Text>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyText}>{text}</Text>
       <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-        <Text style={styles.retryButtonText}>Réessayer</Text>
+        <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -385,21 +391,16 @@ function MetaRow({ label, value }) {
   );
 }
 
-function translateGroupeStatut(statut) {
-  switch (statut) {
-    case 'VALIDE': return 'Validé';
-    case 'EN_ATTENTE': return 'En attente';
-    case 'REFUSE': return 'Refusé';
-    default: return statut || 'Groupe';
-  }
+function translateGroupeStatut(statut, t) {
+  return t(`statuses.${statut}`, { defaultValue: statut || t('groups.title') });
 }
 
-function getApiError(err, fallback) {
+function getApiError(err, t, fallback) {
   if (err.response?.status === 401) {
-    return 'Session expirée. Reconnectez-vous.';
+    return t('errors.session_expired');
   }
   if (err.response?.status === 403) {
-    return 'Accès non autorisé.';
+    return t('errors.forbidden');
   }
   return err.response?.data?.message || fallback;
 }

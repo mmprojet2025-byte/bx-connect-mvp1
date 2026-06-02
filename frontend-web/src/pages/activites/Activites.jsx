@@ -9,16 +9,16 @@ import Alert from '../../components/ui/Alert';
 import EmptyState from '../../components/ui/EmptyState';
 import StatusBadge from '../../components/ui/StatusBadge';
 
-const STATUTS = {
-  PUBLIEE: { label: 'Confirmée', variant: 'success' },
-  BROUILLON: { label: 'Brouillon', variant: 'neutral' },
-  ANNULEE: { label: 'Annulée', variant: 'danger' },
-  TERMINEE: { label: 'Terminée', variant: 'neutral' },
+const STATUT_VARIANTS = {
+  PUBLIEE: 'success',
+  BROUILLON: 'neutral',
+  ANNULEE: 'danger',
+  TERMINEE: 'neutral',
 }
 
 export default function Activites() {
   const { isAuthenticated, isAdmin, isReferent } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [activites, setActivites] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -98,10 +98,10 @@ export default function Activites() {
   const handleInscrire = async (activiteId) => {
     try {
       await api.post('/inscriptions', { activiteId });
-      setMessage('✅ Inscription réussie !');
+      setMessage(t('activities.success_register'));
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
-      setError(err.response?.data?.message || "Erreur lors de l'inscription.");
+      setError(err.response?.data?.message || t('activities.error_register'));
       setTimeout(() => setError(''), 3000);
     }
   };
@@ -109,11 +109,11 @@ export default function Activites() {
   const handlePublier = async (id) => {
     try {
       await api.patch(`/activites/${id}/statut?statut=PUBLIEE`);
-      setMessage('✅ Activité publiée !');
+      setMessage(t('activities.success_publish'));
       fetchActivites();
       setTimeout(() => setMessage(''), 3000);
     } catch {
-      setError('Erreur lors de la publication.');
+      setError(t('activities.error_publish'));
     }
   };
 
@@ -125,12 +125,12 @@ export default function Activites() {
         prix: form.gratuite ? null : parseFloat(form.prix),
         capaciteMax: parseInt(form.capaciteMax),
       });
-      setMessage('✅ Activité créée !');
+      setMessage(t('activities.success_create'));
       setShowForm(false);
       setForm({ titre: '', description: '', dateDebut: '', dateFin: '', lieu: '', gratuite: true, prix: '', capaciteMax: 0, categorie: '', theme: '', imageUrl: '' });
       fetchActivites();
     } catch {
-      setError("Erreur lors de la création.");
+      setError(t('activities.error_create'));
     }
   };
 
@@ -146,7 +146,7 @@ export default function Activites() {
             <h1 className="text-2xl font-bold text-blue-900">🎯 {t('activities.title')}</h1>
             {peutGerer && (
               <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full mt-1 inline-block">
-                🛡️ Mode Admin — {activites.length} activité(s)
+                {t('activities.manage_mode', { count: activites.length })}
               </span>
             )}
           </div>
@@ -155,7 +155,7 @@ export default function Activites() {
               onClick={() => setShowForm(!showForm)}
               className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
             >
-              {showForm ? 'Annuler' : t('activities.new_activity')}
+              {showForm ? t('common.cancel') : t('activities.new_activity')}
             </button>
           )}
         </div>
@@ -166,11 +166,11 @@ export default function Activites() {
 
         {/* ── Filtres (V03) ── */}
         <div className="bg-white rounded-2xl shadow p-5 mb-6">
-          <h2 className="text-sm font-bold text-blue-900 mb-3">🔍 Recherche & Filtres</h2>
+          <h2 className="text-sm font-bold text-blue-900 mb-3">{t('activities.filters_title')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
             <input
               type="text"
-              placeholder="Rechercher par mot-clé..."
+              placeholder={t('activities.search_placeholder')}
               value={recherche}
               onChange={e => setRecherche(e.target.value)}
               className="border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -180,7 +180,7 @@ export default function Activites() {
               onChange={e => setFiltreCategorie(e.target.value)}
               className="border border-gray-300 rounded-xl px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
-              <option value="">Toutes les catégories</option>
+              <option value="">{t('activities.all_categories')}</option>
               {options.categories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
             <select
@@ -188,7 +188,7 @@ export default function Activites() {
               onChange={e => setFiltreTheme(e.target.value)}
               className="border border-gray-300 rounded-xl px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
-              <option value="">Tous les thèmes</option>
+              <option value="">{t('activities.all_themes')}</option>
               {options.themes.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
             <select
@@ -196,7 +196,7 @@ export default function Activites() {
               onChange={e => setFiltreLieu(e.target.value)}
               className="border border-gray-300 rounded-xl px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
-              <option value="">Tous les lieux</option>
+              <option value="">{t('activities.all_places')}</option>
               {options.lieux.map(l => <option key={l} value={l}>{l}</option>)}
             </select>
             <select
@@ -204,9 +204,9 @@ export default function Activites() {
               onChange={e => setFiltreGratuite(e.target.value)}
               className="border border-gray-300 rounded-xl px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
-              <option value="">Gratuit & Payant</option>
-              <option value="true">🆓 Gratuit seulement</option>
-              <option value="false">💶 Payant seulement</option>
+              <option value="">{t('activities.free_and_paid')}</option>
+              <option value="true">{t('activities.free_only')}</option>
+              <option value="false">{t('activities.paid_only')}</option>
             </select>
           </div>
           <div className="flex gap-3">
@@ -214,13 +214,13 @@ export default function Activites() {
               onClick={handleFiltrer}
               className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-5 py-2 rounded-xl transition"
             >
-              Appliquer les filtres
+              {t('activities.apply_filters')}
             </button>
             <button
               onClick={handleReset}
               className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-5 py-2 rounded-xl transition"
             >
-              Réinitialiser
+              {t('activities.reset_filters')}
             </button>
           </div>
         </div>
@@ -228,63 +228,63 @@ export default function Activites() {
         {/* ── Formulaire création ── */}
         {showForm && peutGerer && (
           <div className="bg-white rounded-2xl shadow p-6 mb-6">
-            <h2 className="text-lg font-bold text-blue-900 mb-4">Nouvelle activité</h2>
+            <h2 className="text-lg font-bold text-blue-900 mb-4">{t('activities.new_title')}</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Titre *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('activities.form_title')}</label>
                   <input required value={form.titre} onChange={e => setForm({...form, titre: e.target.value})}
                     className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Lieu</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('activities.form_place')}</label>
                   <input value={form.lieu} onChange={e => setForm({...form, lieu: e.target.value})}
                     className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date début *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('activities.form_start')}</label>
                   <input required type="datetime-local" value={form.dateDebut} onChange={e => setForm({...form, dateDebut: e.target.value})}
                     className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date fin *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('activities.form_end')}</label>
                   <input required type="datetime-local" value={form.dateFin} onChange={e => setForm({...form, dateFin: e.target.value})}
                     className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('activities.form_category')}</label>
                   <input value={form.categorie} onChange={e => setForm({...form, categorie: e.target.value})}
                     className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Thème</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('activities.form_theme')}</label>
                   <input value={form.theme} onChange={e => setForm({...form, theme: e.target.value})}
                     className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Capacité max (0 = illimité)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('activities.form_capacity')}</label>
                   <input type="number" min="0" value={form.capaciteMax} onChange={e => setForm({...form, capaciteMax: e.target.value})}
                     className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
                 </div>
                 <div className="flex items-center gap-2 pt-6">
                   <input type="checkbox" id="gratuite" checked={form.gratuite} onChange={e => setForm({...form, gratuite: e.target.checked})} />
-                  <label htmlFor="gratuite" className="text-sm text-gray-700">Activité gratuite</label>
+                  <label htmlFor="gratuite" className="text-sm text-gray-700">{t('activities.form_free')}</label>
                 </div>
               </div>
               {!form.gratuite && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Prix (€)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('activities.form_price')}</label>
                   <input type="number" min="0" step="0.01" value={form.prix} onChange={e => setForm({...form, prix: e.target.value})}
                     className="w-48 border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('activities.form_description')}</label>
                 <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={3}
                   className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-vertical" />
               </div>
               <button type="submit" className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition">
-                Créer l'activité
+                {t('activities.create_btn')}
               </button>
             </form>
           </div>
@@ -296,8 +296,8 @@ export default function Activites() {
         ) : activites.length === 0 ? (
           <EmptyState
             title={t('activities.no_activities')}
-            description="Les activités publiées par l’association apparaîtront ici."
-            actionLabel="Découvrir les groupes"
+            description={t('activities.empty_description')}
+            actionLabel={t('groups.discover')}
             actionTo="/groupes"
           />
         ) : (
@@ -314,8 +314,8 @@ export default function Activites() {
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-bold text-blue-900 text-base leading-tight flex-1 mr-2">{a.titre}</h3>
-                    <StatusBadge variant={STATUTS[a.statut]?.variant || 'neutral'}>
-                      {STATUTS[a.statut]?.label || a.statut}
+                    <StatusBadge variant={STATUT_VARIANTS[a.statut] || 'neutral'}>
+                      {t(`statuses.${a.statut}`, { defaultValue: a.statut })}
                     </StatusBadge>
                   </div>
 
@@ -325,12 +325,14 @@ export default function Activites() {
 
                   <div className="space-y-1 mb-3">
                     {a.lieu && <p className="text-xs text-gray-500">📍 {a.lieu}</p>}
-                    {a.dateDebut && <p className="text-xs text-gray-500">📅 {new Date(a.dateDebut).toLocaleDateString('fr-BE')}</p>}
+                    {a.dateDebut && <p className="text-xs text-gray-500">📅 {new Date(a.dateDebut).toLocaleDateString(i18n.language || 'fr-BE')}</p>}
                     {a.categorie && <p className="text-xs text-gray-500">🏷️ {a.categorie}</p>}
                     <p className="text-xs text-gray-500">
-                      Places : {a.capaciteMax > 0 ? `${a.capaciteMax} maximum` : 'illimitées'}
+                      {t('activities.places_label', {
+                        value: a.capaciteMax > 0 ? t('activities.capacity_max', { count: a.capaciteMax }) : t('activities.unlimited'),
+                      })}
                     </p>
-                    <p className="text-xs text-gray-500">{a.gratuite ? '🆓 Gratuit' : `💶 ${a.prix} €`}</p>
+                    <p className="text-xs text-gray-500">{a.gratuite ? t('activities.free') : t('activities.price_value', { price: a.prix })}</p>
                   </div>
 
                   <div className="flex gap-2">
@@ -339,7 +341,7 @@ export default function Activites() {
                       to={`/activites/${a.id}`}
                       className="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold py-2 rounded-xl transition"
                     >
-                      Voir détail
+                      {t('activities.view_detail')}
                     </Link>
 
                     {/* S'inscrire (Membre) */}
@@ -348,7 +350,7 @@ export default function Activites() {
                         onClick={() => handleInscrire(a.id)}
                         className="flex-1 bg-blue-700 hover:bg-blue-600 text-white text-xs font-semibold py-2 rounded-xl transition"
                       >
-                        S'inscrire
+                        {t('activities.register_btn')}
                       </button>
                     )}
 
@@ -358,7 +360,7 @@ export default function Activites() {
                         onClick={() => handlePublier(a.id)}
                         className="flex-1 bg-green-600 hover:bg-green-500 text-white text-xs font-semibold py-2 rounded-xl transition"
                       >
-                        ▶ Publier
+                        {t('activities.publish')}
                       </button>
                     )}
                   </div>

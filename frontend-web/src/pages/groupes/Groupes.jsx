@@ -9,12 +9,6 @@ import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
 import StatusBadge from '../../components/ui/StatusBadge'
 
-const STATUS_LABELS = {
-  ACCEPTE: 'Mon groupe',
-  EN_ATTENTE: 'Demande en attente',
-  REFUSE: 'Demande refusée',
-}
-
 export default function Groupes() {
   const { isAuthenticated, isMembre } = useAuth()
   const { t } = useTranslation()
@@ -63,7 +57,7 @@ export default function Groupes() {
     setActionLoading(groupeId)
     try {
       await api.post(`/groupes/${groupeId}/rejoindre`)
-      setMessage('Votre demande a été envoyée au référent du groupe.')
+      setMessage(t('ux.groups.requestSent'))
       await Promise.all([fetchGroupes(), fetchAdhesions()])
     } catch (err) {
       setError(err.response?.data?.message || t('groups.error_load'))
@@ -140,7 +134,7 @@ export default function Groupes() {
           <EmptyState
             title={t('ux.groups.noAvailableTitle')}
             description={t('ux.groups.noAvailableDescription')}
-            actionLabel="Voir les activités"
+            actionLabel={t('activities.viewActivities')}
             actionTo="/activites"
           />
         ) : (
@@ -171,11 +165,13 @@ export default function Groupes() {
 }
 
 function MemberGroupSummary({ adhesionActive, adhesionEnAttente }) {
+  const { t } = useTranslation()
+
   if (adhesionActive) {
     return (
       <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-6">
-        <p className="text-green-800 font-semibold text-sm">Vous êtes membre du groupe {adhesionActive.groupeNom}.</p>
-        <p className="text-green-700 text-sm mt-1">La messagerie de groupe est disponible depuis votre espace membre.</p>
+        <p className="text-green-800 font-semibold text-sm">{t('groups.member_of', { group: adhesionActive.groupeNom })}</p>
+        <p className="text-green-700 text-sm mt-1">{t('groups.messaging_available')}</p>
       </div>
     )
   }
@@ -183,16 +179,16 @@ function MemberGroupSummary({ adhesionActive, adhesionEnAttente }) {
   if (adhesionEnAttente) {
     return (
       <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6">
-        <p className="text-amber-900 font-semibold text-sm">Votre demande pour {adhesionEnAttente.groupeNom} est en attente.</p>
-        <p className="text-amber-700 text-sm mt-1">Vous pourrez rejoindre la messagerie quand le référent aura accepté votre demande.</p>
+        <p className="text-amber-900 font-semibold text-sm">{t('groups.request_pending_for', { group: adhesionEnAttente.groupeNom })}</p>
+        <p className="text-amber-700 text-sm mt-1">{t('groups.messaging_after_acceptance')}</p>
       </div>
     )
   }
 
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
-      <p className="text-blue-900 font-semibold text-sm">Vous n’avez pas encore rejoint de groupe.</p>
-      <p className="text-blue-700 text-sm mt-1">Choisissez un groupe ci-dessous pour envoyer une demande d’adhésion.</p>
+      <p className="text-blue-900 font-semibold text-sm">{t('groups.no_group_joined')}</p>
+      <p className="text-blue-700 text-sm mt-1">{t('groups.choose_group')}</p>
     </div>
   )
 }
@@ -203,21 +199,21 @@ function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelle
   const isPending = adhesion?.statut === 'EN_ATTENTE'
   const referent = [groupe.referentPrenom, groupe.referentNom].filter(Boolean).join(' ')
   const placesLabel = groupe.capaciteMax > 0
-    ? `${groupe.nombreMembres ?? 0}/${groupe.capaciteMax} membres`
-    : `${groupe.nombreMembres ?? 0} membre(s)`
+    ? t('groups.members_capacity', { count: groupe.nombreMembres ?? 0, capacity: groupe.capaciteMax })
+    : t('groups.members_count', { count: groupe.nombreMembres ?? 0 })
 
   return (
     <article className={`bg-white rounded-2xl shadow p-5 flex flex-col gap-4 border ${isAccepted ? 'border-green-300' : 'border-transparent'}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-semibold text-blue-900 text-lg">{groupe.nom}</h2>
-          {referent && <p className="text-xs text-gray-500 mt-1">Référent : {referent}</p>}
+          {referent && <p className="text-xs text-gray-500 mt-1">{t('groups.referent_label', { referent })}</p>}
         </div>
         {adhesion?.statut && <GroupStatusBadge statut={adhesion.statut} />}
       </div>
 
       <p className="text-gray-500 text-sm leading-relaxed min-h-[44px]">
-        {groupe.description || 'Ce groupe accueillera bientôt une description complète.'}
+        {groupe.description || t('groups.description_soon')}
       </p>
 
       <div className="flex flex-wrap gap-2 text-xs">
@@ -266,7 +262,7 @@ function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelle
             disabled={bloqueNouvelleDemande || actionLoading}
             className="w-full bg-blue-700 hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-600 text-white text-sm font-semibold py-2 rounded-xl transition"
           >
-            {bloqueNouvelleDemande ? t('ux.groups.oneGroupOnly') : actionLoading ? 'Envoi...' : t('ux.groups.joinGroup')}
+            {bloqueNouvelleDemande ? t('ux.groups.oneGroupOnly') : actionLoading ? t('groups.sending') : t('ux.groups.joinGroup')}
           </button>
         )}
       </div>
@@ -275,6 +271,7 @@ function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelle
 }
 
 function GroupStatusBadge({ statut }) {
+  const { t } = useTranslation()
   const variants = {
     ACCEPTE: 'success',
     EN_ATTENTE: 'warning',
@@ -282,7 +279,7 @@ function GroupStatusBadge({ statut }) {
   }
   return (
     <StatusBadge variant={variants[statut] || 'neutral'}>
-      {STATUS_LABELS[statut] || statut}
+      {t(`statuses.${statut}`, { defaultValue: statut })}
     </StatusBadge>
   )
 }

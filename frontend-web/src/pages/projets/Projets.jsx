@@ -9,16 +9,6 @@ import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
 import StatusBadge from '../../components/ui/StatusBadge'
 
-const STATUT_LABELS = {
-  BROUILLON: 'Brouillon',
-  SOUMIS: 'En validation',
-  APPROUVE: 'Approuvé',
-  EN_COURS: 'En cours',
-  TERMINE: 'Terminé',
-  REJETE: 'Refusé',
-  ARCHIVE: 'Archivé',
-}
-
 const STATUT_VARIANTS = {
   BROUILLON: 'neutral',
   SOUMIS: 'warning',
@@ -55,7 +45,7 @@ export default function Projets() {
       setProjets(res.data)
       setError('')
     } catch {
-      setError('Impossible de charger les projets.')
+      setError(t('projects.error_load'))
     } finally {
       setLoading(false)
     }
@@ -93,7 +83,7 @@ export default function Projets() {
       setForm({ titre: '', description: '', budgetDemande: '', imageUrl: '' })
       fetchProjets()
     } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de la soumission du projet.')
+      setError(err.response?.data?.message || t('projects.error_submit'))
     }
   }
 
@@ -146,11 +136,11 @@ export default function Projets() {
                 currentUrl={form.imageUrl || null}
                 onUploadSuccess={(url) => setForm({ ...form, imageUrl: url })}
                 shape="rectangle"
-                label="Ajouter une image de couverture"
+                label={t('projects.form_image')}
               />
-              <Input label="Titre du projet *" value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
+              <Input label={t('projects.form_title')} value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('projects.form_description')}</label>
                 <textarea
                   required
                   value={form.description}
@@ -159,21 +149,21 @@ export default function Projets() {
                   className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-vertical"
                 />
               </div>
-              <Input label="Budget demandé (€)" value={form.budgetDemande} onChange={value => setForm({ ...form, budgetDemande: value })} type="number" min="0" />
+              <Input label={t('projects.form_budget')} value={form.budgetDemande} onChange={value => setForm({ ...form, budgetDemande: value })} type="number" min="0" />
               <button type="submit" className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
-                Soumettre le projet
+                {t('projects.submit_project')}
               </button>
             </form>
           </section>
         )}
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">Chargement des projets...</p>
+          <p className="text-gray-400 text-center py-10">{t('projects.loading')}</p>
         ) : projets.length === 0 ? (
           <EmptyState
             title={t('ux.projects.emptyTitle')}
             description={t('ux.projects.emptyDesc')}
-            actionLabel={isAuthenticated ? 'Voir les groupes' : 'Créer un compte'}
+            actionLabel={isAuthenticated ? t('groups.view_groups') : t('auth.register_btn')}
             actionTo={isAuthenticated ? '/groupes' : '/register'}
           />
         ) : (
@@ -184,6 +174,7 @@ export default function Projets() {
                 projet={projet}
                 isAuthenticated={isAuthenticated}
                 supportLabel={t('ux.projects.support')}
+                t={t}
               />
             ))}
           </div>
@@ -194,30 +185,30 @@ export default function Projets() {
   )
 }
 
-function ProjectCard({ projet, isAuthenticated, supportLabel }) {
+function ProjectCard({ projet, isAuthenticated, supportLabel, t }) {
   return (
     <article className="bg-white rounded-2xl shadow overflow-hidden">
       {projet.imageUrl ? (
         <img src={projet.imageUrl} alt={projet.titre} className="w-full h-40 object-cover" />
       ) : (
         <div className="w-full h-40 bg-blue-50 flex items-center justify-center text-blue-800 font-semibold">
-          Projet BX-Connect
+          {t('projects.fallback_image')}
         </div>
       )}
       <div className="p-5">
         <div className="flex items-start justify-between gap-3 mb-3">
           <h2 className="font-semibold text-blue-900">{projet.titre}</h2>
           <StatusBadge variant={STATUT_VARIANTS[projet.statut] || 'neutral'}>
-            {STATUT_LABELS[projet.statut] || projet.statut}
+            {t(`statuses.${projet.statut}`, { defaultValue: projet.statut })}
           </StatusBadge>
         </div>
         <p className="text-sm text-gray-500 leading-relaxed line-clamp-3">
-          {projet.description || 'Description à venir.'}
+          {projet.description || t('projects.description_soon')}
         </p>
         <div className="text-xs text-gray-400 mt-4 space-y-1">
-          {projet.groupeNom && <p>Groupe : {projet.groupeNom}</p>}
-          {projet.porteurPrenom && <p>Porteur : {projet.porteurPrenom} {projet.porteurNom}</p>}
-          <p>{projet.nombreParticipants ?? 0} participant(s)</p>
+          {projet.groupeNom && <p>{t('projects.group_label', { group: projet.groupeNom })}</p>}
+          {projet.porteurPrenom && <p>{t('projects.owner_label', { owner: `${projet.porteurPrenom} ${projet.porteurNom}` })}</p>}
+          <p>{t('projects.participants_count', { count: projet.nombreParticipants ?? 0 })}</p>
         </div>
         {isAuthenticated && projet.statut === 'APPROUVE' && (
           <button type="button" className="w-full mt-4 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold py-2 rounded-xl transition">
