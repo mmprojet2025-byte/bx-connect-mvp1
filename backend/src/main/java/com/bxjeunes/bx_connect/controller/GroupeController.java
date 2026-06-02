@@ -37,8 +37,11 @@ public class GroupeController {
     }
 
     @GetMapping("/{id}/membres")
-    public ResponseEntity<List<MembreGroupeResponse>> getMembres(@PathVariable Long id) {
-        return ResponseEntity.ok(groupeService.getMembres(id));
+    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
+    public ResponseEntity<List<MembreGroupeResponse>> getMembres(
+            @PathVariable Long id,
+            Authentication auth) {
+        return ResponseEntity.ok(groupeService.getMembresAdminOuReferent(id, auth.getName()));
     }
 
     // REFERENT / ADMIN
@@ -66,8 +69,10 @@ public class GroupeController {
 
     @GetMapping("/{id}/demandes")
     @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN')")
-    public ResponseEntity<List<MembreGroupeResponse>> demandesEnAttente(@PathVariable Long id) {
-        return ResponseEntity.ok(groupeService.demandesEnAttente(id));
+    public ResponseEntity<List<MembreGroupeResponse>> demandesEnAttente(
+            @PathVariable Long id,
+            Authentication auth) {
+        return ResponseEntity.ok(groupeService.demandesEnAttenteAdminOuReferent(id, auth.getName()));
     }
 
     // SECURITE : auth.getName() transmis — verifie que le referent gere bien ce groupe

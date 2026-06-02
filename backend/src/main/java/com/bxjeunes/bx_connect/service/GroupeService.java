@@ -46,8 +46,12 @@ public class GroupeService {
     }
 
     public GroupeResponse getGroupe(Long id) {
-        return GroupeResponse.fromEntity(groupeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + id)));
+        Groupe groupe = groupeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + id));
+        if (groupe.getStatut() != StatutGroupe.VALIDE) {
+            throw new RuntimeException("Groupe introuvable : " + id);
+        }
+        return GroupeResponse.fromEntity(groupe);
     }
 
     public GroupeResponse proposerGroupe(GroupeRequest request, String emailReferent) {
@@ -132,6 +136,11 @@ public class GroupeService {
             !mg.getGroupe().getReferent().getId().equals(referent.getId())) {
             throw new AccessDeniedException("Vous n'etes pas le referent de ce groupe.");
         }
+        membreGroupeRepository.findFirstByUserIdAndStatut(mg.getUser().getId(), StatutMembre.ACCEPTE)
+                .filter(adhesion -> !adhesion.getGroupe().getId().equals(mg.getGroupe().getId()))
+                .ifPresent(adhesion -> {
+                    throw new RuntimeException("Ce membre appartient deja a un groupe actif.");
+                });
 
         mg.setStatut(StatutMembre.ACCEPTE);
         MembreGroupe saved = membreGroupeRepository.save(mg);
@@ -216,6 +225,10 @@ public class GroupeService {
         }
         if (membreGroupeRepository.estDejaMembreActif(membre.getId()))
             throw new RuntimeException("Vous etes deja membre d'un groupe.");
+        membreGroupeRepository.findFirstByUserIdAndStatut(membre.getId(), StatutMembre.EN_ATTENTE)
+                .ifPresent(adhesion -> {
+                    throw new RuntimeException("Vous avez deja une demande d'adhesion en attente.");
+                });
         Groupe groupe = groupeRepository.findById(groupeId)
                 .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + groupeId));
         if (groupe.getStatut() != StatutGroupe.VALIDE)
@@ -252,6 +265,18 @@ public class GroupeService {
                 .stream().map(MembreGroupeResponse::fromEntity).collect(Collectors.toList());
     }
 
+    public List<MembreGroupeResponse> getMembresAdminOuReferent(Long groupeId, String emailUser) {
+        User user = userRepository.findByEmail(emailUser)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        if (user.getRole() == Role.ADMIN) {
+            return getMembres(groupeId);
+        }
+        if (user.getRole() == Role.REFERENT) {
+            return getMembresReferent(groupeId, emailUser);
+        }
+        throw new AccessDeniedException("Acces reserve aux ADMIN et REFERENTS du groupe.");
+    }
+
     public List<MembreGroupeResponse> getMembresReferent(Long groupeId, String emailReferent) {
         verifierReferentDuGroupe(groupeId, emailReferent);
         return getMembres(groupeId);
@@ -283,6 +308,18 @@ public class GroupeService {
     public List<MembreGroupeResponse> demandesEnAttenteReferent(Long groupeId, String emailReferent) {
         verifierReferentDuGroupe(groupeId, emailReferent);
         return demandesEnAttente(groupeId);
+    }
+
+    public List<MembreGroupeResponse> demandesEnAttenteAdminOuReferent(Long groupeId, String emailUser) {
+        User user = userRepository.findByEmail(emailUser)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        if (user.getRole() == Role.ADMIN) {
+            return demandesEnAttente(groupeId);
+        }
+        if (user.getRole() == Role.REFERENT) {
+            return demandesEnAttenteReferent(groupeId, emailUser);
+        }
+        throw new AccessDeniedException("Acces reserve aux ADMIN et REFERENTS du groupe.");
     }
 
     public void verifierDemandeDansGroupe(Long membreGroupeId, Long groupeId) {

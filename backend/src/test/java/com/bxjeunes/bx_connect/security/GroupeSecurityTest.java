@@ -21,6 +21,9 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.any;
 
 /**
  * Tests de securite sur les autorisations des groupes.
@@ -94,6 +97,33 @@ class GroupeSecurityTest {
     }
 
     @Test
+    @DisplayName("Un referent ne peut pas lister les demandes d'un groupe d'un autre referent")
+    void referent_ne_peut_pas_lister_demandes_groupe_dautrui() {
+        when(groupeRepository.findById(10L)).thenReturn(Optional.of(groupeDeReferent1));
+        when(userRepository.findByEmail("referent2@test.be")).thenReturn(Optional.of(referent2));
+
+        assertThatThrownBy(() ->
+            groupeService.demandesEnAttenteAdminOuReferent(10L, "referent2@test.be")
+        ).isInstanceOf(AccessDeniedException.class)
+         .hasMessageContaining("referent de ce groupe");
+    }
+
+    @Test
+    @DisplayName("Un groupe non valide est invisible via le detail public")
+    void groupe_non_valide_invisible_publiquement() {
+        Groupe groupeEnAttente = new Groupe();
+        groupeEnAttente.setId(20L);
+        groupeEnAttente.setNom("Groupe en attente");
+        groupeEnAttente.setReferent(referent1);
+        groupeEnAttente.setStatut(StatutGroupe.EN_ATTENTE);
+        when(groupeRepository.findById(20L)).thenReturn(Optional.of(groupeEnAttente));
+
+        assertThatThrownBy(() -> groupeService.getGroupe(20L))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Groupe introuvable");
+    }
+
+    @Test
     @DisplayName("Un referent peut lister les membres de son propre groupe")
     void referent_peut_lister_membres_son_groupe() {
         when(groupeRepository.findById(10L)).thenReturn(Optional.of(groupeDeReferent1));
@@ -159,6 +189,34 @@ class GroupeSecurityTest {
     }
 
     @Test
+    @DisplayName("Un membre ne peut pas avoir deux demandes en attente")
+    void membre_ne_peut_pas_avoir_deux_demandes_en_attente() {
+        User membre = new User();
+        membre.setId(99L);
+        membre.setPrenom("Jean");
+        membre.setNom("Dupont");
+        membre.setEmail("jean@test.be");
+        membre.setRole(Role.MEMBRE);
+
+        MembreGroupe demandeExistante = new MembreGroupe();
+        demandeExistante.setId(101L);
+        demandeExistante.setUser(membre);
+        demandeExistante.setGroupe(groupeDeReferent1);
+        demandeExistante.setStatut(StatutMembre.EN_ATTENTE);
+
+        when(userRepository.findByEmail("jean@test.be")).thenReturn(Optional.of(membre));
+        when(membreGroupeRepository.estDejaMembreActif(99L)).thenReturn(false);
+        when(membreGroupeRepository.findFirstByUserIdAndStatut(99L, StatutMembre.EN_ATTENTE))
+                .thenReturn(Optional.of(demandeExistante));
+
+        assertThatThrownBy(() -> groupeService.rejoindreGroupe(20L, "jean@test.be"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("demande d'adhesion en attente");
+
+        verify(membreGroupeRepository, never()).save(any(MembreGroupe.class));
+    }
+
+    @Test
     @DisplayName("ADMIN peut reassigner un groupe a un autre REFERENT")
     void admin_peut_reassigner_groupe_autre_referent() {
         when(groupeRepository.findById(10L)).thenReturn(Optional.of(groupeDeReferent1));
@@ -191,6 +249,45 @@ class GroupeSecurityTest {
         assertThatThrownBy(() ->
             groupeService.accepterAdhesion(100L, "referent2@test.be")
         ).isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    @DisplayName("Un membre deja accepte dans un groupe ne peut pas etre accepte dans un second groupe")
+    void membre_deja_accepte_ne_peut_pas_etre_accepte_dans_second_groupe() {
+        User membre = new User();
+        membre.setId(99L);
+        membre.setPrenom("Jean");
+        membre.setNom("Dupont");
+        membre.setEmail("jean@test.be");
+
+        Groupe groupe2 = new Groupe();
+        groupe2.setId(20L);
+        groupe2.setNom("Groupe Solidaire");
+        groupe2.setReferent(referent1);
+        groupe2.setStatut(StatutGroupe.VALIDE);
+
+        MembreGroupe demande = new MembreGroupe();
+        demande.setId(100L);
+        demande.setGroupe(groupe2);
+        demande.setUser(membre);
+        demande.setStatut(StatutMembre.EN_ATTENTE);
+
+        MembreGroupe adhesionActive = new MembreGroupe();
+        adhesionActive.setId(101L);
+        adhesionActive.setGroupe(groupeDeReferent1);
+        adhesionActive.setUser(membre);
+        adhesionActive.setStatut(StatutMembre.ACCEPTE);
+
+        when(membreGroupeRepository.findById(100L)).thenReturn(Optional.of(demande));
+        when(userRepository.findByEmail("referent1@test.be")).thenReturn(Optional.of(referent1));
+        when(membreGroupeRepository.findFirstByUserIdAndStatut(99L, StatutMembre.ACCEPTE))
+                .thenReturn(Optional.of(adhesionActive));
+
+        assertThatThrownBy(() -> groupeService.accepterAdhesion(100L, "referent1@test.be"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("deja a un groupe actif");
+
+        verify(membreGroupeRepository, never()).save(any(MembreGroupe.class));
     }
 
     @Test
