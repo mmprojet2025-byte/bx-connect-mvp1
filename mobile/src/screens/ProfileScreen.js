@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, TextInput, ActivityIndicator, Alert
+  TouchableOpacity, TextInput, ActivityIndicator
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
@@ -12,8 +13,8 @@ const LANGUES = [
   { value: 'EN', label: '🇬🇧 English' },
 ];
 
-export default function ProfileScreen({ navigation }) {
-  const { user, logout, login } = useAuth();
+export default function ProfileScreen() {
+  const { logout, login } = useAuth();
 
   const [profil, setProfil] = useState(null);
   const [editMode, setEditMode] = useState(false);
@@ -39,6 +40,9 @@ export default function ProfileScreen({ navigation }) {
   }, []);
 
   const fetchProfil = async () => {
+    setLoading(true);
+    setError('');
+    setMessage('');
     try {
       const res = await api.get('/users/me');
       setProfil(res.data);
@@ -47,22 +51,30 @@ export default function ProfileScreen({ navigation }) {
         nom: res.data.nom,
         languePreference: res.data.languePreference || 'FR',
       });
-    } catch {
-      setError('Impossible de charger le profil.');
+    } catch (err) {
+      setProfil(null);
+      setError(getApiError(err, 'Impossible de charger le profil.'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleSaveProfil = async () => {
+    if (!form.prenom.trim() || !form.nom.trim()) {
+      setError('Le prénom et le nom sont obligatoires.');
+      return;
+    }
     setSaving(true);
     setMessage(''); setError('');
     try {
-      const res = await api.put('/users/me', form);
+      const res = await api.put('/users/me', {
+        prenom: form.prenom.trim(),
+        nom: form.nom.trim(),
+        languePreference: form.languePreference,
+      });
       setProfil(res.data);
       setEditMode(false);
-      setMessage('✅ Profil mis à jour avec succès !');
-      // Mettre à jour le user dans AuthContext
+      setMessage('Profil mis à jour avec succès.');
       await login(await getToken(), {
         prenom: res.data.prenom,
         nom: res.data.nom,
@@ -70,15 +82,14 @@ export default function ProfileScreen({ navigation }) {
         role: res.data.role,
       });
       setTimeout(() => setMessage(''), 3000);
-    } catch {
-      setError('Erreur lors de la mise à jour du profil.');
+    } catch (err) {
+      setError(getApiError(err, 'Erreur lors de la mise à jour du profil.'));
     } finally {
       setSaving(false);
     }
   };
 
   const getToken = async () => {
-    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
     return await AsyncStorage.getItem('token');
   };
 
@@ -91,12 +102,12 @@ export default function ProfileScreen({ navigation }) {
     setMessage(''); setError('');
     try {
       await api.put('/users/me/password', passwordForm);
-      setMessage('✅ Mot de passe mis à jour !');
+      setMessage('Mot de passe mis à jour.');
       setShowPasswordForm(false);
       setPasswordForm({ ancienMotDePasse: '', nouveauMotDePasse: '' });
       setTimeout(() => setMessage(''), 3000);
-    } catch {
-      setError('Ancien mot de passe incorrect.');
+    } catch (err) {
+      setError(getApiError(err, 'Ancien mot de passe incorrect.'));
     } finally {
       setSaving(false);
     }
@@ -110,6 +121,20 @@ export default function ProfileScreen({ navigation }) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#1e3a5f" />
+        <Text style={styles.loadingText}>Chargement du profil...</Text>
+      </View>
+    );
+  }
+
+  if (!profil) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.emptyIcon}>👤</Text>
+        <Text style={styles.emptyTitle}>Profil indisponible</Text>
+        {error !== '' && <Text style={styles.emptyText}>{error}</Text>}
+        <TouchableOpacity style={styles.retryButton} onPress={fetchProfil}>
+          <Text style={styles.retryButtonText}>Réessayer</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -149,7 +174,7 @@ export default function ProfileScreen({ navigation }) {
               🌐 Langue : <Text style={styles.bold}>{profil?.languePreference}</Text>
             </Text>
             <Text style={styles.profileDate}>
-              Membre depuis le {new Date(profil?.dateInscription).toLocaleDateString('fr-BE')}
+              Membre depuis le {formatDate(profil?.dateInscription)}
             </Text>
             <TouchableOpacity
               style={styles.btnEdit}
@@ -179,7 +204,7 @@ export default function ProfileScreen({ navigation }) {
               autoCapitalize="words"
             />
 
-            <Text style={styles.label}>Langue de l'interface</Text>
+            <Text style={styles.label}>{"Langue de l'interface"}</Text>
             <View style={styles.languesRow}>
               {LANGUES.map((l) => (
                 <TouchableOpacity
@@ -282,10 +307,37 @@ export default function ProfileScreen({ navigation }) {
   );
 }
 
+function getApiError(err, fallback) {
+  if (err.response?.status === 401) {
+    return 'Session expirée. Reconnectez-vous.';
+  }
+  if (err.response?.status === 403) {
+    return 'Accès non autorisé.';
+  }
+  return err.response?.data?.message || fallback;
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return 'date inconnue';
+  return new Date(dateStr).toLocaleDateString('fr-BE');
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f0f4f8' },
   content: { padding: 16, paddingBottom: 40 },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, backgroundColor: '#f0f4f8' },
+  loadingText: { marginTop: 12, color: '#64748b', fontSize: 14 },
+  emptyIcon: { fontSize: 54, marginBottom: 14 },
+  emptyTitle: { fontSize: 18, fontWeight: '900', color: '#1e3a5f', marginBottom: 8 },
+  emptyText: { color: '#64748b', fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  retryButton: {
+    marginTop: 18,
+    backgroundColor: '#1e3a5f',
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+  },
+  retryButtonText: { color: '#fff', fontWeight: '900', fontSize: 13 },
 
   successBox: {
     backgroundColor: '#f0fdf4', borderLeftWidth: 4, borderLeftColor: '#16a34a',

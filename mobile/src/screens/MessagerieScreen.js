@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   TextInput, ActivityIndicator, Platform, KeyboardAvoidingView
@@ -7,495 +7,592 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 export default function MessagerieScreen() {
-  const { user } = useAuth();
+  const { user, isMembre, isReferent, isAdmin, isSuperAdmin } = useAuth();
 
-  const [fils, setFils] = useState([]);
+  const [groupes, setGroupes] = useState([]);
+  const [groupeActif, setGroupeActif] = useState(null);
   const [filActif, setFilActif] = useState(null);
   const [messages, setMessages] = useState([]);
   const [nouveauMessage, setNouveauMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
-  const [showNouveauFil, setShowNouveauFil] = useState(false);
-  const [formFil, setFormFil] = useState({ titre: '', type: 'GENERAL' });
-  const [creating, setCreating] = useState(false);
-  const [vue, setVue] = useState('liste'); // 'liste' ou 'conversation'
-
-  const messagesEndRef = useRef(null);
-  const isAdmin = user?.role === 'ADMIN';
+  const [emptyMessage, setEmptyMessage] = useState('');
 
   useEffect(() => {
-    fetchFils();
-  }, []);
+    initialiserMessagerie();
+  }, [isMembre, isReferent, isAdmin, isSuperAdmin]);
 
-  useEffect(() => {
-    if (messagesEndRef.current && Platform.OS === 'web') {
-      messagesEndRef.current.scrollIntoView?.({ behavior: 'smooth' });
+  const initialiserMessagerie = async () => {
+    setLoading(true);
+    setError('');
+    setEmptyMessage('');
+    setGroupes([]);
+    setGroupeActif(null);
+    setFilActif(null);
+    setMessages([]);
+    setNouveauMessage('');
+
+    if (isAdmin || isSuperAdmin) {
+      setLoading(false);
+      return;
     }
-  }, [messages]);
 
-  const fetchFils = async () => {
+    if (isMembre) {
+      await chargerMessagerieMembre();
+      return;
+    }
+
+    if (isReferent) {
+      await chargerGroupesReferent();
+      return;
+    }
+
+    setEmptyMessage('La messagerie groupe est réservée aux membres et référents.');
+    setLoading(false);
+  };
+
+  const chargerMessagerieMembre = async () => {
     try {
-      setError('');
-      const res = await api.get('/messagerie/fils');
-      setFils(res.data);
-    } catch {
-      setError('Impossible de charger les fils de discussion.');
+      const groupeRes = await api.get('/messagerie/mon-groupe');
+      setGroupeActif(groupeRes.data);
+      await chargerFilEtMessages(groupeRes.data);
+    } catch (err) {
+      setEmptyMessage(getMemberEmptyMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchMessages = async (filId) => {
+  const chargerGroupesReferent = async () => {
+    try {
+      const res = await api.get('/referent/groupes');
+      setGroupes(res.data);
+
+      if (res.data.length === 0) {
+        setEmptyMessage('Aucun groupe ne vous est assigné pour le moment.');
+        return;
+      }
+
+      await selectionnerGroupe(res.data[0], false);
+    } catch (err) {
+      setError(getAccessError(err, 'Impossible de charger vos groupes.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const selectionnerGroupe = async (groupe, showLoader = true) => {
+    if (showLoader) {
+      setLoadingMessages(true);
+    }
+    setGroupeActif(groupe);
+    setFilActif(null);
+    setMessages([]);
+    setNouveauMessage('');
+    setError('');
+    setEmptyMessage('');
+
+    try {
+      await chargerFilEtMessages(groupe);
+    } catch (err) {
+      setEmptyMessage(getFilEmptyMessage(err));
+    } finally {
+      if (showLoader) {
+        setLoadingMessages(false);
+      }
+    }
+  };
+
+  const chargerFilEtMessages = async (groupe) => {
+    const filRes = await api.get(`/messagerie/groupes/${groupe.id}/fil`);
+    setFilActif(filRes.data);
+    await chargerMessages(filRes.data.id);
+  };
+
+  const chargerMessages = async (filId) => {
     setLoadingMessages(true);
     setError('');
     try {
       const res = await api.get(`/messagerie/fils/${filId}/messages`);
       setMessages(res.data);
-    } catch {
-      setError('Impossible de charger les messages.');
+    } catch (err) {
+      setMessages([]);
+      setError(getAccessError(err, 'Impossible de charger les messages.'));
     } finally {
       setLoadingMessages(false);
     }
   };
 
-  const handleSelectFil = (fil) => {
-    setFilActif(fil);
-    fetchMessages(fil.id);
-    setVue('conversation');
-  };
-
   const handleEnvoyer = async () => {
-    if (!nouveauMessage.trim()) return;
+    if (!nouveauMessage.trim() || !groupeActif || !filActif || sending) return;
+
+    setSending(true);
+    setError('');
     try {
-      await api.post('/messagerie/messages', {
-        filId: filActif.id,
+      await api.post(`/messagerie/groupes/${groupeActif.id}/messages`, {
         contenu: nouveauMessage.trim(),
+        filId: filActif.id,
       });
       setNouveauMessage('');
-      fetchMessages(filActif.id);
+      await chargerMessages(filActif.id);
     } catch (err) {
-      setError(err.response?.data?.message || "Erreur lors de l'envoi.");
-    }
-  };
-
-  const handleCreerFil = async () => {
-    if (!formFil.titre.trim()) return;
-    setCreating(true);
-    try {
-      await api.post('/messagerie/fils', formFil);
-      setShowNouveauFil(false);
-      setFormFil({ titre: '', type: 'GENERAL' });
-      fetchFils();
-    } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de la création.');
+      setError(getAccessError(err, "Erreur lors de l'envoi du message."));
     } finally {
-      setCreating(false);
+      setSending(false);
     }
   };
 
-  const typeBadge = (type) => ({
-    ADMIN:     { bg: '#fef2f2', color: '#dc2626' },
-    PROJET:    { bg: '#f0fdf4', color: '#16a34a' },
-    EVENEMENT: { bg: '#fffbeb', color: '#d97706' },
-    GENERAL:   { bg: '#eff6ff', color: '#2563eb' },
-  }[type] || { bg: '#eff6ff', color: '#2563eb' });
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    return d.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const getInitiales = (prenom, nom) =>
-    ((prenom?.[0] || '') + (nom?.[0] || '')).toUpperCase() || '?';
-
-  // ── Vue liste des fils ────────────────────────────────────────────────────
-  if (vue === 'liste') {
+  if (isAdmin || isSuperAdmin) {
     return (
-      <View style={styles.container}>
+      <ForbiddenState
+        title="Messagerie indisponible"
+        text="La messagerie groupe est réservée aux membres et référents."
+      />
+    );
+  }
 
-        {/* Header liste */}
-        <View style={styles.listHeader}>
-          <Text style={styles.listHeaderTitle}>💬 Messagerie</Text>
-          {isAdmin && (
-            <TouchableOpacity
-              style={styles.btnNew}
-              onPress={() => setShowNouveauFil(!showNouveauFil)}
-            >
-              <Text style={styles.btnNewText}>{showNouveauFil ? '✕' : '+'}</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Erreur */}
-        {error !== '' && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        )}
-
-        {/* Formulaire nouveau fil */}
-        {showNouveauFil && isAdmin && (
-          <View style={styles.formCard}>
-            <Text style={styles.formTitle}>Nouveau fil de discussion</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Titre du fil..."
-              placeholderTextColor="#94a3b8"
-              value={formFil.titre}
-              onChangeText={(val) => setFormFil({ ...formFil, titre: val })}
-            />
-            <View style={styles.typesRow}>
-              {['GENERAL', 'PROJET', 'EVENEMENT', 'ADMIN'].map((t) => (
-                <TouchableOpacity
-                  key={t}
-                  style={[styles.typeBtn, formFil.type === t && styles.typeBtnActive]}
-                  onPress={() => setFormFil({ ...formFil, type: t })}
-                >
-                  <Text style={[styles.typeBtnText, formFil.type === t && styles.typeBtnTextActive]}>
-                    {t}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <TouchableOpacity
-              style={[styles.btnCreate, creating && styles.btnDisabled]}
-              onPress={handleCreerFil}
-              disabled={creating}
-            >
-              {creating
-                ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={styles.btnCreateText}>Créer le fil</Text>
-              }
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Liste des fils */}
-        {loading ? (
-          <View style={styles.centered}>
-            <ActivityIndicator size="large" color="#1e3a5f" />
-            <Text style={styles.loadingText}>Chargement...</Text>
-          </View>
-        ) : fils.length === 0 ? (
-          <View style={styles.centered}>
-            <Text style={styles.emptyIcon}>💬</Text>
-            <Text style={styles.emptyText}>Aucun fil de discussion disponible.</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={fils}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => {
-              const badge = typeBadge(item.type);
-              return (
-                <TouchableOpacity
-                  style={styles.filItem}
-                  onPress={() => handleSelectFil(item)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.filItemLeft}>
-                    <View style={styles.filAvatar}>
-                      <Text style={styles.filAvatarText}>
-                        {item.titre?.[0]?.toUpperCase() || '?'}
-                      </Text>
-                    </View>
-                    <View style={styles.filInfo}>
-                      <Text style={styles.filTitre} numberOfLines={1}>{item.titre}</Text>
-                      {item.dernierMessage && (
-                        <Text style={styles.filDernierMsg} numberOfLines={1}>
-                          {item.dernierMessage}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-                  <View style={[styles.typeBadge, { backgroundColor: badge.bg }]}>
-                    <Text style={[styles.typeBadgeText, { color: badge.color }]}>
-                      {item.type}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            }}
-            contentContainerStyle={styles.filsList}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#1e3a5f" />
+        <Text style={styles.loadingText}>Chargement de la messagerie...</Text>
       </View>
     );
   }
 
-  // ── Vue conversation ──────────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={90}
     >
-      {/* Header conversation */}
-      <View style={styles.convHeader}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => setVue('liste')}
-        >
-          <Text style={styles.backBtnText}>← Retour</Text>
-        </TouchableOpacity>
-        <View style={styles.convHeaderInfo}>
-          <Text style={styles.convHeaderTitle} numberOfLines={1}>
-            {filActif?.titre}
-          </Text>
-          <Text style={styles.convHeaderSub}>
-            {messages.length} message{messages.length !== 1 ? 's' : ''}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.headerTitle}>Messagerie de groupe</Text>
+          <Text style={styles.headerSub}>
+            {groupeActif?.nom || 'Discussion réservée à votre groupe'}
           </Text>
         </View>
+        <TouchableOpacity style={styles.retrySmall} onPress={initialiserMessagerie}>
+          <Text style={styles.retrySmallText}>Réessayer</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Erreur */}
+      {isReferent && groupes.length > 0 && (
+        <GroupSelector
+          groupes={groupes}
+          groupeActif={groupeActif}
+          onSelect={selectionnerGroupe}
+        />
+      )}
+
       {error !== '' && (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
 
-      {/* Messages */}
-      {loadingMessages ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#1e3a5f" />
-        </View>
+      {emptyMessage ? (
+        <EmptyState
+          title="Discussion indisponible"
+          text={emptyMessage}
+          onRetry={initialiserMessagerie}
+        />
+      ) : !filActif ? (
+        <EmptyState
+          title="Aucun fil de discussion"
+          text="Le fil de discussion de ce groupe n'est pas encore créé."
+          onRetry={initialiserMessagerie}
+        />
       ) : (
-        <FlatList
-          data={messages}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.messagesContent}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={styles.centered}>
-              <Text style={styles.emptyIcon}>💬</Text>
-              <Text style={styles.emptyText}>
-                Aucun message. Soyez le premier à écrire !
-              </Text>
+        <>
+          <ConversationHeader fil={filActif} groupe={groupeActif} messagesCount={messages.length} />
+
+          {loadingMessages ? (
+            <View style={styles.messagesLoading}>
+              <ActivityIndicator color="#1e3a5f" />
+              <Text style={styles.loadingText}>Chargement des messages...</Text>
             </View>
-          }
-          renderItem={({ item }) => {
-            const estMoi = item.expediteurEmail === user?.email;
-            return (
-              <View style={[
-                styles.messageRow,
-                estMoi ? styles.messageRowRight : styles.messageRowLeft,
-              ]}>
-                {/* Avatar */}
-                {!estMoi && (
-                  <View style={styles.msgAvatar}>
-                    <Text style={styles.msgAvatarText}>
-                      {getInitiales(item.expediteurPrenom, item.expediteurNom)}
-                    </Text>
-                  </View>
-                )}
-
-                <View style={styles.msgBubbleContainer}>
-                  {!estMoi && (
-                    <Text style={styles.msgSender}>
-                      {item.expediteurPrenom} {item.expediteurNom}
-                    </Text>
-                  )}
-                  <View style={[
-                    styles.msgBubble,
-                    estMoi ? styles.msgBubbleMoi : styles.msgBubbleAutre,
-                  ]}>
-                    <Text style={[
-                      styles.msgText,
-                      estMoi ? styles.msgTextMoi : styles.msgTextAutre,
-                    ]}>
-                      {item.contenu}
-                    </Text>
-                  </View>
-                  <Text style={[
-                    styles.msgTime,
-                    estMoi ? styles.msgTimeRight : styles.msgTimeLeft,
-                  ]}>
-                    {formatDate(item.dateEnvoi)}
-                  </Text>
+          ) : (
+            <FlatList
+              data={messages}
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerStyle={styles.messagesContent}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={
+                <View style={styles.emptyMessages}>
+                  <Text style={styles.emptyIcon}>💬</Text>
+                  <Text style={styles.emptyText}>Aucun message dans ce groupe.</Text>
                 </View>
+              }
+              renderItem={({ item }) => (
+                <MessageBubble message={item} currentUser={user} />
+              )}
+            />
+          )}
 
-                {estMoi && (
-                  <View style={[styles.msgAvatar, styles.msgAvatarMoi]}>
-                    <Text style={styles.msgAvatarText}>
-                      {getInitiales(user?.prenom, user?.nom)}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            );
-          }}
-        />
+          <View style={styles.inputRow}>
+            <TextInput
+              style={styles.messageInput}
+              placeholder="Écrire un message..."
+              placeholderTextColor="#94a3b8"
+              value={nouveauMessage}
+              onChangeText={setNouveauMessage}
+              multiline
+              maxLength={500}
+            />
+            <TouchableOpacity
+              style={[
+                styles.sendBtn,
+                (!nouveauMessage.trim() || sending) && styles.sendBtnDisabled,
+              ]}
+              onPress={handleEnvoyer}
+              disabled={!nouveauMessage.trim() || sending}
+              activeOpacity={0.8}
+            >
+              {sending ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.sendBtnText}>➤</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </>
       )}
-
-      {/* Zone de saisie */}
-      <View style={styles.inputRow}>
-        <TextInput
-          style={styles.messageInput}
-          placeholder="Écrire un message..."
-          placeholderTextColor="#94a3b8"
-          value={nouveauMessage}
-          onChangeText={setNouveauMessage}
-          multiline
-          maxLength={500}
-        />
-        <TouchableOpacity
-          style={[styles.sendBtn, !nouveauMessage.trim() && styles.sendBtnDisabled]}
-          onPress={handleEnvoyer}
-          disabled={!nouveauMessage.trim()}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.sendBtnText}>➤</Text>
-        </TouchableOpacity>
-      </View>
     </KeyboardAvoidingView>
   );
+}
+
+function GroupSelector({ groupes, groupeActif, onSelect }) {
+  return (
+    <View style={styles.groupSelector}>
+      <FlatList
+        data={groupes}
+        keyExtractor={(item) => item.id.toString()}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.groupSelectorContent}
+        renderItem={({ item }) => {
+          const actif = item.id === groupeActif?.id;
+          return (
+            <TouchableOpacity
+              style={[styles.groupChip, actif && styles.groupChipActive]}
+              onPress={() => onSelect(item)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.groupChipTitle, actif && styles.groupChipTitleActive]}>
+                {item.nom}
+              </Text>
+              <Text style={[styles.groupChipSub, actif && styles.groupChipSubActive]}>
+                {item.nombreMembres ?? 0} membre{(item.nombreMembres ?? 0) > 1 ? 's' : ''}
+              </Text>
+            </TouchableOpacity>
+          );
+        }}
+      />
+    </View>
+  );
+}
+
+function ConversationHeader({ fil, groupe, messagesCount }) {
+  return (
+    <View style={styles.conversationHeader}>
+      <View style={styles.filAvatar}>
+        <Text style={styles.filAvatarText}>
+          {groupe?.nom?.[0]?.toUpperCase() || fil?.titre?.[0]?.toUpperCase() || 'G'}
+        </Text>
+      </View>
+      <View style={styles.conversationInfo}>
+        <Text style={styles.conversationTitle} numberOfLines={1}>
+          {fil?.titre || `Discussion - ${groupe?.nom || 'Groupe'}`}
+        </Text>
+        <Text style={styles.conversationSub}>
+          {messagesCount} message{messagesCount !== 1 ? 's' : ''}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function MessageBubble({ message, currentUser }) {
+  const estMoi =
+    (message.auteurPrenom === currentUser?.prenom && message.auteurNom === currentUser?.nom) ||
+    message.auteurId === currentUser?.id;
+
+  return (
+    <View style={[styles.messageRow, estMoi ? styles.messageRowRight : styles.messageRowLeft]}>
+      {!estMoi && (
+        <View style={styles.msgAvatar}>
+          <Text style={styles.msgAvatarText}>
+            {getInitiales(message.auteurPrenom, message.auteurNom)}
+          </Text>
+        </View>
+      )}
+
+      <View style={styles.msgBubbleContainer}>
+        {!estMoi && (
+          <Text style={styles.msgSender}>
+            {message.auteurPrenom} {message.auteurNom}
+          </Text>
+        )}
+        <View style={[styles.msgBubble, estMoi ? styles.msgBubbleMoi : styles.msgBubbleAutre]}>
+          <Text style={[styles.msgText, estMoi ? styles.msgTextMoi : styles.msgTextAutre]}>
+            {message.contenu}
+          </Text>
+        </View>
+        <Text style={[styles.msgTime, estMoi ? styles.msgTimeRight : styles.msgTimeLeft]}>
+          {formatDate(message.dateEnvoi)}
+        </Text>
+      </View>
+
+      {estMoi && (
+        <View style={[styles.msgAvatar, styles.msgAvatarMoi]}>
+          <Text style={styles.msgAvatarText}>
+            {getInitiales(currentUser?.prenom, currentUser?.nom)}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function ForbiddenState({ title, text }) {
+  return (
+    <View style={styles.centered}>
+      <Text style={styles.forbiddenIcon}>🔒</Text>
+      <Text style={styles.emptyTitle}>{title}</Text>
+      <Text style={styles.emptyText}>{text}</Text>
+    </View>
+  );
+}
+
+function EmptyState({ title, text, onRetry }) {
+  return (
+    <View style={styles.centered}>
+      <Text style={styles.emptyIcon}>💬</Text>
+      <Text style={styles.emptyTitle}>{title}</Text>
+      <Text style={styles.emptyText}>{text}</Text>
+      <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+        <Text style={styles.retryButtonText}>Réessayer</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function getMemberEmptyMessage(err) {
+  if (err.response?.status === 403) {
+    return "Vous n'avez pas encore de groupe actif. Si une demande est en attente, la messagerie sera disponible après acceptation.";
+  }
+  return getAccessError(err, 'Impossible de charger votre groupe actif.');
+}
+
+function getFilEmptyMessage(err) {
+  if (err.response?.status === 403) {
+    return 'Accès non autorisé à cette messagerie.';
+  }
+  return "Le fil de discussion de ce groupe n'est pas encore créé.";
+}
+
+function getAccessError(err, fallback) {
+  if (err.response?.status === 401) {
+    return 'Session expirée. Reconnectez-vous.';
+  }
+  if (err.response?.status === 403) {
+    return 'Accès non autorisé à cette messagerie.';
+  }
+  return err.response?.data?.message || fallback;
+}
+
+function getInitiales(prenom, nom) {
+  return ((prenom?.[0] || '') + (nom?.[0] || '')).toUpperCase() || '?';
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return `${d.toLocaleDateString('fr-BE')} ${d.toLocaleTimeString('fr-BE', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })}`;
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f0f4f8' },
 
-  // Header liste
-  listHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 14,
-    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e2e8f0',
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
   },
-  listHeaderTitle: { fontSize: 18, fontWeight: 'bold', color: '#1e3a5f' },
-  btnNew: {
-    width: 36, height: 36, backgroundColor: '#1e3a5f',
-    borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1e3a5f' },
+  headerSub: { fontSize: 12, color: '#64748b', marginTop: 3 },
+  retrySmall: {
+    backgroundColor: '#eff6ff',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
   },
-  btnNewText: { color: '#fff', fontSize: 20, fontWeight: 'bold', lineHeight: 24 },
+  retrySmallText: { color: '#2563eb', fontSize: 12, fontWeight: '700' },
 
-  // Erreur
+  groupSelector: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  groupSelectorContent: { paddingHorizontal: 12, paddingVertical: 10 },
+  groupChip: {
+    minWidth: 130,
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginRight: 8,
+    backgroundColor: '#fff',
+  },
+  groupChipActive: { backgroundColor: '#1e3a5f', borderColor: '#1e3a5f' },
+  groupChipTitle: { color: '#1e3a5f', fontSize: 13, fontWeight: '800', marginBottom: 2 },
+  groupChipTitleActive: { color: '#fff' },
+  groupChipSub: { color: '#64748b', fontSize: 11 },
+  groupChipSubActive: { color: '#bfdbfe' },
+
+  conversationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  filAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#dbeafe',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  filAvatarText: { color: '#1e3a5f', fontSize: 16, fontWeight: '900' },
+  conversationInfo: { flex: 1 },
+  conversationTitle: { color: '#1e3a5f', fontSize: 15, fontWeight: '800' },
+  conversationSub: { color: '#64748b', fontSize: 12, marginTop: 2 },
+
   errorBox: {
-    backgroundColor: '#fef2f2', borderLeftWidth: 4, borderLeftColor: '#dc2626',
-    marginHorizontal: 16, marginTop: 8, padding: 12, borderRadius: 8,
+    backgroundColor: '#fef2f2',
+    borderLeftWidth: 4,
+    borderLeftColor: '#dc2626',
+    marginHorizontal: 16,
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 8,
   },
   errorText: { color: '#dc2626', fontSize: 13 },
 
-  // Formulaire nouveau fil
-  formCard: {
-    backgroundColor: '#fff', margin: 16, borderRadius: 16, padding: 16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07, shadowRadius: 8, elevation: 2,
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 28,
+    backgroundColor: '#f0f4f8',
   },
-  formTitle: { fontSize: 15, fontWeight: 'bold', color: '#1e3a5f', marginBottom: 12 },
-  input: {
-    borderWidth: 1, borderColor: '#d1d5db', borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 10, fontSize: 14,
-    color: '#1e293b', backgroundColor: '#f8fafc', marginBottom: 10,
+  messagesLoading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 28,
   },
-  typesRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12 },
-  typeBtn: {
-    borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 8,
-    paddingHorizontal: 10, paddingVertical: 5, marginRight: 6, marginBottom: 6,
+  loadingText: { marginTop: 10, color: '#64748b', fontSize: 14 },
+  emptyMessages: { alignItems: 'center', justifyContent: 'center', paddingTop: 80 },
+  emptyIcon: { fontSize: 42, marginBottom: 12 },
+  forbiddenIcon: { fontSize: 42, marginBottom: 12 },
+  emptyTitle: {
+    color: '#1e3a5f',
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 8,
+    textAlign: 'center',
   },
-  typeBtnActive: { borderColor: '#1e3a5f', backgroundColor: '#eff6ff' },
-  typeBtnText: { fontSize: 11, color: '#64748b', fontWeight: '500' },
-  typeBtnTextActive: { color: '#1e3a5f', fontWeight: '700' },
-  btnCreate: {
-    backgroundColor: '#1e3a5f', paddingVertical: 11,
-    borderRadius: 12, alignItems: 'center',
+  emptyText: {
+    color: '#64748b',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+    maxWidth: 320,
   },
-  btnDisabled: { backgroundColor: '#94a3b8' },
-  btnCreateText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  retryButton: {
+    marginTop: 18,
+    backgroundColor: '#1e3a5f',
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+  },
+  retryButtonText: { color: '#fff', fontWeight: '800', fontSize: 13 },
 
-  // Liste des fils
-  filsList: { padding: 8 },
-  filItem: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 8,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
-  },
-  filItemLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 },
-  filAvatar: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: '#1e3a5f', alignItems: 'center',
-    justifyContent: 'center', marginRight: 12,
-  },
-  filAvatarText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  filInfo: { flex: 1 },
-  filTitre: { fontSize: 15, fontWeight: '600', color: '#1e3a5f', marginBottom: 2 },
-  filDernierMsg: { fontSize: 12, color: '#94a3b8' },
-  typeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
-  typeBadgeText: { fontSize: 10, fontWeight: '600' },
-
-  // Header conversation
-  convHeader: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: '#1e3a5f', borderBottomWidth: 1, borderBottomColor: '#2d4f7c',
-  },
-  backBtn: { marginRight: 12 },
-  backBtnText: { color: '#93c5fd', fontSize: 14, fontWeight: '600' },
-  convHeaderInfo: { flex: 1 },
-  convHeaderTitle: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  convHeaderSub: { color: '#93c5fd', fontSize: 12, marginTop: 1 },
-
-  // Messages
-  messagesContent: { padding: 12, paddingBottom: 8 },
-  messageRow: {
-    flexDirection: 'row', alignItems: 'flex-end',
-    marginBottom: 12,
-  },
+  messagesContent: { padding: 14, paddingBottom: 18 },
+  messageRow: { flexDirection: 'row', marginBottom: 12, alignItems: 'flex-end' },
   messageRowLeft: { justifyContent: 'flex-start' },
   messageRowRight: { justifyContent: 'flex-end' },
-
   msgAvatar: {
-    width: 32, height: 32, borderRadius: 16,
-    backgroundColor: '#e2e8f0', alignItems: 'center',
-    justifyContent: 'center', marginHorizontal: 6,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#dbeafe',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 6,
   },
   msgAvatarMoi: { backgroundColor: '#1e3a5f' },
-  msgAvatarText: { fontSize: 11, fontWeight: 'bold', color: '#1e3a5f' },
-
-  msgBubbleContainer: { maxWidth: '70%' },
-  msgSender: { fontSize: 11, color: '#64748b', marginBottom: 3, paddingLeft: 4 },
-  msgBubble: { borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10 },
-  msgBubbleMoi: {
-    backgroundColor: '#1e3a5f',
-    borderBottomRightRadius: 4,
-  },
-  msgBubbleAutre: {
-    backgroundColor: '#fff',
-    borderBottomLeftRadius: 4,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 2, elevation: 1,
-  },
+  msgAvatarText: { color: '#1e3a5f', fontSize: 11, fontWeight: '900' },
+  msgBubbleContainer: { maxWidth: '74%' },
+  msgSender: { fontSize: 11, color: '#64748b', marginBottom: 3, marginLeft: 4 },
+  msgBubble: { paddingHorizontal: 13, paddingVertical: 9 },
+  msgBubbleMoi: { backgroundColor: '#1e3a5f', borderRadius: 14, borderBottomRightRadius: 3 },
+  msgBubbleAutre: { backgroundColor: '#fff', borderRadius: 14, borderBottomLeftRadius: 3 },
   msgText: { fontSize: 14, lineHeight: 20 },
   msgTextMoi: { color: '#fff' },
   msgTextAutre: { color: '#1e293b' },
   msgTime: { fontSize: 10, color: '#94a3b8', marginTop: 3 },
-  msgTimeRight: { textAlign: 'right', paddingRight: 4 },
-  msgTimeLeft: { paddingLeft: 4 },
+  msgTimeRight: { textAlign: 'right', marginRight: 4 },
+  msgTimeLeft: { marginLeft: 4 },
 
-  // Zone de saisie
   inputRow: {
-    flexDirection: 'row', alignItems: 'flex-end',
-    paddingHorizontal: 12, paddingVertical: 10,
-    backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#e2e8f0',
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   messageInput: {
-    flex: 1, backgroundColor: '#f1f5f9', borderRadius: 20,
-    paddingHorizontal: 16, paddingVertical: 10, fontSize: 14,
-    color: '#1e293b', maxHeight: 100, marginRight: 8,
+    flex: 1,
+    minHeight: 42,
+    maxHeight: 110,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#1e293b',
+    marginRight: 8,
   },
   sendBtn: {
-    width: 42, height: 42, backgroundColor: '#1e3a5f',
-    borderRadius: 21, alignItems: 'center', justifyContent: 'center',
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#1e3a5f',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sendBtnDisabled: { backgroundColor: '#cbd5e1' },
-  sendBtnText: { color: '#fff', fontSize: 16 },
-
-  // États
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  loadingText: { marginTop: 12, color: '#64748b', fontSize: 14 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyText: { color: '#64748b', fontSize: 14, textAlign: 'center' },
+  sendBtnText: { color: '#fff', fontSize: 18, fontWeight: '900', paddingLeft: 2 },
 });

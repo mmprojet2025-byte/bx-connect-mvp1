@@ -1,388 +1,580 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, ActivityIndicator, Platform
+  TextInput, ActivityIndicator
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
-export default function GroupesScreen({ navigation }) {
-  const { user, isAdmin, isReferent } = useAuth();
+export default function GroupesScreen() {
+  const {
+    isAuthenticated,
+    isMembre,
+    isReferent,
+    isAdmin,
+    isSuperAdmin,
+  } = useAuth();
 
   const [groupes, setGroupes] = useState([]);
-  const [mesGroupes, setMesGroupes] = useState([]);
+  const [adhesions, setAdhesions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoadingId, setActionLoadingId] = useState(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [recherche, setRecherche] = useState('');
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ nom: '', description: '', type: 'GENERAL' });
-  const [creating, setCreating] = useState(false);
-
-  const peutGerer = isAdmin || isReferent;
 
   useEffect(() => {
-    fetchGroupes();
-    if (user) fetchMesGroupes();
-  }, []);
+    chargerGroupes();
+  }, [isAuthenticated, isMembre, isReferent, isAdmin, isSuperAdmin]);
 
-  const fetchGroupes = async () => {
+  const chargerGroupes = async () => {
+    setLoading(true);
+    setError('');
+    setMessage('');
+
+    if (isAdmin || isSuperAdmin) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      setError('');
-      const res = await api.get('/groupes');
-      setGroupes(res.data);
-    } catch {
-      setError('Impossible de charger les groupes.');
+      if (isReferent) {
+        const res = await api.get('/referent/groupes');
+        setGroupes(res.data);
+        setAdhesions([]);
+      } else {
+        const groupesRes = await api.get('/groupes');
+        setGroupes(groupesRes.data);
+
+        if (isMembre) {
+          try {
+            const adhesionsRes = await api.get('/groupes/mes-adhesions');
+            setAdhesions(adhesionsRes.data);
+          } catch {
+            setAdhesions([]);
+          }
+        } else {
+          setAdhesions([]);
+        }
+      }
+    } catch (err) {
+      setError(getApiError(err, 'Impossible de charger les groupes.'));
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchMesGroupes = async () => {
-    try {
-      const res = await api.get('/groupes/mes-groupes');
-      setMesGroupes(res.data);
-    } catch {
-      // silencieux
-    }
-  };
-
   const handleRejoindre = async (groupeId) => {
-    setMessage(''); setError('');
+    if (!isMembre || hasActiveOrPendingAdhesion) return;
+
+    setActionLoadingId(groupeId);
+    setError('');
+    setMessage('');
     try {
       await api.post(`/groupes/${groupeId}/rejoindre`);
-      setMessage('✅ Vous avez rejoint le groupe !');
-      fetchGroupes(); fetchMesGroupes();
-      setTimeout(() => setMessage(''), 3000);
+      setMessage('Demande envoyée. Elle doit encore être acceptée.');
+      await chargerGroupes();
     } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de la demande.');
-      setTimeout(() => setError(''), 3000);
+      setError(getApiError(err, "Impossible d'envoyer la demande d'adhésion."));
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
   const handleQuitter = async (groupeId) => {
-    setMessage(''); setError('');
+    if (!isMembre) return;
+
+    setActionLoadingId(groupeId);
+    setError('');
+    setMessage('');
     try {
       await api.delete(`/groupes/${groupeId}/quitter`);
-      setMessage('✅ Vous avez quitté le groupe.');
-      fetchGroupes(); fetchMesGroupes();
-      setTimeout(() => setMessage(''), 3000);
+      setMessage('Vous avez quitté le groupe.');
+      await chargerGroupes();
     } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de la demande.');
-      setTimeout(() => setError(''), 3000);
-    }
-  };
-
-  const handleCreer = async () => {
-    if (!form.nom.trim()) {
-      setError('Le nom du groupe est obligatoire.');
-      return;
-    }
-    setCreating(true);
-    setMessage(''); setError('');
-    try {
-      await api.post('/groupes', form);
-      setMessage('✅ Groupe créé avec succès !');
-      setShowForm(false);
-      setForm({ nom: '', description: '', type: 'GENERAL' });
-      fetchGroupes();
-      setTimeout(() => setMessage(''), 3000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de la création.');
+      setError(getApiError(err, 'Impossible de quitter ce groupe.'));
     } finally {
-      setCreating(false);
+      setActionLoadingId(null);
     }
   };
 
-  const mesGroupesIds = mesGroupes.map((g) => g.id);
-  const groupesFiltres = groupes.filter((g) =>
-    g.nom?.toLowerCase().includes(recherche.toLowerCase())
-  );
+  const adhesionAcceptee = adhesions.find((adhesion) => adhesion.statut === 'ACCEPTE') || null;
+  const adhesionEnAttente = adhesions.find((adhesion) => adhesion.statut === 'EN_ATTENTE') || null;
+  const hasActiveOrPendingAdhesion = !!adhesionAcceptee || !!adhesionEnAttente;
 
-  const typeBadge = (type) => ({
-    ADMIN:     { bg: '#fef2f2', color: '#dc2626' },
-    PROJET:    { bg: '#f0fdf4', color: '#16a34a' },
-    EVENEMENT: { bg: '#fffbeb', color: '#d97706' },
-    GENERAL:   { bg: '#eff6ff', color: '#2563eb' },
-  }[type] || { bg: '#eff6ff', color: '#2563eb' });
+  const groupesFiltres = groupes.filter((groupe) => {
+    const texte = `${groupe.nom || ''} ${groupe.description || ''} ${groupe.theme || ''}`;
+    return texte.toLowerCase().includes(recherche.toLowerCase());
+  });
 
-  const renderGroupe = ({ item }) => {
-    const estMembre = mesGroupesIds.includes(item.id);
-    const badge = typeBadge(item.type);
-
+  if (isAdmin) {
     return (
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle} numberOfLines={1}>{item.nom}</Text>
-          <View style={[styles.typeBadge, { backgroundColor: badge.bg }]}>
-            <Text style={[styles.typeBadgeText, { color: badge.color }]}>
-              {item.type || 'GÉNÉRAL'}
-            </Text>
-          </View>
-        </View>
-
-        {item.description && (
-          <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
-        )}
-
-        <Text style={styles.cardMembers}>
-          👤 {item.nombreMembres ?? 0} membre{(item.nombreMembres ?? 0) !== 1 ? 's' : ''}
-        </Text>
-
-        {user && (
-          estMembre ? (
-            <TouchableOpacity
-              style={styles.btnQuitter}
-              onPress={() => handleQuitter(item.id)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.btnQuitterText}>Quitter le groupe</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={styles.btnRejoindre}
-              onPress={() => handleRejoindre(item.id)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.btnRejoindreText}>Rejoindre</Text>
-            </TouchableOpacity>
-          )
-        )}
-      </View>
+      <RoleBlockedState
+        title="Groupes"
+        text="La gestion des groupes se fait depuis le web."
+      />
     );
-  };
+  }
+
+  if (isSuperAdmin) {
+    return (
+      <RoleBlockedState
+        title="Groupes métier"
+        text="Le SUPER_ADMIN ne gère pas les groupes de l’association sur mobile V1."
+      />
+    );
+  }
 
   return (
     <View style={styles.container}>
-
-      {/* Barre de recherche */}
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="🔍 Rechercher un groupe..."
+          placeholder="Rechercher un groupe..."
           placeholderTextColor="#94a3b8"
           value={recherche}
           onChangeText={setRecherche}
         />
-        {peutGerer && (
-          <TouchableOpacity
-            style={styles.btnNew}
-            onPress={() => setShowForm(!showForm)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.btnNewText}>{showForm ? '✕' : '+'}</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity style={styles.retrySmall} onPress={chargerGroupes}>
+          <Text style={styles.retrySmallText}>Réessayer</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Messages */}
+      {isMembre && (
+        <MemberStatus
+          adhesionAcceptee={adhesionAcceptee}
+          adhesionEnAttente={adhesionEnAttente}
+        />
+      )}
+
+      {!isAuthenticated && (
+        <InfoBox text="Connecte-toi pour rejoindre un groupe." />
+      )}
+
+      {isReferent && (
+        <InfoBox text="Vous voyez uniquement les groupes qui vous sont assignés. La gestion avancée se fait depuis l’espace web." />
+      )}
+
       {message !== '' && (
         <View style={styles.successBox}>
           <Text style={styles.successText}>{message}</Text>
         </View>
       )}
+
       {error !== '' && (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
 
-      {/* Formulaire création groupe */}
-      {showForm && peutGerer && (
-        <View style={styles.formCard}>
-          <Text style={styles.formTitle}>Nouveau groupe</Text>
-
-          <Text style={styles.label}>Nom *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Nom du groupe"
-            placeholderTextColor="#94a3b8"
-            value={form.nom}
-            onChangeText={(val) => setForm({ ...form, nom: val })}
-          />
-
-          <Text style={styles.label}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.inputMultiline]}
-            placeholder="Description du groupe..."
-            placeholderTextColor="#94a3b8"
-            value={form.description}
-            onChangeText={(val) => setForm({ ...form, description: val })}
-            multiline
-            numberOfLines={3}
-          />
-
-          <Text style={styles.label}>Type</Text>
-          <View style={styles.typesRow}>
-            {['GENERAL', 'PROJET', 'EVENEMENT'].map((t) => (
-              <TouchableOpacity
-                key={t}
-                style={[styles.typeBtn, form.type === t && styles.typeBtnActive]}
-                onPress={() => setForm({ ...form, type: t })}
-              >
-                <Text style={[styles.typeBtnText, form.type === t && styles.typeBtnTextActive]}>
-                  {t}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <TouchableOpacity
-            style={[styles.btnCreate, creating && styles.btnDisabled]}
-            onPress={handleCreer}
-            disabled={creating}
-            activeOpacity={0.8}
-          >
-            {creating ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={styles.btnCreateText}>Créer le groupe</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Mes groupes */}
-      {user && mesGroupes.length > 0 && (
-        <View style={styles.mesGroupesContainer}>
-          <Text style={styles.mesGroupesTitle}>📌 Mes groupes</Text>
-          <View style={styles.mesGroupesTags}>
-            {mesGroupes.map((g) => (
-              <View key={g.id} style={styles.mesGroupesTag}>
-                <Text style={styles.mesGroupesTagText}>{g.nom}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-
-      {/* Liste */}
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#1e3a5f" />
           <Text style={styles.loadingText}>Chargement des groupes...</Text>
         </View>
       ) : groupesFiltres.length === 0 ? (
-        <View style={styles.centered}>
-          <Text style={styles.emptyIcon}>👥</Text>
-          <Text style={styles.emptyText}>
-            {recherche ? 'Aucun groupe trouvé.' : 'Aucun groupe disponible.'}
-          </Text>
-        </View>
+        <EmptyState
+          title={recherche ? 'Aucun groupe trouvé' : 'Aucun groupe disponible'}
+          text={isReferent
+            ? "Aucun groupe ne vous est assigné pour le moment."
+            : "Les groupes disponibles apparaîtront ici."}
+          onRetry={chargerGroupes}
+        />
       ) : (
         <FlatList
           data={groupesFiltres}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={renderGroupe}
+          renderItem={({ item }) => (
+            <GroupeCard
+              groupe={item}
+              isAuthenticated={isAuthenticated}
+              isMembre={isMembre}
+              isReferent={isReferent}
+              adhesion={adhesions.find((a) => a.groupeId === item.id)}
+              hasActiveOrPendingAdhesion={hasActiveOrPendingAdhesion}
+              actionLoading={actionLoadingId === item.id}
+              onRejoindre={() => handleRejoindre(item.id)}
+              onQuitter={() => handleQuitter(item.id)}
+            />
+          )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          onRefresh={chargerGroupes}
+          refreshing={false}
         />
       )}
     </View>
   );
 }
 
+function MemberStatus({ adhesionAcceptee, adhesionEnAttente }) {
+  let title = 'Aucun groupe';
+  let text = 'Vous pouvez envoyer une demande pour rejoindre un groupe.';
+  let color = '#2563eb';
+  let bg = '#dbeafe';
+
+  if (adhesionEnAttente) {
+    title = 'Demande en attente';
+    text = `Votre demande pour ${adhesionEnAttente.groupeNom} attend une validation.`;
+    color = '#d97706';
+    bg = '#fef3c7';
+  }
+
+  if (adhesionAcceptee) {
+    title = 'Membre accepté';
+    text = `Vous faites partie du groupe ${adhesionAcceptee.groupeNom}.`;
+    color = '#16a34a';
+    bg = '#dcfce7';
+  }
+
+  return (
+    <View style={[styles.statusCard, { backgroundColor: bg, borderLeftColor: color }]}>
+      <Text style={[styles.statusTitle, { color }]}>{title}</Text>
+      <Text style={styles.statusText}>{text}</Text>
+    </View>
+  );
+}
+
+function GroupeCard({
+  groupe,
+  isAuthenticated,
+  isMembre,
+  isReferent,
+  adhesion,
+  hasActiveOrPendingAdhesion,
+  actionLoading,
+  onRejoindre,
+  onQuitter,
+}) {
+  const acceptedHere = adhesion?.statut === 'ACCEPTE';
+  const pendingHere = adhesion?.statut === 'EN_ATTENTE';
+  const refusedHere = adhesion?.statut === 'REFUSE';
+  const canRequest = isMembre && !hasActiveOrPendingAdhesion;
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.cardTitleWrap}>
+          <Text style={styles.cardTitle} numberOfLines={1}>{groupe.nom}</Text>
+          <Text style={styles.cardSub}>
+            {groupe.nombreMembres ?? 0} membre{(groupe.nombreMembres ?? 0) > 1 ? 's' : ''}
+          </Text>
+        </View>
+        <StatusBadge label={translateGroupeStatut(groupe.statut)} color={groupe.statut === 'VALIDE' ? '#16a34a' : '#d97706'} />
+      </View>
+
+      {groupe.description && (
+        <Text style={styles.cardDesc} numberOfLines={3}>{groupe.description}</Text>
+      )}
+
+      <View style={styles.metaBox}>
+        {groupe.theme && <MetaRow label="Thème" value={groupe.theme} />}
+        {groupe.categorie && <MetaRow label="Catégorie" value={groupe.categorie} />}
+        <MetaRow
+          label="Référent"
+          value={groupe.referentPrenom || groupe.referentNom
+            ? `${groupe.referentPrenom || ''} ${groupe.referentNom || ''}`.trim()
+            : 'Non assigné'}
+        />
+      </View>
+
+      {isReferent && (
+        <View style={styles.notice}>
+          <Text style={styles.noticeText}>
+            Membres et demandes sont gérés depuis l’espace web référent pour Mobile V1.
+          </Text>
+        </View>
+      )}
+
+      {!isAuthenticated && (
+        <Text style={styles.visitorHint}>Connecte-toi pour rejoindre un groupe.</Text>
+      )}
+
+      {isMembre && (
+        <View style={styles.actions}>
+          {acceptedHere && (
+            <TouchableOpacity
+              style={[styles.btnDanger, actionLoading && styles.btnDisabled]}
+              onPress={onQuitter}
+              disabled={actionLoading}
+            >
+              {actionLoading
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <Text style={styles.btnDangerText}>Quitter le groupe</Text>
+              }
+            </TouchableOpacity>
+          )}
+
+          {pendingHere && (
+            <StatusLine text="Demande en attente pour ce groupe." color="#d97706" />
+          )}
+
+          {refusedHere && !hasActiveOrPendingAdhesion && (
+            <StatusLine text="Votre précédente demande a été refusée." color="#dc2626" />
+          )}
+
+          {!acceptedHere && !pendingHere && (
+            <TouchableOpacity
+              style={[styles.btnPrimary, (!canRequest || actionLoading) && styles.btnDisabled]}
+              onPress={onRejoindre}
+              disabled={!canRequest || actionLoading}
+            >
+              {actionLoading
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <Text style={styles.btnPrimaryText}>
+                    {canRequest ? 'Demander à rejoindre' : 'Déjà inscrit dans un groupe'}
+                  </Text>
+              }
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function RoleBlockedState({ title, text }) {
+  return (
+    <View style={styles.centered}>
+      <Text style={styles.emptyIcon}>👥</Text>
+      <Text style={styles.emptyTitle}>{title}</Text>
+      <Text style={styles.emptyText}>{text}</Text>
+    </View>
+  );
+}
+
+function EmptyState({ title, text, onRetry }) {
+  return (
+    <View style={styles.centered}>
+      <Text style={styles.emptyIcon}>👥</Text>
+      <Text style={styles.emptyTitle}>{title}</Text>
+      <Text style={styles.emptyText}>{text}</Text>
+      <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+        <Text style={styles.retryButtonText}>Réessayer</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function InfoBox({ text }) {
+  return (
+    <View style={styles.infoBox}>
+      <Text style={styles.infoBoxText}>{text}</Text>
+    </View>
+  );
+}
+
+function StatusBadge({ label, color }) {
+  return (
+    <View style={[styles.statusBadge, { backgroundColor: color }]}>
+      <Text style={styles.statusBadgeText}>{label}</Text>
+    </View>
+  );
+}
+
+function StatusLine({ text, color }) {
+  return <Text style={[styles.statusLine, { color }]}>{text}</Text>;
+}
+
+function MetaRow({ label, value }) {
+  return (
+    <View style={styles.metaRow}>
+      <Text style={styles.metaLabel}>{label}</Text>
+      <Text style={styles.metaValue} numberOfLines={1}>{value}</Text>
+    </View>
+  );
+}
+
+function translateGroupeStatut(statut) {
+  switch (statut) {
+    case 'VALIDE': return 'Validé';
+    case 'EN_ATTENTE': return 'En attente';
+    case 'REFUSE': return 'Refusé';
+    default: return statut || 'Groupe';
+  }
+}
+
+function getApiError(err, fallback) {
+  if (err.response?.status === 401) {
+    return 'Session expirée. Reconnectez-vous.';
+  }
+  if (err.response?.status === 403) {
+    return 'Accès non autorisé.';
+  }
+  return err.response?.data?.message || fallback;
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f0f4f8' },
 
   searchContainer: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e2e8f0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
     gap: 10,
   },
   searchInput: {
-    flex: 1, backgroundColor: '#f1f5f9', borderRadius: 12,
-    paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, color: '#1e293b',
+    flex: 1,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#1e293b',
   },
-  btnNew: {
-    width: 40, height: 40, backgroundColor: '#1e3a5f',
-    borderRadius: 12, alignItems: 'center', justifyContent: 'center',
+  retrySmall: {
+    backgroundColor: '#eff6ff',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
-  btnNewText: { color: '#fff', fontSize: 22, fontWeight: 'bold', lineHeight: 26 },
+  retrySmallText: { color: '#2563eb', fontSize: 12, fontWeight: '800' },
+
+  statusCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 14,
+    borderRadius: 14,
+    borderLeftWidth: 4,
+  },
+  statusTitle: { fontSize: 14, fontWeight: '900', marginBottom: 4 },
+  statusText: { color: '#334155', fontSize: 13, lineHeight: 18 },
+
+  infoBox: {
+    backgroundColor: '#eff6ff',
+    borderLeftWidth: 4,
+    borderLeftColor: '#2563eb',
+    marginHorizontal: 16,
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 10,
+  },
+  infoBoxText: { color: '#1e40af', fontSize: 13, lineHeight: 18 },
 
   successBox: {
-    backgroundColor: '#f0fdf4', borderLeftWidth: 4, borderLeftColor: '#16a34a',
-    marginHorizontal: 16, marginTop: 8, padding: 12, borderRadius: 8,
+    backgroundColor: '#f0fdf4',
+    borderLeftWidth: 4,
+    borderLeftColor: '#16a34a',
+    marginHorizontal: 16,
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 8,
   },
   successText: { color: '#15803d', fontSize: 13 },
   errorBox: {
-    backgroundColor: '#fef2f2', borderLeftWidth: 4, borderLeftColor: '#dc2626',
-    marginHorizontal: 16, marginTop: 8, padding: 12, borderRadius: 8,
+    backgroundColor: '#fef2f2',
+    borderLeftWidth: 4,
+    borderLeftColor: '#dc2626',
+    marginHorizontal: 16,
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 8,
   },
   errorText: { color: '#dc2626', fontSize: 13 },
 
-  formCard: {
-    backgroundColor: '#fff', margin: 16, borderRadius: 16, padding: 16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07, shadowRadius: 8, elevation: 2,
-  },
-  formTitle: { fontSize: 16, fontWeight: 'bold', color: '#1e3a5f', marginBottom: 14 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
-  input: {
-    borderWidth: 1, borderColor: '#d1d5db', borderRadius: 12,
-    paddingHorizontal: 16, paddingVertical: 12, fontSize: 14,
-    color: '#1e293b', backgroundColor: '#f8fafc', marginBottom: 12,
-  },
-  inputMultiline: { height: 80, textAlignVertical: 'top' },
-  typesRow: { flexDirection: 'row', marginBottom: 14 },
-  typeBtn: {
-    flex: 1, borderWidth: 2, borderColor: '#e2e8f0',
-    borderRadius: 10, padding: 8, alignItems: 'center', marginRight: 6,
-  },
-  typeBtnActive: { borderColor: '#1e3a5f', backgroundColor: '#eff6ff' },
-  typeBtnText: { fontSize: 11, color: '#64748b', fontWeight: '500' },
-  typeBtnTextActive: { color: '#1e3a5f', fontWeight: '700' },
-  btnCreate: {
-    backgroundColor: '#1e3a5f', paddingVertical: 12,
-    borderRadius: 12, alignItems: 'center',
-  },
-  btnDisabled: { backgroundColor: '#94a3b8' },
-  btnCreateText: { color: '#fff', fontWeight: '600', fontSize: 14 },
-
-  mesGroupesContainer: {
-    paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e2e8f0',
-  },
-  mesGroupesTitle: { fontSize: 13, fontWeight: '600', color: '#1e3a5f', marginBottom: 8 },
-  mesGroupesTags: { flexDirection: 'row', flexWrap: 'wrap' },
-  mesGroupesTag: {
-    backgroundColor: '#1e3a5f', paddingHorizontal: 12, paddingVertical: 4,
-    borderRadius: 20, marginRight: 6, marginBottom: 4,
-  },
-  mesGroupesTagText: { color: '#fff', fontSize: 12 },
-
-  listContent: { padding: 16 },
-
+  listContent: { padding: 16, paddingBottom: 40 },
   card: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
     marginBottom: 12,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   cardHeader: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 10,
   },
-  cardTitle: { flex: 1, fontSize: 15, fontWeight: 'bold', color: '#1e3a5f', marginRight: 8 },
-  typeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
-  typeBadgeText: { fontSize: 10, fontWeight: '600' },
-  cardDesc: { fontSize: 13, color: '#64748b', lineHeight: 18, marginBottom: 8 },
-  cardMembers: { fontSize: 12, color: '#94a3b8', marginBottom: 10 },
+  cardTitleWrap: { flex: 1, marginRight: 10 },
+  cardTitle: { fontSize: 16, fontWeight: '900', color: '#1e3a5f', marginBottom: 3 },
+  cardSub: { color: '#64748b', fontSize: 12 },
+  cardDesc: { color: '#475569', fontSize: 13, lineHeight: 19, marginBottom: 12 },
+  statusBadge: { borderRadius: 20, paddingHorizontal: 9, paddingVertical: 5 },
+  statusBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900' },
 
-  btnRejoindre: {
-    backgroundColor: '#1e3a5f', paddingVertical: 9,
-    borderRadius: 10, alignItems: 'center',
+  metaBox: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 12,
   },
-  btnRejoindreText: { color: '#fff', fontWeight: '600', fontSize: 13 },
-  btnQuitter: {
-    backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca',
-    paddingVertical: 9, borderRadius: 10, alignItems: 'center',
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eef2f7',
   },
-  btnQuitterText: { color: '#dc2626', fontWeight: '600', fontSize: 13 },
+  metaLabel: { color: '#64748b', fontSize: 12 },
+  metaValue: {
+    color: '#1e3a5f',
+    fontSize: 12,
+    fontWeight: '700',
+    maxWidth: '58%',
+    textAlign: 'right',
+  },
 
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
+  notice: { backgroundColor: '#f8fafc', borderRadius: 12, padding: 12, marginTop: 2 },
+  noticeText: { color: '#64748b', fontSize: 12, lineHeight: 18 },
+  visitorHint: { color: '#2563eb', fontSize: 13, fontWeight: '700', marginTop: 4 },
+
+  actions: { marginTop: 4 },
+  btnPrimary: {
+    backgroundColor: '#1e3a5f',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  btnPrimaryText: { color: '#fff', fontSize: 13, fontWeight: '900' },
+  btnDanger: {
+    backgroundColor: '#dc2626',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  btnDangerText: { color: '#fff', fontSize: 13, fontWeight: '900' },
+  btnDisabled: { backgroundColor: '#cbd5e1' },
+  statusLine: { fontSize: 13, fontWeight: '800', marginTop: 2 },
+
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 30,
+    backgroundColor: '#f0f4f8',
+  },
   loadingText: { marginTop: 12, color: '#64748b', fontSize: 14 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyText: { color: '#64748b', fontSize: 14, textAlign: 'center' },
+  emptyIcon: { fontSize: 42, marginBottom: 12 },
+  emptyTitle: {
+    color: '#1e3a5f',
+    fontSize: 18,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptyText: {
+    color: '#64748b',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+    maxWidth: 320,
+  },
+  retryButton: {
+    marginTop: 18,
+    backgroundColor: '#1e3a5f',
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+  },
+  retryButtonText: { color: '#fff', fontWeight: '900', fontSize: 13 },
 });

@@ -17,10 +17,6 @@ import GroupesScreen       from '../screens/GroupesScreen';
 import MessagerieScreen    from '../screens/MessagerieScreen';
 import ProjectsScreen        from '../screens/ProjectsScreen';
 import NotificationsScreen   from '../screens/NotificationsScreen';
-import PaymentScreen           from '../screens/PaymentScreen';
-import PaymentHistoryScreen    from '../screens/PaymentHistoryScreen';
-import AnnoncesScreen          from '../screens/AnnoncesScreen';
-import PrestationsMobileScreen from '../screens/PrestationsMobileScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -50,6 +46,7 @@ function PublicStack() {
       <Stack.Screen name="Login"      component={LoginScreen}     options={{ title: 'Connexion' }} />
       <Stack.Screen name="Register"   component={RegisterScreen}  options={{ title: 'Créer un compte' }} />
       <Stack.Screen name="Activities" component={ActivitiesScreen} options={{ title: 'Activités' }} />
+      <Stack.Screen name="Groupes"    component={GroupesScreen}    options={{ title: 'Groupes' }} />
     </Stack.Navigator>
   );
 }
@@ -74,19 +71,33 @@ function makeStack(ScreenComponent, title, logout) {
 
 // ─── Tab Navigator privé ─────────────────────────────────────────────────────
 function PrivateTabs() {
-  const { logout } = useAuth();
+  const { logout, isMembre, isReferent, isAdmin, isSuperAdmin } = useAuth();
 
   const DashboardStack     = makeStack(DashboardScreen,     'Tableau de bord', logout);
   const ActivitiesStack    = makeStack(ActivitiesScreen,    'Activités',        logout);
   const ProjectsStack      = makeStack(ProjectsScreen,      'Projets',          logout);
   const GroupesStack       = makeStack(GroupesScreen,       'Groupes',          logout);
+  const MesGroupesStack    = makeStack(GroupesScreen,       'Mes groupes',      logout);
   const MessagerieStack    = makeStack(MessagerieScreen,    'Messagerie',       logout);
   const NotificationsStack  = makeStack(NotificationsScreen,  'Notifications',    logout);
-  const PaymentStack        = makeStack(PaymentScreen,        'Paiement',         logout);
-  const PaymentHistoryStack    = makeStack(PaymentHistoryScreen,    'Mes paiements',  logout);
-  const AnnoncesStack          = makeStack(AnnoncesScreen,          'Annonces',       logout);
-  const PrestationsStack       = makeStack(PrestationsMobileScreen, 'Bénévolat',      logout);
   const ProfileStack           = makeStack(ProfileScreen,           'Mon profil',     logout);
+
+  const tabs = getTabsForRole({
+    isMembre,
+    isReferent,
+    isAdmin,
+    isSuperAdmin,
+    stacks: {
+      DashboardStack,
+      ActivitiesStack,
+      ProjectsStack,
+      GroupesStack,
+      MesGroupesStack,
+      MessagerieStack,
+      NotificationsStack,
+      ProfileStack,
+    },
+  });
 
   return (
     <Tab.Navigator
@@ -103,58 +114,67 @@ function PrivateTabs() {
         tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
       }}
     >
-      <Tab.Screen
-        name="TabDashboard"
-        component={DashboardStack}
-        options={{ tabBarLabel: 'Accueil', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🏠</Text> }}
-      />
-      <Tab.Screen
-        name="TabActivities"
-        component={ActivitiesStack}
-        options={{ tabBarLabel: 'Activités', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🎯</Text> }}
-      />
-      <Tab.Screen
-        name="TabProjects"
-        component={ProjectsStack}
-        options={{ tabBarLabel: 'Projets', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🚀</Text> }}
-      />
-      <Tab.Screen
-        name="TabGroupes"
-        component={GroupesStack}
-        options={{ tabBarLabel: 'Groupes', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>👥</Text> }}
-      />
-      <Tab.Screen
-        name="TabMessagerie"
-        component={MessagerieStack}
-        options={{ tabBarLabel: 'Messages', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>💬</Text> }}
-      />
-      <Tab.Screen
-        name="TabNotifications"
-        component={NotificationsStack}
-        options={{ tabBarLabel: 'Alertes', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔔</Text> }}
-      />
-      <Tab.Screen
-        name="TabAnnonces"
-        component={AnnoncesStack}
-        options={{ tabBarLabel: 'Annonces', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📢</Text> }}
-      />
-      <Tab.Screen
-        name="TabPrestations"
-        component={PrestationsStack}
-        options={{ tabBarLabel: 'Bénévolat', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🤝</Text> }}
-      />
-      <Tab.Screen
-        name="TabPayments"
-        component={PaymentHistoryStack}
-        options={{ tabBarLabel: 'Paiements', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>💳</Text> }}
-      />
-      <Tab.Screen
-        name="TabProfile"
-        component={ProfileStack}
-        options={{ tabBarLabel: 'Profil', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>👤</Text> }}
-      />
+      {tabs.map((tab) => (
+        <Tab.Screen
+          key={tab.name}
+          name={tab.name}
+          component={tab.component}
+          options={{
+            tabBarLabel: tab.label,
+            tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>{tab.icon}</Text>,
+          }}
+        />
+      ))}
     </Tab.Navigator>
   );
+}
+
+function getTabsForRole({ isMembre, isReferent, isAdmin, isSuperAdmin, stacks }) {
+  if (isSuperAdmin) {
+    return [
+      tab('TabDashboard', 'Dashboard', '🏠', stacks.DashboardStack),
+      tab('TabProfile', 'Profil', '👤', stacks.ProfileStack),
+    ];
+  }
+
+  if (isAdmin) {
+    return [
+      tab('TabDashboard', 'Dashboard', '🏠', stacks.DashboardStack),
+      tab('TabNotifications', 'Alertes', '🔔', stacks.NotificationsStack),
+      tab('TabProfile', 'Profil', '👤', stacks.ProfileStack),
+    ];
+  }
+
+  if (isReferent) {
+    return [
+      tab('TabDashboard', 'Dashboard', '🏠', stacks.DashboardStack),
+      tab('TabGroupes', 'Mes groupes', '👥', stacks.MesGroupesStack),
+      tab('TabActivities', 'Activités', '🎯', stacks.ActivitiesStack),
+      tab('TabMessagerie', 'Messages', '💬', stacks.MessagerieStack),
+      tab('TabNotifications', 'Alertes', '🔔', stacks.NotificationsStack),
+      tab('TabProfile', 'Profil', '👤', stacks.ProfileStack),
+    ];
+  }
+
+  if (isMembre) {
+    return [
+      tab('TabDashboard', 'Dashboard', '🏠', stacks.DashboardStack),
+      tab('TabActivities', 'Activités', '🎯', stacks.ActivitiesStack),
+      tab('TabGroupes', 'Groupes', '👥', stacks.GroupesStack),
+      tab('TabProjects', 'Projets', '🚀', stacks.ProjectsStack),
+      tab('TabMessagerie', 'Messages', '💬', stacks.MessagerieStack),
+      tab('TabProfile', 'Profil', '👤', stacks.ProfileStack),
+    ];
+  }
+
+  return [
+    tab('TabDashboard', 'Dashboard', '🏠', stacks.DashboardStack),
+    tab('TabProfile', 'Profil', '👤', stacks.ProfileStack),
+  ];
+}
+
+function tab(name, label, icon, component) {
+  return { name, label, icon, component };
 }
 
 // ─── Navigateur principal ─────────────────────────────────────────────────────

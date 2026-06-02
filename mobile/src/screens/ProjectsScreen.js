@@ -1,456 +1,621 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, ActivityIndicator, Modal, ScrollView, Platform
+  TextInput, ActivityIndicator, Modal, ScrollView
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 export default function ProjectsScreen() {
-  const { isAuthenticated, isAdmin, isReferent, user } = useAuth();
+  const {
+    isAuthenticated,
+    isMembre,
+    isReferent,
+    isAdmin,
+    isSuperAdmin,
+  } = useAuth();
 
   const [projets, setProjets] = useState([]);
+  const [membreDashboard, setMembreDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [recherche, setRecherche] = useState('');
-  const [filtreStatut, setFiltreStatut] = useState('TOUS');
   const [showForm, setShowForm] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
     titre: '',
     description: '',
+    objectifs: '',
     budgetDemande: '',
   });
 
-  const peutGerer = isAdmin || isReferent;
-  const STATUTS_FILTRES = peutGerer
-    ? ['TOUS', 'BROUILLON', 'SOUMIS', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE']
-    : ['TOUS', 'APPROUVE', 'EN_COURS', 'TERMINE'];
-
   useEffect(() => {
-    fetchProjets();
-  }, []);
+    chargerProjets();
+  }, [isAuthenticated, isMembre, isReferent, isAdmin, isSuperAdmin]);
 
-  const fetchProjets = async () => {
+  const chargerProjets = async () => {
+    setLoading(true);
+    setError('');
+    setMessage('');
+
+    if (isAdmin || isSuperAdmin) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      setError('');
-      // ✅ Admin/Référent → tous les projets
-      // ✅ Membre/Visiteur → projets publics (APPROUVE, EN_COURS, TERMINE)
-      const endpoint = peutGerer ? '/projets/admin/tous' : '/projets';
-      const res = await api.get(endpoint);
-      setProjets(res.data);
-    } catch {
-      setError('Impossible de charger les projets.');
+      if (isReferent) {
+        const res = await api.get('/projets/referent/mes-groupes');
+        setProjets(res.data);
+        setMembreDashboard(null);
+        return;
+      }
+
+      const projetsRes = await api.get('/projets');
+      setProjets(projetsRes.data);
+
+      if (isMembre) {
+        try {
+          const dashboardRes = await api.get('/membre/dashboard');
+          setMembreDashboard(dashboardRes.data);
+        } catch {
+          try {
+            const groupeRes = await api.get('/messagerie/mon-groupe');
+            setMembreDashboard({
+              groupe: {
+                ...groupeRes.data,
+                statutAdhesion: 'ACCEPTE',
+              },
+            });
+          } catch {
+            setMembreDashboard(null);
+          }
+        }
+      } else {
+        setMembreDashboard(null);
+      }
+    } catch (err) {
+      setError(getApiError(err, 'Impossible de charger les projets.'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleProposer = async () => {
-    if (!form.titre.trim() || !form.description.trim()) {
-      setError('Le titre et la description sont obligatoires.');
+    if (!canProposeProject) {
+      setError('Rejoins un groupe pour proposer un projet.');
       return;
     }
+    if (!form.titre.trim()) {
+      setError('Le titre est obligatoire.');
+      return;
+    }
+
     setCreating(true);
-    setMessage(''); setError('');
+    setError('');
+    setMessage('');
     try {
       await api.post('/projets', {
         titre: form.titre.trim(),
         description: form.description.trim(),
+        objectifs: form.objectifs.trim(),
         budgetDemande: form.budgetDemande ? parseFloat(form.budgetDemande) : null,
       });
-      setMessage('✅ Projet proposé avec succès !');
+      setMessage('Projet proposé avec succès.');
       setShowForm(false);
-      setForm({ titre: '', description: '', budgetDemande: '' });
-      fetchProjets();
-      setTimeout(() => setMessage(''), 3000);
+      setForm({ titre: '', description: '', objectifs: '', budgetDemande: '' });
+      await chargerProjets();
     } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de la création.');
+      setError(getApiError(err, 'Erreur lors de la proposition du projet.'));
     } finally {
       setCreating(false);
     }
   };
 
-  const handleChangerStatut = async (projetId, statut) => {
-    try {
-      await api.patch(`/projets/${projetId}/statut?statut=${statut}`);
-      setMessage(`✅ Statut mis à jour : ${statut}`);
-      fetchProjets();
-      setTimeout(() => setMessage(''), 3000);
-    } catch {
-      setError('Erreur lors du changement de statut.');
-    }
-  };
+  const groupeActif = membreDashboard?.groupe?.statutAdhesion === 'ACCEPTE'
+    ? membreDashboard.groupe
+    : null;
+  const canProposeProject = isMembre && !!groupeActif;
 
-  const projetsFiltres = projets.filter(p => {
-    const matchRecherche = p.titre?.toLowerCase().includes(recherche.toLowerCase());
-    const matchStatut = filtreStatut === 'TOUS' || p.statut === filtreStatut;
-    return matchRecherche && matchStatut;
+  const projetsFiltres = projets.filter((projet) => {
+    const texte = `${projet.titre || ''} ${projet.description || ''} ${projet.groupeNom || ''}`;
+    return texte.toLowerCase().includes(recherche.toLowerCase());
   });
 
-  const renderProjet = ({ item }) => (
-    <View style={[styles.card, { borderTopColor: statutColor(item.statut) }]}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle} numberOfLines={2}>{item.titre}</Text>
-        <View style={[styles.statutBadge, { backgroundColor: statutColor(item.statut) }]}>
-          <Text style={styles.statutText}>{item.statut}</Text>
-        </View>
-      </View>
+  if (isAdmin) {
+    return (
+      <RoleBlockedState
+        title="Projets"
+        text="La gestion des projets se fait depuis le web."
+      />
+    );
+  }
 
-      {item.description && (
-        <Text style={styles.cardDesc} numberOfLines={3}>{item.description}</Text>
-      )}
-
-      <View style={styles.cardInfos}>
-        {item.budgetDemande && (
-          <Text style={styles.cardInfo}>💰 Budget : {item.budgetDemande} €</Text>
-        )}
-        {item.porteurPrenom && (
-          <Text style={styles.cardInfo}>
-            👤 Porteur : {item.porteurPrenom} {item.porteurNom}
-          </Text>
-        )}
-        {item.dateCreation && (
-          <Text style={styles.cardInfo}>
-            📅 {new Date(item.dateCreation).toLocaleDateString('fr-BE')}
-          </Text>
-        )}
-      </View>
-
-      {/* Actions selon le rôle */}
-      <View style={styles.cardActions}>
-        {/* Admin → changer statut */}
-        {peutGerer && item.statut === 'SOUMIS' && (
-          <>
-            <TouchableOpacity
-              style={styles.btnApprouver}
-              onPress={() => handleChangerStatut(item.id, 'APPROUVE')}
-            >
-              <Text style={styles.btnApprouverText}>✅ Approuver</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.btnRejeter}
-              onPress={() => handleChangerStatut(item.id, 'REJETE')}
-            >
-              <Text style={styles.btnRejeterText}>❌ Rejeter</Text>
-            </TouchableOpacity>
-          </>
-        )}
-        {peutGerer && item.statut === 'APPROUVE' && (
-          <TouchableOpacity
-            style={styles.btnEnCours}
-            onPress={() => handleChangerStatut(item.id, 'EN_COURS')}
-          >
-            <Text style={styles.btnEnCoursText}>▶ Démarrer</Text>
-          </TouchableOpacity>
-        )}
-        {peutGerer && item.statut === 'EN_COURS' && (
-          <TouchableOpacity
-            style={styles.btnTerminer}
-            onPress={() => handleChangerStatut(item.id, 'TERMINE')}
-          >
-            <Text style={styles.btnTerminerText}>🏁 Terminer</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  );
+  if (isSuperAdmin) {
+    return (
+      <RoleBlockedState
+        title="Projets métier"
+        text="Le SUPER_ADMIN ne gère pas les projets de l’association sur mobile V1."
+      />
+    );
+  }
 
   return (
     <View style={styles.container}>
-
-      {/* Barre de recherche + bouton nouveau */}
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="🔍 Rechercher un projet..."
+          placeholder="Rechercher un projet..."
           placeholderTextColor="#94a3b8"
           value={recherche}
           onChangeText={setRecherche}
         />
-        {isAuthenticated && (
+        {isMembre && (
           <TouchableOpacity
-            style={styles.btnNew}
-            onPress={() => setShowForm(true)}
+            style={[styles.btnNew, !canProposeProject && styles.btnNewDisabled]}
+            onPress={() => canProposeProject ? setShowForm(true) : setError('Rejoins un groupe pour proposer un projet.')}
           >
             <Text style={styles.btnNewText}>+</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Filtres statut */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filtresScroll}
-        contentContainerStyle={styles.filtresContent}
-      >
-        {STATUTS_FILTRES.map(s => (
-          <TouchableOpacity
-            key={s}
-            style={[styles.filtreBtn, filtreStatut === s && styles.filtreBtnActive]}
-            onPress={() => setFiltreStatut(s)}
-          >
-            <Text style={[styles.filtreBtnText, filtreStatut === s && styles.filtreBtnTextActive]}>
-              {s}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Bannière admin */}
-      {peutGerer && (
-        <View style={styles.adminBanner}>
-          <Text style={styles.adminBannerText}>
-            🛡️ Mode Admin — {projets.length} projet(s) au total
-          </Text>
-        </View>
+      {!isAuthenticated && (
+        <InfoBox text="Connecte-toi pour proposer un projet." />
       )}
 
-      {/* Messages */}
+      {isMembre && !canProposeProject && (
+        <InfoBox text="Rejoins un groupe pour proposer un projet." />
+      )}
+
+      {isMembre && canProposeProject && (
+        <InfoBox text={`Vous pouvez proposer un projet pour votre groupe : ${groupeActif.nom}.`} />
+      )}
+
+      {isReferent && (
+        <InfoBox text="Mobile V1 affiche les projets de vos groupes en lecture simple. La validation se fait depuis le web admin." />
+      )}
+
       {message !== '' && (
         <View style={styles.successBox}>
           <Text style={styles.successText}>{message}</Text>
         </View>
       )}
+
       {error !== '' && (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
 
-      {/* Liste */}
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#1e3a5f" />
           <Text style={styles.loadingText}>Chargement des projets...</Text>
         </View>
       ) : projetsFiltres.length === 0 ? (
-        <View style={styles.centered}>
-          <Text style={styles.emptyIcon}>🚀</Text>
-          <Text style={styles.emptyText}>
-            {recherche ? 'Aucun projet trouvé.' : 'Aucun projet disponible.'}
-          </Text>
-          {isAuthenticated && (
-            <TouchableOpacity onPress={() => setShowForm(true)}>
-              <Text style={styles.emptyLink}>Proposer un projet →</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        <EmptyState
+          title={recherche ? 'Aucun projet trouvé' : 'Aucun projet disponible'}
+          text={isReferent
+            ? "Aucun projet n'est lié à vos groupes pour le moment."
+            : "Les projets publics apparaîtront ici."}
+          onRetry={chargerProjets}
+        />
       ) : (
         <FlatList
           data={projetsFiltres}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={renderProjet}
+          renderItem={({ item }) => <ProjectCard projet={item} />}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          onRefresh={fetchProjets}
+          onRefresh={chargerProjets}
           refreshing={false}
         />
       )}
 
-      {/* Modal formulaire nouveau projet */}
-      <Modal
+      <ProjectFormModal
         visible={showForm}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowForm(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>🚀 Proposer un projet</Text>
-              <TouchableOpacity onPress={() => setShowForm(false)}>
-                <Text style={styles.modalClose}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.label}>Titre *</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Titre du projet"
-                placeholderTextColor="#94a3b8"
-                value={form.titre}
-                onChangeText={(val) => setForm({ ...form, titre: val })}
-              />
-
-              <Text style={styles.label}>Description *</Text>
-              <TextInput
-                style={[styles.input, styles.inputMultiline]}
-                placeholder="Décris ton projet en détail..."
-                placeholderTextColor="#94a3b8"
-                value={form.description}
-                onChangeText={(val) => setForm({ ...form, description: val })}
-                multiline
-                numberOfLines={4}
-              />
-
-              <Text style={styles.label}>Budget demandé (€)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ex: 500"
-                placeholderTextColor="#94a3b8"
-                value={form.budgetDemande}
-                onChangeText={(val) => setForm({ ...form, budgetDemande: val })}
-                keyboardType="numeric"
-              />
-
-              <TouchableOpacity
-                style={[styles.btnCreate, creating && styles.btnDisabled]}
-                onPress={handleProposer}
-                disabled={creating}
-              >
-                {creating
-                  ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={styles.btnCreateText}>Soumettre le projet</Text>
-                }
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+        form={form}
+        setForm={setForm}
+        creating={creating}
+        onClose={() => setShowForm(false)}
+        onSubmit={handleProposer}
+        groupeNom={groupeActif?.nom}
+      />
     </View>
   );
 }
 
-function statutColor(statut) {
+function ProjectCard({ projet }) {
+  return (
+    <View style={[styles.card, { borderTopColor: statusColor(projet.statut) }]}>
+      <View style={styles.cardHeader}>
+        <View style={styles.cardTitleWrap}>
+          <Text style={styles.cardTitle} numberOfLines={2}>{projet.titre}</Text>
+          <Text style={styles.cardSub}>{formatDate(projet.dateCreation)}</Text>
+        </View>
+        <StatusBadge label={translateProjetStatut(projet.statut)} color={statusColor(projet.statut)} />
+      </View>
+
+      {projet.description && (
+        <Text style={styles.cardDesc} numberOfLines={3}>{projet.description}</Text>
+      )}
+
+      <View style={styles.metaBox}>
+        {projet.groupeNom && <MetaRow label="Groupe" value={projet.groupeNom} />}
+        <MetaRow
+          label="Porteur"
+          value={projet.porteurPrenom || projet.porteurNom
+            ? `${projet.porteurPrenom || ''} ${projet.porteurNom || ''}`.trim()
+            : 'Association'}
+        />
+        <MetaRow label="Budget" value={projet.budgetDemande ? `${projet.budgetDemande} €` : 'Non renseigné'} />
+        <MetaRow label="Participants" value={`${projet.nombreParticipants ?? 0}`} />
+        <MetaRow label="Commentaires" value={`${projet.nombreCommentaires ?? 0}`} />
+      </View>
+    </View>
+  );
+}
+
+function ProjectFormModal({
+  visible,
+  form,
+  setForm,
+  creating,
+  onClose,
+  onSubmit,
+  groupeNom,
+}) {
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalCard}>
+          <View style={styles.modalHeader}>
+            <View>
+              <Text style={styles.modalTitle}>Proposer un projet</Text>
+              {groupeNom && <Text style={styles.modalSub}>Groupe : {groupeNom}</Text>}
+            </View>
+            <TouchableOpacity onPress={onClose}>
+              <Text style={styles.modalClose}>×</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={styles.label}>Titre *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Titre du projet"
+              placeholderTextColor="#94a3b8"
+              value={form.titre}
+              onChangeText={(val) => setForm({ ...form, titre: val })}
+            />
+
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={[styles.input, styles.inputMultiline]}
+              placeholder="Décris ton projet..."
+              placeholderTextColor="#94a3b8"
+              value={form.description}
+              onChangeText={(val) => setForm({ ...form, description: val })}
+              multiline
+              numberOfLines={4}
+            />
+
+            <Text style={styles.label}>Objectifs</Text>
+            <TextInput
+              style={[styles.input, styles.inputMultiline]}
+              placeholder="Quels sont les objectifs ?"
+              placeholderTextColor="#94a3b8"
+              value={form.objectifs}
+              onChangeText={(val) => setForm({ ...form, objectifs: val })}
+              multiline
+              numberOfLines={3}
+            />
+
+            <Text style={styles.label}>Budget demandé (€)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ex: 500"
+              placeholderTextColor="#94a3b8"
+              value={form.budgetDemande}
+              onChangeText={(val) => setForm({ ...form, budgetDemande: val })}
+              keyboardType="numeric"
+            />
+
+            <TouchableOpacity
+              style={[styles.btnCreate, creating && styles.btnDisabled]}
+              onPress={onSubmit}
+              disabled={creating}
+            >
+              {creating
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <Text style={styles.btnCreateText}>Soumettre le projet</Text>
+              }
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function RoleBlockedState({ title, text }) {
+  return (
+    <View style={styles.centered}>
+      <Text style={styles.emptyIcon}>🚀</Text>
+      <Text style={styles.emptyTitle}>{title}</Text>
+      <Text style={styles.emptyText}>{text}</Text>
+    </View>
+  );
+}
+
+function EmptyState({ title, text, onRetry }) {
+  return (
+    <View style={styles.centered}>
+      <Text style={styles.emptyIcon}>🚀</Text>
+      <Text style={styles.emptyTitle}>{title}</Text>
+      <Text style={styles.emptyText}>{text}</Text>
+      <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+        <Text style={styles.retryButtonText}>Réessayer</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function InfoBox({ text }) {
+  return (
+    <View style={styles.infoBox}>
+      <Text style={styles.infoBoxText}>{text}</Text>
+    </View>
+  );
+}
+
+function StatusBadge({ label, color }) {
+  return (
+    <View style={[styles.statusBadge, { backgroundColor: color }]}>
+      <Text style={styles.statusBadgeText}>{label}</Text>
+    </View>
+  );
+}
+
+function MetaRow({ label, value }) {
+  return (
+    <View style={styles.metaRow}>
+      <Text style={styles.metaLabel}>{label}</Text>
+      <Text style={styles.metaValue} numberOfLines={1}>{value}</Text>
+    </View>
+  );
+}
+
+function translateProjetStatut(statut) {
   switch (statut) {
-    case 'APPROUVE':  return '#16a34a';
-    case 'EN_COURS':  return '#2563eb';
-    case 'TERMINE':   return '#6b7280';
-    case 'REJETE':    return '#dc2626';
-    case 'SOUMIS':    return '#0891b2';
-    default:          return '#d97706';
+    case 'BROUILLON': return 'Brouillon';
+    case 'SOUMIS': return 'Soumis';
+    case 'APPROUVE': return 'Approuvé';
+    case 'EN_COURS': return 'En cours';
+    case 'TERMINE': return 'Terminé';
+    case 'REJETE': return 'Rejeté';
+    default: return statut || 'Projet';
   }
+}
+
+function statusColor(statut) {
+  switch (statut) {
+    case 'APPROUVE': return '#16a34a';
+    case 'EN_COURS': return '#2563eb';
+    case 'TERMINE': return '#64748b';
+    case 'REJETE': return '#dc2626';
+    case 'SOUMIS': return '#0891b2';
+    default: return '#d97706';
+  }
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return 'Date non renseignée';
+  return new Date(dateStr).toLocaleDateString('fr-BE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
+function getApiError(err, fallback) {
+  if (err.response?.status === 401) {
+    return 'Session expirée. Reconnectez-vous.';
+  }
+  if (err.response?.status === 403) {
+    return 'Accès non autorisé.';
+  }
+  return err.response?.data?.message || fallback;
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f0f4f8' },
 
   searchContainer: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 10,
-    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e2e8f0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
     gap: 10,
   },
   searchInput: {
-    flex: 1, backgroundColor: '#f1f5f9', borderRadius: 12,
-    paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, color: '#1e293b',
+    flex: 1,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#1e293b',
   },
   btnNew: {
-    width: 40, height: 40, backgroundColor: '#1e3a5f',
-    borderRadius: 12, alignItems: 'center', justifyContent: 'center',
+    width: 40,
+    height: 40,
+    backgroundColor: '#1e3a5f',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  btnNewText: { color: '#fff', fontSize: 24, fontWeight: 'bold', lineHeight: 28 },
+  btnNewDisabled: { backgroundColor: '#cbd5e1' },
+  btnNewText: { color: '#fff', fontSize: 24, fontWeight: '900', lineHeight: 28 },
 
-  filtresScroll: {
-    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e2e8f0',
+  infoBox: {
+    backgroundColor: '#eff6ff',
+    borderLeftWidth: 4,
+    borderLeftColor: '#2563eb',
+    marginHorizontal: 16,
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 10,
   },
-  filtresContent: { paddingHorizontal: 12, paddingVertical: 8, gap: 6 },
-  filtreBtn: {
-    borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 20,
-    paddingHorizontal: 12, paddingVertical: 5,
-  },
-  filtreBtnActive: { backgroundColor: '#1e3a5f', borderColor: '#1e3a5f' },
-  filtreBtnText: { fontSize: 11, color: '#64748b', fontWeight: '500' },
-  filtreBtnTextActive: { color: '#fff', fontWeight: '700' },
-
-  adminBanner: {
-    backgroundColor: '#eff6ff', paddingHorizontal: 16, paddingVertical: 8,
-    borderBottomWidth: 1, borderBottomColor: '#bfdbfe',
-  },
-  adminBannerText: { fontSize: 12, color: '#1e40af', fontWeight: '600' },
-
+  infoBoxText: { color: '#1e40af', fontSize: 13, lineHeight: 18 },
   successBox: {
-    backgroundColor: '#f0fdf4', borderLeftWidth: 4, borderLeftColor: '#16a34a',
-    marginHorizontal: 16, marginTop: 8, padding: 12, borderRadius: 8,
+    backgroundColor: '#f0fdf4',
+    borderLeftWidth: 4,
+    borderLeftColor: '#16a34a',
+    marginHorizontal: 16,
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 8,
   },
   successText: { color: '#15803d', fontSize: 13 },
   errorBox: {
-    backgroundColor: '#fef2f2', borderLeftWidth: 4, borderLeftColor: '#dc2626',
-    marginHorizontal: 16, marginTop: 8, padding: 12, borderRadius: 8,
+    backgroundColor: '#fef2f2',
+    borderLeftWidth: 4,
+    borderLeftColor: '#dc2626',
+    marginHorizontal: 16,
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 8,
   },
   errorText: { color: '#dc2626', fontSize: 13 },
 
-  listContent: { padding: 16 },
-
+  listContent: { padding: 16, paddingBottom: 40 },
   card: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 16,
-    marginBottom: 14, borderTopWidth: 4,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07, shadowRadius: 8, elevation: 2,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderTopWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   cardHeader: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'flex-start', marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 10,
   },
-  cardTitle: {
-    flex: 1, fontSize: 15, fontWeight: 'bold',
-    color: '#1e3a5f', lineHeight: 20, marginRight: 8,
-  },
-  statutBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
-  statutText: { color: '#fff', fontSize: 10, fontWeight: '600' },
-  cardDesc: { fontSize: 13, color: '#64748b', lineHeight: 18, marginBottom: 10 },
-  cardInfos: { marginBottom: 10 },
-  cardInfo: { fontSize: 12, color: '#64748b', marginBottom: 3 },
+  cardTitleWrap: { flex: 1, marginRight: 10 },
+  cardTitle: { fontSize: 16, fontWeight: '900', color: '#1e3a5f', marginBottom: 4 },
+  cardSub: { color: '#64748b', fontSize: 12 },
+  cardDesc: { color: '#475569', fontSize: 13, lineHeight: 19, marginBottom: 12 },
+  statusBadge: { borderRadius: 20, paddingHorizontal: 9, paddingVertical: 5 },
+  statusBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900' },
 
-  cardActions: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  btnApprouver: {
-    flex: 1, backgroundColor: '#f0fdf4', borderWidth: 1, borderColor: '#86efac',
-    paddingVertical: 8, borderRadius: 10, alignItems: 'center',
+  metaBox: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  btnApprouverText: { color: '#16a34a', fontWeight: '600', fontSize: 12 },
-  btnRejeter: {
-    flex: 1, backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fca5a5',
-    paddingVertical: 8, borderRadius: 10, alignItems: 'center',
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eef2f7',
   },
-  btnRejeterText: { color: '#dc2626', fontWeight: '600', fontSize: 12 },
-  btnEnCours: {
-    flex: 1, backgroundColor: '#eff6ff', borderWidth: 1, borderColor: '#93c5fd',
-    paddingVertical: 8, borderRadius: 10, alignItems: 'center',
+  metaLabel: { color: '#64748b', fontSize: 12 },
+  metaValue: {
+    color: '#1e3a5f',
+    fontSize: 12,
+    fontWeight: '700',
+    maxWidth: '58%',
+    textAlign: 'right',
   },
-  btnEnCoursText: { color: '#2563eb', fontWeight: '600', fontSize: 12 },
-  btnTerminer: {
-    flex: 1, backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1',
-    paddingVertical: 8, borderRadius: 10, alignItems: 'center',
-  },
-  btnTerminerText: { color: '#475569', fontWeight: '600', fontSize: 12 },
 
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 30,
+    backgroundColor: '#f0f4f8',
+  },
   loadingText: { marginTop: 12, color: '#64748b', fontSize: 14 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyText: { color: '#64748b', fontSize: 14, textAlign: 'center', marginBottom: 8 },
-  emptyLink: { color: '#2563eb', fontSize: 13 },
+  emptyIcon: { fontSize: 42, marginBottom: 12 },
+  emptyTitle: {
+    color: '#1e3a5f',
+    fontSize: 18,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptyText: {
+    color: '#64748b',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+    maxWidth: 320,
+  },
+  retryButton: {
+    marginTop: 18,
+    backgroundColor: '#1e3a5f',
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+  },
+  retryButtonText: { color: '#fff', fontWeight: '900', fontSize: 13 },
 
-  // Modal
   modalOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)',
+    flex: 1,
+    backgroundColor: 'rgba(15,23,42,0.45)',
     justifyContent: 'flex-end',
   },
   modalCard: {
-    backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 24, maxHeight: '85%',
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    padding: 20,
+    maxHeight: '88%',
   },
   modalHeader: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', marginBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 18,
   },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#1e3a5f' },
-  modalClose: { fontSize: 20, color: '#94a3b8', fontWeight: 'bold' },
-
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
+  modalTitle: { color: '#1e3a5f', fontSize: 18, fontWeight: '900' },
+  modalSub: { color: '#64748b', fontSize: 12, marginTop: 3 },
+  modalClose: { color: '#64748b', fontSize: 28, lineHeight: 30 },
+  label: { fontSize: 13, fontWeight: '800', color: '#374151', marginBottom: 6 },
   input: {
-    borderWidth: 1, borderColor: '#d1d5db', borderRadius: 12,
-    paddingHorizontal: 16, paddingVertical: 12, fontSize: 14,
-    color: '#1e293b', backgroundColor: '#f8fafc', marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#1e293b',
+    backgroundColor: '#f8fafc',
+    marginBottom: 12,
   },
-  inputMultiline: { height: 100, textAlignVertical: 'top' },
+  inputMultiline: { minHeight: 90, textAlignVertical: 'top' },
   btnCreate: {
-    backgroundColor: '#1e3a5f', paddingVertical: 14,
-    borderRadius: 12, alignItems: 'center', marginTop: 4,
+    backgroundColor: '#1e3a5f',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 14,
   },
-  btnDisabled: { backgroundColor: '#94a3b8' },
-  btnCreateText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  btnDisabled: { backgroundColor: '#cbd5e1' },
+  btnCreateText: { color: '#fff', fontSize: 14, fontWeight: '900' },
 });

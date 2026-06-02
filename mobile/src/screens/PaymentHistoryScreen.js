@@ -76,7 +76,7 @@ export default function PaymentHistoryScreen() {
             </Text>
             {item.message && (
               <Text style={styles.cardMessage} numberOfLines={1}>
-                "{item.message}"
+                {'"'}{item.message}{'"'}
               </Text>
             )}
           </View>

@@ -1,8 +1,16 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 
 export default function HomeScreen({ navigation }) {
   const { isAuthenticated, user } = useAuth();
+
+  const goToPublicOrLogin = (screenName) => {
+    if (screenName === 'Activities' || screenName === 'Groupes') {
+      navigation.navigate(screenName);
+      return;
+    }
+    navigation.navigate('Login');
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -65,16 +73,19 @@ export default function HomeScreen({ navigation }) {
           icon="🚀"
           title="Projets"
           description="Propose ou rejoins des projets collaboratifs avec d'autres membres."
+          onPress={() => goToPublicOrLogin('Projects')}
         />
         <FeatureCard
           icon="👥"
           title="Groupes"
           description="Rejoins des groupes et échange avec d'autres membres."
+          onPress={() => navigation.navigate('Groupes')}
         />
         <FeatureCard
           icon="💬"
           title="Messagerie"
           description="Communique avec les membres de ton groupe."
+          onPress={() => navigation.navigate('Login')}
         />
       </View>
 

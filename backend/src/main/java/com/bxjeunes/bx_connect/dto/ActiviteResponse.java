@@ -23,6 +23,9 @@ public class ActiviteResponse {
     private LocalDateTime dateCreation;
     private String createurPrenom;
     private String createurNom;
+    private int nombreInscrits;
+    private int placesRestantes;
+    private boolean complete;
 
     // ─── Constructeur depuis entité ──────────────────────────────────────────
 
@@ -48,6 +51,19 @@ public class ActiviteResponse {
         return response;
     }
 
+    public static ActiviteResponse fromEntity(Activite activite, int nombreInscrits) {
+        ActiviteResponse response = fromEntity(activite);
+        response.nombreInscrits = nombreInscrits;
+        if (activite.getCapaciteMax() > 0) {
+            response.placesRestantes = Math.max(activite.getCapaciteMax() - nombreInscrits, 0);
+            response.complete = response.placesRestantes == 0;
+        } else {
+            response.placesRestantes = -1;
+            response.complete = false;
+        }
+        return response;
+    }
+
     // ─── Getters ─────────────────────────────────────────────────────────────
 
     public Long getId() { return id; }
@@ -65,4 +81,7 @@ public class ActiviteResponse {
     public LocalDateTime getDateCreation() { return dateCreation; }
     public String getCreateurPrenom() { return createurPrenom; }
     public String getCreateurNom() { return createurNom; }
+    public int getNombreInscrits() { return nombreInscrits; }
+    public int getPlacesRestantes() { return placesRestantes; }
+    public boolean isComplete() { return complete; }
 }

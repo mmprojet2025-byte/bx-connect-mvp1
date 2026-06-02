@@ -67,7 +67,7 @@ export default function RegisterScreen({ navigation }) {
         </TouchableOpacity>
       </View>
       <TouchableOpacity style={styles.back} onPress={()=>navigation.navigate('Home')}>
-        <Text style={styles.backText}>Retour a l'accueil</Text>
+        <Text style={styles.backText}>{"Retour a l'accueil"}</Text>
       </TouchableOpacity>
     </ScrollView>
   );

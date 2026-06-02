@@ -48,10 +48,12 @@ export function AuthProvider({ children }) {
 
   // ─── Helpers de rôle ──────────────────────────────────────────────────────
   const isAuthenticated = !!token && !!user;
-  const isAdmin         = user?.role === 'ADMIN';
-  const isReferent      = user?.role === 'REFERENT';
-  const isMembre        = user?.role === 'MEMBRE';
-  const isPartenaire    = user?.role === 'PARTENAIRE';
+  const role            = user?.role || null;
+  const isMembre        = role === 'MEMBRE';
+  const isReferent      = role === 'REFERENT';
+  const isAdmin         = role === 'ADMIN';
+  const isSuperAdmin    = role === 'SUPER_ADMIN';
+  const isPartenaire    = role === 'PARTENAIRE';
 
   return (
     <AuthContext.Provider value={{
@@ -61,9 +63,11 @@ export function AuthProvider({ children }) {
       login,
       logout,
       isAuthenticated,
-      isAdmin,
-      isReferent,
+      role,
       isMembre,
+      isReferent,
+      isAdmin,
+      isSuperAdmin,
       isPartenaire,
     }}>
       {children}

@@ -6,8 +6,10 @@ import com.bxjeunes.bx_connect.dto.ActiviteResponse;
 import com.bxjeunes.bx_connect.entity.Activite;
 import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.StatutActivite;
+import com.bxjeunes.bx_connect.entity.StatutInscription;
 import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.repository.ActiviteRepository;
+import com.bxjeunes.bx_connect.repository.InscriptionRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -21,11 +23,14 @@ public class ActiviteService {
 
     private final ActiviteRepository activiteRepository;
     private final UserRepository userRepository;
+    private final InscriptionRepository inscriptionRepository;
 
     public ActiviteService(ActiviteRepository activiteRepository,
-                           UserRepository userRepository) {
+                           UserRepository userRepository,
+                           InscriptionRepository inscriptionRepository) {
         this.activiteRepository = activiteRepository;
         this.userRepository = userRepository;
+        this.inscriptionRepository = inscriptionRepository;
     }
 
     // ─── Créer une activité ───────────────────────────────────────────────────
@@ -47,14 +52,14 @@ public class ActiviteService {
         activite.setStatut(StatutActivite.BROUILLON);
         activite.setCreateur(createur);
 
-        return ActiviteResponse.fromEntity(activiteRepository.save(activite));
+        return toResponse(activiteRepository.save(activite));
     }
 
     // ─── Lister activités publiées (public) ───────────────────────────────────
     public List<ActiviteResponse> listerPubliees() {
         return activiteRepository.findByStatut(StatutActivite.PUBLIEE)
                 .stream()
-                .map(ActiviteResponse::fromEntity)
+                .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -62,7 +67,7 @@ public class ActiviteService {
     public List<ActiviteResponse> listerToutes() {
         return activiteRepository.findAll()
                 .stream()
-                .map(ActiviteResponse::fromEntity)
+                .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -70,7 +75,7 @@ public class ActiviteService {
     public ActiviteResponse getById(Long id) {
         Activite activite = activiteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
-        return ActiviteResponse.fromEntity(activite);
+        return toResponse(activite);
     }
 
     // ─── Recherche par mot-clé (V06 / M16) ───────────────────────────────────
@@ -78,7 +83,7 @@ public class ActiviteService {
         return activiteRepository
                 .rechercherMultiChamps(StatutActivite.PUBLIEE, motCle)
                 .stream()
-                .map(ActiviteResponse::fromEntity)
+                .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -138,7 +143,7 @@ public class ActiviteService {
         }
 
         return resultats.stream()
-                .map(ActiviteResponse::fromEntity)
+                .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -157,7 +162,7 @@ public class ActiviteService {
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + email));
         return activiteRepository.findByCreateurId(user.getId())
                 .stream()
-                .map(ActiviteResponse::fromEntity)
+                .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -178,7 +183,7 @@ public class ActiviteService {
         activite.setCategorie(request.getCategorie());
         activite.setTheme(request.getTheme());
 
-        return ActiviteResponse.fromEntity(activiteRepository.save(activite));
+        return toResponse(activiteRepository.save(activite));
     }
 
     // ─── Changer le statut ────────────────────────────────────────────────────
@@ -187,7 +192,7 @@ public class ActiviteService {
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
         verifierDroitGestion(activite, emailUser);
         activite.setStatut(nouveauStatut);
-        return ActiviteResponse.fromEntity(activiteRepository.save(activite));
+        return toResponse(activiteRepository.save(activite));
     }
 
     // ─── Supprimer une activité ───────────────────────────────────────────────
@@ -210,5 +215,13 @@ public class ActiviteService {
             return;
         }
         throw new AccessDeniedException("Vous ne pouvez gerer que vos propres activites.");
+    }
+
+    private ActiviteResponse toResponse(Activite activite) {
+        int nombreInscrits = (int) inscriptionRepository.countByActiviteIdAndStatutIn(
+                activite.getId(),
+                List.of(StatutInscription.CONFIRMEE, StatutInscription.PAYEE)
+        );
+        return ActiviteResponse.fromEntity(activite, nombreInscrits);
     }
 }

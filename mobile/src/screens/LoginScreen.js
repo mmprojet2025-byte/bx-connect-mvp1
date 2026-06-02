@@ -132,7 +132,7 @@ export default function LoginScreen({ navigation }) {
         style={styles.backBtn}
         onPress={() => navigation.navigate('Home')}
       >
-        <Text style={styles.backText}>← Retour à l'accueil</Text>
+        <Text style={styles.backText}>{"← Retour à l'accueil"}</Text>
       </TouchableOpacity>
 
     </ScrollView>

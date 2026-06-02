@@ -1,342 +1,559 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, ActivityIndicator, Platform
+  TextInput, ActivityIndicator
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 export default function ActivitiesScreen() {
-  const { isAuthenticated, isAdmin, isReferent } = useAuth();
+  const {
+    isAuthenticated,
+    isMembre,
+    isReferent,
+    isAdmin,
+    isSuperAdmin,
+  } = useAuth();
 
   const [activites, setActivites] = useState([]);
+  const [inscriptions, setInscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoadingId, setActionLoadingId] = useState(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [recherche, setRecherche] = useState('');
-  const [filtreStatut, setFiltreStatut] = useState('TOUS');
-
-  // ✅ ADMIN/REFERENT voient toutes les activités, les autres voient les publiées
-  const peutGerer = isAdmin || isReferent;
 
   useEffect(() => {
-    fetchActivites();
-  }, []);
+    chargerActivites();
+  }, [isAuthenticated, isMembre, isReferent, isAdmin, isSuperAdmin]);
 
-  const fetchActivites = async () => {
+  const chargerActivites = async () => {
+    setLoading(true);
+    setError('');
+    setMessage('');
+
+    if (isAdmin || isSuperAdmin) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      setError('');
-      // ✅ ADMIN/REFERENT → endpoint admin (toutes les activités)
-      // ✅ MEMBRE/VISITEUR → endpoint public (activités publiées seulement)
-      const endpoint = peutGerer ? '/activites/admin/toutes' : '/activites';
-      const res = await api.get(endpoint);
-      setActivites(res.data);
-    } catch (err) {
-      // Si l'endpoint admin échoue (ex: token expiré), fallback sur public
-      try {
-        const res = await api.get('/activites');
+      if (isReferent) {
+        const res = await api.get('/activites/mes-activites');
         setActivites(res.data);
-      } catch {
-        setError('Impossible de charger les activités.');
+        setInscriptions([]);
+        return;
       }
+
+      const activitesRes = await api.get('/activites');
+      setActivites(activitesRes.data);
+
+      if (isMembre) {
+        try {
+          const inscriptionsRes = await api.get('/inscriptions/mes-inscriptions');
+          setInscriptions(inscriptionsRes.data);
+        } catch {
+          setInscriptions([]);
+        }
+      } else {
+        setInscriptions([]);
+      }
+    } catch (err) {
+      setError(getApiError(err, 'Impossible de charger les activités.'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleInscrire = async (activiteId) => {
-    if (!isAuthenticated) return;
+    if (!isMembre) return;
+
+    setActionLoadingId(activiteId);
+    setError('');
+    setMessage('');
     try {
-      setMessage('');
       await api.post('/inscriptions', { activiteId });
-      setMessage('✅ Inscription réussie !');
-      setTimeout(() => setMessage(''), 3000);
+      setMessage('Inscription réussie.');
+      await chargerActivites();
     } catch (err) {
-      setError(err.response?.data?.message || "Erreur lors de l'inscription.");
-      setTimeout(() => setError(''), 3000);
+      setError(getApiError(err, "Impossible de s'inscrire à cette activité."));
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
-  const handlePublier = async (activiteId) => {
-    try {
-      await api.patch(`/activites/${activiteId}/statut?statut=PUBLIEE`);
-      setMessage('✅ Activité publiée !');
-      fetchActivites();
-      setTimeout(() => setMessage(''), 3000);
-    } catch {
-      setError('Erreur lors de la publication.');
-    }
-  };
-
-  // Filtres
-  const STATUTS = peutGerer
-    ? ['TOUS', 'BROUILLON', 'PUBLIEE', 'ANNULEE', 'TERMINEE']
-    : ['TOUS'];
-
-  const activitesFiltrees = activites.filter(a => {
-    const matchRecherche =
-      a.titre?.toLowerCase().includes(recherche.toLowerCase()) ||
-      a.lieu?.toLowerCase().includes(recherche.toLowerCase());
-    const matchStatut = filtreStatut === 'TOUS' || a.statut === filtreStatut;
-    return matchRecherche && matchStatut;
+  const activitesFiltrees = activites.filter((activite) => {
+    const texte = `${activite.titre || ''} ${activite.description || ''} ${activite.lieu || ''} ${activite.theme || ''}`;
+    return texte.toLowerCase().includes(recherche.toLowerCase());
   });
 
-  const renderActivite = ({ item }) => (
-    <View style={styles.card}>
-      <View style={styles.cardImagePlaceholder}>
-        <Text style={styles.cardImageIcon}>🎯</Text>
-      </View>
+  if (isAdmin) {
+    return (
+      <RoleBlockedState
+        title="Activités"
+        text="La gestion des activités se fait depuis le web."
+      />
+    );
+  }
 
-      <View style={styles.cardBody}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle} numberOfLines={2}>{item.titre}</Text>
-          <View style={[styles.statutBadge, { backgroundColor: statutColor(item.statut) }]}>
-            <Text style={styles.statutText}>{item.statut}</Text>
-          </View>
-        </View>
-
-        {item.description && (
-          <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
-        )}
-
-        <View style={styles.cardInfos}>
-          {item.lieu && <Text style={styles.cardInfo}>📍 {item.lieu}</Text>}
-          {item.dateDebut && (
-            <Text style={styles.cardInfo}>
-              📅 {new Date(item.dateDebut).toLocaleDateString('fr-BE')}
-            </Text>
-          )}
-          <Text style={styles.cardInfo}>
-            {item.gratuite ? '🆓 Gratuit' : `💶 ${item.prix} €`}
-          </Text>
-          {item.capaciteMax > 0 && (
-            <Text style={styles.cardInfo}>👥 Max {item.capaciteMax} personnes</Text>
-          )}
-          {/* ✅ Affiche le créateur pour Admin/Référent */}
-          {peutGerer && item.createurPrenom && (
-            <Text style={styles.cardInfo}>
-              👤 Créé par {item.createurPrenom} {item.createurNom}
-            </Text>
-          )}
-        </View>
-
-        {/* ✅ Boutons selon le rôle */}
-        <View style={styles.cardActions}>
-          {/* Membre connecté → S'inscrire si activité publiée */}
-          {isAuthenticated && !peutGerer && item.statut === 'PUBLIEE' && (
-            <TouchableOpacity
-              style={styles.btnInscrire}
-              onPress={() => handleInscrire(item.id)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.btnInscrireText}>S'inscrire</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Admin/Référent → Publier si brouillon */}
-          {peutGerer && item.statut === 'BROUILLON' && (
-            <TouchableOpacity
-              style={styles.btnPublier}
-              onPress={() => handlePublier(item.id)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.btnPublierText}>▶ Publier</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-    </View>
-  );
+  if (isSuperAdmin) {
+    return (
+      <RoleBlockedState
+        title="Activités métier"
+        text="Le SUPER_ADMIN ne gère pas les activités de l’association sur mobile V1."
+      />
+    );
+  }
 
   return (
     <View style={styles.container}>
-
-      {/* Barre de recherche */}
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="🔍 Rechercher une activité..."
+          placeholder="Rechercher une activité..."
           placeholderTextColor="#94a3b8"
           value={recherche}
           onChangeText={setRecherche}
         />
+        <TouchableOpacity style={styles.retrySmall} onPress={chargerActivites}>
+          <Text style={styles.retrySmallText}>Réessayer</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* ✅ Filtres statut pour Admin/Référent */}
-      {peutGerer && (
-        <View style={styles.filtresContainer}>
-          {STATUTS.map(s => (
-            <TouchableOpacity
-              key={s}
-              style={[styles.filtreBtn, filtreStatut === s && styles.filtreBtnActive]}
-              onPress={() => setFiltreStatut(s)}
-            >
-              <Text style={[styles.filtreBtnText, filtreStatut === s && styles.filtreBtnTextActive]}>
-                {s}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      {!isAuthenticated && (
+        <InfoBox text="Connecte-toi pour t’inscrire à une activité." />
       )}
 
-      {/* ✅ Indicateur de mode pour Admin */}
-      {peutGerer && (
-        <View style={styles.adminBanner}>
-          <Text style={styles.adminBannerText}>
-            🛡️ Mode Admin — {activites.length} activité(s) au total
-          </Text>
-        </View>
+      {isReferent && (
+        <InfoBox text="Mobile V1 affiche vos activités en lecture simple. La gestion complète se fait depuis le web." />
       )}
 
-      {/* Messages */}
       {message !== '' && (
         <View style={styles.successBox}>
           <Text style={styles.successText}>{message}</Text>
         </View>
       )}
+
       {error !== '' && (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
 
-      {/* Liste */}
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#1e3a5f" />
           <Text style={styles.loadingText}>Chargement des activités...</Text>
         </View>
       ) : activitesFiltrees.length === 0 ? (
-        <View style={styles.centered}>
-          <Text style={styles.emptyIcon}>🎯</Text>
-          <Text style={styles.emptyText}>
-            {recherche ? 'Aucune activité trouvée.' : 'Aucune activité disponible.'}
-          </Text>
-        </View>
+        <EmptyState
+          title={recherche ? 'Aucune activité trouvée' : 'Aucune activité disponible'}
+          text={isReferent
+            ? "Vos activités apparaîtront ici lorsqu'elles seront créées."
+            : "Les activités publiées apparaîtront ici."}
+          onRetry={chargerActivites}
+        />
       ) : (
         <FlatList
           data={activitesFiltrees}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={renderActivite}
+          renderItem={({ item }) => (
+            <ActivityCard
+              activite={item}
+              isAuthenticated={isAuthenticated}
+              isMembre={isMembre}
+              isReferent={isReferent}
+              inscription={inscriptions.find((ins) => ins.activiteId === item.id)}
+              actionLoading={actionLoadingId === item.id}
+              onInscrire={() => handleInscrire(item.id)}
+            />
+          )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          onRefresh={chargerActivites}
           refreshing={false}
-          onRefresh={fetchActivites}
         />
-      )}
-
-      {/* Bouton refresh sur web */}
-      {Platform.OS === 'web' && (
-        <TouchableOpacity style={styles.refreshBtn} onPress={fetchActivites}>
-          <Text style={styles.refreshBtnText}>🔄 Actualiser</Text>
-        </TouchableOpacity>
       )}
     </View>
   );
 }
 
-function statutColor(statut) {
-  switch (statut) {
-    case 'PUBLIEE':  return '#16a34a';
-    case 'ANNULEE':  return '#dc2626';
-    case 'TERMINEE': return '#6b7280';
-    default:         return '#d97706';
+function ActivityCard({
+  activite,
+  isAuthenticated,
+  isMembre,
+  isReferent,
+  inscription,
+  actionLoading,
+  onInscrire,
+}) {
+  const complete = isActiviteComplete(activite);
+  const alreadyRegistered = !!inscription && inscription.statut !== 'ANNULEE';
+  const canRegister = isMembre && activite.statut === 'PUBLIEE' && !alreadyRegistered && !complete;
+  const status = getActivityStatus({ activite, inscription, complete });
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.cardTitleWrap}>
+          <Text style={styles.cardTitle} numberOfLines={2}>{activite.titre}</Text>
+          <Text style={styles.cardSub}>{formatDateRange(activite.dateDebut, activite.dateFin)}</Text>
+        </View>
+        <StatusBadge label={status.label} color={status.color} />
+      </View>
+
+      {activite.description && (
+        <Text style={styles.cardDesc} numberOfLines={3}>{activite.description}</Text>
+      )}
+
+      <View style={styles.metaBox}>
+        <MetaRow label="Lieu" value={activite.lieu || 'À confirmer'} />
+        <MetaRow label="Prix" value={activite.gratuite ? 'Gratuit' : `${activite.prix ?? 0} €`} />
+        <MetaRow label="Capacité" value={formatCapacite(activite)} />
+        {activite.theme && <MetaRow label="Thème" value={activite.theme} />}
+        {isReferent && activite.createurPrenom && (
+          <MetaRow
+            label="Créée par"
+            value={`${activite.createurPrenom || ''} ${activite.createurNom || ''}`.trim()}
+          />
+        )}
+      </View>
+
+      {!isAuthenticated && (
+        <Text style={styles.visitorHint}>Connecte-toi pour t’inscrire.</Text>
+      )}
+
+      {isMembre && (
+        <View style={styles.actions}>
+          {alreadyRegistered ? (
+            <StatusLine
+              text={`Votre inscription : ${translateInscription(inscription.statut)}`}
+              color={status.color}
+            />
+          ) : complete ? (
+            <StatusLine text="Cette activité est complète." color="#dc2626" />
+          ) : activite.statut !== 'PUBLIEE' ? (
+            <StatusLine text="Inscription indisponible pour cette activité." color="#64748b" />
+          ) : (
+            <TouchableOpacity
+              style={[styles.btnPrimary, (!canRegister || actionLoading) && styles.btnDisabled]}
+              onPress={onInscrire}
+              disabled={!canRegister || actionLoading}
+            >
+              {actionLoading
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <Text style={styles.btnPrimaryText}>{"S'inscrire"}</Text>
+              }
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function RoleBlockedState({ title, text }) {
+  return (
+    <View style={styles.centered}>
+      <Text style={styles.emptyIcon}>🎯</Text>
+      <Text style={styles.emptyTitle}>{title}</Text>
+      <Text style={styles.emptyText}>{text}</Text>
+    </View>
+  );
+}
+
+function EmptyState({ title, text, onRetry }) {
+  return (
+    <View style={styles.centered}>
+      <Text style={styles.emptyIcon}>🎯</Text>
+      <Text style={styles.emptyTitle}>{title}</Text>
+      <Text style={styles.emptyText}>{text}</Text>
+      <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+        <Text style={styles.retryButtonText}>Réessayer</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function InfoBox({ text }) {
+  return (
+    <View style={styles.infoBox}>
+      <Text style={styles.infoBoxText}>{text}</Text>
+    </View>
+  );
+}
+
+function StatusBadge({ label, color }) {
+  return (
+    <View style={[styles.statusBadge, { backgroundColor: color }]}>
+      <Text style={styles.statusBadgeText}>{label}</Text>
+    </View>
+  );
+}
+
+function StatusLine({ text, color }) {
+  return <Text style={[styles.statusLine, { color }]}>{text}</Text>;
+}
+
+function MetaRow({ label, value }) {
+  return (
+    <View style={styles.metaRow}>
+      <Text style={styles.metaLabel}>{label}</Text>
+      <Text style={styles.metaValue} numberOfLines={1}>{value}</Text>
+    </View>
+  );
+}
+
+function getActivityStatus({ activite, inscription, complete }) {
+  if (inscription?.statut === 'CONFIRMEE') {
+    return { label: 'Inscrit', color: '#16a34a' };
   }
+  if (inscription?.statut === 'EN_ATTENTE_PAIEMENT') {
+    return { label: 'Paiement en attente', color: '#d97706' };
+  }
+  if (inscription?.statut === 'ANNULEE') {
+    return { label: 'Annulée', color: '#64748b' };
+  }
+  if (complete) {
+    return { label: 'Complète', color: '#dc2626' };
+  }
+  if (activite.statut === 'PUBLIEE') {
+    return { label: 'Disponible', color: '#2563eb' };
+  }
+  return { label: translateActiviteStatut(activite.statut), color: statusColor(activite.statut) };
+}
+
+function isActiviteComplete(activite) {
+  if (typeof activite.complete === 'boolean') {
+    return activite.complete;
+  }
+  const inscrits = activite.nombreInscrits ?? activite.inscrits ?? activite.nombreParticipants;
+  return activite.capaciteMax > 0 && typeof inscrits === 'number' && inscrits >= activite.capaciteMax;
+}
+
+function formatCapacite(activite) {
+  if (!activite.capaciteMax || activite.capaciteMax <= 0) {
+    return 'Illimitée';
+  }
+
+  if (typeof activite.placesRestantes === 'number' && activite.placesRestantes >= 0) {
+    return `${activite.placesRestantes} place${activite.placesRestantes > 1 ? 's' : ''} restante${activite.placesRestantes > 1 ? 's' : ''}`;
+  }
+
+  const inscrits = activite.nombreInscrits ?? activite.inscrits ?? activite.nombreParticipants;
+  if (typeof inscrits === 'number') {
+    const restantes = Math.max(activite.capaciteMax - inscrits, 0);
+    return `${restantes} place${restantes > 1 ? 's' : ''} restante${restantes > 1 ? 's' : ''}`;
+  }
+
+  return `${activite.capaciteMax} place${activite.capaciteMax > 1 ? 's' : ''} maximum`;
+}
+
+function translateInscription(statut) {
+  switch (statut) {
+    case 'CONFIRMEE': return 'Confirmée';
+    case 'EN_ATTENTE_PAIEMENT': return 'Paiement en attente';
+    case 'ANNULEE': return 'Annulée';
+    default: return statut || 'Inconnue';
+  }
+}
+
+function translateActiviteStatut(statut) {
+  switch (statut) {
+    case 'BROUILLON': return 'Brouillon';
+    case 'PUBLIEE': return 'Disponible';
+    case 'ANNULEE': return 'Annulée';
+    case 'TERMINEE': return 'Terminée';
+    default: return statut || 'Activité';
+  }
+}
+
+function statusColor(statut) {
+  switch (statut) {
+    case 'PUBLIEE': return '#2563eb';
+    case 'ANNULEE': return '#dc2626';
+    case 'TERMINEE': return '#64748b';
+    default: return '#d97706';
+  }
+}
+
+function formatDateRange(dateDebut, dateFin) {
+  if (!dateDebut) return 'Date à confirmer';
+  const debut = new Date(dateDebut);
+  const date = debut.toLocaleDateString('fr-BE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+  const heureDebut = debut.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
+
+  if (!dateFin) return `${date} · ${heureDebut}`;
+
+  const fin = new Date(dateFin);
+  const heureFin = fin.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
+  return `${date} · ${heureDebut} - ${heureFin}`;
+}
+
+function getApiError(err, fallback) {
+  if (err.response?.status === 401) {
+    return 'Session expirée. Reconnectez-vous.';
+  }
+  if (err.response?.status === 403) {
+    return 'Accès non autorisé.';
+  }
+  return err.response?.data?.message || fallback;
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f0f4f8' },
 
   searchContainer: {
-    paddingHorizontal: 16, paddingVertical: 10,
-    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e2e8f0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+    gap: 10,
   },
   searchInput: {
-    backgroundColor: '#f1f5f9', borderRadius: 12,
-    paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, color: '#1e293b',
+    flex: 1,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#1e293b',
   },
+  retrySmall: {
+    backgroundColor: '#eff6ff',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  retrySmallText: { color: '#2563eb', fontSize: 12, fontWeight: '800' },
 
-  // Filtres statut
-  filtresContainer: {
-    flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 8,
-    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e2e8f0',
-    flexWrap: 'wrap',
+  infoBox: {
+    backgroundColor: '#eff6ff',
+    borderLeftWidth: 4,
+    borderLeftColor: '#2563eb',
+    marginHorizontal: 16,
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 10,
   },
-  filtreBtn: {
-    borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 20,
-    paddingHorizontal: 10, paddingVertical: 4, marginRight: 6, marginBottom: 4,
-  },
-  filtreBtnActive: { backgroundColor: '#1e3a5f', borderColor: '#1e3a5f' },
-  filtreBtnText: { fontSize: 11, color: '#64748b', fontWeight: '500' },
-  filtreBtnTextActive: { color: '#fff', fontWeight: '700' },
-
-  // Bannière admin
-  adminBanner: {
-    backgroundColor: '#eff6ff', paddingHorizontal: 16, paddingVertical: 8,
-    borderBottomWidth: 1, borderBottomColor: '#bfdbfe',
-  },
-  adminBannerText: { fontSize: 12, color: '#1e40af', fontWeight: '600' },
-
-  // Messages
+  infoBoxText: { color: '#1e40af', fontSize: 13, lineHeight: 18 },
   successBox: {
-    backgroundColor: '#f0fdf4', borderLeftWidth: 4, borderLeftColor: '#16a34a',
-    marginHorizontal: 16, marginTop: 8, padding: 12, borderRadius: 8,
+    backgroundColor: '#f0fdf4',
+    borderLeftWidth: 4,
+    borderLeftColor: '#16a34a',
+    marginHorizontal: 16,
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 8,
   },
   successText: { color: '#15803d', fontSize: 13 },
   errorBox: {
-    backgroundColor: '#fef2f2', borderLeftWidth: 4, borderLeftColor: '#dc2626',
-    marginHorizontal: 16, marginTop: 8, padding: 12, borderRadius: 8,
+    backgroundColor: '#fef2f2',
+    borderLeftWidth: 4,
+    borderLeftColor: '#dc2626',
+    marginHorizontal: 16,
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 8,
   },
   errorText: { color: '#dc2626', fontSize: 13 },
 
-  listContent: { padding: 16 },
-
+  listContent: { padding: 16, paddingBottom: 40 },
   card: {
-    backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden',
-    marginBottom: 16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07, shadowRadius: 8, elevation: 2,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  cardImagePlaceholder: {
-    height: 80, backgroundColor: '#e2eaf0',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  cardImageIcon: { fontSize: 32 },
-  cardBody: { padding: 14 },
   cardHeader: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'flex-start', marginBottom: 6,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 10,
   },
-  cardTitle: {
-    flex: 1, fontSize: 15, fontWeight: 'bold',
-    color: '#1e3a5f', lineHeight: 20, marginRight: 8,
-  },
-  statutBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
-  statutText: { color: '#fff', fontSize: 10, fontWeight: '600' },
-  cardDesc: { fontSize: 13, color: '#64748b', lineHeight: 18, marginBottom: 8 },
-  cardInfos: { marginBottom: 10 },
-  cardInfo: { fontSize: 12, color: '#64748b', marginBottom: 2 },
+  cardTitleWrap: { flex: 1, marginRight: 10 },
+  cardTitle: { fontSize: 16, fontWeight: '900', color: '#1e3a5f', marginBottom: 4 },
+  cardSub: { color: '#64748b', fontSize: 12 },
+  cardDesc: { color: '#475569', fontSize: 13, lineHeight: 19, marginBottom: 12 },
+  statusBadge: { borderRadius: 20, paddingHorizontal: 9, paddingVertical: 5 },
+  statusBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900' },
 
-  cardActions: { flexDirection: 'row', gap: 8 },
-  btnInscrire: {
-    flex: 1, backgroundColor: '#1e3a5f', paddingVertical: 9,
-    borderRadius: 10, alignItems: 'center',
+  metaBox: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 12,
   },
-  btnInscrireText: { color: '#fff', fontWeight: '600', fontSize: 13 },
-  btnPublier: {
-    flex: 1, backgroundColor: '#16a34a', paddingVertical: 9,
-    borderRadius: 10, alignItems: 'center',
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eef2f7',
   },
-  btnPublierText: { color: '#fff', fontWeight: '600', fontSize: 13 },
+  metaLabel: { color: '#64748b', fontSize: 12 },
+  metaValue: {
+    color: '#1e3a5f',
+    fontSize: 12,
+    fontWeight: '700',
+    maxWidth: '58%',
+    textAlign: 'right',
+  },
 
-  refreshBtn: {
-    margin: 16, backgroundColor: '#e2eaf0', paddingVertical: 10,
-    borderRadius: 10, alignItems: 'center',
+  visitorHint: { color: '#2563eb', fontSize: 13, fontWeight: '700', marginTop: 2 },
+  actions: { marginTop: 2 },
+  btnPrimary: {
+    backgroundColor: '#1e3a5f',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
   },
-  refreshBtnText: { color: '#1e3a5f', fontWeight: '600', fontSize: 13 },
+  btnPrimaryText: { color: '#fff', fontSize: 13, fontWeight: '900' },
+  btnDisabled: { backgroundColor: '#cbd5e1' },
+  statusLine: { fontSize: 13, fontWeight: '800', marginTop: 2 },
 
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 30,
+    backgroundColor: '#f0f4f8',
+  },
   loadingText: { marginTop: 12, color: '#64748b', fontSize: 14 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyText: { color: '#64748b', fontSize: 14, textAlign: 'center' },
+  emptyIcon: { fontSize: 42, marginBottom: 12 },
+  emptyTitle: {
+    color: '#1e3a5f',
+    fontSize: 18,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptyText: {
+    color: '#64748b',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+    maxWidth: 320,
+  },
+  retryButton: {
+    marginTop: 18,
+    backgroundColor: '#1e3a5f',
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+  },
+  retryButtonText: { color: '#fff', fontWeight: '900', fontSize: 13 },
 });

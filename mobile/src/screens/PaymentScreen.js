@@ -77,10 +77,10 @@ export default function PaymentScreen({ route }) {
         <Text style={styles.successIcon}>✅</Text>
         <Text style={styles.successTitle}>Redirection en cours</Text>
         <Text style={styles.successText}>
-          Complétez votre paiement dans le navigateur qui vient de s'ouvrir.
+          {"Complétez votre paiement dans le navigateur qui vient de s'ouvrir."}
         </Text>
         <Text style={styles.successHint}>
-          Après le paiement, revenez dans l'application.
+          {"Après le paiement, revenez dans l'application."}
         </Text>
       </View>
     );
