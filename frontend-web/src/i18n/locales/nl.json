@@ -7,10 +7,25 @@
     "messaging": "Berichten",
     "admin": "Beheer",
     "about": "Over ons",
-    "login": "Inloggen",
-    "register": "Registreren",
-    "logout": "Uitloggen",
-    "profile": "Profiel"
+    "login": "Aanmelden",
+    "register": "Registratie",
+    "logout": "Afmelden",
+    "profile": "Profiel",
+    "dashboard": "Dashboard",
+    "adminDashboard": "Dashboard",
+    "users": "Gebruikers",
+    "referents": "Begeleiders",
+    "requests": "Aanvragen",
+    "admins": "Beheerders",
+    "logs": "Logboeken",
+    "notifications": "Meldingen",
+    "alerts": "Meldingen",
+    "myGroups": "Mijn groepen",
+    "platform": "Platform",
+    "partner": "Partner",
+    "menu": "Menu",
+    "close": "Sluiten",
+    "openMenu": "Menu openen"
   },
   "home": {
     "welcome": "Welkom op BX-CONNECT",
@@ -34,6 +49,12 @@
     "email": "E-mailadres",
     "password": "Wachtwoord",
     "login_btn": "Inloggen",
+    "email_placeholder": "jij@email.com",
+    "password_placeholder": "Wachtwoord",
+    "separator_or": "of",
+    "create_free_account": "Gratis account aanmaken",
+    "view_activities_guest": "Activiteiten bekijken zonder aan te melden",
+    "back_home": "Terug naar startpagina",
     "no_account": "Nog geen account?",
     "register_link": "Registreren",
     "forgot_password": "Wachtwoord vergeten?",
@@ -50,7 +71,10 @@
     "login_link": "Inloggen",
     "error_login": "E-mail of wachtwoord onjuist.",
     "error_register": "Fout bij registratie.",
-    "error_passwords": "Wachtwoorden komen niet overeen."
+    "error_email_exists": "Er bestaat al een account met dit e-mailadres.",
+    "error_passwords": "Wachtwoorden komen niet overeen.",
+    "error_required": "Vul alle velden in.",
+    "error_password_min": "Het wachtwoord moet minstens 8 tekens bevatten."
   },
   "dashboard": {
     "title": "Mijn dashboard",
@@ -142,16 +166,40 @@
     "role": "Rol",
     "language": "Interfacetaal",
     "member_since": "Lid sinds",
+    "member_since_with_date": "Lid sinds {{date}}",
     "change_password": "Wachtwoord wijzigen",
+    "security": "Beveiliging",
+    "edit_title": "Profiel bewerken",
     "old_password": "Oud wachtwoord",
     "new_password": "Nieuw wachtwoord",
     "confirm_password": "Nieuw wachtwoord bevestigen",
     "save_password": "Wachtwoord bijwerken",
     "success_update": "Profiel succesvol bijgewerkt!",
+    "success_update_plain": "Profiel succesvol bijgewerkt.",
     "success_password": "Wachtwoord bijgewerkt!",
+    "success_password_plain": "Wachtwoord bijgewerkt.",
+    "error_load": "Kan profiel niet laden.",
     "error_update": "Fout bij het bijwerken.",
     "error_password": "Fout bij het wijzigen van het wachtwoord.",
-    "photo": "Profielfoto"
+    "error_required_names": "Voornaam en achternaam zijn verplicht.",
+    "error_password_fields": "Vul beide velden in.",
+    "error_old_password": "Het oude wachtwoord is onjuist.",
+    "unavailable": "Profiel niet beschikbaar",
+    "unknown_date": "onbekende datum",
+    "photo": "Profielfoto",
+    "confirm": "Bevestigen",
+    "logout": "Afmelden"
+  },
+  "errors": {
+    "session_expired": "Je sessie is verlopen. Meld je opnieuw aan.",
+    "forbidden": "Geen toegang."
+  },
+  "roles": {
+    "SUPER_ADMIN": "Superbeheerder",
+    "ADMIN": "Beheerder",
+    "REFERENT": "Begeleider",
+    "MEMBRE": "Lid",
+    "PARTENAIRE": "Partner"
   },
   "admin": {
     "title": "Beheerpaneel",
@@ -179,10 +227,18 @@
       "dashboard": "Dashboard",
       "adminDashboard": "Dashboard",
       "users": "Gebruikers",
-      "referents": "Referenten",
+      "referents": "Begeleiders",
       "requests": "Aanvragen",
       "admins": "Beheerders",
-      "logs": "Logs"
+      "logs": "Logboeken",
+      "notifications": "Meldingen",
+      "alerts": "Meldingen",
+      "myGroups": "Mijn groepen",
+      "platform": "Platform",
+      "partner": "Partner",
+      "menu": "Menu",
+      "close": "Sluiten",
+      "openMenu": "Menu openen"
     },
     "groups": {
       "community": "Gemeenschap",
@@ -242,6 +298,172 @@
       "openMessaging": "Berichten openen",
       "recentMembers": "Recente leden",
       "upcomingActivities": "Komende activiteiten"
+    }
+  },
+  "memberDashboard": {
+    "welcome": "Welkom in je BX-Connect-ruimte.",
+    "hello": "Hallo, {{name}}",
+    "memberFallback": "lid",
+    "errorLoad": "Kan je ledendashboard niet laden.",
+    "loading": "Laden...",
+    "unavailable": "Je ledenruimte is momenteel niet beschikbaar.",
+    "mobileSpace": "Mobiele V1-ruimte",
+    "mobileLimited": "Je bent aangemeld met de rol {{role}}. In Mobile V1 blijft deze ruimte bewust beperkt.",
+    "mobileAdvancedWeb": "Geavanceerd beheer gebeurt via het webbackoffice.",
+    "openProfile": "Mijn profiel openen",
+    "unavailableTitle": "Dashboard niet beschikbaar",
+    "status": {
+      "title": "Mijn status",
+      "noGroupTitle": "Nog geen groep",
+      "noGroupLabel": "Geen groep",
+      "noGroupDescription": "Je bent nog geen lid van een groep. Word lid van een groep om berichten te gebruiken en deel te nemen aan de gemeenschap.",
+      "pendingTitle": "Aanvraag in behandeling",
+      "pendingDescription": "Je aanvraag om lid te worden van {{group}} wordt door de begeleider bekeken.",
+      "pendingGeneric": "Je lidmaatschapsaanvraag wordt bekeken.",
+      "acceptedLabel": "Aanvaard lid",
+      "acceptedTitle": "Lid van {{group}}",
+      "acceptedMessagingAvailable": "Je bent aanvaard in je groep. Je kunt berichten gebruiken en deelnemen aan activiteiten.",
+      "acceptedMessagingUnavailable": "Je bent aanvaard in je groep. Berichten worden binnenkort beschikbaar.",
+      "refusedLabel": "Aanvraag geweigerd"
+    },
+    "group": {
+      "title": "Mijn groep",
+      "newMember": "Nieuw lid",
+      "joinGroup": "Word lid van een groep",
+      "noGroupDescription": "Groepen vormen het hart van BX-Connect. Word lid van een groep om deel te nemen aan activiteiten, andere jongeren te ontmoeten en berichten te gebruiken.",
+      "fallbackGroup": "groep",
+      "status": "Status",
+      "referent": "Begeleider",
+      "referentPending": "Begeleider nog te bevestigen",
+      "members": "Leden",
+      "upcomingActivities": "Komende activiteiten",
+      "noActiveGroup": "Je hebt nog geen actieve groep.",
+      "messagingAvailable": "Berichten zijn beschikbaar voor je groep.",
+      "messagingUnavailable": "Berichten zijn beschikbaar zodra je in een groep bent aanvaard."
+    },
+    "referent": {
+      "title": "Mijn begeleider",
+      "ofGroup": "Begeleider van {{group}}",
+      "pending": "Je begeleider wordt zichtbaar zodra je aanvraag is goedgekeurd.",
+      "empty": "Je begeleider verschijnt hier nadat je lid bent geworden van een groep.",
+      "availableAfterAcceptance": "De begeleider wordt getoond zodra je lidmaatschap is aanvaard.",
+      "name": "Naam",
+      "email": "E-mail",
+      "notProvided": "Niet ingevuld"
+    },
+    "activities": {
+      "title": "Mijn activiteiten",
+      "empty": "Nog geen inschrijvingen.",
+      "fallbackTitle": "Activiteit",
+      "upcomingDate": "Komende datum",
+      "dateToConfirm": "Datum nog te bevestigen"
+    },
+    "messaging": {
+      "title": "Berichten",
+      "availableDescription": "Open de discussie van {{group}} met de leden en de begeleider.",
+      "pendingDescription": "Berichten worden beschikbaar zodra je in de groep bent aanvaard.",
+      "unavailableDescription": "Berichten zijn beschikbaar zodra je in een groep bent aanvaard."
+    },
+    "notifications": {
+      "title": "Meldingen",
+      "subtitle": "De laatste updates over je account.",
+      "empty": "Momenteel geen belangrijke meldingen.",
+      "unreadCount": "{{count}} ongelezen",
+      "fallbackTitle": "Melding",
+      "fallbackMessage": "Er is nieuwe informatie beschikbaar.",
+      "read": "Gelezen",
+      "new": "Nieuw"
+    },
+    "projects": {
+      "title": "Mijn projecten",
+      "empty": "Nog geen project voorgesteld.",
+      "fallbackTitle": "Project",
+      "proposed": "Project voorgesteld"
+    },
+    "stats": {
+      "title": "Mijn statistieken",
+      "activitiesJoined": "Activiteiten gevolgd",
+      "confirmedRegistrations": "Bevestigde inschrijvingen",
+      "proposedProjects": "Voorgestelde projecten",
+      "unreadNotifications": "Ongelezen meldingen"
+    },
+    "engagement": {
+      "title": "Mijn betrokkenheid",
+      "statusLine": "Status: {{status}}",
+      "descriptions": {
+        "NOUVEAU_MEMBRE": "Start je traject door lid te worden van een groep en deel te nemen aan een activiteit.",
+        "MEMBRE_ACTIF": "Je neemt al deel aan het leven van BX-Connect. Blijf activiteiten en projecten volgen.",
+        "MEMBRE_ENGAGE": "Je bent sterk betrokken bij de gemeenschap. Je inzet laat de groep groeien.",
+        "default": "Start je traject binnen de BX-Connect-gemeenschap."
+      }
+    },
+    "nextActions": {
+      "title": "Mijn volgende stappen",
+      "joinGroup": "Word lid van een groep",
+      "joinGroupDescription": "Kies een groep om je traject te starten.",
+      "discoverActivities": "Activiteiten ontdekken",
+      "discoverActivitiesDescription": "Bekijk de beschikbare activiteiten.",
+      "completeProfile": "Mijn profiel aanvullen",
+      "followGroupRequest": "Mijn groepsaanvraag opvolgen",
+      "viewActivities": "Activiteiten bekijken",
+      "discoverProjects": "Projecten ontdekken",
+      "requestPendingDescription": "Je begeleider of het adminteam moet je lidmaatschap nog goedkeuren.",
+      "exploreActivities": "Activiteiten verkennen",
+      "exploreActivitiesDescription": "Je kunt alvast ontdekken wat er wordt aangeboden.",
+      "groupJoined": "Groep aangesloten",
+      "groupJoinedDescription": "Je groepstoegang is actief.",
+      "trackRegistrations": "Mijn inschrijvingen opvolgen",
+      "trackRegistrationsDescription": "Houd je activiteiten in de gaten.",
+      "joinActivity": "Deelnemen aan een activiteit",
+      "joinActivityDescription": "Schrijf je in voor een eerste activiteit.",
+      "useMessaging": "Berichten gebruiken",
+      "useMessagingDescription": "Wissel uit met je groep.",
+      "messagingUnavailable": "Berichten niet beschikbaar",
+      "messagingUnavailableDescription": "Berichten worden beschikbaar na aanvaarding.",
+      "trackProjects": "Mijn projecten opvolgen",
+      "trackProjectsDescription": "Bekijk de voortgang van je projecten.",
+      "proposeProject": "Een project voorstellen",
+      "proposeProjectDescription": "Deel een idee met je groep.",
+      "openGroupMessaging": "Groepsberichten openen",
+      "viewMyGroup": "Mijn groep bekijken",
+      "registerActivity": "Inschrijven voor een activiteit",
+      "proposeOrJoinProject": "Een project voorstellen of meedoen"
+    },
+    "buttons": {
+      "discoverGroups": "Groepen ontdekken",
+      "viewGroups": "Groepen bekijken",
+      "openMyGroup": "Mijn groep openen",
+      "openMessaging": "Berichten openen",
+      "viewActivities": "Activiteiten bekijken",
+      "viewProjects": "Projecten bekijken",
+      "viewNotifications": "Meldingen bekijken",
+      "viewAll": "Alles bekijken",
+      "open": "Openen",
+      "retry": "Opnieuw proberen"
+    },
+    "statuses": {
+      "unknown": "Onbekende status",
+      "subscription": {
+        "CONFIRMEE": "Bevestigd",
+        "EN_ATTENTE_PAIEMENT": "Betaling in behandeling",
+        "ANNULEE": "Geannuleerd",
+        "PAYEE": "Betaald",
+        "EN_ATTENTE": "In behandeling"
+      },
+      "project": {
+        "BROUILLON": "Concept",
+        "SOUMIS": "In beoordeling",
+        "APPROUVE": "Goedgekeurd",
+        "EN_COURS": "Lopend",
+        "TERMINE": "Afgerond",
+        "REJETE": "Geweigerd",
+        "ARCHIVE": "Gearchiveerd"
+      },
+      "engagement": {
+        "NOUVEAU_MEMBRE": "Nieuw lid",
+        "MEMBRE_ACTIF": "Actief lid",
+        "MEMBRE_ENGAGE": "Betrokken lid"
+      }
     }
   },
   "common": {

@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 export default function MemberGroupCard({ groupe, referent, messagerieDisponible }) {
+  const { t } = useTranslation()
   const statut = groupe?.statutAdhesion
 
   if (!groupe) {
@@ -8,14 +10,13 @@ export default function MemberGroupCard({ groupe, referent, messagerieDisponible
       <section className="bg-white rounded-2xl shadow overflow-hidden">
         <GroupBanner />
         <div className="p-6">
-          <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold">Nouveau membre</span>
-          <h2 className="text-2xl font-bold text-blue-900 mt-4">Rejoins un groupe</h2>
+          <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold">{t('memberDashboard.group.newMember')}</span>
+          <h2 className="text-2xl font-bold text-blue-900 mt-4">{t('memberDashboard.group.joinGroup')}</h2>
           <p className="text-gray-500 text-sm mt-2 max-w-2xl">
-            Les groupes sont le coeur de BX-Connect. Rejoins un groupe pour participer aux activités,
-            rencontrer d'autres jeunes et accéder à la messagerie.
+            {t('memberDashboard.group.noGroupDescription')}
           </p>
           <Link to="/groupes" className="inline-block mt-5 bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
-            Découvrir les groupes
+            {t('memberDashboard.buttons.discoverGroups')}
           </Link>
         </div>
       </section>
@@ -23,8 +24,8 @@ export default function MemberGroupCard({ groupe, referent, messagerieDisponible
   }
 
   const demandeEnAttente = statut === 'EN_ATTENTE'
-  const statutLabel = demandeEnAttente ? 'Demande en attente' : 'Membre accepté'
-  const referentLabel = referent ? `${referent.prenom} ${referent.nom}` : 'Référent à confirmer'
+  const statutLabel = demandeEnAttente ? t('memberDashboard.status.pendingTitle') : t('memberDashboard.status.acceptedLabel')
+  const referentLabel = referent ? `${referent.prenom} ${referent.nom}` : t('memberDashboard.group.referentPending')
 
   return (
     <section className="bg-white rounded-2xl shadow overflow-hidden">
@@ -37,26 +38,26 @@ export default function MemberGroupCard({ groupe, referent, messagerieDisponible
             </span>
             <h2 className="text-2xl font-bold text-blue-900 mt-4">{groupe.nom}</h2>
             <div className="flex flex-wrap gap-2 mt-3 text-xs">
-              <InfoPill label="Statut" value={statutLabel} />
-              <InfoPill label="Référent" value={referentLabel} />
+              <InfoPill label={t('memberDashboard.group.status')} value={statutLabel} />
+              <InfoPill label={t('memberDashboard.group.referent')} value={referentLabel} />
             </div>
             {groupe.description && (
               <p className="text-gray-500 text-sm mt-2 max-w-2xl">{groupe.description}</p>
             )}
           </div>
           <div className="grid grid-cols-2 gap-3 min-w-[220px]">
-            <Metric label="Membres" value={groupe.nombreMembres ?? 0} />
-            <Metric label="Activités à venir" value={groupe.nombreActivitesAVenir ?? 0} />
+            <Metric label={t('memberDashboard.group.members')} value={groupe.nombreMembres ?? 0} />
+            <Metric label={t('memberDashboard.group.upcomingActivities')} value={groupe.nombreActivitesAVenir ?? 0} />
           </div>
         </div>
 
         <div className="mt-5 flex flex-wrap gap-3">
           <Link to="/groupes" className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
-            Ouvrir mon groupe
+            {t('memberDashboard.buttons.openMyGroup')}
           </Link>
           {messagerieDisponible && (
             <Link to="/messagerie" className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-5 py-2.5 rounded-xl transition">
-              Ouvrir la messagerie
+              {t('memberDashboard.buttons.openMessaging')}
             </Link>
           )}
         </div>

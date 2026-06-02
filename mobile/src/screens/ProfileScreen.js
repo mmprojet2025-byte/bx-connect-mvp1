@@ -5,16 +5,19 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
+import { changeAppLanguage } from '../i18n';
 
 const LANGUES = [
-  { value: 'FR', label: '🇫🇷 Français' },
-  { value: 'NL', label: '🇧🇪 Nederlands' },
-  { value: 'EN', label: '🇬🇧 English' },
+  { value: 'FR', labelKey: 'common.language_fr', icon: '🇫🇷' },
+  { value: 'NL', labelKey: 'common.language_nl', icon: '🇧🇪' },
+  { value: 'EN', labelKey: 'common.language_en', icon: '🇬🇧' },
 ];
 
 export default function ProfileScreen() {
   const { logout, login } = useAuth();
+  const { t, i18n } = useTranslation();
 
   const [profil, setProfil] = useState(null);
   const [editMode, setEditMode] = useState(false);
@@ -53,7 +56,7 @@ export default function ProfileScreen() {
       });
     } catch (err) {
       setProfil(null);
-      setError(getApiError(err, 'Impossible de charger le profil.'));
+      setError(getApiError(err, t('profile.error_load'), t));
     } finally {
       setLoading(false);
     }
@@ -61,7 +64,7 @@ export default function ProfileScreen() {
 
   const handleSaveProfil = async () => {
     if (!form.prenom.trim() || !form.nom.trim()) {
-      setError('Le prénom et le nom sont obligatoires.');
+      setError(t('profile.error_required_names'));
       return;
     }
     setSaving(true);
@@ -74,7 +77,8 @@ export default function ProfileScreen() {
       });
       setProfil(res.data);
       setEditMode(false);
-      setMessage('Profil mis à jour avec succès.');
+      setMessage(t('profile.success_update'));
+      await changeAppLanguage(form.languePreference.toLowerCase());
       await login(await getToken(), {
         prenom: res.data.prenom,
         nom: res.data.nom,
@@ -83,7 +87,7 @@ export default function ProfileScreen() {
       });
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
-      setError(getApiError(err, 'Erreur lors de la mise à jour du profil.'));
+      setError(getApiError(err, t('profile.error_update'), t));
     } finally {
       setSaving(false);
     }
@@ -95,19 +99,19 @@ export default function ProfileScreen() {
 
   const handleChangePassword = async () => {
     if (!passwordForm.ancienMotDePasse || !passwordForm.nouveauMotDePasse) {
-      setError('Veuillez remplir les deux champs.');
+      setError(t('profile.error_password_fields'));
       return;
     }
     setSaving(true);
     setMessage(''); setError('');
     try {
       await api.put('/users/me/password', passwordForm);
-      setMessage('Mot de passe mis à jour.');
+      setMessage(t('profile.success_password'));
       setShowPasswordForm(false);
       setPasswordForm({ ancienMotDePasse: '', nouveauMotDePasse: '' });
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
-      setError(getApiError(err, 'Ancien mot de passe incorrect.'));
+      setError(getApiError(err, t('profile.error_old_password'), t));
     } finally {
       setSaving(false);
     }
@@ -121,7 +125,7 @@ export default function ProfileScreen() {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#1e3a5f" />
-        <Text style={styles.loadingText}>Chargement du profil...</Text>
+        <Text style={styles.loadingText}>{t('profile.loading')}</Text>
       </View>
     );
   }
@@ -130,10 +134,10 @@ export default function ProfileScreen() {
     return (
       <View style={styles.centered}>
         <Text style={styles.emptyIcon}>👤</Text>
-        <Text style={styles.emptyTitle}>Profil indisponible</Text>
+        <Text style={styles.emptyTitle}>{t('profile.unavailable')}</Text>
         {error !== '' && <Text style={styles.emptyText}>{error}</Text>}
         <TouchableOpacity style={styles.retryButton} onPress={fetchProfil}>
-          <Text style={styles.retryButtonText}>Réessayer</Text>
+          <Text style={styles.retryButtonText}>{t('profile.retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -167,28 +171,28 @@ export default function ProfileScreen() {
           <>
             <Text style={styles.profileName}>{profil?.prenom} {profil?.nom}</Text>
             <View style={styles.roleBadge}>
-              <Text style={styles.roleText}>{profil?.role}</Text>
+              <Text style={styles.roleText}>{t(`roles.${profil?.role}`, profil?.role)}</Text>
             </View>
             <Text style={styles.profileEmail}>📧 {profil?.email}</Text>
             <Text style={styles.profileLang}>
-              🌐 Langue : <Text style={styles.bold}>{profil?.languePreference}</Text>
+              🌐 {t('profile.language_display', { language: languageLabel(profil?.languePreference, t) })}
             </Text>
             <Text style={styles.profileDate}>
-              Membre depuis le {formatDate(profil?.dateInscription)}
+              {t('profile.member_since', { date: formatDate(profil?.dateInscription, i18n.language, t) })}
             </Text>
             <TouchableOpacity
               style={styles.btnEdit}
               onPress={() => setEditMode(true)}
               activeOpacity={0.8}
             >
-              <Text style={styles.btnEditText}>✏️ Modifier le profil</Text>
+              <Text style={styles.btnEditText}>✏️ {t('profile.edit_btn')}</Text>
             </TouchableOpacity>
           </>
         ) : (
           <View style={styles.editForm}>
-            <Text style={styles.editTitle}>Modifier le profil</Text>
+            <Text style={styles.editTitle}>{t('profile.edit_title')}</Text>
 
-            <Text style={styles.label}>Prénom</Text>
+            <Text style={styles.label}>{t('profile.firstname')}</Text>
             <TextInput
               style={styles.input}
               value={form.prenom}
@@ -196,7 +200,7 @@ export default function ProfileScreen() {
               autoCapitalize="words"
             />
 
-            <Text style={styles.label}>Nom</Text>
+            <Text style={styles.label}>{t('profile.lastname')}</Text>
             <TextInput
               style={styles.input}
               value={form.nom}
@@ -204,7 +208,7 @@ export default function ProfileScreen() {
               autoCapitalize="words"
             />
 
-            <Text style={styles.label}>{"Langue de l'interface"}</Text>
+            <Text style={styles.label}>{t('profile.language')}</Text>
             <View style={styles.languesRow}>
               {LANGUES.map((l) => (
                 <TouchableOpacity
@@ -219,7 +223,7 @@ export default function ProfileScreen() {
                     styles.langueBtnText,
                     form.languePreference === l.value && styles.langueBtnTextActive,
                   ]}>
-                    {l.label}
+                    {l.icon} {t(l.labelKey)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -235,14 +239,14 @@ export default function ProfileScreen() {
                 {saving ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={styles.btnSaveText}>💾 Sauvegarder</Text>
+                  <Text style={styles.btnSaveText}>💾 {t('profile.save_btn')}</Text>
                 )}
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.btnCancel}
                 onPress={() => setEditMode(false)}
               >
-                <Text style={styles.btnCancelText}>Annuler</Text>
+                <Text style={styles.btnCancelText}>{t('profile.cancel_btn')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -251,7 +255,7 @@ export default function ProfileScreen() {
 
       {/* Sécurité */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>🔒 Sécurité</Text>
+        <Text style={styles.sectionTitle}>🔒 {t('profile.security')}</Text>
 
         {!showPasswordForm ? (
           <TouchableOpacity
@@ -259,11 +263,11 @@ export default function ProfileScreen() {
             onPress={() => setShowPasswordForm(true)}
             activeOpacity={0.8}
           >
-            <Text style={styles.btnPasswordText}>Changer le mot de passe</Text>
+            <Text style={styles.btnPasswordText}>{t('profile.change_password')}</Text>
           </TouchableOpacity>
         ) : (
           <View>
-            <Text style={styles.label}>Ancien mot de passe</Text>
+            <Text style={styles.label}>{t('profile.old_password')}</Text>
             <TextInput
               style={styles.input}
               value={passwordForm.ancienMotDePasse}
@@ -271,7 +275,7 @@ export default function ProfileScreen() {
               secureTextEntry
               autoCapitalize="none"
             />
-            <Text style={styles.label}>Nouveau mot de passe</Text>
+            <Text style={styles.label}>{t('profile.new_password')}</Text>
             <TextInput
               style={styles.input}
               value={passwordForm.nouveauMotDePasse}
@@ -285,13 +289,13 @@ export default function ProfileScreen() {
                 onPress={handleChangePassword}
                 disabled={saving}
               >
-                <Text style={styles.btnSaveText}>Confirmer</Text>
+                <Text style={styles.btnSaveText}>{t('profile.confirm')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.btnCancel}
                 onPress={() => setShowPasswordForm(false)}
               >
-                <Text style={styles.btnCancelText}>Annuler</Text>
+                <Text style={styles.btnCancelText}>{t('profile.cancel_btn')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -300,26 +304,35 @@ export default function ProfileScreen() {
 
       {/* Déconnexion */}
       <TouchableOpacity style={styles.btnLogout} onPress={handleLogout} activeOpacity={0.8}>
-        <Text style={styles.btnLogoutText}>🚪 Se déconnecter</Text>
+        <Text style={styles.btnLogoutText}>🚪 {t('profile.logout')}</Text>
       </TouchableOpacity>
 
     </ScrollView>
   );
 }
 
-function getApiError(err, fallback) {
+function getApiError(err, fallback, t) {
   if (err.response?.status === 401) {
-    return 'Session expirée. Reconnectez-vous.';
+    return t('errors.session_expired');
   }
   if (err.response?.status === 403) {
-    return 'Accès non autorisé.';
+    return t('errors.forbidden');
   }
-  return err.response?.data?.message || fallback;
+  return fallback;
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return 'date inconnue';
-  return new Date(dateStr).toLocaleDateString('fr-BE');
+function languageLabel(value, t) {
+  return {
+    FR: t('common.language_fr'),
+    NL: t('common.language_nl'),
+    EN: t('common.language_en'),
+  }[value] || value || '';
+}
+
+function formatDate(dateStr, language, t) {
+  if (!dateStr) return t('profile.unknown_date');
+  const locale = language === 'nl' ? 'nl-BE' : language === 'en' ? 'en-GB' : 'fr-BE';
+  return new Date(dateStr).toLocaleDateString(locale);
 }
 
 const styles = StyleSheet.create({

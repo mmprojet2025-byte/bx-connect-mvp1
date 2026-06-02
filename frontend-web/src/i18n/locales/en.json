@@ -10,7 +10,22 @@
     "login": "Login",
     "register": "Sign up",
     "logout": "Logout",
-    "profile": "Profile"
+    "profile": "Profile",
+    "dashboard": "Dashboard",
+    "adminDashboard": "Dashboard",
+    "users": "Users",
+    "referents": "Mentors",
+    "requests": "Requests",
+    "admins": "Administrators",
+    "logs": "Logs",
+    "notifications": "Notifications",
+    "alerts": "Notifications",
+    "myGroups": "My groups",
+    "platform": "Platform",
+    "partner": "Partner",
+    "menu": "Menu",
+    "close": "Close",
+    "openMenu": "Open menu"
   },
   "home": {
     "welcome": "Welcome to BX-CONNECT",
@@ -34,6 +49,12 @@
     "email": "Email address",
     "password": "Password",
     "login_btn": "Log in",
+    "email_placeholder": "you@email.com",
+    "password_placeholder": "Password",
+    "separator_or": "or",
+    "create_free_account": "Create a free account",
+    "view_activities_guest": "View activities without logging in",
+    "back_home": "Back to home",
     "no_account": "Not registered yet?",
     "register_link": "Sign up",
     "forgot_password": "Forgot password?",
@@ -50,7 +71,10 @@
     "login_link": "Log in",
     "error_login": "Incorrect email or password.",
     "error_register": "Error during registration.",
-    "error_passwords": "Passwords do not match."
+    "error_email_exists": "An account already exists with this email address.",
+    "error_passwords": "Passwords do not match.",
+    "error_required": "Please fill in all fields.",
+    "error_password_min": "The password must contain at least 8 characters."
   },
   "dashboard": {
     "title": "My dashboard",
@@ -142,16 +166,40 @@
     "role": "Role",
     "language": "Interface language",
     "member_since": "Member since",
+    "member_since_with_date": "Member since {{date}}",
     "change_password": "Change password",
+    "security": "Security",
+    "edit_title": "Edit profile",
     "old_password": "Old password",
     "new_password": "New password",
     "confirm_password": "Confirm new password",
     "save_password": "Update password",
     "success_update": "Profile updated successfully!",
+    "success_update_plain": "Profile updated successfully.",
     "success_password": "Password updated!",
+    "success_password_plain": "Password updated.",
+    "error_load": "Unable to load profile.",
     "error_update": "Error updating profile.",
     "error_password": "Error changing password.",
-    "photo": "Profile photo"
+    "error_required_names": "First name and last name are required.",
+    "error_password_fields": "Please fill in both fields.",
+    "error_old_password": "The old password is incorrect.",
+    "unavailable": "Profile unavailable",
+    "unknown_date": "unknown date",
+    "photo": "Profile photo",
+    "confirm": "Confirm",
+    "logout": "Log out"
+  },
+  "errors": {
+    "session_expired": "Session expired. Please log in again.",
+    "forbidden": "Access denied."
+  },
+  "roles": {
+    "SUPER_ADMIN": "Super administrator",
+    "ADMIN": "Administrator",
+    "REFERENT": "Mentor",
+    "MEMBRE": "Member",
+    "PARTENAIRE": "Partner"
   },
   "admin": {
     "title": "Admin Back-office",
@@ -179,10 +227,18 @@
       "dashboard": "Dashboard",
       "adminDashboard": "Dashboard",
       "users": "Users",
-      "referents": "Referents",
+      "referents": "Mentors",
       "requests": "Requests",
       "admins": "Administrators",
-      "logs": "Logs"
+      "logs": "Logs",
+      "notifications": "Notifications",
+      "alerts": "Notifications",
+      "myGroups": "My groups",
+      "platform": "Platform",
+      "partner": "Partner",
+      "menu": "Menu",
+      "close": "Close",
+      "openMenu": "Open menu"
     },
     "groups": {
       "community": "Community",
@@ -242,6 +298,172 @@
       "openMessaging": "Open messaging",
       "recentMembers": "Recent members",
       "upcomingActivities": "Upcoming activities"
+    }
+  },
+  "memberDashboard": {
+    "welcome": "Welcome to your BX-Connect space.",
+    "hello": "Hello, {{name}}",
+    "memberFallback": "member",
+    "errorLoad": "Unable to load your member dashboard.",
+    "loading": "Loading...",
+    "unavailable": "Your member space is not available right now.",
+    "mobileSpace": "Mobile V1 space",
+    "mobileLimited": "You are signed in as {{role}}. In Mobile V1, this space is intentionally limited.",
+    "mobileAdvancedWeb": "Advanced management is handled from the web back office.",
+    "openProfile": "Open my profile",
+    "unavailableTitle": "Dashboard unavailable",
+    "status": {
+      "title": "My status",
+      "noGroupTitle": "No group joined",
+      "noGroupLabel": "No group",
+      "noGroupDescription": "You have not joined a group yet. Join one to access messaging and take part in community life.",
+      "pendingTitle": "Request pending",
+      "pendingDescription": "Your request to join {{group}} is being reviewed by the mentor.",
+      "pendingGeneric": "Your membership request is being reviewed.",
+      "acceptedLabel": "Accepted member",
+      "acceptedTitle": "Member of {{group}}",
+      "acceptedMessagingAvailable": "You have been accepted into your group. You can access messaging and join activities.",
+      "acceptedMessagingUnavailable": "You have been accepted into your group. Messaging will be available soon.",
+      "refusedLabel": "Request refused"
+    },
+    "group": {
+      "title": "My group",
+      "newMember": "New member",
+      "joinGroup": "Join a group",
+      "noGroupDescription": "Groups are at the heart of BX-Connect. Join a group to take part in activities, meet other young people and access messaging.",
+      "fallbackGroup": "group",
+      "status": "Status",
+      "referent": "Mentor",
+      "referentPending": "Mentor to be confirmed",
+      "members": "Members",
+      "upcomingActivities": "Upcoming activities",
+      "noActiveGroup": "You do not have an active group yet.",
+      "messagingAvailable": "Messaging is available for your group.",
+      "messagingUnavailable": "Messaging is available once you are accepted into a group."
+    },
+    "referent": {
+      "title": "My mentor",
+      "ofGroup": "Mentor for {{group}}",
+      "pending": "Your mentor will be available once your request has been approved.",
+      "empty": "Your mentor will appear here after you join a group.",
+      "availableAfterAcceptance": "The mentor will be shown once your membership is accepted.",
+      "name": "Name",
+      "email": "Email",
+      "notProvided": "Not provided"
+    },
+    "activities": {
+      "title": "My activities",
+      "empty": "No registrations yet.",
+      "fallbackTitle": "Activity",
+      "upcomingDate": "Upcoming date",
+      "dateToConfirm": "Date to be confirmed"
+    },
+    "messaging": {
+      "title": "Messaging",
+      "availableDescription": "Access the {{group}} discussion with members and the mentor.",
+      "pendingDescription": "Messaging will be available once you are accepted into the group.",
+      "unavailableDescription": "Messaging is available once you are accepted into a group."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "subtitle": "The latest updates related to your account.",
+      "empty": "No important notifications at the moment.",
+      "unreadCount": "{{count}} unread",
+      "fallbackTitle": "Notification",
+      "fallbackMessage": "New information is available.",
+      "read": "Read",
+      "new": "New"
+    },
+    "projects": {
+      "title": "My projects",
+      "empty": "No project proposed yet.",
+      "fallbackTitle": "Project",
+      "proposed": "Project proposed"
+    },
+    "stats": {
+      "title": "My statistics",
+      "activitiesJoined": "Activities joined",
+      "confirmedRegistrations": "Confirmed registrations",
+      "proposedProjects": "Projects proposed",
+      "unreadNotifications": "Unread notifications"
+    },
+    "engagement": {
+      "title": "My involvement",
+      "statusLine": "Status: {{status}}",
+      "descriptions": {
+        "NOUVEAU_MEMBRE": "Start your journey by joining a group and taking part in an activity.",
+        "MEMBRE_ACTIF": "You are already taking part in BX-Connect life. Keep following activities and projects.",
+        "MEMBRE_ENGAGE": "You are strongly involved in the community. Your commitment helps the group thrive.",
+        "default": "Start your journey in the BX-Connect community."
+      }
+    },
+    "nextActions": {
+      "title": "My next actions",
+      "joinGroup": "Join a group",
+      "joinGroupDescription": "Choose a group to start your journey.",
+      "discoverActivities": "Discover activities",
+      "discoverActivitiesDescription": "Browse the available activities.",
+      "completeProfile": "Complete my profile",
+      "followGroupRequest": "Track my group request",
+      "viewActivities": "View activities",
+      "discoverProjects": "Discover projects",
+      "requestPendingDescription": "Your mentor or the admin team still needs to approve your membership.",
+      "exploreActivities": "Explore activities",
+      "exploreActivitiesDescription": "You can already discover what is available.",
+      "groupJoined": "Group joined",
+      "groupJoinedDescription": "Your group access is active.",
+      "trackRegistrations": "Track my registrations",
+      "trackRegistrationsDescription": "Keep an eye on your activities.",
+      "joinActivity": "Join an activity",
+      "joinActivityDescription": "Register for a first activity.",
+      "useMessaging": "Use messaging",
+      "useMessagingDescription": "Chat with your group.",
+      "messagingUnavailable": "Messaging unavailable",
+      "messagingUnavailableDescription": "Messaging will be available after acceptance.",
+      "trackProjects": "Track my projects",
+      "trackProjectsDescription": "Follow the progress of your projects.",
+      "proposeProject": "Propose a project",
+      "proposeProjectDescription": "Share an idea with your group.",
+      "openGroupMessaging": "Open group messaging",
+      "viewMyGroup": "View my group",
+      "registerActivity": "Register for an activity",
+      "proposeOrJoinProject": "Propose or join a project"
+    },
+    "buttons": {
+      "discoverGroups": "Discover groups",
+      "viewGroups": "View groups",
+      "openMyGroup": "Open my group",
+      "openMessaging": "Open messaging",
+      "viewActivities": "View activities",
+      "viewProjects": "View projects",
+      "viewNotifications": "View notifications",
+      "viewAll": "See all",
+      "open": "Open",
+      "retry": "Retry"
+    },
+    "statuses": {
+      "unknown": "Unknown status",
+      "subscription": {
+        "CONFIRMEE": "Confirmed",
+        "EN_ATTENTE_PAIEMENT": "Payment pending",
+        "ANNULEE": "Cancelled",
+        "PAYEE": "Paid",
+        "EN_ATTENTE": "Pending"
+      },
+      "project": {
+        "BROUILLON": "Draft",
+        "SOUMIS": "Under review",
+        "APPROUVE": "Approved",
+        "EN_COURS": "In progress",
+        "TERMINE": "Completed",
+        "REJETE": "Rejected",
+        "ARCHIVE": "Archived"
+      },
+      "engagement": {
+        "NOUVEAU_MEMBRE": "New member",
+        "MEMBRE_ACTIF": "Active member",
+        "MEMBRE_ENGAGE": "Engaged member"
+      }
     }
   },
   "common": {

@@ -24,7 +24,7 @@ export default function Login() {
       login(token, { prenom, nom, email, role })
       navigate(getDefaultRouteForRole(role))
     } catch (err) {
-      setErreur(err.response?.data?.message || t('auth.error_login'))
+      setErreur(formatAuthError(err, t('auth.error_login'), t))
     } finally {
       setLoading(false)
     }
@@ -59,7 +59,7 @@ export default function Login() {
               value={form.email}
               onChange={e => setForm({ ...form, email: e.target.value })}
               className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="ton@email.com"
+              placeholder={t('auth.email_placeholder')}
             />
           </div>
 
@@ -74,6 +74,7 @@ export default function Login() {
               value={form.motDePasse}
               onChange={e => setForm({ ...form, motDePasse: e.target.value })}
               className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder={t('auth.password_placeholder')}
             />
           </div>
 
@@ -95,4 +96,9 @@ export default function Login() {
       </div>
     </div>
   )
+}
+
+function formatAuthError(err, fallback, t) {
+  if (err.response?.status === 403) return t('errors.forbidden')
+  return fallback
 }

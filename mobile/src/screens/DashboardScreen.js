@@ -3,10 +3,12 @@ import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, ActivityIndicator, Image
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 export default function DashboardScreen({ navigation }) {
+  const { t, i18n } = useTranslation();
   const { user, isMembre, role } = useAuth();
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(isMembre);
@@ -28,11 +30,11 @@ export default function DashboardScreen({ navigation }) {
       setDashboard(res.data);
     } catch (err) {
       if (err.response?.status === 401) {
-        setError('Session expirée. Reconnectez-vous.');
+        setError(t('errors.session_expired'));
       } else if (err.response?.status === 403) {
-        setError('Accès non autorisé au dashboard membre.');
+        setError(t('memberDashboard.errorForbidden'));
       } else {
-        setError(err.response?.data?.message || 'Impossible de charger votre dashboard.');
+        setError(err.response?.data?.message || t('memberDashboard.errorLoad'));
       }
     } finally {
       setLoading(false);
@@ -40,14 +42,14 @@ export default function DashboardScreen({ navigation }) {
   };
 
   if (!isMembre) {
-    return <RoleDashboard user={user} role={role} navigation={navigation} />;
+    return <RoleDashboard user={user} role={role} navigation={navigation} t={t} />;
   }
 
   if (loading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#1e3a5f" />
-        <Text style={styles.loadingText}>Chargement de votre espace...</Text>
+        <Text style={styles.loadingText}>{t('memberDashboard.loadingSpace')}</Text>
       </View>
     );
   }
@@ -56,10 +58,10 @@ export default function DashboardScreen({ navigation }) {
     return (
       <View style={styles.centered}>
         <Text style={styles.emptyIcon}>!</Text>
-        <Text style={styles.errorTitle}>Dashboard indisponible</Text>
+        <Text style={styles.errorTitle}>{t('memberDashboard.unavailableTitle')}</Text>
         <Text style={styles.emptyText}>{error}</Text>
         <TouchableOpacity style={styles.primaryButton} onPress={chargerDashboard}>
-          <Text style={styles.primaryButtonText}>Réessayer</Text>
+          <Text style={styles.primaryButtonText}>{t('memberDashboard.buttons.retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -75,54 +77,56 @@ export default function DashboardScreen({ navigation }) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <WelcomeCard user={user} />
-      <MemberStatusCard statut={adhesion} />
+      <WelcomeCard user={user} t={t} />
+      <MemberStatusCard statut={adhesion} t={t} />
       <MemberGroupCard
         groupe={groupe}
         messagerieDisponible={messagerieDisponible}
         navigation={navigation}
+        t={t}
       />
-      <MemberReferentCard referent={referent} statut={adhesion} />
-      <MemberActivitiesCard inscriptions={inscriptions} navigation={navigation} />
-      <MemberNotificationsCard notifications={notifications} navigation={navigation} />
-      <MemberProjectsCard projets={projets} navigation={navigation} />
+      <MemberReferentCard referent={referent} statut={adhesion} t={t} />
+      <MemberActivitiesCard inscriptions={inscriptions} navigation={navigation} t={t} language={i18n.language} />
+      <MemberNotificationsCard notifications={notifications} navigation={navigation} t={t} />
+      <MemberProjectsCard projets={projets} navigation={navigation} t={t} />
       <MemberNextActions
         statut={adhesion}
         hasActivities={inscriptions.length > 0}
         hasProjects={projets.length > 0}
         messagerieDisponible={messagerieDisponible}
         navigation={navigation}
+        t={t}
       />
     </ScrollView>
   );
 }
 
-function RoleDashboard({ user, role, navigation }) {
-  const roleLabel = role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : role || 'Utilisateur';
+function RoleDashboard({ user, role, navigation, t }) {
+  const roleLabel = role ? t(`roles.${role}`, { defaultValue: role }) : t('memberDashboard.userFallback');
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <WelcomeCard user={user} />
+      <WelcomeCard user={user} t={t} />
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Espace mobile V1</Text>
+        <Text style={styles.cardTitle}>{t('memberDashboard.mobileSpace')}</Text>
         <Text style={styles.cardText}>
-          Vous êtes connecté avec le rôle {roleLabel}. Sur mobile V1, cet espace reste volontairement limité.
+          {t('memberDashboard.mobileLimited', { role: roleLabel })}
         </Text>
         <Text style={styles.cardHint}>
-          La gestion avancée se fait depuis le back-office web.
+          {t('memberDashboard.mobileAdvancedWeb')}
         </Text>
       </View>
       <TouchableOpacity
         style={styles.primaryButton}
         onPress={() => navigation.getParent()?.navigate('TabProfile')}
       >
-        <Text style={styles.primaryButtonText}>Ouvrir mon profil</Text>
+        <Text style={styles.primaryButtonText}>{t('memberDashboard.openProfile')}</Text>
       </TouchableOpacity>
     </ScrollView>
   );
 }
 
-function WelcomeCard({ user }) {
+function WelcomeCard({ user, t }) {
   return (
     <View style={styles.welcomeCard}>
       <View style={styles.avatar}>
@@ -131,20 +135,22 @@ function WelcomeCard({ user }) {
         </Text>
       </View>
       <View style={styles.welcomeContent}>
-        <Text style={styles.welcomeTitle}>Bonjour, {user?.prenom || 'membre'}</Text>
-        <Text style={styles.welcomeSubtitle}>Votre espace BX-Connect</Text>
+        <Text style={styles.welcomeTitle}>
+          {t('memberDashboard.hello', { name: user?.prenom || t('memberDashboard.memberFallback') })}
+        </Text>
+        <Text style={styles.welcomeSubtitle}>{t('memberDashboard.welcome')}</Text>
       </View>
     </View>
   );
 }
 
-function MemberStatusCard({ statut }) {
-  const info = statutInfo(statut);
+function MemberStatusCard({ statut, t }) {
+  const info = statutInfo(statut, t);
 
   return (
     <View style={[styles.card, { borderLeftColor: info.color }]}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>Mon statut</Text>
+        <Text style={styles.cardTitle}>{t('memberDashboard.status.title')}</Text>
         <View style={[styles.badge, { backgroundColor: info.bg }]}>
           <Text style={[styles.badgeText, { color: info.color }]}>{info.label}</Text>
         </View>
@@ -154,17 +160,17 @@ function MemberStatusCard({ statut }) {
   );
 }
 
-function MemberGroupCard({ groupe, messagerieDisponible, navigation }) {
+function MemberGroupCard({ groupe, messagerieDisponible, navigation, t }) {
   if (!groupe) {
     return (
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Mon groupe</Text>
-        <EmptyText text="Vous n'avez pas encore de groupe actif." />
+        <Text style={styles.cardTitle}>{t('memberDashboard.group.title')}</Text>
+        <EmptyText text={t('memberDashboard.group.noActiveGroup')} />
         <TouchableOpacity
           style={styles.primaryButton}
           onPress={() => navigation.getParent()?.navigate('TabGroupes')}
         >
-          <Text style={styles.primaryButtonText}>Découvrir les groupes</Text>
+          <Text style={styles.primaryButtonText}>{t('memberDashboard.buttons.discoverGroups')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -181,61 +187,61 @@ function MemberGroupCard({ groupe, messagerieDisponible, navigation }) {
       )}
       <Text style={styles.cardTitle}>{groupe.nom}</Text>
       {groupe.description && <Text style={styles.cardText}>{groupe.description}</Text>}
-      <InfoRow label="Statut" value={translateAdhesion(groupe.statutAdhesion)} />
-      <InfoRow label="Membres" value={`${groupe.nombreMembres || 0}`} />
-      <InfoRow label="Activités à venir" value={`${groupe.nombreActivitesAVenir || 0}`} />
+      <InfoRow label={t('memberDashboard.group.status')} value={translateAdhesion(groupe.statutAdhesion, t)} t={t} />
+      <InfoRow label={t('memberDashboard.group.members')} value={`${groupe.nombreMembres || 0}`} t={t} />
+      <InfoRow label={t('memberDashboard.group.upcomingActivities')} value={`${groupe.nombreActivitesAVenir || 0}`} t={t} />
       <TouchableOpacity
         style={styles.primaryButton}
         onPress={() => navigation.getParent()?.navigate('TabGroupes')}
       >
-        <Text style={styles.primaryButtonText}>Ouvrir mon groupe</Text>
+        <Text style={styles.primaryButtonText}>{t('memberDashboard.buttons.openMyGroup')}</Text>
       </TouchableOpacity>
       <View style={[styles.notice, messagerieDisponible ? styles.noticeOk : styles.noticeMuted]}>
         <Text style={styles.noticeText}>
           {messagerieDisponible
-            ? 'Messagerie disponible pour votre groupe.'
-            : 'Messagerie disponible après acceptation dans un groupe.'}
+            ? t('memberDashboard.group.messagingAvailable')
+            : t('memberDashboard.group.messagingUnavailable')}
         </Text>
       </View>
     </View>
   );
 }
 
-function MemberReferentCard({ referent, statut }) {
+function MemberReferentCard({ referent, statut, t }) {
   if (!referent || statut !== 'ACCEPTE') {
     return (
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Mon référent</Text>
-        <EmptyText text="Le référent sera affiché lorsque votre adhésion sera acceptée." />
+        <Text style={styles.cardTitle}>{t('memberDashboard.referent.title')}</Text>
+        <EmptyText text={t('memberDashboard.referent.availableAfterAcceptance')} />
       </View>
     );
   }
 
   return (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>Mon référent</Text>
-      <InfoRow label="Nom" value={`${referent.prenom || ''} ${referent.nom || ''}`.trim()} />
-      <InfoRow label="Email" value={referent.email || 'Non renseigné'} />
+      <Text style={styles.cardTitle}>{t('memberDashboard.referent.title')}</Text>
+      <InfoRow label={t('memberDashboard.referent.name')} value={`${referent.prenom || ''} ${referent.nom || ''}`.trim()} t={t} />
+      <InfoRow label={t('memberDashboard.referent.email')} value={referent.email || t('memberDashboard.referent.notProvided')} t={t} />
     </View>
   );
 }
 
-function MemberActivitiesCard({ inscriptions, navigation }) {
+function MemberActivitiesCard({ inscriptions, navigation, t, language }) {
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>Mes activités</Text>
+        <Text style={styles.cardTitle}>{t('memberDashboard.activities.title')}</Text>
         <Text style={styles.counter}>{inscriptions.length}</Text>
       </View>
       {inscriptions.length === 0 ? (
-        <EmptyText text="Aucune inscription pour le moment." />
+        <EmptyText text={t('memberDashboard.activities.empty')} />
       ) : (
         inscriptions.slice(0, 3).map((inscription) => (
           <ListItem
             key={inscription.id}
-            title={inscription.activiteTitre || 'Activité'}
-            subtitle={formatDate(inscription.activiteDateDebut, inscription.activiteLieu)}
-            badge={translateInscription(inscription.statut)}
+            title={inscription.activiteTitre || t('memberDashboard.activities.fallbackTitle')}
+            subtitle={formatDate(inscription.activiteDateDebut, inscription.activiteLieu, language, t)}
+            badge={translateInscription(inscription.statut, t)}
             color={statusColor(inscription.statut)}
           />
         ))
@@ -244,30 +250,30 @@ function MemberActivitiesCard({ inscriptions, navigation }) {
         style={styles.secondaryButton}
         onPress={() => navigation.getParent()?.navigate('TabActivities')}
       >
-        <Text style={styles.secondaryButtonText}>Voir les activités</Text>
+        <Text style={styles.secondaryButtonText}>{t('memberDashboard.buttons.viewActivities')}</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-function MemberNotificationsCard({ notifications, navigation }) {
+function MemberNotificationsCard({ notifications, navigation, t }) {
   const nonLues = notifications.filter((notification) => !notification.lue).length;
 
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>Notifications</Text>
-        <Text style={styles.counter}>{nonLues} non lue{nonLues > 1 ? 's' : ''}</Text>
+        <Text style={styles.cardTitle}>{t('memberDashboard.notifications.title')}</Text>
+        <Text style={styles.counter}>{t('memberDashboard.notifications.unreadCount', { count: nonLues })}</Text>
       </View>
       {notifications.length === 0 ? (
-        <EmptyText text="Aucune notification pour le moment." />
+        <EmptyText text={t('memberDashboard.notifications.empty')} />
       ) : (
         notifications.slice(0, 3).map((notification) => (
           <ListItem
             key={notification.id}
-            title={notification.titre || 'Notification'}
-            subtitle={notification.message || 'Nouvelle information disponible.'}
-            badge={notification.lue ? 'Lue' : 'Nouvelle'}
+            title={notification.titre || t('memberDashboard.notifications.fallbackTitle')}
+            subtitle={notification.message || t('memberDashboard.notifications.fallbackMessage')}
+            badge={notification.lue ? t('memberDashboard.notifications.read') : t('memberDashboard.notifications.new')}
             color={notification.lue ? '#64748b' : '#2563eb'}
           />
         ))
@@ -276,28 +282,28 @@ function MemberNotificationsCard({ notifications, navigation }) {
         style={styles.secondaryButton}
         onPress={() => navigation.getParent()?.navigate('TabNotifications')}
       >
-        <Text style={styles.secondaryButtonText}>Ouvrir les notifications</Text>
+        <Text style={styles.secondaryButtonText}>{t('memberDashboard.buttons.viewNotifications')}</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-function MemberProjectsCard({ projets, navigation }) {
+function MemberProjectsCard({ projets, navigation, t }) {
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>Mes projets</Text>
+        <Text style={styles.cardTitle}>{t('memberDashboard.projects.title')}</Text>
         <Text style={styles.counter}>{projets.length}</Text>
       </View>
       {projets.length === 0 ? (
-        <EmptyText text="Aucun projet proposé pour le moment." />
+        <EmptyText text={t('memberDashboard.projects.empty')} />
       ) : (
         projets.slice(0, 3).map((projet) => (
           <ListItem
             key={projet.id}
-            title={projet.titre || 'Projet'}
-            subtitle="Projet proposé"
-            badge={translateProjet(projet.statut)}
+            title={projet.titre || t('memberDashboard.projects.fallbackTitle')}
+            subtitle={t('memberDashboard.projects.proposed')}
+            badge={translateProjet(projet.statut, t)}
             color={statusColor(projet.statut)}
           />
         ))
@@ -306,18 +312,18 @@ function MemberProjectsCard({ projets, navigation }) {
         style={styles.secondaryButton}
         onPress={() => navigation.getParent()?.navigate('TabProjects')}
       >
-        <Text style={styles.secondaryButtonText}>Voir les projets</Text>
+        <Text style={styles.secondaryButtonText}>{t('memberDashboard.buttons.viewProjects')}</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-function MemberNextActions({ statut, hasActivities, hasProjects, messagerieDisponible, navigation }) {
-  const actions = buildNextActions({ statut, hasActivities, hasProjects, messagerieDisponible, navigation });
+function MemberNextActions({ statut, hasActivities, hasProjects, messagerieDisponible, navigation, t }) {
+  const actions = buildNextActions({ statut, hasActivities, hasProjects, messagerieDisponible, navigation, t });
 
   return (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>Mes prochaines actions</Text>
+      <Text style={styles.cardTitle}>{t('memberDashboard.nextActions.title')}</Text>
       {actions.map((action) => (
         <TouchableOpacity
           key={action.label}
@@ -336,17 +342,17 @@ function MemberNextActions({ statut, hasActivities, hasProjects, messagerieDispo
   );
 }
 
-function buildNextActions({ statut, hasActivities, hasProjects, messagerieDisponible, navigation }) {
+function buildNextActions({ statut, hasActivities, hasProjects, messagerieDisponible, navigation, t }) {
   if (!statut || statut === 'AUCUN_GROUPE') {
     return [
       {
-        label: 'Rejoindre un groupe',
-        description: 'Choisissez un groupe pour commencer votre parcours.',
+        label: t('memberDashboard.nextActions.joinGroup'),
+        description: t('memberDashboard.nextActions.joinGroupDescription'),
         onPress: () => navigation.getParent()?.navigate('TabGroupes'),
       },
       {
-        label: 'Découvrir les activités',
-        description: 'Consultez les activités disponibles.',
+        label: t('memberDashboard.nextActions.discoverActivities'),
+        description: t('memberDashboard.nextActions.discoverActivitiesDescription'),
         onPress: () => navigation.getParent()?.navigate('TabActivities'),
       },
     ];
@@ -355,12 +361,12 @@ function buildNextActions({ statut, hasActivities, hasProjects, messagerieDispon
   if (statut === 'EN_ATTENTE') {
     return [
       {
-        label: 'Demande en attente',
-        description: 'Votre référent ou l’équipe admin doit encore valider votre adhésion.',
+        label: t('memberDashboard.status.pendingTitle'),
+        description: t('memberDashboard.nextActions.requestPendingDescription'),
       },
       {
-        label: 'Explorer les activités',
-        description: 'Vous pouvez déjà découvrir ce qui est proposé.',
+        label: t('memberDashboard.nextActions.exploreActivities'),
+        description: t('memberDashboard.nextActions.exploreActivitiesDescription'),
         onPress: () => navigation.getParent()?.navigate('TabActivities'),
       },
     ];
@@ -368,33 +374,33 @@ function buildNextActions({ statut, hasActivities, hasProjects, messagerieDispon
 
   return [
     {
-      label: 'Groupe rejoint',
-      description: 'Votre accès groupe est actif.',
+      label: t('memberDashboard.nextActions.groupJoined'),
+      description: t('memberDashboard.nextActions.groupJoinedDescription'),
       done: true,
     },
     {
-      label: hasActivities ? 'Suivre mes inscriptions' : 'Participer à une activité',
-      description: hasActivities ? 'Gardez un oeil sur vos activités.' : 'Inscrivez-vous à une première activité.',
+      label: hasActivities ? t('memberDashboard.nextActions.trackRegistrations') : t('memberDashboard.nextActions.joinActivity'),
+      description: hasActivities ? t('memberDashboard.nextActions.trackRegistrationsDescription') : t('memberDashboard.nextActions.joinActivityDescription'),
       onPress: () => navigation.getParent()?.navigate('TabActivities'),
     },
     {
-      label: messagerieDisponible ? 'Utiliser la messagerie' : 'Messagerie indisponible',
-      description: messagerieDisponible ? 'Échangez avec votre groupe.' : 'La messagerie sera disponible après acceptation.',
+      label: messagerieDisponible ? t('memberDashboard.nextActions.useMessaging') : t('memberDashboard.nextActions.messagingUnavailable'),
+      description: messagerieDisponible ? t('memberDashboard.nextActions.useMessagingDescription') : t('memberDashboard.nextActions.messagingUnavailableDescription'),
       onPress: messagerieDisponible ? () => navigation.getParent()?.navigate('TabMessagerie') : null,
     },
     {
-      label: hasProjects ? 'Suivre mes projets' : 'Proposer un projet',
-      description: hasProjects ? 'Consultez l’avancement de vos projets.' : 'Partagez une idée avec votre groupe.',
+      label: hasProjects ? t('memberDashboard.nextActions.trackProjects') : t('memberDashboard.nextActions.proposeProject'),
+      description: hasProjects ? t('memberDashboard.nextActions.trackProjectsDescription') : t('memberDashboard.nextActions.proposeProjectDescription'),
       onPress: () => navigation.getParent()?.navigate('TabProjects'),
     },
   ];
 }
 
-function InfoRow({ label, value }) {
+function InfoRow({ label, value, t }) {
   return (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value || 'Non renseigné'}</Text>
+      <Text style={styles.infoValue}>{value || t('memberDashboard.referent.notProvided')}</Text>
     </View>
   );
 }
@@ -425,60 +431,50 @@ function initiales(prenom, nom) {
   return `${prenom?.[0] || ''}${nom?.[0] || ''}`.toUpperCase() || '?';
 }
 
-function statutInfo(statut) {
+function statutInfo(statut, t) {
   if (statut === 'ACCEPTE') {
     return {
-      label: 'Membre accepté',
-      description: 'Vous faites partie d’un groupe actif et pouvez accéder à sa messagerie.',
+      label: t('memberDashboard.status.acceptedLabel'),
+      description: t('memberDashboard.status.acceptedMessagingAvailable'),
       color: '#16a34a',
       bg: '#dcfce7',
     };
   }
   if (statut === 'EN_ATTENTE') {
     return {
-      label: 'Demande en attente',
-      description: 'Votre demande d’adhésion est en cours de validation.',
+      label: t('memberDashboard.status.pendingTitle'),
+      description: t('memberDashboard.status.pendingGeneric'),
       color: '#d97706',
       bg: '#fef3c7',
     };
   }
   return {
-    label: 'Aucun groupe',
-    description: 'Rejoignez un groupe pour accéder à l’expérience complète BX-Connect.',
+    label: t('memberDashboard.status.noGroupLabel'),
+    description: t('memberDashboard.status.noGroupDescription'),
     color: '#2563eb',
     bg: '#dbeafe',
   };
 }
 
-function translateAdhesion(statut) {
+function translateAdhesion(statut, t) {
   switch (statut) {
-    case 'ACCEPTE': return 'Membre accepté';
-    case 'EN_ATTENTE': return 'Demande en attente';
-    case 'REFUSE': return 'Demande refusée';
-    default: return 'Aucun groupe';
+    case 'ACCEPTE': return t('memberDashboard.status.acceptedLabel');
+    case 'EN_ATTENTE': return t('memberDashboard.status.pendingTitle');
+    case 'REFUSE': return t('memberDashboard.status.refusedLabel');
+    default: return t('memberDashboard.status.noGroupLabel');
   }
 }
 
-function translateInscription(statut) {
-  switch (statut) {
-    case 'CONFIRMEE': return 'Confirmée';
-    case 'EN_ATTENTE_PAIEMENT': return 'Paiement en attente';
-    case 'ANNULEE': return 'Annulée';
-    case 'EN_ATTENTE': return 'En attente';
-    default: return statut || 'Inconnue';
-  }
+function translateInscription(statut, t) {
+  return t(`memberDashboard.statuses.subscription.${statut}`, {
+    defaultValue: statut || t('memberDashboard.statuses.unknown'),
+  });
 }
 
-function translateProjet(statut) {
-  switch (statut) {
-    case 'BROUILLON': return 'Brouillon';
-    case 'SOUMIS': return 'Soumis';
-    case 'APPROUVE': return 'Approuvé';
-    case 'EN_COURS': return 'En cours';
-    case 'TERMINE': return 'Terminé';
-    case 'REJETE': return 'Rejeté';
-    default: return statut || 'Inconnu';
-  }
+function translateProjet(statut, t) {
+  return t(`memberDashboard.statuses.project.${statut}`, {
+    defaultValue: statut || t('memberDashboard.statuses.unknown'),
+  });
 }
 
 function statusColor(statut) {
@@ -504,17 +500,17 @@ function statusColor(statut) {
   }
 }
 
-function formatDate(dateStr, lieu) {
+function formatDate(dateStr, lieu, language, t) {
   const fragments = [];
   if (dateStr) {
-    fragments.push(new Date(dateStr).toLocaleDateString('fr-BE', {
+    fragments.push(new Date(dateStr).toLocaleDateString(language || 'fr-BE', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
     }));
   }
   if (lieu) fragments.push(lieu);
-  return fragments.length > 0 ? fragments.join(' · ') : 'Date à confirmer';
+  return fragments.length > 0 ? fragments.join(' · ') : t('memberDashboard.activities.dateToConfirm');
 }
 
 const styles = StyleSheet.create({

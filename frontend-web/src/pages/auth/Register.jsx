@@ -16,7 +16,7 @@ export default function Register() {
     e.preventDefault()
     setErreur(null)
     if (form.motDePasse !== form.confirmation) { setErreur(t('auth.error_passwords')); return }
-    if (form.motDePasse.length < 8) { setErreur('Le mot de passe doit contenir au moins 8 caracteres.'); return }
+    if (form.motDePasse.length < 8) { setErreur(t('auth.error_password_min')); return }
     setLoading(true)
     try {
       const res = await api.post('/auth/register', {
@@ -27,7 +27,7 @@ export default function Register() {
       login(token, { prenom, nom, email, role })
       navigate('/dashboard')
     } catch (err) {
-      setErreur(err.response?.data?.message || t('auth.error_register'))
+      setErreur(formatAuthError(err, t('auth.error_register'), t))
     } finally { setLoading(false) }
   }
 
@@ -55,17 +55,19 @@ export default function Register() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.email')} *</label>
             <input type="email" required value={form.email} onChange={e=>setForm({...form,email:e.target.value})}
-              placeholder="ton@email.com"
+              placeholder={t('auth.email_placeholder')}
               className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.password')} *</label>
             <input type="password" required value={form.motDePasse} onChange={e=>setForm({...form,motDePasse:e.target.value})}
+              placeholder={t('auth.password_placeholder')}
               className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.confirm_password')} *</label>
             <input type="password" required value={form.confirmation} onChange={e=>setForm({...form,confirmation:e.target.value})}
+              placeholder={t('auth.confirm_password')}
               className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
           </div>
           <button type="submit" disabled={loading}
@@ -80,4 +82,11 @@ export default function Register() {
       </div>
     </div>
   )
+}
+
+function formatAuthError(err, fallback, t) {
+  if (err.response?.status === 403) return t('errors.forbidden')
+  const message = err.response?.data?.message?.toLowerCase() || ''
+  if (message.includes('existe')) return t('auth.error_email_exists')
+  return fallback
 }

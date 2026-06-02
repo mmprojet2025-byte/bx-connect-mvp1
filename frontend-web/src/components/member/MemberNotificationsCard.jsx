@@ -1,23 +1,25 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 export default function MemberNotificationsCard({ notifications = [] }) {
+  const { t } = useTranslation()
   const nonLues = notifications.filter(notification => !notification.lue).length
 
   return (
     <section className="bg-white rounded-2xl shadow p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-lg font-bold text-blue-900">Notifications</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Les dernières nouvelles liées à ton compte.</p>
+          <h2 className="text-lg font-bold text-blue-900">{t('memberDashboard.notifications.title')}</h2>
+          <p className="text-xs text-gray-400 mt-0.5">{t('memberDashboard.notifications.subtitle')}</p>
         </div>
         <span className={`text-xs rounded-full px-2 py-1 font-semibold ${nonLues > 0 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500'}`}>
-          {nonLues} non lue(s)
+          {t('memberDashboard.notifications.unreadCount', { count: nonLues })}
         </span>
       </div>
 
       {notifications.length === 0 ? (
         <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-400">
-          Aucune notification importante pour le moment.
+          {t('memberDashboard.notifications.empty')}
         </div>
       ) : (
         <ul className="space-y-3">
@@ -29,7 +31,7 @@ export default function MemberNotificationsCard({ notifications = [] }) {
                   <p className="text-xs text-gray-500 mt-1 line-clamp-2">{notification.message}</p>
                   {notification.lienAction && (
                     <Link to={notification.lienAction} className="inline-flex mt-2 text-xs font-semibold text-blue-700 hover:underline">
-                      Ouvrir
+                      {t('memberDashboard.buttons.open')}
                     </Link>
                   )}
                 </div>
@@ -41,7 +43,7 @@ export default function MemberNotificationsCard({ notifications = [] }) {
       )}
 
       <Link to="/notifications" className="inline-block mt-4 text-sm text-blue-700 font-semibold hover:underline">
-        Voir les notifications
+        {t('memberDashboard.buttons.viewNotifications')}
       </Link>
     </section>
   )

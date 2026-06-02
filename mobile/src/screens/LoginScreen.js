@@ -4,10 +4,12 @@ import {
   StyleSheet, ScrollView, ActivityIndicator
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 
 export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
+  const { t } = useTranslation();
 
   const [form, setForm] = useState({ email: '', motDePasse: '' });
   const [loading, setLoading] = useState(false);
@@ -16,7 +18,7 @@ export default function LoginScreen({ navigation }) {
   const handleLogin = async () => {
     setError('');
     if (!form.email.trim() || !form.motDePasse.trim()) {
-      setError('Veuillez remplir tous les champs.');
+      setError(t('auth.error_required'));
       return;
     }
     setLoading(true);
@@ -29,7 +31,7 @@ export default function LoginScreen({ navigation }) {
       await login(token, { prenom, nom, email, role });
       // AppNavigator bascule automatiquement vers PrivateStack
     } catch (err) {
-      setError(err.response?.data?.message || 'Email ou mot de passe incorrect.');
+      setError(getApiError(err, t('auth.error_login'), t));
     } finally {
       setLoading(false);
     }
@@ -44,7 +46,7 @@ export default function LoginScreen({ navigation }) {
       {/* Logo */}
       <View style={styles.header}>
         <Text style={styles.logo}>BX-CONNECT</Text>
-        <Text style={styles.subtitle}>Connecte-toi à ton espace</Text>
+        <Text style={styles.subtitle}>{t('auth.login_subtitle')}</Text>
       </View>
 
       {/* Carte formulaire */}
@@ -59,10 +61,10 @@ export default function LoginScreen({ navigation }) {
 
         {/* Email */}
         <View style={styles.field}>
-          <Text style={styles.label}>Adresse e-mail</Text>
+          <Text style={styles.label}>{t('auth.email')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="ton@email.com"
+            placeholder={t('auth.email_placeholder')}
             placeholderTextColor="#94a3b8"
             value={form.email}
             onChangeText={(val) => setForm({ ...form, email: val })}
@@ -74,10 +76,10 @@ export default function LoginScreen({ navigation }) {
 
         {/* Mot de passe */}
         <View style={styles.field}>
-          <Text style={styles.label}>Mot de passe</Text>
+          <Text style={styles.label}>{t('auth.password')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="••••••••"
+            placeholder={t('auth.password_placeholder')}
             placeholderTextColor="#94a3b8"
             value={form.motDePasse}
             onChangeText={(val) => setForm({ ...form, motDePasse: val })}
@@ -95,14 +97,14 @@ export default function LoginScreen({ navigation }) {
         >
           {loading
             ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.btnLoginText}>Se connecter</Text>
+            : <Text style={styles.btnLoginText}>{t('auth.login_btn')}</Text>
           }
         </TouchableOpacity>
 
         {/* ✅ Séparateur */}
         <View style={styles.separator}>
           <View style={styles.separatorLine} />
-          <Text style={styles.separatorText}>ou</Text>
+          <Text style={styles.separatorText}>{t('auth.separator_or')}</Text>
           <View style={styles.separatorLine} />
         </View>
 
@@ -112,7 +114,7 @@ export default function LoginScreen({ navigation }) {
           onPress={() => navigation.navigate('Register')}
           activeOpacity={0.8}
         >
-          <Text style={styles.btnRegisterText}>✨ Créer un compte gratuitement</Text>
+          <Text style={styles.btnRegisterText}>✨ {t('auth.create_free_account')}</Text>
         </TouchableOpacity>
 
       </View>
@@ -123,7 +125,7 @@ export default function LoginScreen({ navigation }) {
         onPress={() => navigation.navigate('Activities')}
       >
         <Text style={styles.linkText}>
-          Voir les activités sans se connecter →
+          {t('auth.view_activities_guest')}
         </Text>
       </TouchableOpacity>
 
@@ -132,11 +134,16 @@ export default function LoginScreen({ navigation }) {
         style={styles.backBtn}
         onPress={() => navigation.navigate('Home')}
       >
-        <Text style={styles.backText}>{"← Retour à l'accueil"}</Text>
+        <Text style={styles.backText}>{t('auth.back_home')}</Text>
       </TouchableOpacity>
 
     </ScrollView>
   );
+}
+
+function getApiError(err, fallback, t) {
+  if (err.response?.status === 403) return t('errors.forbidden');
+  return fallback;
 }
 
 const styles = StyleSheet.create({

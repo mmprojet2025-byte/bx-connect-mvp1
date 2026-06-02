@@ -1,14 +1,17 @@
 import { NavLink } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
 const links = [
-  { to: '/super-admin/dashboard', label: 'Dashboard', icon: '📊' },
-  { to: '/super-admin/admins', label: 'Administrateurs', icon: '🛡️' },
-  { to: '/super-admin/logs', label: 'Logs', icon: '🧾' },
+  { to: '/super-admin/dashboard', labelKey: 'nav.dashboard', icon: '📊' },
+  { to: '/super-admin/admins', labelKey: 'nav.admins', icon: '🛡️' },
+  { to: '/super-admin/logs', labelKey: 'nav.logs', icon: '🧾' },
 ]
 
 export default function SuperAdminLayout({ children, title, subtitle }) {
+  const { t } = useTranslation()
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
@@ -16,7 +19,7 @@ export default function SuperAdminLayout({ children, title, subtitle }) {
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
           <aside className="bg-white rounded-2xl shadow p-4 h-fit">
-            <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Plateforme</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase mb-3">{t('nav.platform')}</p>
             <nav className="space-y-2">
               {links.map(link => (
                 <NavLink
@@ -31,7 +34,7 @@ export default function SuperAdminLayout({ children, title, subtitle }) {
                   }
                 >
                   <span>{link.icon}</span>
-                  <span>{link.label}</span>
+                  <span>{t(link.labelKey)}</span>
                 </NavLink>
               ))}
             </nav>

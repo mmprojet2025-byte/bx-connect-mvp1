@@ -1,34 +1,30 @@
 import { Link } from 'react-router-dom'
-
-const STATUTS_INSCRIPTION = {
-  CONFIRMEE: 'Confirmée',
-  EN_ATTENTE_PAIEMENT: 'Paiement en attente',
-  ANNULEE: 'Annulée',
-  PAYEE: 'Payée',
-}
+import { useTranslation } from 'react-i18next'
 
 export default function MemberActivitiesCard({ inscriptions = [] }) {
+  const { t, i18n } = useTranslation()
+
   return (
     <section className="bg-white rounded-2xl shadow p-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-blue-900">Mes activités</h2>
-        <Link to="/activites" className="text-sm text-blue-700 font-semibold hover:underline">Voir tout</Link>
+        <h2 className="text-lg font-bold text-blue-900">{t('memberDashboard.activities.title')}</h2>
+        <Link to="/activites" className="text-sm text-blue-700 font-semibold hover:underline">{t('memberDashboard.buttons.viewAll')}</Link>
       </div>
       {inscriptions.length === 0 ? (
-        <Empty text="Aucune inscription pour le moment." action="Voir les activités" to="/activites" />
+        <Empty text={t('memberDashboard.activities.empty')} action={t('memberDashboard.buttons.viewActivities')} to="/activites" />
       ) : (
         <ul className="space-y-3">
           {inscriptions.slice(0, 4).map(inscription => (
             <li key={inscription.id} className="border border-gray-100 rounded-xl p-3">
               <div className="flex justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-blue-900">{inscription.activiteTitre || 'Activité'}</p>
+                  <p className="text-sm font-semibold text-blue-900">{inscription.activiteTitre || t('memberDashboard.activities.fallbackTitle')}</p>
                   <p className="text-xs text-gray-400 mt-1">
-                    {formatDate(inscription.activiteDateDebut)}
+                    {formatDate(inscription.activiteDateDebut, i18n.language, t)}
                     {inscription.activiteLieu ? ` · ${inscription.activiteLieu}` : ''}
                   </p>
                 </div>
-                <StatusBadge statut={inscription.statut} />
+                <StatusBadge statut={inscription.statut} t={t} />
               </div>
             </li>
           ))}
@@ -38,8 +34,10 @@ export default function MemberActivitiesCard({ inscriptions = [] }) {
   )
 }
 
-function StatusBadge({ statut }) {
-  const label = STATUTS_INSCRIPTION[statut] || statut || 'Statut inconnu'
+function StatusBadge({ statut, t }) {
+  const label = t(`memberDashboard.statuses.subscription.${statut}`, {
+    defaultValue: statut || t('memberDashboard.statuses.unknown'),
+  })
   const styles = {
     CONFIRMEE: 'bg-green-100 text-green-700',
     PAYEE: 'bg-green-100 text-green-700',
@@ -59,6 +57,6 @@ function Empty({ text, action, to }) {
   )
 }
 
-function formatDate(value) {
-  return value ? new Date(value).toLocaleDateString('fr-BE') : 'Date à venir'
+function formatDate(value, language, t) {
+  return value ? new Date(value).toLocaleDateString(language || 'fr-BE') : t('memberDashboard.activities.upcomingDate')
 }

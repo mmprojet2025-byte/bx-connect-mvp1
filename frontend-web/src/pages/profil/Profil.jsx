@@ -36,8 +36,8 @@ export default function Profil() {
         languePreference: res.data.languePreference || 'FR',
       });
       setAvatarUrl(res.data.avatarUrl || null);
-    } catch {
-      setError(t('profile.error_update'));
+    } catch (err) {
+      setError(getApiError(err, t('profile.error_load'), t));
     } finally {
       setLoading(false);
     }
@@ -57,8 +57,8 @@ export default function Profil() {
       const langCode = form.languePreference.toLowerCase(); // FR → fr, NL → nl, EN → en
       i18n.changeLanguage(langCode);
       localStorage.setItem('bxconnect_lang', langCode);
-    } catch {
-      setError(t('profile.error_update'));
+    } catch (err) {
+      setError(getApiError(err, t('profile.error_update'), t));
     }
   };
 
@@ -71,8 +71,8 @@ export default function Profil() {
       setMessage(t('profile.success_password'));
       setShowPasswordForm(false);
       setPasswordForm({ ancienMotDePasse: '', nouveauMotDePasse: '' });
-    } catch {
-      setError(t('profile.error_password'));
+    } catch (err) {
+      setError(getApiError(err, t('profile.error_password'), t));
     }
   };
 
@@ -132,14 +132,14 @@ export default function Profil() {
                     {profil?.prenom} {profil?.nom}
                   </h2>
                   <span className="inline-block bg-blue-600 text-white text-xs px-3 py-0.5 rounded-full mb-3">
-                    {profil?.role}
+                    {t(`roles.${profil?.role}`, profil?.role)}
                   </span>
                   <p className="text-gray-600 text-sm mb-1">📧 {profil?.email}</p>
                   <p className="text-gray-600 text-sm mb-1">
-                    🌐 {t('profile.language')} : <strong>{profil?.languePreference}</strong>
+                    🌐 {t('profile.language')} : <strong>{languageLabel(profil?.languePreference, t)}</strong>
                   </p>
                   <p className="text-gray-400 text-xs mb-4">
-                    {t('profile.member_since')} {new Date(profil?.dateInscription).toLocaleDateString('fr-BE')}
+                    {t('profile.member_since_with_date', { date: formatDate(profil?.dateInscription, i18n.language, t) })}
                   </p>
                   <button
                     onClick={() => setEditMode(true)}
@@ -173,9 +173,9 @@ export default function Profil() {
                       onChange={(e) => setForm({ ...form, languePreference: e.target.value })}
                       className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                     >
-                      <option value="FR">🇫🇷 Français</option>
-                      <option value="NL">🇧🇪 Nederlands</option>
-                      <option value="EN">🇬🇧 English</option>
+                      <option value="FR">🇫🇷 {t('common.language_fr')}</option>
+                      <option value="NL">🇧🇪 {t('common.language_nl')}</option>
+                      <option value="EN">🇬🇧 {t('common.language_en')}</option>
                     </select>
                   </div>
                   <div className="flex gap-3">
@@ -194,7 +194,7 @@ export default function Profil() {
 
         {/* Sécurité — Changer mot de passe */}
         <div className="bg-white rounded-2xl shadow p-6 mb-6">
-          <h3 className="text-lg font-bold text-blue-900 mb-4">🔒 {t('profile.change_password')}</h3>
+          <h3 className="text-lg font-bold text-blue-900 mb-4">🔒 {t('profile.security')}</h3>
           {!showPasswordForm ? (
             <button
               onClick={() => setShowPasswordForm(true)}
@@ -246,4 +246,24 @@ export default function Profil() {
       <Footer />
     </div>
   );
+}
+
+function getApiError(err, fallback, t) {
+  if (err.response?.status === 401) return t('errors.session_expired');
+  if (err.response?.status === 403) return t('errors.forbidden');
+  return fallback;
+}
+
+function languageLabel(value, t) {
+  return {
+    FR: t('common.language_fr'),
+    NL: t('common.language_nl'),
+    EN: t('common.language_en'),
+  }[value] || value || '';
+}
+
+function formatDate(value, language, t) {
+  if (!value) return t('profile.unknown_date');
+  const locale = language === 'nl' ? 'nl-BE' : language === 'en' ? 'en-GB' : 'fr-BE';
+  return new Date(value).toLocaleDateString(locale);
 }

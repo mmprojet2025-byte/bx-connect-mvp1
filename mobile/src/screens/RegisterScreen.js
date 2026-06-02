@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 
 export default function RegisterScreen({ navigation }) {
   const { login } = useAuth();
+  const { t } = useTranslation();
   const [form, setForm] = useState({ prenom:'', nom:'', email:'', motDePasse:'', confirmation:'' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -12,10 +14,10 @@ export default function RegisterScreen({ navigation }) {
   const handleRegister = async () => {
     setError('');
     if (!form.prenom.trim()||!form.nom.trim()||!form.email.trim()||!form.motDePasse.trim()) {
-      setError('Veuillez remplir tous les champs.'); return;
+      setError(t('auth.error_required')); return;
     }
-    if (form.motDePasse !== form.confirmation) { setError('Les mots de passe ne correspondent pas.'); return; }
-    if (form.motDePasse.length < 8) { setError('Le mot de passe doit contenir au moins 8 caracteres.'); return; }
+    if (form.motDePasse !== form.confirmation) { setError(t('auth.error_passwords')); return; }
+    if (form.motDePasse.length < 8) { setError(t('auth.error_password_min')); return; }
     setLoading(true);
     try {
       const res = await api.post('/auth/register', {
@@ -25,7 +27,7 @@ export default function RegisterScreen({ navigation }) {
       const { token, prenom, nom, email, role } = res.data;
       await login(token, { prenom, nom, email, role });
     } catch (err) {
-      setError(err.response?.data?.message || "Erreur lors de l'inscription.");
+      setError(getApiError(err, t('auth.error_register'), t));
     } finally { setLoading(false); }
   };
 
@@ -33,44 +35,51 @@ export default function RegisterScreen({ navigation }) {
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.header}>
         <Text style={styles.logo}>BX-CONNECT</Text>
-        <Text style={styles.subtitle}>Cree ton compte gratuitement</Text>
+        <Text style={styles.subtitle}>{t('auth.register_subtitle')}</Text>
       </View>
       {error !== '' && <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View>}
       <View style={styles.card}>
         <View style={styles.row}>
           <View style={[styles.field,{flex:1,marginRight:8}]}>
-            <Text style={styles.label}>Prenom *</Text>
+            <Text style={styles.label}>{t('auth.firstname')} *</Text>
             <TextInput style={styles.input} value={form.prenom} onChangeText={v=>setForm({...form,prenom:v})} autoCapitalize="words"/>
           </View>
           <View style={[styles.field,{flex:1}]}>
-            <Text style={styles.label}>Nom *</Text>
+            <Text style={styles.label}>{t('auth.lastname')} *</Text>
             <TextInput style={styles.input} value={form.nom} onChangeText={v=>setForm({...form,nom:v})} autoCapitalize="words"/>
           </View>
         </View>
         <View style={styles.field}>
-          <Text style={styles.label}>Email *</Text>
-          <TextInput style={styles.input} value={form.email} onChangeText={v=>setForm({...form,email:v})} keyboardType="email-address" autoCapitalize="none" placeholder="ton@email.com" placeholderTextColor="#94a3b8"/>
+          <Text style={styles.label}>{t('auth.email')} *</Text>
+          <TextInput style={styles.input} value={form.email} onChangeText={v=>setForm({...form,email:v})} keyboardType="email-address" autoCapitalize="none" placeholder={t('auth.email_placeholder')} placeholderTextColor="#94a3b8"/>
         </View>
         <View style={styles.field}>
-          <Text style={styles.label}>Mot de passe * (min. 8 caracteres)</Text>
-          <TextInput style={styles.input} value={form.motDePasse} onChangeText={v=>setForm({...form,motDePasse:v})} secureTextEntry autoCapitalize="none"/>
+          <Text style={styles.label}>{t('auth.password_min_label')}</Text>
+          <TextInput style={styles.input} value={form.motDePasse} onChangeText={v=>setForm({...form,motDePasse:v})} secureTextEntry autoCapitalize="none" placeholder={t('auth.password_placeholder')} placeholderTextColor="#94a3b8"/>
         </View>
         <View style={styles.field}>
-          <Text style={styles.label}>Confirmer le mot de passe *</Text>
-          <TextInput style={styles.input} value={form.confirmation} onChangeText={v=>setForm({...form,confirmation:v})} secureTextEntry autoCapitalize="none"/>
+          <Text style={styles.label}>{t('auth.confirm_password')} *</Text>
+          <TextInput style={styles.input} value={form.confirmation} onChangeText={v=>setForm({...form,confirmation:v})} secureTextEntry autoCapitalize="none" placeholder={t('auth.confirm_password')} placeholderTextColor="#94a3b8"/>
         </View>
         <TouchableOpacity style={[styles.btn,loading&&styles.btnDisabled]} onPress={handleRegister} disabled={loading} activeOpacity={0.8}>
-          {loading ? <ActivityIndicator color="#fff"/> : <Text style={styles.btnText}>Creer mon compte</Text>}
+          {loading ? <ActivityIndicator color="#fff"/> : <Text style={styles.btnText}>{t('auth.register_btn')}</Text>}
         </TouchableOpacity>
         <TouchableOpacity style={styles.link} onPress={()=>navigation.navigate('Login')}>
-          <Text style={styles.linkText}>Deja inscrit ? Se connecter</Text>
+          <Text style={styles.linkText}>{t('auth.already_account')}</Text>
         </TouchableOpacity>
       </View>
       <TouchableOpacity style={styles.back} onPress={()=>navigation.navigate('Home')}>
-        <Text style={styles.backText}>{"Retour a l'accueil"}</Text>
+        <Text style={styles.backText}>{t('auth.back_home_short')}</Text>
       </TouchableOpacity>
     </ScrollView>
   );
+}
+
+function getApiError(err, fallback, t) {
+  if (err.response?.status === 403) return t('errors.forbidden');
+  const message = err.response?.data?.message?.toLowerCase() || '';
+  if (message.includes('existe')) return t('auth.error_email_exists');
+  return fallback;
 }
 
 const styles = StyleSheet.create({

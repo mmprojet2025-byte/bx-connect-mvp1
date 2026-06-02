@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../context/AuthContext';
 import { ActivityIndicator, View, TouchableOpacity, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 // ─── Écrans publics ───────────────────────────────────────────────────────────
 import HomeScreen          from '../screens/HomeScreen';
@@ -28,11 +29,11 @@ const headerStyle = {
 };
 
 // ─── Bouton déconnexion dans le header ───────────────────────────────────────
-function LogoutButton({ onPress }) {
+function LogoutButton({ onPress, label }) {
   return (
     <TouchableOpacity onPress={onPress} style={{ marginRight: 4 }}>
       <Text style={{ color: '#fca5a5', fontWeight: '600', fontSize: 14 }}>
-        🚪 Déco
+        🚪 {label}
       </Text>
     </TouchableOpacity>
   );
@@ -40,27 +41,29 @@ function LogoutButton({ onPress }) {
 
 // ─── Stack public ─────────────────────────────────────────────────────────────
 function PublicStack() {
+  const { t } = useTranslation();
+
   return (
     <Stack.Navigator screenOptions={headerStyle}>
       <Stack.Screen name="Home"       component={HomeScreen}      options={{ title: 'BX-CONNECT', headerBackVisible: false }} />
-      <Stack.Screen name="Login"      component={LoginScreen}     options={{ title: 'Connexion' }} />
-      <Stack.Screen name="Register"   component={RegisterScreen}  options={{ title: 'Créer un compte' }} />
-      <Stack.Screen name="Activities" component={ActivitiesScreen} options={{ title: 'Activités' }} />
-      <Stack.Screen name="Groupes"    component={GroupesScreen}    options={{ title: 'Groupes' }} />
+      <Stack.Screen name="Login"      component={LoginScreen}     options={{ title: t('navigation.login') }} />
+      <Stack.Screen name="Register"   component={RegisterScreen}  options={{ title: t('navigation.createAccount') }} />
+      <Stack.Screen name="Activities" component={ActivitiesScreen} options={{ title: t('navigation.activities') }} />
+      <Stack.Screen name="Groupes"    component={GroupesScreen}    options={{ title: t('navigation.groups') }} />
     </Stack.Navigator>
   );
 }
 
 // ─── Stacks privés (un par onglet) ───────────────────────────────────────────
-function makeStack(ScreenComponent, title, logout) {
+function makeStack(ScreenComponent, title, logout, logoutLabel) {
   return function StackWrapper() {
     return (
       <Stack.Navigator screenOptions={{
         ...headerStyle,
-        headerRight: () => <LogoutButton onPress={logout} />,
+        headerRight: () => <LogoutButton onPress={logout} label={logoutLabel} />,
       }}>
         <Stack.Screen
-          name={`${title}Main`}
+          name="Main"
           component={ScreenComponent}
           options={{ title, headerBackVisible: false }}
         />
@@ -72,21 +75,24 @@ function makeStack(ScreenComponent, title, logout) {
 // ─── Tab Navigator privé ─────────────────────────────────────────────────────
 function PrivateTabs() {
   const { logout, isMembre, isReferent, isAdmin, isSuperAdmin } = useAuth();
+  const { t } = useTranslation();
+  const logoutLabel = t('navigation.logout');
 
-  const DashboardStack     = makeStack(DashboardScreen,     'Tableau de bord', logout);
-  const ActivitiesStack    = makeStack(ActivitiesScreen,    'Activités',        logout);
-  const ProjectsStack      = makeStack(ProjectsScreen,      'Projets',          logout);
-  const GroupesStack       = makeStack(GroupesScreen,       'Groupes',          logout);
-  const MesGroupesStack    = makeStack(GroupesScreen,       'Mes groupes',      logout);
-  const MessagerieStack    = makeStack(MessagerieScreen,    'Messagerie',       logout);
-  const NotificationsStack  = makeStack(NotificationsScreen,  'Notifications',    logout);
-  const ProfileStack           = makeStack(ProfileScreen,           'Mon profil',     logout);
+  const DashboardStack     = makeStack(DashboardScreen,     t('navigation.dashboard'),      logout, logoutLabel);
+  const ActivitiesStack    = makeStack(ActivitiesScreen,    t('navigation.activities'),     logout, logoutLabel);
+  const ProjectsStack      = makeStack(ProjectsScreen,      t('navigation.projects'),       logout, logoutLabel);
+  const GroupesStack       = makeStack(GroupesScreen,       t('navigation.groups'),         logout, logoutLabel);
+  const MesGroupesStack    = makeStack(GroupesScreen,       t('navigation.myGroups'),       logout, logoutLabel);
+  const MessagerieStack    = makeStack(MessagerieScreen,    t('navigation.messaging'),      logout, logoutLabel);
+  const NotificationsStack = makeStack(NotificationsScreen, t('navigation.notifications'),  logout, logoutLabel);
+  const ProfileStack       = makeStack(ProfileScreen,       t('navigation.profile'),        logout, logoutLabel);
 
   const tabs = getTabsForRole({
     isMembre,
     isReferent,
     isAdmin,
     isSuperAdmin,
+    t,
     stacks: {
       DashboardStack,
       ActivitiesStack,
@@ -129,47 +135,47 @@ function PrivateTabs() {
   );
 }
 
-function getTabsForRole({ isMembre, isReferent, isAdmin, isSuperAdmin, stacks }) {
+function getTabsForRole({ isMembre, isReferent, isAdmin, isSuperAdmin, t, stacks }) {
   if (isSuperAdmin) {
     return [
-      tab('TabDashboard', 'Dashboard', '🏠', stacks.DashboardStack),
-      tab('TabProfile', 'Profil', '👤', stacks.ProfileStack),
+      tab('TabDashboard', t('navigation.dashboard'), '🏠', stacks.DashboardStack),
+      tab('TabProfile', t('navigation.profile'), '👤', stacks.ProfileStack),
     ];
   }
 
   if (isAdmin) {
     return [
-      tab('TabDashboard', 'Dashboard', '🏠', stacks.DashboardStack),
-      tab('TabNotifications', 'Alertes', '🔔', stacks.NotificationsStack),
-      tab('TabProfile', 'Profil', '👤', stacks.ProfileStack),
+      tab('TabDashboard', t('navigation.dashboard'), '🏠', stacks.DashboardStack),
+      tab('TabNotifications', t('navigation.alerts'), '🔔', stacks.NotificationsStack),
+      tab('TabProfile', t('navigation.profile'), '👤', stacks.ProfileStack),
     ];
   }
 
   if (isReferent) {
     return [
-      tab('TabDashboard', 'Dashboard', '🏠', stacks.DashboardStack),
-      tab('TabGroupes', 'Mes groupes', '👥', stacks.MesGroupesStack),
-      tab('TabActivities', 'Activités', '🎯', stacks.ActivitiesStack),
-      tab('TabMessagerie', 'Messages', '💬', stacks.MessagerieStack),
-      tab('TabNotifications', 'Alertes', '🔔', stacks.NotificationsStack),
-      tab('TabProfile', 'Profil', '👤', stacks.ProfileStack),
+      tab('TabDashboard', t('navigation.dashboard'), '🏠', stacks.DashboardStack),
+      tab('TabGroupes', t('navigation.myGroups'), '👥', stacks.MesGroupesStack),
+      tab('TabActivities', t('navigation.activities'), '🎯', stacks.ActivitiesStack),
+      tab('TabMessagerie', t('navigation.messages'), '💬', stacks.MessagerieStack),
+      tab('TabNotifications', t('navigation.alerts'), '🔔', stacks.NotificationsStack),
+      tab('TabProfile', t('navigation.profile'), '👤', stacks.ProfileStack),
     ];
   }
 
   if (isMembre) {
     return [
-      tab('TabDashboard', 'Dashboard', '🏠', stacks.DashboardStack),
-      tab('TabActivities', 'Activités', '🎯', stacks.ActivitiesStack),
-      tab('TabGroupes', 'Groupes', '👥', stacks.GroupesStack),
-      tab('TabProjects', 'Projets', '🚀', stacks.ProjectsStack),
-      tab('TabMessagerie', 'Messages', '💬', stacks.MessagerieStack),
-      tab('TabProfile', 'Profil', '👤', stacks.ProfileStack),
+      tab('TabDashboard', t('navigation.dashboard'), '🏠', stacks.DashboardStack),
+      tab('TabActivities', t('navigation.activities'), '🎯', stacks.ActivitiesStack),
+      tab('TabGroupes', t('navigation.groups'), '👥', stacks.GroupesStack),
+      tab('TabProjects', t('navigation.projects'), '🚀', stacks.ProjectsStack),
+      tab('TabMessagerie', t('navigation.messages'), '💬', stacks.MessagerieStack),
+      tab('TabProfile', t('navigation.profile'), '👤', stacks.ProfileStack),
     ];
   }
 
   return [
-    tab('TabDashboard', 'Dashboard', '🏠', stacks.DashboardStack),
-    tab('TabProfile', 'Profil', '👤', stacks.ProfileStack),
+    tab('TabDashboard', t('navigation.dashboard'), '🏠', stacks.DashboardStack),
+    tab('TabProfile', t('navigation.profile'), '👤', stacks.ProfileStack),
   ];
 }
 

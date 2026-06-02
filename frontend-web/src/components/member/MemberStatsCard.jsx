@@ -1,15 +1,18 @@
+import { useTranslation } from 'react-i18next'
+
 export default function MemberStatsCard({ implication, notifications = [] }) {
+  const { t } = useTranslation()
   const data = implication || {}
   const nonLues = notifications.filter(notification => !notification.lue).length
 
   return (
     <section className="bg-white rounded-2xl shadow p-5">
-      <h2 className="text-lg font-bold text-blue-900 mb-4">Mes statistiques</h2>
+      <h2 className="text-lg font-bold text-blue-900 mb-4">{t('memberDashboard.stats.title')}</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Metric label="Activités rejointes" value={data.activitesRejointes ?? 0} />
-        <Metric label="Inscriptions confirmées" value={data.inscriptionsConfirmees ?? 0} />
-        <Metric label="Projets proposés" value={data.projetsProposes ?? 0} />
-        <Metric label="Notifications non lues" value={nonLues} />
+        <Metric label={t('memberDashboard.stats.activitiesJoined')} value={data.activitesRejointes ?? 0} />
+        <Metric label={t('memberDashboard.stats.confirmedRegistrations')} value={data.inscriptionsConfirmees ?? 0} />
+        <Metric label={t('memberDashboard.stats.proposedProjects')} value={data.projetsProposes ?? 0} />
+        <Metric label={t('memberDashboard.stats.unreadNotifications')} value={nonLues} />
       </div>
     </section>
   )

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
@@ -16,6 +17,7 @@ import MemberStatsCard from '../../components/member/MemberStatsCard'
 import api from '../../api/axios'
 
 export default function Dashboard() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [dashboard, setDashboard] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -28,11 +30,11 @@ export default function Dashboard() {
       const res = await api.get('/membre/dashboard')
       setDashboard(res.data)
     } catch {
-      setError('Impossible de charger votre dashboard membre.')
+      setError(t('memberDashboard.errorLoad'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => { fetchDashboard() }, [fetchDashboard])
 
@@ -45,8 +47,10 @@ export default function Dashboard() {
       <Navbar />
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
         <header className="mb-8">
-          <p className="text-sm text-gray-500">Bienvenue dans ton espace BX-Connect.</p>
-          <h1 className="text-3xl font-bold text-blue-900 mt-1">Bonjour, {user?.prenom}</h1>
+          <p className="text-sm text-gray-500">{t('memberDashboard.welcome')}</p>
+          <h1 className="text-3xl font-bold text-blue-900 mt-1">
+            {t('memberDashboard.hello', { name: user?.prenom || t('memberDashboard.memberFallback') })}
+          </h1>
         </header>
 
         {error && (
@@ -56,7 +60,7 @@ export default function Dashboard() {
         )}
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">Chargement...</p>
+          <p className="text-gray-400 text-center py-10">{t('memberDashboard.loading')}</p>
         ) : dashboard ? (
           <div className="space-y-6">
             <MemberStatusCard groupe={groupe} messagerieDisponible={messagerieDisponible} />
@@ -95,9 +99,9 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="bg-white rounded-2xl shadow p-10 text-center">
-            <p className="text-gray-500 text-sm mb-4">Votre espace membre n’est pas disponible pour le moment.</p>
+            <p className="text-gray-500 text-sm mb-4">{t('memberDashboard.unavailable')}</p>
             <Link to="/activites" className="text-blue-700 text-sm font-semibold hover:underline">
-              Voir les activités
+              {t('memberDashboard.buttons.viewActivities')}
             </Link>
           </div>
         )}

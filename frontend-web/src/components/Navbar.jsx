@@ -81,9 +81,9 @@ export default function Navbar() {
             onClick={() => setMenuOpen(open => !open)}
             className="lg:hidden border border-blue-700 hover:bg-blue-800 rounded-xl px-3 py-2 text-sm font-semibold"
             aria-expanded={menuOpen}
-            aria-label="Ouvrir le menu"
+            aria-label={t('nav.openMenu')}
           >
-            {menuOpen ? 'Fermer' : 'Menu'}
+            {menuOpen ? t('nav.close') : t('nav.menu')}
           </button>
         </div>
       </div>
@@ -123,17 +123,17 @@ export default function Navbar() {
 function getNavLinks({ isSuperAdmin, isAdmin, isReferent, isMembre, isPartenaire, t }) {
   if (isSuperAdmin) {
     return [
-      { to: '/super-admin/dashboard', label: t('ux.nav.dashboard') },
-      { to: '/super-admin/admins', label: t('ux.nav.admins') },
-      { to: '/super-admin/logs', label: t('ux.nav.logs') },
+      { to: '/super-admin/dashboard', label: t('nav.dashboard') },
+      { to: '/super-admin/admins', label: t('nav.admins') },
+      { to: '/super-admin/logs', label: t('nav.logs') },
     ]
   }
 
   if (isAdmin) {
     return [
-      { to: '/admin/dashboard', label: t('ux.nav.adminDashboard') },
-      { to: '/admin/utilisateurs', label: t('ux.nav.users') },
-      { to: '/admin/referents', label: t('ux.nav.referents') },
+      { to: '/admin/dashboard', label: t('nav.adminDashboard') },
+      { to: '/admin/utilisateurs', label: t('nav.users') },
+      { to: '/admin/referents', label: t('nav.referents') },
       { to: '/admin/groupes', label: t('nav.groups') },
       { to: '/admin/activites', label: t('nav.activities') },
       { to: '/admin/projets', label: t('nav.projects') },
@@ -142,10 +142,10 @@ function getNavLinks({ isSuperAdmin, isAdmin, isReferent, isMembre, isPartenaire
 
   if (isReferent) {
     return [
-      { to: '/referent/dashboard', label: t('ux.nav.dashboard') },
-      { to: '/referent/groupes', label: t('ux.referentDashboard.assignedGroups') },
-      { to: '/referent/membres', label: t('ux.referentDashboard.members') },
-      { to: '/referent/demandes', label: t('ux.nav.requests') },
+      { to: '/referent/dashboard', label: t('nav.dashboard') },
+      { to: '/referent/groupes', label: t('nav.myGroups') },
+      { to: '/referent/membres', label: t('nav.users') },
+      { to: '/referent/demandes', label: t('nav.requests') },
       { to: '/referent/activites', label: t('nav.activities') },
       { to: '/referent/messagerie', label: t('nav.messaging') },
     ]
@@ -153,7 +153,7 @@ function getNavLinks({ isSuperAdmin, isAdmin, isReferent, isMembre, isPartenaire
 
   if (isMembre) {
     return [
-      { to: '/dashboard', label: 'Dashboard' },
+      { to: '/dashboard', label: t('nav.dashboard') },
       { to: '/activites', label: t('nav.activities') },
       { to: '/groupes', label: t('nav.groups') },
       { to: '/projets', label: t('nav.projects') },
@@ -164,7 +164,7 @@ function getNavLinks({ isSuperAdmin, isAdmin, isReferent, isMembre, isPartenaire
 
   if (isPartenaire) {
     return [
-      { to: '/partenaire', label: 'Partenaire', className: 'text-orange-300 hover:text-orange-200 transition font-semibold' },
+      { to: '/partenaire', label: t('nav.partner'), className: 'text-orange-300 hover:text-orange-200 transition font-semibold' },
     ]
   }
 
