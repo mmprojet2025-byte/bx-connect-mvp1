@@ -24,7 +24,7 @@ public class InscriptionController {
 
     // ─── MEMBRE : S'inscrire à une activité (M06 CDC) ───────────────────────
     @PostMapping
-    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT', 'ADMIN')")
+    @PreAuthorize("hasRole('MEMBRE')")
     public ResponseEntity<InscriptionResponse> inscrire(
             @Valid @RequestBody InscriptionRequest request,
             Authentication authentication) {
@@ -35,7 +35,7 @@ public class InscriptionController {
 
     // ─── MEMBRE : Voir ses inscriptions (M11 CDC) ────────────────────────────
     @GetMapping("/mes-inscriptions")
-    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT', 'ADMIN')")
+    @PreAuthorize("hasRole('MEMBRE')")
     public ResponseEntity<List<InscriptionResponse>> mesInscriptions(
             Authentication authentication) {
         String email = authentication.getName();
@@ -44,7 +44,7 @@ public class InscriptionController {
 
     // ─── MEMBRE : Annuler son inscription (M12 CDC) ──────────────────────────
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT', 'ADMIN')")
+    @PreAuthorize("hasRole('MEMBRE')")
     public ResponseEntity<InscriptionResponse> annuler(
             @PathVariable Long id,
             Authentication authentication) {
@@ -56,7 +56,11 @@ public class InscriptionController {
     @GetMapping("/activite/{activiteId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
     public ResponseEntity<List<InscriptionResponse>> inscriptionsParActivite(
-            @PathVariable Long activiteId) {
-        return ResponseEntity.ok(inscriptionService.inscriptionsParActivite(activiteId));
+            @PathVariable Long activiteId,
+            Authentication authentication) {
+        return ResponseEntity.ok(inscriptionService.inscriptionsParActivite(
+                activiteId,
+                authentication.getName()
+        ));
     }
 }

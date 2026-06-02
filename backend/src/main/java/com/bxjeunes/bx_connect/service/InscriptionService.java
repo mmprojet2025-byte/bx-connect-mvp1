@@ -6,6 +6,7 @@ import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.ActiviteRepository;
 import com.bxjeunes.bx_connect.repository.InscriptionRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -115,7 +116,21 @@ public class InscriptionService {
 
     // ─── Consulter toutes les inscriptions d'une activité (R07 / admin) ─────
 
-    public List<InscriptionResponse> inscriptionsParActivite(Long activiteId) {
+    public List<InscriptionResponse> inscriptionsParActivite(Long activiteId, String emailUtilisateur) {
+        User utilisateur = userRepository.findByEmail(emailUtilisateur)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + emailUtilisateur));
+        Activite activite = activiteRepository.findById(activiteId)
+                .orElseThrow(() -> new RuntimeException("Activité introuvable : " + activiteId));
+
+        if (utilisateur.getRole() == Role.REFERENT &&
+                (activite.getCreateur() == null ||
+                        !activite.getCreateur().getId().equals(utilisateur.getId()))) {
+            throw new AccessDeniedException("Vous ne pouvez consulter que les inscriptions de vos propres activites.");
+        }
+        if (utilisateur.getRole() != Role.ADMIN && utilisateur.getRole() != Role.REFERENT) {
+            throw new AccessDeniedException("Acces reserve aux ADMIN et REFERENTS.");
+        }
+
         return inscriptionRepository.findByActiviteId(activiteId)
                 .stream()
                 .map(InscriptionResponse::fromEntity)

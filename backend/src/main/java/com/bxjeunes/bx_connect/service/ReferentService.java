@@ -4,6 +4,7 @@ import com.bxjeunes.bx_connect.dto.ActiviteResponse;
 import com.bxjeunes.bx_connect.dto.ProjetResponse;
 import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.*;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -102,6 +103,12 @@ public class ReferentService {
         // Vérifier que l'activité appartient au référent
         User referent = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Référent introuvable"));
+        Activite activite = activiteRepository.findById(activiteId)
+                .orElseThrow(() -> new RuntimeException("Activité introuvable : " + activiteId));
+
+        if (activite.getCreateur() == null || !activite.getCreateur().getId().equals(referent.getId())) {
+            throw new AccessDeniedException("Vous ne pouvez exporter que les participants de vos propres activites.");
+        }
 
         return inscriptionRepository.findByActiviteId(activiteId).stream()
                 .map(ins -> {

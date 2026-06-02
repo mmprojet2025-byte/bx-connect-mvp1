@@ -72,9 +72,35 @@ public class ActiviteService {
     }
 
     // ─── Détail d'une activité (V04) ──────────────────────────────────────────
-    public ActiviteResponse getById(Long id) {
+    public ActiviteResponse getById(Long id, String emailUtilisateur) {
         Activite activite = activiteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
+
+        if (emailUtilisateur == null) {
+            if (activite.getStatut() != StatutActivite.PUBLIEE) {
+                throw new RuntimeException("Activité introuvable : " + id);
+            }
+            return toResponse(activite);
+        }
+
+        User utilisateur = userRepository.findByEmail(emailUtilisateur)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + emailUtilisateur));
+
+        if (utilisateur.getRole() == Role.ADMIN) {
+            return toResponse(activite);
+        }
+
+        if (utilisateur.getRole() == Role.REFERENT) {
+            if (activite.getCreateur() != null &&
+                    activite.getCreateur().getId().equals(utilisateur.getId())) {
+                return toResponse(activite);
+            }
+            throw new AccessDeniedException("Vous ne pouvez consulter que vos propres activites.");
+        }
+
+        if (activite.getStatut() != StatutActivite.PUBLIEE) {
+            throw new RuntimeException("Activité introuvable : " + id);
+        }
         return toResponse(activite);
     }
 

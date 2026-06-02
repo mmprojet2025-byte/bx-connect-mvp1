@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,8 +34,13 @@ public class ActiviteController {
 
     // ─── PUBLIC : Détail d'une activité (V04) ────────────────────────────────
     @GetMapping("/{id}")
-    public ResponseEntity<ActiviteResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(activiteService.getById(id));
+    public ResponseEntity<ActiviteResponse> getById(@PathVariable Long id, Authentication authentication) {
+        String email = authentication != null
+                && authentication.isAuthenticated()
+                && !(authentication instanceof AnonymousAuthenticationToken)
+                ? authentication.getName()
+                : null;
+        return ResponseEntity.ok(activiteService.getById(id, email));
     }
 
     // ─── PUBLIC : Recherche par mot-clé (V06 / M16) ──────────────────────────
