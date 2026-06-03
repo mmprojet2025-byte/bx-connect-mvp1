@@ -390,6 +390,53 @@
       }
     }
   },
+  "admin": {
+    "dashboard": "Dashboard Admin",
+    "users": "Utilisateurs",
+    "referents": "Référents",
+    "groups": "Groupes",
+    "activities": "Activités",
+    "projects": "Projets",
+    "statistics": "Statistiques",
+    "mobileLimited": "La gestion de l’association se fait depuis le web."
+  },
+  "referent": {
+    "dashboard": "Dashboard Référent",
+    "groups": "Mes groupes",
+    "activities": "Activités",
+    "projects": "Projets",
+    "messaging": "Messagerie référent",
+    "requests": "Demandes",
+    "mobileLimited": "Mobile V1 affiche les informations essentielles de vos groupes."
+  },
+  "superAdmin": {
+    "dashboard": "Dashboard SUPER_ADMIN",
+    "admins": "Administrateurs",
+    "logs": "Logs",
+    "security": "Sécurité",
+    "statistics": "Statistiques plateforme",
+    "mobileLimited": "La gestion plateforme se fait depuis le web."
+  },
+  "audit": {
+    "date": "Date",
+    "action": "Action",
+    "actor": "Acteur",
+    "target": "Cible",
+    "details": "Détails"
+  },
+  "statistics": {
+    "activitiesTotal": "{{count}} activité(s) au total",
+    "projectsTotal": "{{count}} projet(s) au total"
+  },
+  "users": {
+    "name": "Nom",
+    "firstname": "Prénom",
+    "lastname": "Nom",
+    "email": "Email",
+    "role": "Rôle",
+    "status": "Statut",
+    "actions": "Actions"
+  },
   "roles": {
     "SUPER_ADMIN": "Super administrateur",
     "ADMIN": "Administrateur",

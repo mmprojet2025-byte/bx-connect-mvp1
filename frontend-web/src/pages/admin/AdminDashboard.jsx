@@ -67,8 +67,8 @@ export default function AdminDashboard() {
             {stats && (
               <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <StatCard label={t('admin.stats_total_users')} value={stats.totalUtilisateurs} color="#2E86AB" />
-                <StatCard label="Référents actifs" value={referentsActifs} color="#0d9488" />
-                <StatCard label="Groupes" value={groupes.length} color="#7c3aed" />
+                <StatCard label={t('admin.activeReferents')} value={referentsActifs} color="#0d9488" />
+                <StatCard label={t('admin.groups')} value={groupes.length} color="#7c3aed" />
                 <StatCard label={t('admin.stats_activities')} value={stats.totalActivites} color="#F4A261" />
               </section>
             )}
@@ -81,7 +81,7 @@ export default function AdminDashboard() {
                     <p className="text-sm text-gray-500">{t('ux.adminDashboard.priorityDesc')}</p>
                   </div>
                   <Link to="/admin/groupes" className="text-blue-700 text-sm font-semibold hover:underline">
-                    Voir groupes
+                    {t('admin.viewGroups')}
                   </Link>
                 </div>
 
@@ -89,21 +89,21 @@ export default function AdminDashboard() {
                   <PriorityCard
                     label={t('ux.adminDashboard.groupsWithoutReferent')}
                     value={groupesSansReferent.length}
-                    description="Assignez un référent pour chaque groupe."
+                    description={t('admin.assignReferentDesc')}
                     to="/admin/groupes"
                     alert={groupesSansReferent.length > 0}
                   />
                   <PriorityCard
                     label={t('ux.adminDashboard.pendingGroups')}
                     value={groupesEnAttente.length}
-                    description="Validez ou refusez les groupes en attente."
+                    description={t('admin.pendingGroupsDesc')}
                     to="/admin/groupes"
                     alert={groupesEnAttente.length > 0}
                   />
                   <PriorityCard
                     label={t('ux.adminDashboard.activeReferents')}
                     value={referentsActifs}
-                    description="Gardez une équipe référente opérationnelle."
+                    description={t('admin.activeReferentsDesc')}
                     to="/admin/referents"
                   />
                 </div>
@@ -124,8 +124,8 @@ export default function AdminDashboard() {
               <h2 className="text-lg font-bold text-blue-900 mb-4">{t('admin.manage')}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 <NavCard to="/admin/utilisateurs" title={t('admin.users_title')} description={t('admin.users_desc')} color="#2E86AB" />
-                <NavCard to="/admin/referents" title="Référents" description="Créer et suivre les référents des groupes" color="#0d9488" />
-                <NavCard to="/admin/groupes" title="Groupes" description="Créer les groupes et assigner les référents" color="#7c3aed" />
+                <NavCard to="/admin/referents" title={t('admin.referents_title')} description={t('admin.referents_desc')} color="#0d9488" />
+                <NavCard to="/admin/groupes" title={t('admin.groups_title')} description={t('admin.groups_desc')} color="#7c3aed" />
                 <NavCard to="/admin/activites" title={t('admin.activities_title')} description={t('admin.activities_desc')} color="#F4A261" />
                 <NavCard to="/admin/projets" title={t('admin.projects_title')} description={t('admin.projects_desc')} color="#28a745" />
               </div>
@@ -134,9 +134,9 @@ export default function AdminDashboard() {
             {groupes.length === 0 && (
               <div className="mt-8">
                 <EmptyState
-                  title="Aucun groupe créé"
-                  description="Commencez par créer les groupes de l’association, puis assignez un référent actif."
-                  actionLabel="Créer un groupe"
+                  title={t('admin.noGroupsCreated')}
+                  description={t('admin.noGroupsCreatedDesc')}
+                  actionLabel={t('admin.createGroup')}
                   actionTo="/admin/groupes"
                 />
               </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import api from '../../api/axios'
 import SuperAdminLayout from '../../layouts/SuperAdminLayout'
 
@@ -10,6 +11,7 @@ const emptyForm = {
 }
 
 export default function SuperAdminAdmins() {
+  const { t, i18n } = useTranslation()
   const [admins, setAdmins] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -26,7 +28,7 @@ export default function SuperAdminAdmins() {
       const res = await api.get('/super-admin/admins')
       setAdmins(res.data)
     } catch {
-      setError('Impossible de charger les administrateurs.')
+      setError(t('superAdmin.errorAdminsLoad'))
     } finally {
       setLoading(false)
     }
@@ -45,23 +47,23 @@ export default function SuperAdminAdmins() {
       const res = await api.post('/super-admin/admins', form)
       setAdmins(prev => [...prev, res.data])
       setForm(emptyForm)
-      setMessage('ADMIN créé avec succès.')
+      setMessage(t('superAdmin.adminCreated'))
     } catch (err) {
-      setError(formatCreationError(err, 'Erreur lors de la création ADMIN.'))
+      setError(formatCreationError(err, t, t('superAdmin.errorAdminCreate')))
     } finally {
       setSaving(false)
     }
   }
 
   const disableAdmin = async (admin) => {
-    if (!window.confirm(`Désactiver le compte ADMIN de ${admin.email} ?`)) return
+    if (!window.confirm(t('superAdmin.confirmDisableAdmin', { email: admin.email }))) return
     clearFeedback()
     try {
       const res = await api.patch(`/super-admin/admins/${admin.id}/disable`)
       setAdmins(prev => prev.map(item => item.id === admin.id ? res.data : item))
-      setMessage('ADMIN désactivé.')
+      setMessage(t('superAdmin.adminDisabled'))
     } catch (err) {
-      setError(err.response?.data?.message || 'Impossible de désactiver cet ADMIN.')
+      setError(err.response?.data?.message || t('superAdmin.errorDisableAdmin'))
     }
   }
 
@@ -70,9 +72,9 @@ export default function SuperAdminAdmins() {
     try {
       const res = await api.patch(`/super-admin/admins/${admin.id}/enable`)
       setAdmins(prev => prev.map(item => item.id === admin.id ? res.data : item))
-      setMessage('ADMIN réactivé.')
+      setMessage(t('superAdmin.adminEnabled'))
     } catch (err) {
-      setError(err.response?.data?.message || 'Impossible de réactiver cet ADMIN.')
+      setError(err.response?.data?.message || t('superAdmin.errorEnableAdmin'))
     }
   }
 
@@ -84,30 +86,30 @@ export default function SuperAdminAdmins() {
       await api.patch(`/super-admin/admins/${resetTarget.id}/reset-password`, {
         nouveauMotDePasseTemporaire: newPassword,
       })
-      setMessage(`Mot de passe réinitialisé pour ${resetTarget.email}.`)
+      setMessage(t('superAdmin.passwordReset', { email: resetTarget.email }))
       setResetTarget(null)
       setNewPassword('')
     } catch (err) {
-      setError(err.response?.data?.message || 'Impossible de réinitialiser le mot de passe.')
+      setError(err.response?.data?.message || t('superAdmin.errorResetPassword'))
     }
   }
 
   return (
     <SuperAdminLayout
-      title="Gestion des ADMIN"
-      subtitle="Création, activation et sécurité des administrateurs de l'association."
+      title={t('superAdmin.adminManagementTitle')}
+      subtitle={t('superAdmin.adminManagementSubtitle')}
     >
       {message && <Alert>{message}</Alert>}
       {error && <Alert type="error">{error}</Alert>}
 
       <form onSubmit={createAdmin} className="bg-white rounded-2xl shadow p-5 mb-6">
-        <h2 className="font-bold text-blue-900 mb-4">Créer un ADMIN</h2>
+        <h2 className="font-bold text-blue-900 mb-4">{t('superAdmin.createAdmin')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input label="Prénom" value={form.prenom} onChange={value => setForm({ ...form, prenom: value })} />
-          <Input label="Nom" value={form.nom} onChange={value => setForm({ ...form, nom: value })} />
-          <Input label="Email" type="email" value={form.email} onChange={value => setForm({ ...form, email: value })} />
+          <Input label={t('users.firstname')} value={form.prenom} onChange={value => setForm({ ...form, prenom: value })} />
+          <Input label={t('users.lastname')} value={form.nom} onChange={value => setForm({ ...form, nom: value })} />
+          <Input label={t('users.email')} type="email" value={form.email} onChange={value => setForm({ ...form, email: value })} />
           <Input
-            label="Mot de passe temporaire"
+            label={t('users.temporaryPassword')}
             type="password"
             value={form.motDePasseTemporaire}
             onChange={value => setForm({ ...form, motDePasseTemporaire: value })}
@@ -118,38 +120,38 @@ export default function SuperAdminAdmins() {
           disabled={saving}
           className="mt-4 bg-blue-900 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-blue-800 disabled:opacity-60 transition"
         >
-          {saving ? 'Création...' : 'Créer ADMIN'}
+          {saving ? t('common.creating') : t('superAdmin.createAdminButton')}
         </button>
       </form>
 
       {loading ? (
-        <p className="text-gray-400 text-center py-10">Chargement...</p>
+        <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
       ) : (
         <div className="bg-white rounded-2xl shadow overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse" style={{ minWidth: '760px' }}>
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Nom</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Email</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Statut</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Création</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.name')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.email')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.status')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.registration')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {admins.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-10 text-gray-400 text-sm">Aucun ADMIN.</td>
+                    <td colSpan={5} className="text-center py-10 text-gray-400 text-sm">{t('superAdmin.noAdmin')}</td>
                   </tr>
                 ) : admins.map((admin, index) => (
                   <tr key={admin.id} className={`border-b border-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                     <td className="px-4 py-3 font-medium text-blue-900 text-sm">{admin.prenom} {admin.nom}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{admin.email}</td>
                     <td className="px-4 py-3">
-                      <StatusBadge actif={admin.actif} />
+                      <StatusBadge actif={admin.actif} t={t} />
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-400">{formatDate(admin.dateInscription)}</td>
+                    <td className="px-4 py-3 text-xs text-gray-400">{formatDate(admin.dateInscription, i18n.language)}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-2">
                         {admin.actif ? (
@@ -157,21 +159,21 @@ export default function SuperAdminAdmins() {
                             onClick={() => disableAdmin(admin)}
                             className="text-xs px-3 py-1 rounded-lg bg-yellow-100 text-yellow-700 hover:bg-yellow-200 font-medium transition"
                           >
-                            Désactiver
+                            {t('common.deactivate')}
                           </button>
                         ) : (
                           <button
                             onClick={() => enableAdmin(admin)}
                             className="text-xs px-3 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium transition"
                           >
-                            Réactiver
+                            {t('common.reactivate')}
                           </button>
                         )}
                         <button
                           onClick={() => { setResetTarget(admin); setNewPassword(''); clearFeedback() }}
                           className="text-xs px-3 py-1 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 font-medium transition"
                         >
-                          Reset mot de passe
+                          {t('superAdmin.resetPassword')}
                         </button>
                       </div>
                     </td>
@@ -186,10 +188,10 @@ export default function SuperAdminAdmins() {
       {resetTarget && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-50">
           <form onSubmit={resetPassword} className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <h2 className="font-bold text-blue-900 mb-1">Réinitialiser le mot de passe</h2>
+            <h2 className="font-bold text-blue-900 mb-1">{t('superAdmin.resetPassword')}</h2>
             <p className="text-sm text-gray-500 mb-4">{resetTarget.email}</p>
             <Input
-              label="Nouveau mot de passe temporaire"
+              label={t('superAdmin.newTemporaryPassword')}
               type="password"
               value={newPassword}
               onChange={setNewPassword}
@@ -200,13 +202,13 @@ export default function SuperAdminAdmins() {
                 onClick={() => { setResetTarget(null); setNewPassword('') }}
                 className="px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
               >
-                Annuler
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 className="px-4 py-2 rounded-xl text-sm font-semibold bg-blue-900 text-white hover:bg-blue-800 transition"
               >
-                Réinitialiser
+                {t('common.reset')}
               </button>
             </div>
           </form>
@@ -216,39 +218,39 @@ export default function SuperAdminAdmins() {
   )
 }
 
-function formatCreationError(err, fallback) {
-  if (err.response?.status === 401) return 'Session expirée. Reconnectez-vous.'
-  if (err.response?.status === 403) return 'Action réservée au SUPER_ADMIN.'
+function formatCreationError(err, t, fallback) {
+  if (err.response?.status === 401) return t('errors.session_expired')
+  if (err.response?.status === 403) return t('superAdmin.reservedAction')
   if (err.response?.status === 400 || err.response?.status === 422) {
     const data = err.response?.data || {}
     const fields = data.fields || {}
     const fieldMessages = Object.entries(fields)
-      .map(([field, message]) => formatFieldError(field, message))
+      .map(([field, message]) => formatFieldError(field, message, t))
       .filter(Boolean)
 
     if (fieldMessages.length > 0) return fieldMessages.join(' ')
 
     const message = data.message || ''
-    if (message.toLowerCase().includes('email')) return 'Email invalide ou déjà utilisé.'
+    if (message.toLowerCase().includes('email')) return t('users.errorEmail')
     if (message.toLowerCase().includes('mot') || message.toLowerCase().includes('password')) {
-      return 'Le mot de passe temporaire doit contenir au moins 8 caractères.'
+      return t('users.errorTemporaryPassword')
     }
-    return message || 'Vérifiez les champs du formulaire.'
+    return message || t('users.checkFields')
   }
   return err.response?.data?.message || fallback
 }
 
-function formatFieldError(field, message) {
+function formatFieldError(field, message, t) {
   if (field === 'motDePasseTemporaire' || field === 'nouveauMotDePasseTemporaire') {
-    return 'Le mot de passe temporaire doit contenir au moins 8 caractères.'
+    return t('users.errorTemporaryPassword')
   }
   if (field === 'email') {
     return message?.toLowerCase().includes('blank')
-      ? 'L’email est obligatoire.'
-      : 'Email invalide ou déjà utilisé.'
+      ? t('users.emailRequired')
+      : t('users.errorEmail')
   }
   if (['prenom', 'nom'].includes(field)) {
-    return `${field === 'prenom' ? 'Le prénom' : 'Le nom'} est obligatoire.`
+    return t(field === 'prenom' ? 'users.firstnameRequired' : 'users.lastnameRequired')
   }
   return message || null
 }
@@ -268,11 +270,11 @@ function Input({ label, value, onChange, type = 'text' }) {
   )
 }
 
-function StatusBadge({ actif }) {
+function StatusBadge({ actif, t }) {
   const className = actif ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
   return (
     <span className={`text-xs px-3 py-0.5 rounded-full font-medium ${className}`}>
-      {actif ? 'Actif' : 'Inactif'}
+      {actif ? t('common.active') : t('common.inactive')}
     </span>
   )
 }
@@ -285,6 +287,6 @@ function Alert({ type, children }) {
   return <div className={`border px-4 py-3 rounded-xl mb-5 text-sm ${styles}`}>{children}</div>
 }
 
-function formatDate(value) {
-  return value ? new Date(value).toLocaleDateString('fr-BE') : '-'
+function formatDate(value, language = 'fr') {
+  return value ? new Date(value).toLocaleDateString(language) : '-'
 }

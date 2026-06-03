@@ -2,8 +2,10 @@ import { useCallback, useEffect, useState } from 'react'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import api from '../../api/axios'
+import { useTranslation } from 'react-i18next'
 
 export default function ReferentMembres() {
+  const { t, i18n } = useTranslation()
   const [groupes, setGroupes] = useState([])
   const [membres, setMembres] = useState([])
   const [groupeFiltre, setGroupeFiltre] = useState('')
@@ -24,11 +26,11 @@ export default function ReferentMembres() {
       setMembres(membresData.flat())
       setError('')
     } catch {
-      setError('Impossible de charger les membres.')
+      setError(t('referent.errorMembersLoad'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => { fetchMembres() }, [fetchMembres])
 
@@ -42,15 +44,15 @@ export default function ReferentMembres() {
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-blue-900">Membres de mes groupes</h1>
-            <p className="text-sm text-gray-500 mt-1">{membresFiltres.length} membre(s) visible(s)</p>
+            <h1 className="text-2xl font-bold text-blue-900">{t('referent.membersOfGroups')}</h1>
+            <p className="text-sm text-gray-500 mt-1">{t('referent.visibleMembersCount', { count: membresFiltres.length })}</p>
           </div>
           <select
             value={groupeFiltre}
             onChange={e => setGroupeFiltre(e.target.value)}
             className="border border-gray-300 rounded-xl px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-400"
           >
-            <option value="">Tous mes groupes</option>
+            <option value="">{t('referent.allMyGroups')}</option>
             {groupes.map(groupe => <option key={groupe.id} value={groupe.id}>{groupe.nom}</option>)}
           </select>
         </div>
@@ -58,19 +60,19 @@ export default function ReferentMembres() {
         {error && <Alert type="error">{error}</Alert>}
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">Chargement...</p>
+          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
         ) : membresFiltres.length === 0 ? (
-          <EmptyState>Aucun membre accepté dans ce périmètre.</EmptyState>
+          <EmptyState>{t('referent.noAcceptedMembers')}</EmptyState>
         ) : (
           <div className="bg-white rounded-2xl shadow overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse" style={{ minWidth: '760px' }}>
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Nom</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Email</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Groupe</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Depuis</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.name')}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.email')}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('admin.groupName')}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.memberSince')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -79,7 +81,7 @@ export default function ReferentMembres() {
                       <td className="px-4 py-3 text-sm font-medium text-blue-900">{membre.prenom} {membre.nom}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{membre.email}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{membre.groupeNom}</td>
-                      <td className="px-4 py-3 text-xs text-gray-400">{formatDate(membre.dateAdhesion)}</td>
+                      <td className="px-4 py-3 text-xs text-gray-400">{formatDate(membre.dateAdhesion, i18n.language)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -105,6 +107,6 @@ function EmptyState({ children }) {
   return <div className="bg-white rounded-2xl shadow p-10 text-center text-gray-400 text-sm">{children}</div>
 }
 
-function formatDate(value) {
-  return value ? new Date(value).toLocaleDateString('fr-BE') : '-'
+function formatDate(value, language = 'fr') {
+  return value ? new Date(value).toLocaleDateString(language) : '-'
 }

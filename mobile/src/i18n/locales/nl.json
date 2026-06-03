@@ -390,6 +390,53 @@
       }
     }
   },
+  "admin": {
+    "dashboard": "Admin-dashboard",
+    "users": "Gebruikers",
+    "referents": "Begeleiders",
+    "groups": "Groepen",
+    "activities": "Activiteiten",
+    "projects": "Projecten",
+    "statistics": "Statistieken",
+    "mobileLimited": "Het beheer van de vereniging gebeurt via het web."
+  },
+  "referent": {
+    "dashboard": "Begeleidersdashboard",
+    "groups": "Mijn groepen",
+    "activities": "Activiteiten",
+    "projects": "Projecten",
+    "messaging": "Berichten voor begeleiders",
+    "requests": "Aanvragen",
+    "mobileLimited": "Mobile V1 toont de essentiële informatie voor je groepen."
+  },
+  "superAdmin": {
+    "dashboard": "SUPER_ADMIN-dashboard",
+    "admins": "Beheerders",
+    "logs": "Logboeken",
+    "security": "Beveiliging",
+    "statistics": "Platformstatistieken",
+    "mobileLimited": "Platformbeheer gebeurt via het web."
+  },
+  "audit": {
+    "date": "Datum",
+    "action": "Actie",
+    "actor": "Actor",
+    "target": "Doel",
+    "details": "Details"
+  },
+  "statistics": {
+    "activitiesTotal": "{{count}} activiteit(en) in totaal",
+    "projectsTotal": "{{count}} project(en) in totaal"
+  },
+  "users": {
+    "name": "Naam",
+    "firstname": "Voornaam",
+    "lastname": "Achternaam",
+    "email": "E-mail",
+    "role": "Rol",
+    "status": "Status",
+    "actions": "Acties"
+  },
   "roles": {
     "SUPER_ADMIN": "Superbeheerder",
     "ADMIN": "Beheerder",

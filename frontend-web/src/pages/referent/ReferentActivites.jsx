@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import api from '../../api/axios'
+import { useTranslation } from 'react-i18next'
 
 const emptyForm = {
   titre: '',
@@ -17,6 +18,7 @@ const emptyForm = {
 }
 
 export default function ReferentActivites() {
+  const { t, i18n } = useTranslation()
   const [activites, setActivites] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(emptyForm)
@@ -32,11 +34,11 @@ export default function ReferentActivites() {
       setActivites(res.data)
       setError('')
     } catch {
-      setError('Impossible de charger vos activités.')
+      setError(t('referent.errorActivitiesLoad'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => { fetchActivites() }, [fetchActivites])
 
@@ -57,10 +59,10 @@ export default function ReferentActivites() {
       })
       setForm(emptyForm)
       setShowForm(false)
-      setMessage('Activité créée.')
+      setMessage(t('referent.activityCreated'))
       await fetchActivites()
     } catch {
-      setError('Impossible de créer cette activité.')
+      setError(t('referent.errorActivityCreate'))
     } finally {
       setSaving(false)
     }
@@ -72,14 +74,14 @@ export default function ReferentActivites() {
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-blue-900">Activités de mes groupes</h1>
-            <p className="text-sm text-gray-500 mt-1">{activites.length} activité(s)</p>
+            <h1 className="text-2xl font-bold text-blue-900">{t('referent.activitiesTitle')}</h1>
+            <p className="text-sm text-gray-500 mt-1">{t('referent.activitiesCount', { count: activites.length })}</p>
           </div>
           <button
             onClick={() => setShowForm(prev => !prev)}
             className="bg-teal-700 hover:bg-teal-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
           >
-            {showForm ? 'Annuler' : 'Nouvelle activité'}
+            {showForm ? t('common.cancel') : t('referent.newActivity')}
           </button>
         </div>
 
@@ -88,22 +90,22 @@ export default function ReferentActivites() {
 
         {showForm && (
           <form onSubmit={handleCreate} className="bg-white rounded-2xl shadow p-5 mb-6 grid md:grid-cols-2 gap-4">
-            <Input label="Titre" value={form.titre} onChange={value => updateForm('titre', value)} required />
-            <Input label="Lieu" value={form.lieu} onChange={value => updateForm('lieu', value)} />
-            <Input label="Date début" type="datetime-local" value={form.dateDebut} onChange={value => updateForm('dateDebut', value)} required />
-            <Input label="Date fin" type="datetime-local" value={form.dateFin} onChange={value => updateForm('dateFin', value)} required />
-            <Input label="Catégorie" value={form.categorie} onChange={value => updateForm('categorie', value)} />
-            <Input label="Thème" value={form.theme} onChange={value => updateForm('theme', value)} />
-            <Input label="Capacité maximale" type="number" min="0" value={form.capaciteMax} onChange={value => updateForm('capaciteMax', value)} />
+            <Input label={t('activities.form_title')} value={form.titre} onChange={value => updateForm('titre', value)} required />
+            <Input label={t('activities.form_place')} value={form.lieu} onChange={value => updateForm('lieu', value)} />
+            <Input label={t('activities.start_date')} type="datetime-local" value={form.dateDebut} onChange={value => updateForm('dateDebut', value)} required />
+            <Input label={t('activities.end_date')} type="datetime-local" value={form.dateFin} onChange={value => updateForm('dateFin', value)} required />
+            <Input label={t('activities.form_category')} value={form.categorie} onChange={value => updateForm('categorie', value)} />
+            <Input label={t('activities.form_theme')} value={form.theme} onChange={value => updateForm('theme', value)} />
+            <Input label={t('activities.form_capacity')} type="number" min="0" value={form.capaciteMax} onChange={value => updateForm('capaciteMax', value)} />
             <label className="flex items-center gap-2 text-sm text-gray-700 pt-7">
               <input type="checkbox" checked={form.gratuite} onChange={e => updateForm('gratuite', e.target.checked)} />
-              Activité gratuite
+              {t('activities.form_free')}
             </label>
             {!form.gratuite && (
-              <Input label="Prix" type="number" min="0" value={form.prix} onChange={value => updateForm('prix', value)} />
+              <Input label={t('activities.form_price')} type="number" min="0" value={form.prix} onChange={value => updateForm('prix', value)} />
             )}
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">{t('activities.form_description')}</label>
               <textarea
                 value={form.description}
                 onChange={e => updateForm('description', e.target.value)}
@@ -117,29 +119,29 @@ export default function ReferentActivites() {
                 disabled={saving}
                 className="bg-teal-700 hover:bg-teal-600 disabled:bg-gray-300 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition"
               >
-                {saving ? 'Création...' : 'Créer l’activité'}
+                {saving ? t('common.creating') : t('activities.create_btn')}
               </button>
             </div>
           </form>
         )}
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">Chargement...</p>
+          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
         ) : activites.length === 0 ? (
-          <EmptyState>Aucune activité créée.</EmptyState>
+          <EmptyState>{t('referent.noActivityCreated')}</EmptyState>
         ) : (
           <div className="grid md:grid-cols-2 gap-4">
             {activites.map(activite => (
               <article key={activite.id} className="bg-white rounded-2xl shadow p-5">
                 <div className="flex justify-between gap-3">
                   <h2 className="font-bold text-blue-900">{activite.titre}</h2>
-                  <span className="text-xs bg-teal-100 text-teal-700 rounded-full px-2 py-0.5 h-fit">{activite.statut}</span>
+                  <span className="text-xs bg-teal-100 text-teal-700 rounded-full px-2 py-0.5 h-fit">{t(`statuses.${activite.statut}`, activite.statut)}</span>
                 </div>
                 {activite.description && <p className="text-sm text-gray-500 mt-2">{activite.description}</p>}
                 <div className="text-xs text-gray-400 mt-4 space-y-1">
                   {activite.lieu && <p>{activite.lieu}</p>}
-                  {activite.dateDebut && <p>{formatDate(activite.dateDebut)}</p>}
-                  <p>{activite.gratuite ? 'Gratuite' : `${activite.prix} €`}</p>
+                  {activite.dateDebut && <p>{formatDate(activite.dateDebut, i18n.language)}</p>}
+                  <p>{activite.gratuite ? t('activities.free') : `${activite.prix} €`}</p>
                 </div>
               </article>
             ))}
@@ -179,6 +181,6 @@ function EmptyState({ children }) {
   return <div className="bg-white rounded-2xl shadow p-10 text-center text-gray-400 text-sm">{children}</div>
 }
 
-function formatDate(value) {
-  return value ? new Date(value).toLocaleDateString('fr-BE') : '-'
+function formatDate(value, language = 'fr') {
+  return value ? new Date(value).toLocaleDateString(language) : '-'
 }

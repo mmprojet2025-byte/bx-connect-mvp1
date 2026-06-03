@@ -7,7 +7,7 @@ import Footer from '../../components/Footer';
 const ROLES = ['MEMBRE', 'REFERENT', 'PARTENAIRE'];
 
 export default function AdminUtilisateurs() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [utilisateurs, setUtilisateurs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -21,7 +21,7 @@ export default function AdminUtilisateurs() {
       const res = await api.get('/admin/utilisateurs');
       setUtilisateurs(res.data);
     } catch {
-      setError('Impossible de charger les utilisateurs.');
+      setError(t('users.errorLoad'));
     } finally {
       setLoading(false);
     }
@@ -31,10 +31,10 @@ export default function AdminUtilisateurs() {
     try {
       const res = await api.patch(`/admin/utilisateurs/${id}/role?role=${role}`);
       setUtilisateurs(prev => prev.map(u => u.id === id ? res.data : u));
-      setMessage('✅ Rôle mis à jour.');
+      setMessage(t('users.roleUpdated'));
       setError('');
     } catch {
-      setError('Erreur lors du changement de rôle.');
+      setError(t('users.errorRoleUpdate'));
     }
   };
 
@@ -42,22 +42,22 @@ export default function AdminUtilisateurs() {
     try {
       const res = await api.patch(`/admin/utilisateurs/${id}/actif`);
       setUtilisateurs(prev => prev.map(u => u.id === id ? res.data : u));
-      setMessage('✅ Statut mis à jour.');
+      setMessage(t('users.statusUpdated'));
       setError('');
     } catch {
-      setError('Erreur lors de la mise à jour du statut.');
+      setError(t('users.errorStatusUpdate'));
     }
   };
 
   const supprimerUtilisateur = async (id, email) => {
-    if (!window.confirm(`Supprimer définitivement le compte de ${email} ?`)) return;
+    if (!window.confirm(t('users.confirmDelete', { email }))) return;
     try {
       await api.delete(`/admin/utilisateurs/${id}`);
       setUtilisateurs(prev => prev.filter(u => u.id !== id));
-      setMessage('✅ Utilisateur supprimé.');
+      setMessage(t('users.deleted'));
       setError('');
     } catch {
-      setError('Erreur lors de la suppression.');
+      setError(t('users.errorDelete'));
     }
   };
 
@@ -75,7 +75,7 @@ export default function AdminUtilisateurs() {
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
         <h1 className="text-2xl font-bold text-blue-900 mb-1">👥 {t('admin.users_title')}</h1>
-        <p className="text-gray-500 text-sm mb-6">{utilisateurs.length} utilisateur(s) enregistré(s)</p>
+        <p className="text-gray-500 text-sm mb-6">{t('users.registeredCount', { count: utilisateurs.length })}</p>
 
         {message && (
           <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>
@@ -86,7 +86,7 @@ export default function AdminUtilisateurs() {
 
         <input
           type="text"
-          placeholder="🔍 Rechercher par nom, prénom ou email..."
+          placeholder={t('users.searchPlaceholder')}
           value={recherche}
           onChange={e => { setRecherche(e.target.value); setMessage(''); setError(''); }}
           className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm mb-6 focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -100,18 +100,18 @@ export default function AdminUtilisateurs() {
               <table className="w-full border-collapse" style={{ minWidth: '700px' }}>
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Nom</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Email</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Rôle</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Statut</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Inscription</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.name')}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.email')}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.role')}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.status')}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.registration')}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {utilisateursFiltres.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-10 text-gray-400 text-sm">Aucun utilisateur trouvé.</td>
+                      <td colSpan={6} className="text-center py-10 text-gray-400 text-sm">{t('users.noneFound')}</td>
                     </tr>
                   ) : (
                     utilisateursFiltres.map((u, i) => (
@@ -129,7 +129,7 @@ export default function AdminUtilisateurs() {
                               style={{ background: roleColor(u.role), color: '#fff' }}
                             >
                               {ROLES.map(r => (
-                                <option key={r} value={r} style={{ background: '#fff', color: '#333' }}>{r}</option>
+                                <option key={r} value={r} style={{ background: '#fff', color: '#333' }}>{t(`roles.${r}`, r)}</option>
                               ))}
                             </select>
                           ) : (
@@ -137,7 +137,7 @@ export default function AdminUtilisateurs() {
                               className="text-xs px-2 py-1 rounded-lg font-semibold text-white"
                               style={{ background: roleColor(u.role) }}
                             >
-                              {u.role}
+                              {t(`roles.${u.role}`, u.role)}
                             </span>
                           )}
                         </td>
@@ -147,7 +147,7 @@ export default function AdminUtilisateurs() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-400">
-                          {u.dateInscription ? new Date(u.dateInscription).toLocaleDateString('fr-BE') : '—'}
+                          {u.dateInscription ? new Date(u.dateInscription).toLocaleDateString(i18n.language) : '—'}
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-2">
@@ -157,7 +157,7 @@ export default function AdminUtilisateurs() {
                                   onClick={() => toggleActif(u.id)}
                                   className={`text-xs px-3 py-1 rounded-lg font-medium transition ${u.actif ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
                                 >
-                                  {u.actif ? 'Désactiver' : 'Activer'}
+                                  {u.actif ? t('users.disable') : t('users.enable')}
                                 </button>
                                 <button
                                   onClick={() => supprimerUtilisateur(u.id, u.email)}
@@ -167,7 +167,7 @@ export default function AdminUtilisateurs() {
                                 </button>
                               </>
                             ) : (
-                              <span className="text-xs text-gray-400">Lecture seule</span>
+                              <span className="text-xs text-gray-400">{t('users.readOnly')}</span>
                             )}
                           </div>
                         </td>

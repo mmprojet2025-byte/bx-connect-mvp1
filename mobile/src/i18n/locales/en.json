@@ -390,6 +390,53 @@
       }
     }
   },
+  "admin": {
+    "dashboard": "Admin Dashboard",
+    "users": "Users",
+    "referents": "Mentors",
+    "groups": "Groups",
+    "activities": "Activities",
+    "projects": "Projects",
+    "statistics": "Statistics",
+    "mobileLimited": "Association management is handled from the web."
+  },
+  "referent": {
+    "dashboard": "Mentor Dashboard",
+    "groups": "My groups",
+    "activities": "Activities",
+    "projects": "Projects",
+    "messaging": "Mentor messaging",
+    "requests": "Requests",
+    "mobileLimited": "Mobile V1 shows the essential information for your groups."
+  },
+  "superAdmin": {
+    "dashboard": "SUPER_ADMIN Dashboard",
+    "admins": "Administrators",
+    "logs": "Logs",
+    "security": "Security",
+    "statistics": "Platform statistics",
+    "mobileLimited": "Platform management is handled from the web."
+  },
+  "audit": {
+    "date": "Date",
+    "action": "Action",
+    "actor": "Actor",
+    "target": "Target",
+    "details": "Details"
+  },
+  "statistics": {
+    "activitiesTotal": "{{count}} activity/activities in total",
+    "projectsTotal": "{{count}} project(s) in total"
+  },
+  "users": {
+    "name": "Name",
+    "firstname": "First name",
+    "lastname": "Last name",
+    "email": "Email",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
   "roles": {
     "SUPER_ADMIN": "Super administrator",
     "ADMIN": "Administrator",

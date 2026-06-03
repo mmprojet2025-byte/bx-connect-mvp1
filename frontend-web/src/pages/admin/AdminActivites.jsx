@@ -19,7 +19,7 @@ const emptyForm = {
 };
 
 export default function AdminActivites() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [activites, setActivites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -57,9 +57,9 @@ export default function AdminActivites() {
       setActivites(prev => [res.data, ...prev]);
       setForm(emptyForm);
       setShowForm(false);
-      setMessage('✅ Activité créée.');
+      setMessage(t('activities.success_create'));
     } catch (err) {
-      setError(formatApiError(err, "Erreur lors de la création de l'activité."));
+      setError(formatApiError(err, t, t('activities.error_create')));
     } finally {
       setCreating(false);
     }
@@ -69,22 +69,22 @@ export default function AdminActivites() {
     try {
       const res = await api.patch(`/activites/${id}/statut?statut=${statut}`);
       setActivites(prev => prev.map(a => a.id === id ? res.data : a));
-      setMessage(`✅ Statut mis à jour : ${statut}`);
+      setMessage(t('admin.statusUpdatedWithValue', { status: t(`statuses.${statut}`, { defaultValue: statut }) }));
       setError('');
     } catch {
-      setError('Erreur lors du changement de statut.');
+      setError(t('admin.errorStatusChange'));
     }
   };
 
   const supprimerActivite = async (id, titre) => {
-    if (!window.confirm(`Supprimer définitivement l'activité "${titre}" ?`)) return;
+    if (!window.confirm(t('admin.confirmDeleteActivity', { title: titre }))) return;
     try {
       await api.delete(`/activites/${id}`);
       setActivites(prev => prev.filter(a => a.id !== id));
-      setMessage('✅ Activité supprimée.');
+      setMessage(t('admin.activityDeleted'));
       setError('');
     } catch {
-      setError('Erreur lors de la suppression.');
+      setError(t('admin.errorDelete'));
     }
   };
 
@@ -103,14 +103,14 @@ export default function AdminActivites() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-blue-900 mb-1">🎯 {t('admin.activities_title')}</h1>
-            <p className="text-gray-500 text-sm">{activites.length} activité(s) au total</p>
+            <p className="text-gray-500 text-sm">{t('statistics.activitiesTotal', { count: activites.length })}</p>
           </div>
           <button
             type="button"
             onClick={() => setShowForm(prev => !prev)}
             className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
           >
-            {showForm ? t('common.cancel') : 'Créer une activité'}
+            {showForm ? t('common.cancel') : t('admin.createActivity')}
           </button>
         </div>
 
@@ -123,22 +123,22 @@ export default function AdminActivites() {
 
         {showForm && (
           <form onSubmit={creerActivite} className="bg-white rounded-2xl shadow p-5 mb-6 grid md:grid-cols-2 gap-4">
-            <Input label="Titre" value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
-            <Input label="Lieu" value={form.lieu} onChange={value => setForm({ ...form, lieu: value })} />
-            <Input label="Date début" type="datetime-local" value={form.dateDebut} onChange={value => setForm({ ...form, dateDebut: value })} required />
-            <Input label="Date fin" type="datetime-local" value={form.dateFin} onChange={value => setForm({ ...form, dateFin: value })} required />
-            <Input label="Catégorie" value={form.categorie} onChange={value => setForm({ ...form, categorie: value })} />
-            <Input label="Thème" value={form.theme} onChange={value => setForm({ ...form, theme: value })} />
-            <Input label="Capacité maximale" type="number" min="0" value={form.capaciteMax} onChange={value => setForm({ ...form, capaciteMax: value })} />
+            <Input label={t('activities.form_title')} value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
+            <Input label={t('activities.form_place')} value={form.lieu} onChange={value => setForm({ ...form, lieu: value })} />
+            <Input label={t('activities.form_start')} type="datetime-local" value={form.dateDebut} onChange={value => setForm({ ...form, dateDebut: value })} required />
+            <Input label={t('activities.form_end')} type="datetime-local" value={form.dateFin} onChange={value => setForm({ ...form, dateFin: value })} required />
+            <Input label={t('activities.form_category')} value={form.categorie} onChange={value => setForm({ ...form, categorie: value })} />
+            <Input label={t('activities.form_theme')} value={form.theme} onChange={value => setForm({ ...form, theme: value })} />
+            <Input label={t('admin.maxCapacity')} type="number" min="0" value={form.capaciteMax} onChange={value => setForm({ ...form, capaciteMax: value })} />
             <label className="flex items-center gap-2 text-sm text-gray-700 pt-7">
               <input type="checkbox" checked={form.gratuite} onChange={e => setForm({ ...form, gratuite: e.target.checked })} />
-              Activité gratuite
+              {t('activities.form_free')}
             </label>
             {!form.gratuite && (
-              <Input label="Prix" type="number" min="0" value={form.prix} onChange={value => setForm({ ...form, prix: value })} />
+              <Input label={t('activities.form_price')} type="number" min="0" value={form.prix} onChange={value => setForm({ ...form, prix: value })} />
             )}
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">{t('activities.form_description')}</label>
               <textarea
                 value={form.description}
                 onChange={e => setForm({ ...form, description: e.target.value })}
@@ -152,7 +152,7 @@ export default function AdminActivites() {
                 disabled={creating}
                 className="bg-blue-700 hover:bg-blue-600 disabled:bg-gray-300 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition"
               >
-                {creating ? 'Création...' : 'Créer l’activité'}
+                {creating ? t('common.creating') : t('admin.createActivity')}
               </button>
             </div>
           </form>
@@ -162,7 +162,7 @@ export default function AdminActivites() {
         <div className="flex gap-3 mb-6 flex-wrap">
           <input
             type="text"
-            placeholder="🔍 Rechercher par titre ou lieu..."
+            placeholder={t('admin.searchActivityPlaceholder')}
             value={recherche}
             onChange={e => { setRecherche(e.target.value); setMessage(''); setError(''); }}
             className="flex-1 min-w-48 border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -173,7 +173,7 @@ export default function AdminActivites() {
             className="border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
           >
             <option value="">{t('common.all_statuses')}</option>
-            {STATUTS.map(s => <option key={s} value={s}>{s}</option>)}
+            {STATUTS.map(s => <option key={s} value={s}>{t(`statuses.${s}`, { defaultValue: s })}</option>)}
           </select>
         </div>
 
@@ -185,18 +185,18 @@ export default function AdminActivites() {
               <table className="w-full border-collapse" style={{ minWidth: '700px' }}>
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Titre</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Lieu</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Date début</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Créateur</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Statut</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('admin.titleLabel')}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('activities.form_place')}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('activities.start_date')}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('admin.creator')}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.status')}</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {activitesFiltrees.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-10 text-gray-400 text-sm">Aucune activité trouvée.</td>
+                      <td colSpan={6} className="text-center py-10 text-gray-400 text-sm">{t('activities.no_search_results')}</td>
                     </tr>
                   ) : (
                     activitesFiltrees.map((a, i) => (
@@ -210,7 +210,7 @@ export default function AdminActivites() {
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">{a.lieu || '—'}</td>
                         <td className="px-4 py-3 text-xs text-gray-400">
-                          {a.dateDebut ? new Date(a.dateDebut).toLocaleDateString('fr-BE') : '—'}
+                          {a.dateDebut ? new Date(a.dateDebut).toLocaleDateString(i18n.language) : '—'}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">{a.createurPrenom} {a.createurNom}</td>
                         <td className="px-4 py-3">
@@ -221,7 +221,7 @@ export default function AdminActivites() {
                             style={{ background: statutColor(a.statut), color: '#fff' }}
                           >
                             {STATUTS.map(s => (
-                              <option key={s} value={s} style={{ background: '#fff', color: '#333' }}>{s}</option>
+                              <option key={s} value={s} style={{ background: '#fff', color: '#333' }}>{t(`statuses.${s}`, { defaultValue: s })}</option>
                             ))}
                           </select>
                         </td>
@@ -264,9 +264,9 @@ function Input({ label, value, onChange, type = 'text', required = false, min })
   );
 }
 
-function formatApiError(err, fallback) {
-  if (err.response?.status === 401) return 'Session expirée. Reconnectez-vous.';
-  if (err.response?.status === 403) return 'Accès refusé pour ce rôle.';
+function formatApiError(err, t, fallback) {
+  if (err.response?.status === 401) return t('errors.session_expired');
+  if (err.response?.status === 403) return t('errors.forbidden');
   return err.response?.data?.message || fallback;
 }
 

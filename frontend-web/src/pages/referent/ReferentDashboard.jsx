@@ -14,7 +14,7 @@ export default function ReferentDashboard() {
   const [activites, setActivites] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   const fetchDashboard = useCallback(async () => {
     setLoading(true)
@@ -44,11 +44,11 @@ export default function ReferentDashboard() {
       })
       setError('')
     } catch {
-      setError('Impossible de charger le tableau de bord référent.')
+      setError(t('referent.dashboardError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => { fetchDashboard() }, [fetchDashboard])
 
@@ -77,7 +77,7 @@ export default function ReferentDashboard() {
         {error && <Alert type="error">{error}</Alert>}
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">Chargement...</p>
+          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
         ) : (
           <>
             <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -95,15 +95,15 @@ export default function ReferentDashboard() {
                     <p className="text-sm text-gray-500">{t('ux.referentDashboard.requestsDesc')}</p>
                   </div>
                   <Link to="/referent/demandes" className="text-teal-700 text-sm font-semibold hover:underline">
-                    Voir demandes
+                    {t('referent.viewRequests')}
                   </Link>
                 </div>
 
                 {demandesRecentes.length === 0 ? (
                   <EmptyState
-                    title="Aucune demande en attente"
-                    description="Toutes les demandes de vos groupes sont traitées."
-                    actionLabel="Voir mes groupes"
+                    title={t('referent.noPendingRequests')}
+                    description={t('referent.noPendingRequestsDesc')}
+                    actionLabel={t('referent.viewMyGroups')}
                     actionTo="/referent/groupes"
                   />
                 ) : (
@@ -111,7 +111,7 @@ export default function ReferentDashboard() {
                     {demandesRecentes.map(demande => (
                       <div key={`${demande.groupeNom}-${demande.id}`} className="border border-amber-100 bg-amber-50 rounded-xl p-4">
                         <p className="font-semibold text-blue-900 text-sm">{demande.prenom} {demande.nom}</p>
-                        <p className="text-xs text-gray-500 mt-1">{demande.groupeNom} · {formatDate(demande.dateAdhesion)}</p>
+                        <p className="text-xs text-gray-500 mt-1">{demande.groupeNom} · {formatDate(demande.dateAdhesion, i18n.language)}</p>
                       </div>
                     ))}
                   </div>
@@ -121,32 +121,32 @@ export default function ReferentDashboard() {
               <div className="bg-white rounded-2xl shadow p-6">
                 <h2 className="font-bold text-blue-900 mb-4">{t('ux.referentDashboard.quickActions')}</h2>
                 <div className="grid gap-3">
-                  <QuickAction to="/referent/demandes" label="Traiter les demandes" />
-                  <QuickAction to="/referent/activites" label="Créer une activité" />
+                  <QuickAction to="/referent/demandes" label={t('referent.processRequests')} />
+                  <QuickAction to="/referent/activites" label={t('referent.createActivity')} />
                   <QuickAction to="/referent/messagerie" label={t('ux.referentDashboard.openMessaging')} />
                 </div>
               </div>
             </section>
 
             <section className="grid lg:grid-cols-2 gap-6 mb-8">
-              <InfoPanel title={t('ux.referentDashboard.assignedGroups')} to="/referent/groupes">
+              <InfoPanel title={t('ux.referentDashboard.assignedGroups')} to="/referent/groupes" actionLabel={t('common.open')}>
                 {groupes.length === 0 ? (
-                  <p className="text-sm text-gray-400">Aucun groupe ne vous est assigné.</p>
+                  <p className="text-sm text-gray-400">{t('referent.noAssignedGroups')}</p>
                 ) : (
                   <div className="grid gap-3">
                     {groupes.map(groupe => (
                       <div key={groupe.id} className="border border-gray-100 rounded-xl p-4">
                         <h3 className="font-semibold text-blue-900">{groupe.nom}</h3>
-                        <p className="text-xs text-gray-400 mt-2">{groupe.nombreMembres ?? 0} membre(s)</p>
+                        <p className="text-xs text-gray-400 mt-2">{t('groups.members_count', { count: groupe.nombreMembres ?? 0 })}</p>
                       </div>
                     ))}
                   </div>
                 )}
               </InfoPanel>
 
-              <InfoPanel title={t('ux.referentDashboard.recentMembers')} to="/referent/membres">
+              <InfoPanel title={t('ux.referentDashboard.recentMembers')} to="/referent/membres" actionLabel={t('common.open')}>
                 {membresRecents.length === 0 ? (
-                  <p className="text-sm text-gray-400">Aucun membre dans vos groupes pour le moment.</p>
+                  <p className="text-sm text-gray-400">{t('referent.noMembersYet')}</p>
                 ) : (
                   <div className="grid gap-3">
                     {membresRecents.map(membre => (
@@ -160,15 +160,15 @@ export default function ReferentDashboard() {
               </InfoPanel>
             </section>
 
-            <InfoPanel title={t('ux.referentDashboard.upcomingActivities')} to="/referent/activites">
+            <InfoPanel title={t('ux.referentDashboard.upcomingActivities')} to="/referent/activites" actionLabel={t('common.open')}>
               {prochainesActivites.length === 0 ? (
-                <p className="text-sm text-gray-400">Aucune activité référent pour le moment.</p>
+                <p className="text-sm text-gray-400">{t('referent.noActivitiesYet')}</p>
               ) : (
                 <div className="grid md:grid-cols-2 gap-3">
                   {prochainesActivites.map(activite => (
                     <div key={activite.id} className="border border-gray-100 rounded-xl p-4">
                       <h3 className="font-semibold text-blue-900">{activite.titre}</h3>
-                      <p className="text-xs text-gray-400 mt-1">{activite.dateDebut || 'Date à confirmer'}</p>
+                      <p className="text-xs text-gray-400 mt-1">{activite.dateDebut ? formatDate(activite.dateDebut, i18n.language) : t('memberDashboard.activities.dateToConfirm')}</p>
                     </div>
                   ))}
                 </div>
@@ -199,13 +199,13 @@ function QuickAction({ to, label }) {
   )
 }
 
-function InfoPanel({ title, to, children }) {
+function InfoPanel({ title, to, actionLabel, children }) {
   return (
     <section className="bg-white rounded-2xl shadow p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-bold text-blue-900">{title}</h2>
         <Link to={to} className="text-teal-700 text-sm font-semibold hover:underline">
-          Ouvrir
+          {actionLabel}
         </Link>
       </div>
       {children}
@@ -213,6 +213,6 @@ function InfoPanel({ title, to, children }) {
   )
 }
 
-function formatDate(value) {
-  return value ? new Date(value).toLocaleDateString('fr-BE') : '-'
+function formatDate(value, language = 'fr') {
+  return value ? new Date(value).toLocaleDateString(language) : '-'
 }

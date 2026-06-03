@@ -2,8 +2,10 @@ import { useCallback, useEffect, useState } from 'react'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import api from '../../api/axios'
+import { useTranslation } from 'react-i18next'
 
 export default function ReferentGroupes() {
+  const { t } = useTranslation()
   const [groupes, setGroupes] = useState([])
   const [details, setDetails] = useState({})
   const [loading, setLoading] = useState(true)
@@ -31,11 +33,11 @@ export default function ReferentGroupes() {
       setDetails(detailsData)
       setError('')
     } catch {
-      setError('Impossible de charger vos groupes.')
+      setError(t('messaging.errorGroups'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => { fetchGroupes() }, [fetchGroupes])
 
@@ -43,13 +45,13 @@ export default function ReferentGroupes() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
-        <h1 className="text-2xl font-bold text-blue-900 mb-6">Mes groupes</h1>
+        <h1 className="text-2xl font-bold text-blue-900 mb-6">{t('nav.myGroups')}</h1>
         {error && <Alert type="error">{error}</Alert>}
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">Chargement...</p>
+          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
         ) : groupes.length === 0 ? (
-          <EmptyState>Aucun groupe ne vous est assigné.</EmptyState>
+          <EmptyState>{t('referent.noAssignedGroups')}</EmptyState>
         ) : (
           <div className="space-y-5">
             {groupes.map(groupe => {
@@ -63,19 +65,19 @@ export default function ReferentGroupes() {
                       {groupe.description && <p className="text-sm text-gray-500 mt-1">{groupe.description}</p>}
                     </div>
                     <span className="self-start text-xs bg-teal-100 text-teal-700 px-3 py-1 rounded-full font-semibold">
-                      {groupe.statut}
+                      {t(`statuses.${groupe.statut}`, groupe.statut)}
                     </span>
                   </div>
 
                   <div className="grid md:grid-cols-3 gap-4">
-                    <InfoPanel title="Membres" count={membres.length}>
-                      <CompactPeopleList items={membres} empty="Aucun membre accepté." />
+                    <InfoPanel title={t('ux.referentDashboard.members')} count={membres.length}>
+                      <CompactPeopleList items={membres} empty={t('referent.noAcceptedMembers')} />
                     </InfoPanel>
-                    <InfoPanel title="Demandes" count={demandes.length}>
-                      <CompactPeopleList items={demandes} empty="Aucune demande en attente." />
+                    <InfoPanel title={t('nav.requests')} count={demandes.length}>
+                      <CompactPeopleList items={demandes} empty={t('referent.noPendingRequests')} />
                     </InfoPanel>
-                    <InfoPanel title="Activités liées" count={0}>
-                      <p className="text-sm text-gray-400">Aucune activité liée à ce groupe.</p>
+                    <InfoPanel title={t('referent.linkedActivities')} count={0}>
+                      <p className="text-sm text-gray-400">{t('referent.noLinkedActivities')}</p>
                     </InfoPanel>
                   </div>
                 </article>

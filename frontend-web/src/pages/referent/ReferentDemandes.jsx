@@ -4,8 +4,10 @@ import Footer from '../../components/Footer'
 import api from '../../api/axios'
 import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
+import { useTranslation } from 'react-i18next'
 
 export default function ReferentDemandes() {
+  const { t, i18n } = useTranslation()
   const [demandes, setDemandes] = useState([])
   const [loading, setLoading] = useState(true)
   const [processingId, setProcessingId] = useState(null)
@@ -23,11 +25,11 @@ export default function ReferentDemandes() {
       setDemandes(demandesData.flat())
       setError('')
     } catch {
-      setError('Impossible de charger les demandes.')
+      setError(t('referent.errorRequestsLoad'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => { fetchDemandes() }, [fetchDemandes])
 
@@ -37,10 +39,10 @@ export default function ReferentDemandes() {
     setError('')
     try {
       await api.patch(`/referent/groupes/${demande.groupeId}/demandes/${demande.id}/${action}`)
-      setMessage(action === 'accepter' ? 'Demande acceptée.' : 'Demande refusée.')
+      setMessage(action === 'accepter' ? t('referent.requestAccepted') : t('referent.requestRefused'))
       await fetchDemandes()
     } catch {
-      setError('Impossible de traiter cette demande.')
+      setError(t('referent.errorProcessRequest'))
     } finally {
       setProcessingId(null)
     }
@@ -51,20 +53,20 @@ export default function ReferentDemandes() {
       <Navbar />
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-blue-900">Demandes d’adhésion</h1>
-          <p className="text-sm text-gray-500 mt-1">{demandes.length} demande(s) en attente dans vos groupes</p>
+          <h1 className="text-2xl font-bold text-blue-900">{t('referent.requestsTitle')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('referent.pendingRequestsCount', { count: demandes.length })}</p>
         </div>
 
         {message && <Alert>{message}</Alert>}
         {error && <Alert type="error">{error}</Alert>}
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">Chargement...</p>
+          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
         ) : demandes.length === 0 ? (
           <EmptyState
-            title="Aucune demande en attente"
-            description="Toutes les demandes de vos groupes ont été traitées."
-            actionLabel="Voir mes groupes"
+            title={t('referent.noPendingRequests')}
+            description={t('referent.noPendingRequestsDesc')}
+            actionLabel={t('referent.viewMyGroups')}
             actionTo="/referent/groupes"
           />
         ) : (
@@ -74,7 +76,7 @@ export default function ReferentDemandes() {
                 <div>
                   <h2 className="font-bold text-blue-900">{demande.prenom} {demande.nom}</h2>
                   <p className="text-sm text-gray-500">{demande.email}</p>
-                  <p className="text-xs text-gray-400 mt-1">{demande.groupeNom} · {formatDate(demande.dateAdhesion)}</p>
+                  <p className="text-xs text-gray-400 mt-1">{demande.groupeNom} · {formatDate(demande.dateAdhesion, i18n.language)}</p>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -82,14 +84,14 @@ export default function ReferentDemandes() {
                     disabled={processingId === demande.id}
                     className="bg-green-600 hover:bg-green-500 disabled:bg-gray-300 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
                   >
-                    Accepter
+                    {t('referent.accept')}
                   </button>
                   <button
                     onClick={() => traiterDemande(demande, 'refuser')}
                     disabled={processingId === demande.id}
                     className="bg-red-600 hover:bg-red-500 disabled:bg-gray-300 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
                   >
-                    Refuser
+                    {t('referent.refuse')}
                   </button>
                 </div>
               </div>
@@ -102,6 +104,6 @@ export default function ReferentDemandes() {
   )
 }
 
-function formatDate(value) {
-  return value ? new Date(value).toLocaleDateString('fr-BE') : '-'
+function formatDate(value, language = 'fr') {
+  return value ? new Date(value).toLocaleDateString(language) : '-'
 }

@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import api from '../../api/axios'
 import SuperAdminLayout from '../../layouts/SuperAdminLayout'
 
 export default function SuperAdminDashboard() {
+  const { t, i18n } = useTranslation()
   const [dashboard, setDashboard] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -11,44 +13,44 @@ export default function SuperAdminDashboard() {
   useEffect(() => {
     api.get('/super-admin/dashboard')
       .then(res => setDashboard(res.data))
-      .catch(() => setError('Impossible de charger le dashboard SUPER_ADMIN.'))
+      .catch(() => setError(t('superAdmin.errorDashboardLoad')))
       .finally(() => setLoading(false))
-  }, [])
+  }, [t])
 
   return (
     <SuperAdminLayout
-      title="Dashboard SUPER_ADMIN"
-      subtitle="Supervision technique de la plateforme et des administrateurs."
+      title={t('superAdmin.dashboardTitle')}
+      subtitle={t('superAdmin.dashboardSubtitle')}
     >
       {error && <Alert type="error">{error}</Alert>}
 
       {loading ? (
-        <p className="text-gray-400 text-center py-10">Chargement...</p>
+        <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
       ) : dashboard && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <StatCard label="ADMIN actifs" value={dashboard.adminsActifs} color="#2563eb" />
-            <StatCard label="ADMIN inactifs" value={dashboard.adminsInactifs} color="#d97706" />
-            <StatCard label="Actions critiques" value={dashboard.totalActionsCritiques} color="#7c3aed" />
+            <StatCard label={t('superAdmin.activeAdmins')} value={dashboard.adminsActifs} color="#2563eb" />
+            <StatCard label={t('superAdmin.inactiveAdmins')} value={dashboard.adminsInactifs} color="#d97706" />
+            <StatCard label={t('superAdmin.criticalActions')} value={dashboard.totalActionsCritiques} color="#7c3aed" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <Link to="/super-admin/admins" className="bg-white rounded-2xl shadow p-5 hover:-translate-y-1 transition">
-              <h2 className="font-bold text-blue-900 mb-1">Administrateurs</h2>
-              <p className="text-sm text-gray-500">Créer, désactiver, réactiver et réinitialiser les ADMIN.</p>
+              <h2 className="font-bold text-blue-900 mb-1">{t('superAdmin.adminsTitle')}</h2>
+              <p className="text-sm text-gray-500">{t('superAdmin.adminsDescription')}</p>
             </Link>
 
             <Link to="/super-admin/logs" className="bg-white rounded-2xl shadow p-5 hover:-translate-y-1 transition">
-              <h2 className="font-bold text-blue-900 mb-1">Logs critiques</h2>
-              <p className="text-sm text-gray-500">Consulter les dernières actions sensibles de la plateforme.</p>
+              <h2 className="font-bold text-blue-900 mb-1">{t('superAdmin.logsTitle')}</h2>
+              <p className="text-sm text-gray-500">{t('superAdmin.logsDescription')}</p>
             </Link>
           </div>
 
           <section className="mt-8 bg-white rounded-2xl shadow overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100">
-              <h2 className="font-bold text-blue-900">Derniers logs</h2>
+              <h2 className="font-bold text-blue-900">{t('superAdmin.latestLogs')}</h2>
             </div>
-            <LogPreview logs={dashboard.derniersLogs || []} />
+            <LogPreview logs={dashboard.derniersLogs || []} t={t} language={i18n.language} />
           </section>
         </>
       )}
@@ -65,9 +67,9 @@ function StatCard({ label, value, color }) {
   )
 }
 
-function LogPreview({ logs }) {
+function LogPreview({ logs, t, language }) {
   if (logs.length === 0) {
-    return <p className="text-sm text-gray-400 px-5 py-6">Aucun log critique.</p>
+    return <p className="text-sm text-gray-400 px-5 py-6">{t('audit.noCriticalLog')}</p>
   }
 
   return (
@@ -78,7 +80,7 @@ function LogPreview({ logs }) {
             <span className="font-semibold text-blue-900">{log.action}</span>
             <span className="text-gray-500"> · {log.cibleEmail}</span>
           </div>
-          <span className="text-xs text-gray-400">{formatDate(log.dateAction)}</span>
+          <span className="text-xs text-gray-400">{formatDate(log.dateAction, language)}</span>
         </div>
       ))}
     </div>
@@ -93,6 +95,6 @@ function Alert({ type, children }) {
   return <div className={`border px-4 py-3 rounded-xl mb-5 text-sm ${styles}`}>{children}</div>
 }
 
-function formatDate(value) {
-  return value ? new Date(value).toLocaleString('fr-BE') : '-'
+function formatDate(value, language = 'fr') {
+  return value ? new Date(value).toLocaleString(language) : '-'
 }

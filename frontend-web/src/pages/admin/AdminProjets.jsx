@@ -45,9 +45,9 @@ export default function AdminProjets() {
       setProjets(prev => [res.data, ...prev]);
       setForm(emptyForm);
       setShowForm(false);
-      setMessage('✅ Projet institutionnel créé.');
+      setMessage(t('admin.projectCreated'));
     } catch (err) {
-      setError(formatApiError(err, 'Erreur lors de la création du projet.'));
+      setError(formatApiError(err, t, t('admin.errorProjectCreate')));
     } finally {
       setCreating(false);
     }
@@ -57,22 +57,22 @@ export default function AdminProjets() {
     try {
       const res = await api.patch(`/projets/${id}/statut?statut=${statut}`);
       setProjets(prev => prev.map(p => p.id === id ? res.data : p));
-      setMessage(`✅ Statut mis à jour : ${statut}`);
+      setMessage(t('admin.statusUpdatedWithValue', { status: t(`statuses.${statut}`, statut) }));
       setError('');
     } catch {
-      setError('Erreur lors du changement de statut.');
+      setError(t('admin.errorStatusChange'));
     }
   };
 
   const supprimerProjet = async (id, titre) => {
-    if (!window.confirm(`Supprimer définitivement le projet "${titre}" ?`)) return;
+    if (!window.confirm(t('admin.confirmDeleteProject', { title: titre }))) return;
     try {
       await api.delete(`/projets/${id}`);
       setProjets(prev => prev.filter(p => p.id !== id));
-      setMessage('✅ Projet supprimé.');
+      setMessage(t('admin.projectDeleted'));
       setError('');
     } catch {
-      setError('Erreur lors de la suppression.');
+      setError(t('admin.errorDelete'));
     }
   };
 
@@ -90,14 +90,14 @@ export default function AdminProjets() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-blue-900 mb-1">🚀 {t('admin.projects_title')}</h1>
-            <p className="text-gray-500 text-sm">{projets.length} projet(s) au total</p>
+            <p className="text-gray-500 text-sm">{t('statistics.projectsTotal', { count: projets.length })}</p>
           </div>
           <button
             type="button"
             onClick={() => setShowForm(prev => !prev)}
             className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
           >
-            {showForm ? t('common.cancel') : 'Créer un projet'}
+            {showForm ? t('common.cancel') : t('admin.createProject')}
           </button>
         </div>
 
@@ -110,10 +110,10 @@ export default function AdminProjets() {
 
         {showForm && (
           <form onSubmit={creerProjet} className="bg-white rounded-2xl shadow p-5 mb-6 grid md:grid-cols-2 gap-4">
-            <Input label="Titre du projet" value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
-            <Input label="Budget demandé (€)" value={form.budgetDemande} onChange={value => setForm({ ...form, budgetDemande: value })} type="number" min="0" />
+            <Input label={t('projects.form_title')} value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
+            <Input label={t('projects.form_budget')} value={form.budgetDemande} onChange={value => setForm({ ...form, budgetDemande: value })} type="number" min="0" />
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">{t('projects.form_description')}</label>
               <textarea
                 value={form.description}
                 onChange={e => setForm({ ...form, description: e.target.value })}
@@ -127,7 +127,7 @@ export default function AdminProjets() {
                 disabled={creating}
                 className="bg-blue-700 hover:bg-blue-600 disabled:bg-gray-300 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition"
               >
-                {creating ? 'Création...' : 'Créer le projet'}
+                {creating ? t('common.creating') : t('admin.createProject')}
               </button>
             </div>
           </form>
@@ -148,7 +148,7 @@ export default function AdminProjets() {
                   borderColor: statutColor(s),
                 }}
               >
-                {s} ({count})
+                {t(`statuses.${s}`, s)} ({count})
               </button>
             );
           })}
@@ -157,17 +157,17 @@ export default function AdminProjets() {
         {/* Recherche */}
         <input
           type="text"
-          placeholder="🔍 Rechercher par titre..."
+          placeholder={t('admin.searchProjectPlaceholder')}
           value={recherche}
           onChange={e => { setRecherche(e.target.value); setMessage(''); setError(''); }}
           className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm mb-6 focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">{t('admin.loading')}</p>
+          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
         ) : projetsFiltres.length === 0 ? (
           <div className="bg-white rounded-2xl shadow p-10 text-center text-gray-400 text-sm">
-            Aucun projet trouvé.
+            {t('admin.noProjectFound')}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -184,7 +184,7 @@ export default function AdminProjets() {
                       className="text-xs px-2 py-0.5 rounded-full text-white ml-2 whitespace-nowrap"
                       style={{ background: statutColor(p.statut) }}
                     >
-                      {p.statut}
+                      {t(`statuses.${p.statut}`, p.statut)}
                     </span>
                   </div>
 
@@ -195,11 +195,11 @@ export default function AdminProjets() {
                   )}
 
                   <p className="text-xs text-gray-400 mb-1">
-                    💰 Budget : <strong>{p.budgetDemande ? `${p.budgetDemande} €` : 'Non défini'}</strong>
+                    {t('admin.budgetLabel')} <strong>{p.budgetDemande ? `${p.budgetDemande} €` : t('admin.notSpecified')}</strong>
                   </p>
                   {p.porteurPrenom && (
                     <p className="text-xs text-gray-400 mb-4">
-                      👤 Porteur : <strong>{p.porteurPrenom} {p.porteurNom}</strong>
+                      {t('admin.ownerLabel')} <strong>{p.porteurPrenom} {p.porteurNom}</strong>
                     </p>
                   )}
 
@@ -209,7 +209,7 @@ export default function AdminProjets() {
                       onChange={e => changerStatut(p.id, e.target.value)}
                       className="flex-1 text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
                     >
-                      {STATUTS.map(s => <option key={s} value={s}>{s}</option>)}
+                      {STATUTS.map(s => <option key={s} value={s}>{t(`statuses.${s}`, s)}</option>)}
                     </select>
                     <button
                       onClick={() => supprimerProjet(p.id, p.titre)}
@@ -246,9 +246,9 @@ function Input({ label, value, onChange, type = 'text', required = false, min })
   );
 }
 
-function formatApiError(err, fallback) {
-  if (err.response?.status === 401) return 'Session expirée. Reconnectez-vous.';
-  if (err.response?.status === 403) return 'Accès refusé pour ce rôle.';
+function formatApiError(err, t, fallback) {
+  if (err.response?.status === 401) return t('errors.session_expired');
+  if (err.response?.status === 403) return t('errors.forbidden');
   return err.response?.data?.message || fallback;
 }
 
