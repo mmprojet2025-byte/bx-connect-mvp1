@@ -95,8 +95,13 @@ export default function Profil() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-10">
-        <h1 className="text-2xl font-bold text-blue-900 mb-6">{t('profile.title')}</h1>
+      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-10">
+        <header className="mb-6">
+          <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">{t('profile.title')}</p>
+          <h1 className="text-3xl font-bold text-blue-900 mt-1">
+            {profil?.prenom} {profil?.nom}
+          </h1>
+        </header>
 
         {message && (
           <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">
@@ -109,41 +114,46 @@ export default function Profil() {
           </div>
         )}
 
-        {/* Carte profil */}
-        <div className="bg-white rounded-2xl shadow p-6 mb-6">
-          <div className="flex gap-6 items-start flex-wrap">
+        <div className="grid lg:grid-cols-[1fr_340px] gap-6">
+          {/* Carte profil */}
+          <div className="bg-white rounded-2xl shadow p-6 mb-6">
+            <div className="flex gap-6 items-start flex-wrap">
 
-            {/* Avatar */}
-            <div className="flex flex-col items-center gap-2">
-              <ImageUpload
-                type="avatar"
-                currentUrl={avatarUrl}
-                onUploadSuccess={(url) => setAvatarUrl(url)}
-                shape="circle"
-                label={t('profile.photo')}
-              />
-            </div>
+              {/* Avatar */}
+              <div className="flex flex-col items-center gap-2">
+                <div className="rounded-3xl bg-blue-50 p-3">
+                  <ImageUpload
+                    type="avatar"
+                    currentUrl={avatarUrl}
+                    onUploadSuccess={(url) => setAvatarUrl(url)}
+                    shape="circle"
+                    label={t('profile.photo')}
+                  />
+                </div>
+              </div>
 
-            {/* Infos */}
-            <div className="flex-1">
+              {/* Infos */}
+              <div className="flex-1 min-w-0">
               {!editMode ? (
                 <>
-                  <h2 className="text-xl font-bold text-blue-900 mb-1">
+                  <h2 className="text-2xl font-bold text-blue-900 mb-2">
                     {profil?.prenom} {profil?.nom}
                   </h2>
-                  <span className="inline-block bg-blue-600 text-white text-xs px-3 py-0.5 rounded-full mb-3">
+                  <span className="inline-flex rounded-full bg-blue-100 text-blue-800 text-xs px-3 py-1 font-semibold mb-4">
                     {t(`roles.${profil?.role}`, profil?.role)}
                   </span>
-                  <p className="text-gray-600 text-sm mb-1">📧 {profil?.email}</p>
-                  <p className="text-gray-600 text-sm mb-1">
-                    🌐 {t('profile.language')} : <strong>{languageLabel(profil?.languePreference, t)}</strong>
-                  </p>
-                  <p className="text-gray-400 text-xs mb-4">
-                    {t('profile.member_since_with_date', { date: formatDate(profil?.dateInscription, i18n.language, t) })}
-                  </p>
+                  <div className="grid sm:grid-cols-2 gap-3 mb-5">
+                    <ProfileInfo label={t('users.email')} value={profil?.email} />
+                    <ProfileInfo label={t('profile.language')} value={languageLabel(profil?.languePreference, t)} />
+                    <ProfileInfo
+                      label={t('users.memberSince')}
+                      value={formatDate(profil?.dateInscription, i18n.language, t)}
+                    />
+                    <ProfileInfo label={t('users.status')} value={profil?.actif === false ? t('users.inactive') : t('users.active')} />
+                  </div>
                   <button
                     onClick={() => setEditMode(true)}
-                    className="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-2 rounded-xl transition"
+                    className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
                   >
                     ✏️ {t('profile.edit_btn')}
                   </button>
@@ -188,22 +198,28 @@ export default function Profil() {
                   </div>
                 </form>
               )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Sécurité — Changer mot de passe */}
-        <div className="bg-white rounded-2xl shadow p-6 mb-6">
-          <h3 className="text-lg font-bold text-blue-900 mb-4">🔒 {t('profile.security')}</h3>
+          {/* Sécurité — Changer mot de passe */}
+          <aside className="bg-white rounded-2xl shadow p-6 mb-6 h-fit">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="h-11 w-11 rounded-2xl bg-orange-100 text-orange-700 flex items-center justify-center font-black">🔒</div>
+            <div>
+              <h3 className="text-lg font-bold text-blue-900">{t('profile.security')}</h3>
+              <p className="text-xs text-gray-500 mt-1">{profil?.email}</p>
+            </div>
+          </div>
           {!showPasswordForm ? (
             <button
               onClick={() => setShowPasswordForm(true)}
-              className="bg-orange-400 hover:bg-orange-300 text-white text-sm px-4 py-2 rounded-xl transition"
+              className="w-full bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
             >
               {t('profile.change_password')}
             </button>
           ) : (
-            <form onSubmit={handleChangePassword} className="space-y-4 max-w-sm">
+            <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('profile.old_password')}</label>
                 <input
@@ -232,6 +248,7 @@ export default function Profil() {
               </div>
             </form>
           )}
+          </aside>
         </div>
 
         {/* Déconnexion */}
@@ -252,6 +269,15 @@ function getApiError(err, fallback, t) {
   if (err.response?.status === 401) return t('errors.session_expired');
   if (err.response?.status === 403) return t('errors.forbidden');
   return fallback;
+}
+
+function ProfileInfo({ label, value }) {
+  return (
+    <div className="rounded-2xl bg-gray-50 px-4 py-3">
+      <p className="text-xs font-semibold uppercase text-gray-400">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-gray-700 break-words">{value || '—'}</p>
+    </div>
+  );
 }
 
 function languageLabel(value, t) {

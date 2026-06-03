@@ -8,6 +8,7 @@ import api from '../../api/axios';
 import Alert from '../../components/ui/Alert';
 import EmptyState from '../../components/ui/EmptyState';
 import StatusBadge from '../../components/StatusBadge';
+import ActivityCover from '../../components/ActivityCover';
 import { userFriendlyError } from '../../utils/userFriendlyError';
 
 export default function Activites() {
@@ -297,39 +298,47 @@ export default function Activites() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {activites.map(a => (
-              <div key={a.id} className="bg-white rounded-2xl shadow overflow-hidden hover:shadow-md transition">
-                {/* Image */}
-                {a.imageUrl ? (
-                  <img src={a.imageUrl} alt={a.titre} className="w-full h-40 object-cover" />
-                ) : (
-                  <div className="w-full h-40 bg-blue-50 flex items-center justify-center text-4xl">🎯</div>
-                )}
-
-                <div className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-blue-900 text-base leading-tight flex-1 mr-2">{a.titre}</h3>
+              <article key={a.id} className="bg-white rounded-2xl shadow overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition flex flex-col">
+                <div className="relative">
+                  <ActivityCover imageUrl={a.imageUrl} title={a.titre} className="h-44" />
+                  <div className="absolute left-4 top-4">
                     <StatusBadge status={a.statut}>
                       {t(`statuses.${a.statut}`, { defaultValue: a.statut })}
                     </StatusBadge>
                   </div>
+                </div>
 
-                  {a.description && (
-                    <p className="text-gray-500 text-xs mb-3 line-clamp-2">{a.description}</p>
-                  )}
-
-                  <div className="space-y-1 mb-3">
-                    {a.lieu && <p className="text-xs text-gray-500">📍 {a.lieu}</p>}
-                    {a.dateDebut && <p className="text-xs text-gray-500">📅 {new Date(a.dateDebut).toLocaleDateString(i18n.language || 'fr-BE')}</p>}
-                    {a.categorie && <p className="text-xs text-gray-500">🏷️ {a.categorie}</p>}
-                    <p className="text-xs text-gray-500">
-                      {t('activities.places_label', {
-                        value: a.capaciteMax > 0 ? t('activities.capacity_max', { count: a.capaciteMax }) : t('activities.unlimited'),
-                      })}
-                    </p>
-                    <p className="text-xs text-gray-500">{a.gratuite ? t('activities.free') : t('activities.price_value', { price: a.prix })}</p>
+                <div className="p-5 flex flex-col flex-1">
+                  <div className="mb-3">
+                    <h3 className="font-bold text-blue-900 text-lg leading-tight">{a.titre}</h3>
+                    {(a.categorie || a.theme) && (
+                      <p className="text-xs text-blue-700 font-semibold mt-1">
+                        {[a.categorie, a.theme].filter(Boolean).join(' · ')}
+                      </p>
+                    )}
                   </div>
 
-                  <div className="flex gap-2">
+                  {a.description && (
+                    <p className="text-gray-500 text-sm mb-4 line-clamp-2 leading-relaxed">{a.description}</p>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-2 mb-4 text-xs">
+                    <InfoPill label={t('activities.form_place')} value={a.lieu || '—'} />
+                    <InfoPill
+                      label={t('activities.start_date')}
+                      value={a.dateDebut ? new Date(a.dateDebut).toLocaleDateString(i18n.language || 'fr-BE') : '—'}
+                    />
+                    <InfoPill
+                      label={t('activities.capacity')}
+                      value={a.capaciteMax > 0 ? t('activities.capacity_max', { count: a.capaciteMax }) : t('activities.unlimited')}
+                    />
+                    <InfoPill
+                      label={t('activities.form_price')}
+                      value={a.gratuite ? t('activities.free') : t('activities.price_value', { price: a.prix })}
+                    />
+                  </div>
+
+                  <div className="flex gap-2 mt-auto">
                     {/* Lien détail (V04) */}
                     <Link
                       to={`/activites/${a.id}`}
@@ -359,13 +368,22 @@ export default function Activites() {
                     )}
                   </div>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         )}
       </main>
 
       <Footer />
+    </div>
+  );
+}
+
+function InfoPill({ label, value }) {
+  return (
+    <div className="rounded-xl bg-gray-50 px-3 py-2">
+      <p className="text-[10px] font-semibold uppercase text-gray-400">{label}</p>
+      <p className="mt-0.5 font-semibold text-gray-700 truncate">{value}</p>
     </div>
   );
 }

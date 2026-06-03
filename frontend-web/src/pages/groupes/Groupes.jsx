@@ -8,6 +8,7 @@ import Footer from '../../components/Footer'
 import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
 import StatusBadge from '../../components/StatusBadge'
+import GroupAvatar from '../../components/GroupAvatar'
 import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFriendlyError'
 
 export default function Groupes() {
@@ -205,11 +206,14 @@ function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelle
     : t('groups.members_count', { count: groupe.nombreMembres ?? 0 })
 
   return (
-    <article className={`bg-white rounded-2xl shadow p-5 flex flex-col gap-4 border ${isAccepted ? 'border-green-300' : 'border-transparent'}`}>
+    <article className={`bg-white rounded-2xl shadow p-5 flex flex-col gap-4 border hover:-translate-y-0.5 hover:shadow-lg transition ${isAccepted ? 'border-green-300' : 'border-transparent'}`}>
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="font-semibold text-blue-900 text-lg">{groupe.nom}</h2>
+        <div className="flex items-start gap-3 min-w-0">
+          <GroupAvatar name={groupe.nom} />
+          <div className="min-w-0">
+            <h2 className="font-semibold text-blue-900 text-lg leading-tight">{groupe.nom}</h2>
           {referent && <p className="text-xs text-gray-500 mt-1">{t('groups.referent_label', { referent })}</p>}
+          </div>
         </div>
         {adhesion?.statut && <GroupStatusBadge statut={adhesion.statut} />}
       </div>
@@ -218,10 +222,12 @@ function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelle
         {groupe.description || t('groups.description_soon')}
       </p>
 
-      <div className="flex flex-wrap gap-2 text-xs">
-        <span className="bg-blue-50 text-blue-800 px-2.5 py-1 rounded-full">{placesLabel}</span>
-        {groupe.theme && <span className="bg-teal-50 text-teal-800 px-2.5 py-1 rounded-full">{groupe.theme}</span>}
-        {groupe.categorie && <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full">{groupe.categorie}</span>}
+      <div className="grid grid-cols-1 gap-2 text-xs">
+        <InfoPill value={placesLabel} />
+        <div className="flex flex-wrap gap-2">
+          {groupe.theme && <span className="bg-teal-50 text-teal-800 px-2.5 py-1 rounded-full font-semibold">{groupe.theme}</span>}
+          {groupe.categorie && <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full font-semibold">{groupe.categorie}</span>}
+        </div>
       </div>
 
       <div className="mt-auto">
@@ -278,5 +284,13 @@ function GroupStatusBadge({ statut }) {
     <StatusBadge status={statut}>
       {t(`statuses.${statut}`, { defaultValue: statut })}
     </StatusBadge>
+  )
+}
+
+function InfoPill({ value }) {
+  return (
+    <div className="rounded-xl bg-blue-50 px-3 py-2 font-semibold text-blue-800">
+      {value}
+    </div>
   )
 }

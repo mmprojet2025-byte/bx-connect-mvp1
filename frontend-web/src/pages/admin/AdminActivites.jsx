@@ -4,6 +4,8 @@ import api from '../../api/axios';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFriendlyError';
+import ActivityCover from '../../components/ActivityCover';
+import StatusBadge from '../../components/StatusBadge';
 
 const STATUTS = ['BROUILLON', 'PUBLIEE', 'ANNULEE', 'TERMINEE'];
 const emptyForm = {
@@ -245,7 +247,9 @@ export default function AdminActivites() {
                 <div className="bg-white rounded-2xl shadow p-8 text-center text-gray-400 text-sm">{t('activities.no_search_results')}</div>
               ) : (
                 activitesFiltrees.map(a => (
-                  <article key={a.id} className="bg-white rounded-2xl shadow p-5">
+                  <article key={a.id} className="bg-white rounded-2xl shadow overflow-hidden">
+                    <ActivityCover imageUrl={a.imageUrl} title={a.titre} className="h-32" />
+                    <div className="p-5">
                     <div className="flex items-start justify-between gap-3 mb-4">
                       <div className="min-w-0">
                         <h2 className="font-semibold text-blue-900 text-sm">{a.titre}</h2>
@@ -261,7 +265,10 @@ export default function AdminActivites() {
                     <div className="grid gap-3 text-sm">
                       <InfoLine label={t('admin.creator')} value={`${a.createurPrenom || ''} ${a.createurNom || ''}`.trim() || '—'} />
                       <div>
-                        <p className="text-xs text-gray-400 mb-1">{t('users.status')}</p>
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <p className="text-xs text-gray-400">{t('users.status')}</p>
+                          <StatusBadge status={a.statut}>{t(`statuses.${a.statut}`, { defaultValue: a.statut })}</StatusBadge>
+                        </div>
                         <select
                           value={a.statut}
                           onChange={e => changerStatut(a.id, e.target.value)}
@@ -288,6 +295,7 @@ export default function AdminActivites() {
                           {t('common.delete')}
                         </button>
                       </div>
+                    </div>
                     </div>
                   </article>
                 ))
@@ -316,11 +324,18 @@ export default function AdminActivites() {
                     activitesFiltrees.map((a, i) => (
                       <tr key={a.id} className={`border-b border-gray-50 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                         <td className="px-4 py-3">
-                          <span className="font-medium text-blue-900 text-sm">{a.titre}</span>
-                          {a.gratuite
-                            ? <span className="ml-2 text-xs text-green-600">🆓</span>
-                            : <span className="ml-2 text-xs text-orange-500">💶 {a.prix}€</span>
-                          }
+                          <div className="flex items-center gap-3">
+                            <div className="h-12 w-16 shrink-0 overflow-hidden rounded-xl">
+                              <ActivityCover imageUrl={a.imageUrl} title={a.titre} className="h-12" />
+                            </div>
+                            <div>
+                              <span className="font-medium text-blue-900 text-sm">{a.titre}</span>
+                              {a.gratuite
+                                ? <span className="ml-2 text-xs text-green-600">🆓</span>
+                                : <span className="ml-2 text-xs text-orange-500">💶 {a.prix}€</span>
+                              }
+                            </div>
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">{a.lieu || '—'}</td>
                         <td className="px-4 py-3 text-xs text-gray-400">

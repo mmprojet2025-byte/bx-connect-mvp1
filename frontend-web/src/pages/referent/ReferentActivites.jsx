@@ -4,6 +4,7 @@ import Footer from '../../components/Footer'
 import api from '../../api/axios'
 import { useTranslation } from 'react-i18next'
 import StatusBadge from '../../components/StatusBadge'
+import ActivityCover from '../../components/ActivityCover'
 
 const emptyForm = {
   titre: '',
@@ -189,25 +190,37 @@ export default function ReferentActivites() {
         ) : (
           <div className="grid md:grid-cols-2 gap-4">
             {activites.map(activite => (
-              <article key={activite.id} className="bg-white rounded-2xl shadow p-5">
-                <div className="flex justify-between gap-3">
-                  <h2 className="font-bold text-blue-900">{activite.titre}</h2>
-                  <StatusBadge status={activite.statut}>{t(`statuses.${activite.statut}`, activite.statut)}</StatusBadge>
+              <article key={activite.id} className="bg-white rounded-2xl shadow overflow-hidden">
+                <div className="relative">
+                  <ActivityCover imageUrl={activite.imageUrl} title={activite.titre} className="h-36" />
+                  <div className="absolute left-4 top-4">
+                    <StatusBadge status={activite.statut}>{t(`statuses.${activite.statut}`, activite.statut)}</StatusBadge>
+                  </div>
                 </div>
-                {activite.description && <p className="text-sm text-gray-500 mt-2">{activite.description}</p>}
-                <div className="text-xs text-gray-400 mt-4 space-y-1">
-                  {activite.lieu && <p>{activite.lieu}</p>}
-                  {activite.dateDebut && <p>{formatDate(activite.dateDebut, i18n.language)}</p>}
-                  <p>{activite.gratuite ? t('activities.free') : `${activite.prix} €`}</p>
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => startEdit(activite)}
-                    className="border border-teal-200 text-teal-700 hover:bg-teal-50 text-sm font-semibold px-4 py-2 rounded-xl transition"
-                  >
-                    {t('common.edit')}
-                  </button>
+                <div className="p-5">
+                  <h2 className="font-bold text-blue-900 text-lg">{activite.titre}</h2>
+                  {activite.description && <p className="text-sm text-gray-500 mt-2 line-clamp-2">{activite.description}</p>}
+                  <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 mt-4">
+                    <InfoPill label={t('activities.form_place')} value={activite.lieu || '—'} />
+                    <InfoPill label={t('activities.start_date')} value={formatDate(activite.dateDebut, i18n.language)} />
+                    <InfoPill
+                      label={t('activities.form_price')}
+                      value={activite.gratuite ? t('activities.free') : `${activite.prix} €`}
+                    />
+                    <InfoPill
+                      label={t('activities.capacity')}
+                      value={activite.capaciteMax > 0 ? t('activities.capacity_max', { count: activite.capaciteMax }) : t('activities.unlimited')}
+                    />
+                  </div>
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(activite)}
+                      className="border border-teal-200 text-teal-700 hover:bg-teal-50 text-sm font-semibold px-4 py-2 rounded-xl transition"
+                    >
+                      {t('common.edit')}
+                    </button>
+                  </div>
                 </div>
               </article>
             ))}
@@ -245,6 +258,15 @@ function Alert({ type, children }) {
 
 function EmptyState({ children }) {
   return <div className="bg-white rounded-2xl shadow p-10 text-center text-gray-400 text-sm">{children}</div>
+}
+
+function InfoPill({ label, value }) {
+  return (
+    <div className="rounded-xl bg-gray-50 px-3 py-2">
+      <p className="text-[10px] font-semibold uppercase text-gray-400">{label}</p>
+      <p className="mt-0.5 font-semibold text-gray-700 truncate">{value}</p>
+    </div>
+  )
 }
 
 function formatDate(value, language = 'fr') {

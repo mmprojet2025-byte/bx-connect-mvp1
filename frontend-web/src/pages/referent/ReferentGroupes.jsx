@@ -4,6 +4,7 @@ import Footer from '../../components/Footer'
 import api from '../../api/axios'
 import { useTranslation } from 'react-i18next'
 import StatusBadge from '../../components/StatusBadge'
+import GroupAvatar from '../../components/GroupAvatar'
 
 export default function ReferentGroupes() {
   const { t } = useTranslation()
@@ -59,11 +60,23 @@ export default function ReferentGroupes() {
               const membres = details[groupe.id]?.membres || []
               const demandes = details[groupe.id]?.demandes || []
               return (
-                <article key={groupe.id} className="bg-white rounded-2xl shadow p-5">
+                <article key={groupe.id} className="bg-white rounded-2xl shadow p-5 border border-gray-100">
                   <div className="flex flex-col md:flex-row md:justify-between gap-3 mb-4">
-                    <div>
-                      <h2 className="text-lg font-bold text-blue-900">{groupe.nom}</h2>
-                      {groupe.description && <p className="text-sm text-gray-500 mt-1">{groupe.description}</p>}
+                    <div className="flex items-start gap-4">
+                      <GroupAvatar name={groupe.nom} />
+                      <div>
+                        <h2 className="text-lg font-bold text-blue-900">{groupe.nom}</h2>
+                        {groupe.description && <p className="text-sm text-gray-500 mt-1">{groupe.description}</p>}
+                        <div className="flex flex-wrap gap-2 mt-3 text-xs">
+                          {groupe.nombreMembres !== undefined && (
+                            <span className="bg-blue-50 text-blue-800 px-2.5 py-1 rounded-full font-semibold">
+                              {t('groups.members_count', { count: groupe.nombreMembres })}
+                            </span>
+                          )}
+                          {groupe.theme && <span className="bg-teal-50 text-teal-800 px-2.5 py-1 rounded-full font-semibold">{groupe.theme}</span>}
+                          {groupe.categorie && <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full font-semibold">{groupe.categorie}</span>}
+                        </div>
+                      </div>
                     </div>
                     <StatusBadge status={groupe.statut} className="self-start">
                       {t(`statuses.${groupe.statut}`, groupe.statut)}

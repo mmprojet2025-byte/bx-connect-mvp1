@@ -7,6 +7,7 @@ import Footer from '../../components/Footer';
 import api from '../../api/axios';
 import { userFriendlyError } from '../../utils/userFriendlyError';
 import StatusBadge from '../../components/StatusBadge';
+import ActivityCover from '../../components/ActivityCover';
 
 export default function ActiviteDetail() {
   const { id } = useParams();
@@ -79,7 +80,7 @@ export default function ActiviteDetail() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
 
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-10">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
 
         {/* Retour */}
         <button
@@ -94,32 +95,33 @@ export default function ActiviteDetail() {
         {error   && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>}
 
         <div className="bg-white rounded-2xl shadow overflow-hidden">
-          {/* Image */}
-          {activite.imageUrl ? (
-            <img src={activite.imageUrl} alt={activite.titre} className="w-full h-64 object-cover" />
-          ) : (
-            <div className="w-full h-48 bg-blue-50 flex items-center justify-center text-6xl">🎯</div>
-          )}
-
-          <div className="p-8">
-            {/* En-tête */}
-            <div className="flex justify-between items-start mb-4">
-              <h1 className="text-2xl font-bold text-blue-900 flex-1 mr-4">{activite.titre}</h1>
+          <div className="relative">
+            <ActivityCover imageUrl={activite.imageUrl} title={activite.titre} className="h-72" />
+            <div className="absolute left-5 top-5">
               <StatusBadge status={activite.statut}>
                 {t(`statuses.${activite.statut}`, { defaultValue: activite.statut })}
               </StatusBadge>
             </div>
+          </div>
 
-            {/* Badges */}
-            <div className="flex flex-wrap gap-2 mb-6">
+          <div className="grid lg:grid-cols-[1fr_320px] gap-8 p-6 md:p-8">
+            <section>
+              <h1 className="text-3xl font-bold text-blue-900 leading-tight">{activite.titre}</h1>
+              {activite.description && (
+                <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line mt-4">
+                  {activite.description}
+                </p>
+              )}
+
+              <div className="flex flex-wrap gap-2 mt-6">
               {activite.categorie && (
                 <span className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full font-medium">
-                  🏷️ {activite.categorie}
+                  {activite.categorie}
                 </span>
               )}
               {activite.theme && (
-                <span className="bg-purple-100 text-purple-700 text-xs px-3 py-1 rounded-full font-medium">
-                  🎨 {activite.theme}
+                <span className="bg-teal-100 text-teal-700 text-xs px-3 py-1 rounded-full font-medium">
+                  {activite.theme}
                 </span>
               )}
               <span className={`text-xs px-3 py-1 rounded-full font-medium ${
@@ -127,71 +129,59 @@ export default function ActiviteDetail() {
               }`}>
                 {activite.gratuite ? t('activities.free') : t('activities.price_value', { price: activite.prix })}
               </span>
-            </div>
+              </div>
+            </section>
 
-            {/* Infos */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
+            <aside className="bg-gray-50 rounded-2xl p-5 h-fit">
+              <div className="grid gap-4">
               {activite.lieu && (
-                <div>
+                <InfoBlock>
                   <p className="text-xs text-gray-400 font-semibold uppercase mb-1">{t('activities.form_place')}</p>
-                  <p className="text-sm text-gray-700">📍 {activite.lieu}</p>
-                </div>
+                  <p className="text-sm font-semibold text-gray-700">{activite.lieu}</p>
+                </InfoBlock>
               )}
               {activite.dateDebut && (
-                <div>
+                <InfoBlock>
                   <p className="text-xs text-gray-400 font-semibold uppercase mb-1">{t('activities.start_date')}</p>
-                  <p className="text-sm text-gray-700">
-                    📅 {new Date(activite.dateDebut).toLocaleDateString(i18n.language || 'fr-BE', {
+                  <p className="text-sm font-semibold text-gray-700">
+                    {new Date(activite.dateDebut).toLocaleDateString(i18n.language || 'fr-BE', {
                       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
                       hour: '2-digit', minute: '2-digit'
                     })}
                   </p>
-                </div>
+                </InfoBlock>
               )}
               {activite.dateFin && (
-                <div>
+                <InfoBlock>
                   <p className="text-xs text-gray-400 font-semibold uppercase mb-1">{t('activities.end_date')}</p>
-                  <p className="text-sm text-gray-700">
-                    🏁 {new Date(activite.dateFin).toLocaleDateString(i18n.language || 'fr-BE', {
+                  <p className="text-sm font-semibold text-gray-700">
+                    {new Date(activite.dateFin).toLocaleDateString(i18n.language || 'fr-BE', {
                       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
                       hour: '2-digit', minute: '2-digit'
                     })}
                   </p>
-                </div>
+                </InfoBlock>
               )}
               {activite.capaciteMax > 0 && (
-                <div>
+                <InfoBlock>
                   <p className="text-xs text-gray-400 font-semibold uppercase mb-1">{t('activities.capacity')}</p>
-                  <p className="text-sm text-gray-700">👥 {t('activities.people_max', { count: activite.capaciteMax })}</p>
-                </div>
+                  <p className="text-sm font-semibold text-gray-700">{t('activities.people_max', { count: activite.capaciteMax })}</p>
+                </InfoBlock>
               )}
               {activite.createurPrenom && (
-                <div>
+                <InfoBlock>
                   <p className="text-xs text-gray-400 font-semibold uppercase mb-1">{t('activities.organizer')}</p>
-                  <p className="text-sm text-gray-700">
-                    👤 {activite.createurPrenom} {activite.createurNom}
-                  </p>
-                </div>
+                  <p className="text-sm font-semibold text-gray-700">{activite.createurPrenom} {activite.createurNom}</p>
+                </InfoBlock>
               )}
-            </div>
-
-            {/* Description */}
-            {activite.description && (
-              <div className="mb-6">
-                <h2 className="text-base font-bold text-blue-900 mb-2">{t('activities.form_description')}</h2>
-                <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
-                  {activite.description}
-                </p>
               </div>
-            )}
 
-            {/* Actions */}
-            <div className="flex gap-3 flex-wrap">
+              <div className="flex flex-col gap-3 mt-5">
               {/* S'inscrire */}
               {activite.statut === 'PUBLIEE' && !inscrit && (
                 <button
                   onClick={handleInscrire}
-                  className="bg-blue-700 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl transition"
+                  className="bg-blue-700 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl transition text-center"
                 >
                   {isAuthenticated ? t('activities.register_this') : t('activities.login_to_register')}
                 </button>
@@ -209,7 +199,8 @@ export default function ActiviteDetail() {
               >
                 {t('activities.back_to_list')}
               </button>
-            </div>
+              </div>
+            </aside>
           </div>
         </div>
       </main>
@@ -217,4 +208,8 @@ export default function ActiviteDetail() {
       <Footer />
     </div>
   );
+}
+
+function InfoBlock({ children }) {
+  return <div className="border-b border-white pb-3 last:border-0 last:pb-0">{children}</div>;
 }

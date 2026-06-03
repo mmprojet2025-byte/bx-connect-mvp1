@@ -4,6 +4,7 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
 import StatusBadge from '../../components/StatusBadge';
+import GroupAvatar from '../../components/GroupAvatar';
 
 const emptyGroupeForm = {
   nom: '',
@@ -234,13 +235,16 @@ export default function AdminGroupes() {
         ) : (
           <div className="space-y-4">
             {groupes.map(g => (
-              <div key={g.id} className="bg-white rounded-2xl shadow p-5">
+              <div key={g.id} className="bg-white rounded-2xl shadow p-5 border border-gray-100">
                 <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="font-bold text-blue-900 text-lg">{g.nom}</h3>
-                    <p className="text-gray-500 text-sm mt-0.5">
-                      {t('admin.referentLabel', { referent: referentAssigne(g) })}
-                    </p>
+                  <div className="flex items-start gap-4">
+                    <GroupAvatar name={g.nom} />
+                    <div>
+                      <h3 className="font-bold text-blue-900 text-lg">{g.nom}</h3>
+                      <p className="text-gray-500 text-sm mt-0.5">
+                        {t('admin.referentLabel', { referent: referentAssigne(g) })}
+                      </p>
+                    </div>
                   </div>
                   <StatusBadge status={g.statut}>
                     {t(`statuses.${g.statut}`, { defaultValue: g.statut })}
@@ -249,11 +253,11 @@ export default function AdminGroupes() {
 
                 {g.description && <p className="text-gray-600 text-sm mb-3">{g.description}</p>}
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-gray-500 mb-4">
-                  {g.theme    && <span>🎨 {g.theme}</span>}
-                  {g.categorie && <span>🏷️ {g.categorie}</span>}
-                  {g.capaciteMax > 0 && <span>👥 Max {g.capaciteMax}</span>}
-                  <span>📅 {new Date(g.dateCreation).toLocaleDateString(i18n.language || 'fr-BE')}</span>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs mb-4">
+                  {g.theme && <InfoChip>{g.theme}</InfoChip>}
+                  {g.categorie && <InfoChip>{g.categorie}</InfoChip>}
+                  {g.capaciteMax > 0 && <InfoChip>{t('activities.capacity_max', { count: g.capaciteMax })}</InfoChip>}
+                  <InfoChip>{new Date(g.dateCreation).toLocaleDateString(i18n.language || 'fr-BE')}</InfoChip>
                 </div>
 
                 {g.objectif && (
@@ -362,5 +366,13 @@ function TextArea({ label, value, onChange }) {
         className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
       />
     </div>
+  );
+}
+
+function InfoChip({ children }) {
+  return (
+    <span className="rounded-xl bg-gray-50 px-3 py-2 font-semibold text-gray-600">
+      {children}
+    </span>
   );
 }
