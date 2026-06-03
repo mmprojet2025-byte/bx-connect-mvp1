@@ -3,6 +3,7 @@ import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import api from '../../api/axios'
 import { useTranslation } from 'react-i18next'
+import StatusBadge from '../../components/StatusBadge'
 
 export default function ReferentGroupes() {
   const { t } = useTranslation()
@@ -64,9 +65,9 @@ export default function ReferentGroupes() {
                       <h2 className="text-lg font-bold text-blue-900">{groupe.nom}</h2>
                       {groupe.description && <p className="text-sm text-gray-500 mt-1">{groupe.description}</p>}
                     </div>
-                    <span className="self-start text-xs bg-teal-100 text-teal-700 px-3 py-1 rounded-full font-semibold">
+                    <StatusBadge status={groupe.statut} className="self-start">
                       {t(`statuses.${groupe.statut}`, groupe.statut)}
-                    </span>
+                    </StatusBadge>
                   </div>
 
                   <div className="grid md:grid-cols-3 gap-4">

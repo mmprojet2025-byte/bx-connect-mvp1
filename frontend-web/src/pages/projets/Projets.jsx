@@ -7,18 +7,8 @@ import Footer from '../../components/Footer'
 import ImageUpload from '../../components/ImageUpload'
 import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
-import StatusBadge from '../../components/ui/StatusBadge'
+import StatusBadge from '../../components/StatusBadge'
 import { userFriendlyError } from '../../utils/userFriendlyError'
-
-const STATUT_VARIANTS = {
-  BROUILLON: 'neutral',
-  SOUMIS: 'warning',
-  APPROUVE: 'success',
-  EN_COURS: 'info',
-  TERMINE: 'success',
-  REJETE: 'danger',
-  ARCHIVE: 'neutral',
-}
 
 export default function Projets() {
   const { isAuthenticated, isMembre } = useAuth()
@@ -199,7 +189,7 @@ function ProjectCard({ projet, isAuthenticated, supportLabel, t }) {
       <div className="p-5">
         <div className="flex items-start justify-between gap-3 mb-3">
           <h2 className="font-semibold text-blue-900">{projet.titre}</h2>
-          <StatusBadge variant={STATUT_VARIANTS[projet.statut] || 'neutral'}>
+          <StatusBadge status={projet.statut}>
             {t(`statuses.${projet.statut}`, { defaultValue: projet.statut })}
           </StatusBadge>
         </div>

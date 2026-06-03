@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import api from '../../api/axios'
+import StatusBadge from '../../components/StatusBadge'
 
 export default function ReferentProjets() {
   const { t, i18n } = useTranslation()
@@ -51,9 +52,9 @@ export default function ReferentProjets() {
                       <p className="text-xs text-gray-400 mt-1">{t('referent.projectGroup', { group: projet.groupeNom })}</p>
                     )}
                   </div>
-                  <span className="text-xs bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 h-fit">
+                  <StatusBadge status={projet.statut}>
                     {t(`statuses.${projet.statut}`, projet.statut)}
-                  </span>
+                  </StatusBadge>
                 </div>
 
                 {projet.description && <p className="text-sm text-gray-500 mt-3">{projet.description}</p>}

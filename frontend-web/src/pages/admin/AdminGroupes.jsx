@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
+import StatusBadge from '../../components/StatusBadge';
 
 const emptyGroupeForm = {
   nom: '',
@@ -123,16 +124,6 @@ export default function AdminGroupes() {
     } catch { setError(t('admin.errorGroupRefuse')); }
   };
 
-  const statutColor = (statut) => {
-    switch (statut) {
-      case 'VALIDE':     return 'bg-green-100 text-green-700';
-      case 'EN_ATTENTE': return 'bg-yellow-100 text-yellow-700';
-      case 'REFUSE':     return 'bg-red-100 text-red-700';
-      case 'ARCHIVE':    return 'bg-gray-100 text-gray-600';
-      default:           return 'bg-gray-100 text-gray-600';
-    }
-  };
-
   const referentLabel = (referent) => `${referent.prenom || ''} ${referent.nom || ''}`.trim() || referent.email;
 
   const referentAssigne = (groupe) => {
@@ -251,9 +242,9 @@ export default function AdminGroupes() {
                       {t('admin.referentLabel', { referent: referentAssigne(g) })}
                     </p>
                   </div>
-                  <span className={`text-xs px-3 py-1 rounded-full font-semibold ${statutColor(g.statut)}`}>
+                  <StatusBadge status={g.statut}>
                     {t(`statuses.${g.statut}`, { defaultValue: g.statut })}
-                  </span>
+                  </StatusBadge>
                 </div>
 
                 {g.description && <p className="text-gray-600 text-sm mb-3">{g.description}</p>}

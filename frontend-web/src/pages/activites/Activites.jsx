@@ -7,15 +7,8 @@ import Footer from '../../components/Footer';
 import api from '../../api/axios';
 import Alert from '../../components/ui/Alert';
 import EmptyState from '../../components/ui/EmptyState';
-import StatusBadge from '../../components/ui/StatusBadge';
+import StatusBadge from '../../components/StatusBadge';
 import { userFriendlyError } from '../../utils/userFriendlyError';
-
-const STATUT_VARIANTS = {
-  PUBLIEE: 'success',
-  BROUILLON: 'neutral',
-  ANNULEE: 'danger',
-  TERMINEE: 'neutral',
-}
 
 export default function Activites() {
   const { isAuthenticated, isAdmin, isReferent } = useAuth();
@@ -315,7 +308,7 @@ export default function Activites() {
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-bold text-blue-900 text-base leading-tight flex-1 mr-2">{a.titre}</h3>
-                    <StatusBadge variant={STATUT_VARIANTS[a.statut] || 'neutral'}>
+                    <StatusBadge status={a.statut}>
                       {t(`statuses.${a.statut}`, { defaultValue: a.statut })}
                     </StatusBadge>
                   </div>

@@ -6,6 +6,7 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
 import { userFriendlyError } from '../../utils/userFriendlyError';
+import StatusBadge from '../../components/StatusBadge';
 
 export default function ActiviteDetail() {
   const { id } = useParams();
@@ -104,11 +105,9 @@ export default function ActiviteDetail() {
             {/* En-tête */}
             <div className="flex justify-between items-start mb-4">
               <h1 className="text-2xl font-bold text-blue-900 flex-1 mr-4">{activite.titre}</h1>
-              <span className={`text-sm px-3 py-1 rounded-full text-white font-semibold ${
-                activite.statut === 'PUBLIEE' ? 'bg-green-500' :
-                activite.statut === 'ANNULEE' ? 'bg-red-500' :
-                activite.statut === 'TERMINEE' ? 'bg-gray-500' : 'bg-yellow-500'
-              }`}>{t(`statuses.${activite.statut}`, { defaultValue: activite.statut })}</span>
+              <StatusBadge status={activite.statut}>
+                {t(`statuses.${activite.statut}`, { defaultValue: activite.statut })}
+              </StatusBadge>
             </div>
 
             {/* Badges */}

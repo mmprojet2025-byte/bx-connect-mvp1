@@ -3,6 +3,7 @@ import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import api from '../../api/axios'
 import { useTranslation } from 'react-i18next'
+import StatusBadge from '../../components/StatusBadge'
 
 const emptyForm = {
   titre: '',
@@ -191,7 +192,7 @@ export default function ReferentActivites() {
               <article key={activite.id} className="bg-white rounded-2xl shadow p-5">
                 <div className="flex justify-between gap-3">
                   <h2 className="font-bold text-blue-900">{activite.titre}</h2>
-                  <span className="text-xs bg-teal-100 text-teal-700 rounded-full px-2 py-0.5 h-fit">{t(`statuses.${activite.statut}`, activite.statut)}</span>
+                  <StatusBadge status={activite.statut}>{t(`statuses.${activite.statut}`, activite.statut)}</StatusBadge>
                 </div>
                 {activite.description && <p className="text-sm text-gray-500 mt-2">{activite.description}</p>}
                 <div className="text-xs text-gray-400 mt-4 space-y-1">

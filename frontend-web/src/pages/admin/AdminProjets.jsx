@@ -4,6 +4,7 @@ import api from '../../api/axios';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFriendlyError';
+import StatusBadge from '../../components/StatusBadge';
 
 const STATUTS = ['BROUILLON', 'SOUMIS', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE'];
 const emptyForm = { titre: '', description: '', budgetDemande: '' };
@@ -228,12 +229,9 @@ export default function AdminProjets() {
                 <div className="p-5">
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="font-semibold text-blue-900 text-sm leading-tight">{p.titre}</h3>
-                    <span
-                      className="text-xs px-2 py-0.5 rounded-full text-white ml-2 whitespace-nowrap"
-                      style={{ background: statutColor(p.statut) }}
-                    >
+                    <StatusBadge status={p.statut} className="ml-2">
                       {t(`statuses.${p.statut}`, p.statut)}
-                    </span>
+                    </StatusBadge>
                   </div>
 
                   {p.description && (

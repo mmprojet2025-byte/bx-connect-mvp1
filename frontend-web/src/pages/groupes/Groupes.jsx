@@ -7,7 +7,7 @@ import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
-import StatusBadge from '../../components/ui/StatusBadge'
+import StatusBadge from '../../components/StatusBadge'
 import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFriendlyError'
 
 export default function Groupes() {
@@ -274,13 +274,8 @@ function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelle
 
 function GroupStatusBadge({ statut }) {
   const { t } = useTranslation()
-  const variants = {
-    ACCEPTE: 'success',
-    EN_ATTENTE: 'warning',
-    REFUSE: 'danger',
-  }
   return (
-    <StatusBadge variant={variants[statut] || 'neutral'}>
+    <StatusBadge status={statut}>
       {t(`statuses.${statut}`, { defaultValue: statut })}
     </StatusBadge>
   )
