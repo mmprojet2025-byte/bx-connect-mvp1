@@ -35,6 +35,7 @@ import ReferentGroupes    from './pages/referent/ReferentGroupes'
 import ReferentMembres    from './pages/referent/ReferentMembres'
 import ReferentDemandes   from './pages/referent/ReferentDemandes'
 import ReferentActivites  from './pages/referent/ReferentActivites'
+import ReferentProjets    from './pages/referent/ReferentProjets'
 import ReferentMessagerie from './pages/referent/ReferentMessagerie'
 import GestionPrestations from './pages/prestations/GestionPrestations'
 
@@ -128,6 +129,7 @@ export default function App() {
       <Route path="/referent/membres"     element={<ReferentRoute><ReferentMembres /></ReferentRoute>} />
       <Route path="/referent/demandes"    element={<ReferentRoute><ReferentDemandes /></ReferentRoute>} />
       <Route path="/referent/activites"   element={<ReferentRoute><ReferentActivites /></ReferentRoute>} />
+      <Route path="/referent/projets"     element={<ReferentRoute><ReferentProjets /></ReferentRoute>} />
       <Route path="/referent/messagerie"  element={<ReferentRoute><ReferentMessagerie /></ReferentRoute>} />
       <Route path="/referent/prestations" element={<ReferentRoute><GestionPrestations /></ReferentRoute>} />
 

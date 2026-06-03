@@ -147,6 +147,7 @@ function getNavLinks({ isSuperAdmin, isAdmin, isReferent, isMembre, isPartenaire
       { to: '/referent/membres', label: t('nav.users') },
       { to: '/referent/demandes', label: t('nav.requests') },
       { to: '/referent/activites', label: t('nav.activities') },
+      { to: '/referent/projets', label: t('nav.projects') },
       { to: '/referent/messagerie', label: t('nav.messaging') },
     ]
   }

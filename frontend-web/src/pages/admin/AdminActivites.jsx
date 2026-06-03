@@ -28,6 +28,7 @@ export default function AdminActivites() {
   const [filtreStatut, setFiltreStatut] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
 
   useEffect(() => { fetchActivites(); }, []);
@@ -43,23 +44,66 @@ export default function AdminActivites() {
     }
   };
 
-  const creerActivite = async (e) => {
+  const resetForm = () => {
+    setForm(emptyForm);
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const openCreateForm = () => {
+    setMessage('');
+    setError('');
+    if (showForm && !editingId) {
+      resetForm();
+      return;
+    }
+    setForm(emptyForm);
+    setEditingId(null);
+    setShowForm(true);
+  };
+
+  const modifierActivite = (activite) => {
+    setMessage('');
+    setError('');
+    setEditingId(activite.id);
+    setForm({
+      titre: activite.titre || '',
+      description: activite.description || '',
+      dateDebut: toDateTimeLocalValue(activite.dateDebut),
+      dateFin: toDateTimeLocalValue(activite.dateFin),
+      lieu: activite.lieu || '',
+      gratuite: activite.gratuite ?? true,
+      prix: activite.prix ?? '',
+      capaciteMax: activite.capaciteMax ?? 0,
+      categorie: activite.categorie || '',
+      theme: activite.theme || '',
+    });
+    setShowForm(true);
+  };
+
+  const enregistrerActivite = async (e) => {
     e.preventDefault();
     setCreating(true);
     setMessage('');
     setError('');
+    const payload = {
+      ...form,
+      prix: form.gratuite ? null : Number(form.prix),
+      capaciteMax: Number(form.capaciteMax) || 0,
+    };
     try {
-      const res = await api.post('/activites', {
-        ...form,
-        prix: form.gratuite ? null : Number(form.prix),
-        capaciteMax: Number(form.capaciteMax) || 0,
-      });
-      setActivites(prev => [res.data, ...prev]);
-      setForm(emptyForm);
-      setShowForm(false);
-      setMessage(t('activities.success_create'));
+      if (editingId) {
+        const res = await api.put(`/activites/${editingId}`, payload);
+        setActivites(prev => prev.map(a => a.id === editingId ? res.data : a));
+        setMessage(t('admin.activityUpdated'));
+      } else {
+        const res = await api.post('/activites', payload);
+        setActivites(prev => [res.data, ...prev]);
+        setMessage(t('activities.success_create'));
+      }
+      resetForm();
     } catch (err) {
-      setError(formatApiError(err, t, t('activities.error_create')));
+      setError(formatApiError(err, t, editingId ? t('admin.errorActivityUpdate') : t('activities.error_create')));
     } finally {
       setCreating(false);
     }
@@ -107,7 +151,7 @@ export default function AdminActivites() {
           </div>
           <button
             type="button"
-            onClick={() => setShowForm(prev => !prev)}
+            onClick={showForm ? resetForm : openCreateForm}
             className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
           >
             {showForm ? t('common.cancel') : t('admin.createActivity')}
@@ -122,7 +166,21 @@ export default function AdminActivites() {
         )}
 
         {showForm && (
-          <form onSubmit={creerActivite} className="bg-white rounded-2xl shadow p-5 mb-6 grid md:grid-cols-2 gap-4">
+          <form onSubmit={enregistrerActivite} className="bg-white rounded-2xl shadow p-5 mb-6 grid md:grid-cols-2 gap-4">
+            <div className="md:col-span-2 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-bold text-blue-900">
+                {editingId ? t('common.edit') : t('admin.createActivity')}
+              </h2>
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="text-sm font-semibold text-gray-600 hover:text-gray-900"
+                >
+                  {t('common.cancelEdit')}
+                </button>
+              )}
+            </div>
             <Input label={t('activities.form_title')} value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
             <Input label={t('activities.form_place')} value={form.lieu} onChange={value => setForm({ ...form, lieu: value })} />
             <Input label={t('activities.form_start')} type="datetime-local" value={form.dateDebut} onChange={value => setForm({ ...form, dateDebut: value })} required />
@@ -152,7 +210,7 @@ export default function AdminActivites() {
                 disabled={creating}
                 className="bg-blue-700 hover:bg-blue-600 disabled:bg-gray-300 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition"
               >
-                {creating ? t('common.creating') : t('admin.createActivity')}
+                {creating ? t('common.saving') : editingId ? t('common.saveChanges') : t('admin.createActivity')}
               </button>
             </div>
           </form>
@@ -226,12 +284,20 @@ export default function AdminActivites() {
                           </select>
                         </td>
                         <td className="px-4 py-3">
-                          <button
-                            onClick={() => supprimerActivite(a.id, a.titre)}
-                            className="text-xs px-3 py-1 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 font-medium transition"
-                          >
-                            {t('common.delete')}
-                          </button>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              onClick={() => modifierActivite(a)}
+                              className="text-xs px-3 py-1 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 font-medium transition"
+                            >
+                              {t('common.edit')}
+                            </button>
+                            <button
+                              onClick={() => supprimerActivite(a.id, a.titre)}
+                              className="text-xs px-3 py-1 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 font-medium transition"
+                            >
+                              {t('common.delete')}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -246,6 +312,11 @@ export default function AdminActivites() {
       <Footer />
     </div>
   );
+}
+
+function toDateTimeLocalValue(value) {
+  if (!value) return '';
+  return String(value).slice(0, 16);
 }
 
 function Input({ label, value, onChange, type = 'text', required = false, min }) {

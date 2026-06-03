@@ -22,6 +22,7 @@ export default function ReferentActivites() {
   const [activites, setActivites] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(emptyForm)
+  const [editingActivity, setEditingActivity] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -46,23 +47,54 @@ export default function ReferentActivites() {
     setForm(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleCreate = async (e) => {
+  const resetForm = () => {
+    setForm(emptyForm)
+    setEditingActivity(null)
+    setShowForm(false)
+  }
+
+  const startEdit = (activite) => {
+    setEditingActivity(activite)
+    setForm({
+      titre: activite.titre || '',
+      description: activite.description || '',
+      dateDebut: toDateTimeInput(activite.dateDebut),
+      dateFin: toDateTimeInput(activite.dateFin),
+      lieu: activite.lieu || '',
+      gratuite: activite.gratuite ?? true,
+      prix: activite.prix ?? '',
+      capaciteMax: activite.capaciteMax ?? 0,
+      categorie: activite.categorie || '',
+      theme: activite.theme || '',
+    })
+    setMessage('')
+    setError('')
+    setShowForm(true)
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setSaving(true)
     setMessage('')
     setError('')
+    const payload = {
+      ...form,
+      prix: form.gratuite ? null : Number(form.prix),
+      capaciteMax: Number(form.capaciteMax) || 0,
+    }
+
     try {
-      await api.post('/activites', {
-        ...form,
-        prix: form.gratuite ? null : Number(form.prix),
-        capaciteMax: Number(form.capaciteMax) || 0,
-      })
-      setForm(emptyForm)
-      setShowForm(false)
-      setMessage(t('referent.activityCreated'))
+      if (editingActivity) {
+        await api.put(`/activites/${editingActivity.id}`, payload)
+        setMessage(t('referent.activityUpdated'))
+      } else {
+        await api.post('/activites', payload)
+        setMessage(t('referent.activityCreated'))
+      }
+      resetForm()
       await fetchActivites()
     } catch {
-      setError(t('referent.errorActivityCreate'))
+      setError(editingActivity ? t('referent.errorActivityUpdate') : t('referent.errorActivityCreate'))
     } finally {
       setSaving(false)
     }
@@ -78,7 +110,13 @@ export default function ReferentActivites() {
             <p className="text-sm text-gray-500 mt-1">{t('referent.activitiesCount', { count: activites.length })}</p>
           </div>
           <button
-            onClick={() => setShowForm(prev => !prev)}
+            onClick={() => {
+              if (showForm) {
+                resetForm()
+              } else {
+                setShowForm(true)
+              }
+            }}
             className="bg-teal-700 hover:bg-teal-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
           >
             {showForm ? t('common.cancel') : t('referent.newActivity')}
@@ -89,7 +127,12 @@ export default function ReferentActivites() {
         {error && <Alert type="error">{error}</Alert>}
 
         {showForm && (
-          <form onSubmit={handleCreate} className="bg-white rounded-2xl shadow p-5 mb-6 grid md:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow p-5 mb-6 grid md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <h2 className="text-lg font-bold text-blue-900">
+                {editingActivity ? t('referent.editActivity') : t('referent.newActivity')}
+              </h2>
+            </div>
             <Input label={t('activities.form_title')} value={form.titre} onChange={value => updateForm('titre', value)} required />
             <Input label={t('activities.form_place')} value={form.lieu} onChange={value => updateForm('lieu', value)} />
             <Input label={t('activities.start_date')} type="datetime-local" value={form.dateDebut} onChange={value => updateForm('dateDebut', value)} required />
@@ -114,12 +157,25 @@ export default function ReferentActivites() {
               />
             </div>
             <div className="md:col-span-2 flex justify-end">
+              {editingActivity && (
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="mr-3 border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-5 py-2.5 rounded-xl transition"
+                >
+                  {t('common.cancelEdit')}
+                </button>
+              )}
               <button
                 type="submit"
                 disabled={saving}
                 className="bg-teal-700 hover:bg-teal-600 disabled:bg-gray-300 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition"
               >
-                {saving ? t('common.creating') : t('activities.create_btn')}
+                {saving
+                  ? t('common.saving')
+                  : editingActivity
+                    ? t('common.saveChanges')
+                    : t('activities.create_btn')}
               </button>
             </div>
           </form>
@@ -142,6 +198,15 @@ export default function ReferentActivites() {
                   {activite.lieu && <p>{activite.lieu}</p>}
                   {activite.dateDebut && <p>{formatDate(activite.dateDebut, i18n.language)}</p>}
                   <p>{activite.gratuite ? t('activities.free') : `${activite.prix} €`}</p>
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => startEdit(activite)}
+                    className="border border-teal-200 text-teal-700 hover:bg-teal-50 text-sm font-semibold px-4 py-2 rounded-xl transition"
+                  >
+                    {t('common.edit')}
+                  </button>
                 </div>
               </article>
             ))}
@@ -183,4 +248,13 @@ function EmptyState({ children }) {
 
 function formatDate(value, language = 'fr') {
   return value ? new Date(value).toLocaleDateString(language) : '-'
+}
+
+function toDateTimeInput(value) {
+  if (!value) return ''
+  if (typeof value === 'string') return value.slice(0, 16)
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  const offsetMs = date.getTimezoneOffset() * 60 * 1000
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16)
 }

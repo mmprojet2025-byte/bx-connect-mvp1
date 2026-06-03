@@ -1,5 +1,6 @@
 package com.bxjeunes.bx_connect.security;
 
+import com.bxjeunes.bx_connect.dto.ActiviteRequest;
 import com.bxjeunes.bx_connect.entity.Activite;
 import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.StatutActivite;
@@ -25,7 +26,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -102,6 +105,34 @@ class ActiviteSecurityTest {
     }
 
     @Test
+    @DisplayName("Un referent peut modifier sa propre activite")
+    void referent_peut_modifier_propre_activite() {
+        Activite activiteReferentA = activite(30L, "Ancien titre", StatutActivite.BROUILLON, referentA);
+        ActiviteRequest request = activiteRequest("Nouveau titre");
+
+        when(activiteRepository.findById(30L)).thenReturn(Optional.of(activiteReferentA));
+        when(userRepository.findByEmail(referentA.getEmail())).thenReturn(Optional.of(referentA));
+        when(activiteRepository.save(any(Activite.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);
+
+        assertThat(activiteService.modifier(30L, request, referentA.getEmail()).getTitre())
+                .isEqualTo("Nouveau titre");
+    }
+
+    @Test
+    @DisplayName("Un referent ne peut pas modifier l'activite d'un autre referent")
+    void referent_ne_modifie_pas_activite_autrui() {
+        ActiviteRequest request = activiteRequest("Tentative");
+
+        when(activiteRepository.findById(20L)).thenReturn(Optional.of(activiteReferentB));
+        when(userRepository.findByEmail(referentA.getEmail())).thenReturn(Optional.of(referentA));
+
+        assertThatThrownBy(() -> activiteService.modifier(20L, request, referentA.getEmail()))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(activiteRepository, never()).save(any(Activite.class));
+    }
+
+    @Test
     @DisplayName("ADMIN peut consulter les inscriptions d'une activite")
     void admin_peut_consulter_inscriptions_activite() {
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
@@ -138,5 +169,19 @@ class ActiviteSecurityTest {
         activite.setStatut(statut);
         activite.setCreateur(createur);
         return activite;
+    }
+
+    private ActiviteRequest activiteRequest(String titre) {
+        ActiviteRequest request = new ActiviteRequest();
+        request.setTitre(titre);
+        request.setDescription("Description mise a jour");
+        request.setDateDebut(LocalDateTime.now().plusDays(2));
+        request.setDateFin(LocalDateTime.now().plusDays(2).plusHours(2));
+        request.setLieu("Bruxelles");
+        request.setGratuite(true);
+        request.setCapaciteMax(12);
+        request.setCategorie("Atelier");
+        request.setTheme("Creatif");
+        return request;
     }
 }

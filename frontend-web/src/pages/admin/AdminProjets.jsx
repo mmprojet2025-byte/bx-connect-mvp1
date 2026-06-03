@@ -17,6 +17,7 @@ export default function AdminProjets() {
   const [filtreStatut, setFiltreStatut] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
 
   useEffect(() => { fetchProjets(); }, []);
@@ -32,22 +33,54 @@ export default function AdminProjets() {
     }
   };
 
-  const creerProjet = async (e) => {
+  const resetForm = () => {
+    setForm(emptyForm);
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const openCreateForm = () => {
+    setMessage('');
+    setError('');
+    setForm(emptyForm);
+    setEditingId(null);
+    setShowForm(true);
+  };
+
+  const modifierProjet = (projet) => {
+    setMessage('');
+    setError('');
+    setEditingId(projet.id);
+    setForm({
+      titre: projet.titre || '',
+      description: projet.description || '',
+      budgetDemande: projet.budgetDemande ?? '',
+    });
+    setShowForm(true);
+  };
+
+  const enregistrerProjet = async (e) => {
     e.preventDefault();
     setCreating(true);
     setMessage('');
     setError('');
+    const payload = {
+      ...form,
+      budgetDemande: parseFloat(form.budgetDemande) || 0,
+    };
     try {
-      const res = await api.post('/projets', {
-        ...form,
-        budgetDemande: parseFloat(form.budgetDemande) || 0,
-      });
-      setProjets(prev => [res.data, ...prev]);
-      setForm(emptyForm);
-      setShowForm(false);
-      setMessage(t('admin.projectCreated'));
+      if (editingId) {
+        const res = await api.put(`/projets/${editingId}`, payload);
+        setProjets(prev => prev.map(p => p.id === editingId ? res.data : p));
+        setMessage(t('admin.projectUpdated'));
+      } else {
+        const res = await api.post('/projets', payload);
+        setProjets(prev => [res.data, ...prev]);
+        setMessage(t('admin.projectCreated'));
+      }
+      resetForm();
     } catch (err) {
-      setError(formatApiError(err, t, t('admin.errorProjectCreate')));
+      setError(formatApiError(err, t, editingId ? t('admin.errorProjectUpdate') : t('admin.errorProjectCreate')));
     } finally {
       setCreating(false);
     }
@@ -94,7 +127,7 @@ export default function AdminProjets() {
           </div>
           <button
             type="button"
-            onClick={() => setShowForm(prev => !prev)}
+            onClick={showForm ? resetForm : openCreateForm}
             className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
           >
             {showForm ? t('common.cancel') : t('admin.createProject')}
@@ -109,7 +142,21 @@ export default function AdminProjets() {
         )}
 
         {showForm && (
-          <form onSubmit={creerProjet} className="bg-white rounded-2xl shadow p-5 mb-6 grid md:grid-cols-2 gap-4">
+          <form onSubmit={enregistrerProjet} className="bg-white rounded-2xl shadow p-5 mb-6 grid md:grid-cols-2 gap-4">
+            <div className="md:col-span-2 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-bold text-blue-900">
+                {editingId ? t('common.edit') : t('admin.createProject')}
+              </h2>
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="text-sm font-semibold text-gray-600 hover:text-gray-900"
+                >
+                  {t('common.cancelEdit')}
+                </button>
+              )}
+            </div>
             <Input label={t('projects.form_title')} value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
             <Input label={t('projects.form_budget')} value={form.budgetDemande} onChange={value => setForm({ ...form, budgetDemande: value })} type="number" min="0" />
             <div className="md:col-span-2">
@@ -127,7 +174,7 @@ export default function AdminProjets() {
                 disabled={creating}
                 className="bg-blue-700 hover:bg-blue-600 disabled:bg-gray-300 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition"
               >
-                {creating ? t('common.creating') : t('admin.createProject')}
+                {creating ? t('common.saving') : editingId ? t('common.saveChanges') : t('admin.createProject')}
               </button>
             </div>
           </form>
@@ -211,6 +258,12 @@ export default function AdminProjets() {
                     >
                       {STATUTS.map(s => <option key={s} value={s}>{t(`statuses.${s}`, s)}</option>)}
                     </select>
+                    <button
+                      onClick={() => modifierProjet(p)}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 font-medium transition"
+                    >
+                      {t('common.edit')}
+                    </button>
                     <button
                       onClick={() => supprimerProjet(p.id, p.titre)}
                       className="text-xs px-3 py-1.5 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 font-medium transition"
