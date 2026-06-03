@@ -156,6 +156,7 @@ function getTabsForRole({ isMembre, isReferent, isAdmin, isSuperAdmin, t, stacks
       tab('TabDashboard', t('navigation.dashboard'), '🏠', stacks.DashboardStack),
       tab('TabGroupes', t('navigation.myGroups'), '👥', stacks.MesGroupesStack),
       tab('TabActivities', t('navigation.activities'), '🎯', stacks.ActivitiesStack),
+      tab('TabProjects', t('navigation.projects'), '🚀', stacks.ProjectsStack),
       tab('TabMessagerie', t('navigation.messages'), '💬', stacks.MessagerieStack),
       tab('TabNotifications', t('navigation.alerts'), '🔔', stacks.NotificationsStack),
       tab('TabProfile', t('navigation.profile'), '👤', stacks.ProfileStack),

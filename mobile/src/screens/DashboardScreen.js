@@ -9,18 +9,21 @@ import api from '../api/axios';
 
 export default function DashboardScreen({ navigation }) {
   const { t, i18n } = useTranslation();
-  const { user, isMembre, role } = useAuth();
+  const { user, isMembre, isReferent, role } = useAuth();
   const [dashboard, setDashboard] = useState(null);
-  const [loading, setLoading] = useState(isMembre);
+  const [referentDashboard, setReferentDashboard] = useState(null);
+  const [loading, setLoading] = useState(isMembre || isReferent);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (isMembre) {
       chargerDashboard();
+    } else if (isReferent) {
+      chargerReferentDashboard();
     } else {
       setLoading(false);
     }
-  }, [isMembre]);
+  }, [isMembre, isReferent]);
 
   const chargerDashboard = async () => {
     setLoading(true);
@@ -41,7 +44,68 @@ export default function DashboardScreen({ navigation }) {
     }
   };
 
+  const chargerReferentDashboard = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [dashboardRes, groupesRes, notificationsRes] = await Promise.all([
+        api.get('/referent/dashboard'),
+        api.get('/referent/groupes'),
+        api.get('/notifications').catch(() => ({ data: [] })),
+      ]);
+      setReferentDashboard({
+        ...dashboardRes.data,
+        groupes: groupesRes.data || [],
+        notifications: notificationsRes.data || [],
+      });
+    } catch (err) {
+      if (err.response?.status === 401) {
+        setError(t('errors.session_expired'));
+      } else if (err.response?.status === 403) {
+        setError(t('memberDashboard.errorForbidden'));
+      } else {
+        setError('Impossible de charger le dashboard référent.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!isMembre) {
+    if (isReferent) {
+      if (loading) {
+        return (
+          <View style={styles.centered}>
+            <ActivityIndicator size="large" color="#1e3a5f" />
+            <Text style={styles.loadingText}>Chargement de l’espace référent...</Text>
+          </View>
+        );
+      }
+
+      if (error) {
+        return (
+          <View style={styles.centered}>
+            <Text style={styles.emptyIcon}>!</Text>
+            <Text style={styles.errorTitle}>{t('memberDashboard.unavailableTitle')}</Text>
+            <Text style={styles.emptyText}>{error}</Text>
+            <TouchableOpacity style={styles.primaryButton} onPress={chargerReferentDashboard}>
+              <Text style={styles.primaryButtonText}>{t('memberDashboard.buttons.retry')}</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      }
+
+      return (
+        <ReferentDashboard
+          user={user}
+          dashboard={referentDashboard}
+          navigation={navigation}
+          t={t}
+          language={i18n.language}
+        />
+      );
+    }
+
     return <RoleDashboard user={user} role={role} navigation={navigation} t={t} />;
   }
 
@@ -98,6 +162,191 @@ export default function DashboardScreen({ navigation }) {
         t={t}
       />
     </ScrollView>
+  );
+}
+
+function ReferentDashboard({ user, dashboard, navigation, t, language }) {
+  const groupes = dashboard?.groupes || [];
+  const activites = dashboard?.mesActivites || [];
+  const projets = dashboard?.projetsSoumisListe || [];
+  const notifications = dashboard?.notifications || [];
+  const nonLues = notifications.filter((notification) => !notification.lue).length;
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <WelcomeCard user={user} t={t} />
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Mon espace référent</Text>
+        <Text style={styles.cardText}>
+          Vue mobile légère pour suivre vos groupes, vos activités, les projets de vos groupes et accéder rapidement à la messagerie.
+        </Text>
+      </View>
+
+      <View style={styles.metricGrid}>
+        <MetricCard label="Groupes assignés" value={groupes.length} color="#2563eb" />
+        <MetricCard label="Activités" value={dashboard?.totalActivites ?? activites.length} color="#0f766e" />
+        <MetricCard label="Projets" value={dashboard?.projetsSoumis ?? projets.length} color="#7c3aed" />
+        <MetricCard label="Notifications non lues" value={nonLues} color="#d97706" />
+      </View>
+
+      <ReferentGroupsCard groupes={groupes} navigation={navigation} />
+      <ReferentActivitiesCard activites={activites} navigation={navigation} language={language} />
+      <ReferentProjectsCard projets={projets} navigation={navigation} />
+      <ReferentNotificationsCard notifications={notifications} navigation={navigation} />
+      <ReferentQuickActions navigation={navigation} />
+    </ScrollView>
+  );
+}
+
+function MetricCard({ label, value, color }) {
+  return (
+    <View style={[styles.metricCard, { borderTopColor: color }]}>
+      <Text style={[styles.metricValue, { color }]}>{value ?? 0}</Text>
+      <Text style={styles.metricLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function ReferentGroupsCard({ groupes, navigation }) {
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <Text style={styles.cardTitle}>Groupes assignés</Text>
+        <Text style={styles.counter}>{groupes.length}</Text>
+      </View>
+      {groupes.length === 0 ? (
+        <EmptyText text="Aucun groupe assigné pour le moment." />
+      ) : (
+        groupes.slice(0, 3).map((groupe) => (
+          <ListItem
+            key={groupe.id}
+            title={groupe.nom || 'Groupe'}
+            subtitle={groupe.description || 'Description non disponible'}
+            badge={groupe.statut || 'GROUPE'}
+            color="#2563eb"
+          />
+        ))
+      )}
+      <TouchableOpacity
+        style={styles.secondaryButton}
+        onPress={() => navigation.getParent()?.navigate('TabGroupes')}
+      >
+        <Text style={styles.secondaryButtonText}>Voir mes groupes</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function ReferentActivitiesCard({ activites, navigation, language }) {
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <Text style={styles.cardTitle}>Activités</Text>
+        <Text style={styles.counter}>{activites.length}</Text>
+      </View>
+      {activites.length === 0 ? (
+        <EmptyText text="Aucune activité référent pour le moment." />
+      ) : (
+        activites.slice(0, 3).map((activite) => (
+          <ListItem
+            key={activite.id}
+            title={activite.titre || 'Activité'}
+            subtitle={formatReferentDate(activite.dateDebut, activite.lieu, language)}
+            badge={activite.statut || 'ACTIVITE'}
+            color={statusColor(activite.statut)}
+          />
+        ))
+      )}
+      <TouchableOpacity
+        style={styles.secondaryButton}
+        onPress={() => navigation.getParent()?.navigate('TabActivities')}
+      >
+        <Text style={styles.secondaryButtonText}>Voir mes activités</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function ReferentProjectsCard({ projets, navigation }) {
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <Text style={styles.cardTitle}>Projets</Text>
+        <Text style={styles.counter}>{projets.length}</Text>
+      </View>
+      {projets.length === 0 ? (
+        <EmptyText text="Aucun projet dans vos groupes pour le moment." />
+      ) : (
+        projets.slice(0, 3).map((projet) => (
+          <ListItem
+            key={projet.id}
+            title={projet.titre || 'Projet'}
+            subtitle={projet.groupeNom || 'Groupe non précisé'}
+            badge={projet.statut || 'PROJET'}
+            color={statusColor(projet.statut)}
+          />
+        ))
+      )}
+      <TouchableOpacity
+        style={styles.secondaryButton}
+        onPress={() => navigation.getParent()?.navigate('TabProjects')}
+      >
+        <Text style={styles.secondaryButtonText}>Voir les projets</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function ReferentNotificationsCard({ notifications, navigation }) {
+  const nonLues = notifications.filter((notification) => !notification.lue).length;
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <Text style={styles.cardTitle}>Notifications</Text>
+        <Text style={styles.counter}>{nonLues} non lue(s)</Text>
+      </View>
+      {notifications.length === 0 ? (
+        <EmptyText text="Aucune notification pour le moment." />
+      ) : (
+        notifications.slice(0, 3).map((notification) => (
+          <ListItem
+            key={notification.id}
+            title={notification.titre || 'Notification'}
+            subtitle={notification.message || ''}
+            badge={notification.lue ? 'Lue' : 'Nouvelle'}
+            color={notification.lue ? '#64748b' : '#2563eb'}
+          />
+        ))
+      )}
+      <TouchableOpacity
+        style={styles.secondaryButton}
+        onPress={() => navigation.getParent()?.navigate('TabNotifications')}
+      >
+        <Text style={styles.secondaryButtonText}>Voir les notifications</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function ReferentQuickActions({ navigation }) {
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>Accès rapides</Text>
+      <TouchableOpacity
+        style={styles.primaryButton}
+        onPress={() => navigation.getParent()?.navigate('TabMessagerie')}
+      >
+        <Text style={styles.primaryButtonText}>Ouvrir la messagerie</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.secondaryButton}
+        onPress={() => navigation.getParent()?.navigate('TabProjects')}
+      >
+        <Text style={styles.secondaryButtonText}>Consulter les projets</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -513,6 +762,19 @@ function formatDate(dateStr, lieu, language, t) {
   return fragments.length > 0 ? fragments.join(' · ') : t('memberDashboard.activities.dateToConfirm');
 }
 
+function formatReferentDate(dateStr, lieu, language) {
+  const fragments = [];
+  if (dateStr) {
+    fragments.push(new Date(dateStr).toLocaleDateString(language || 'fr-BE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }));
+  }
+  if (lieu) fragments.push(lieu);
+  return fragments.length > 0 ? fragments.join(' · ') : 'Date à confirmer';
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f0f4f8' },
   content: { padding: 16, paddingBottom: 40 },
@@ -568,6 +830,26 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 16, fontWeight: '800', color: '#1e3a5f', marginBottom: 8 },
   cardText: { fontSize: 13, color: '#475569', lineHeight: 19, marginBottom: 10 },
   cardHint: { fontSize: 12, color: '#64748b', lineHeight: 18 },
+  metricGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 14,
+  },
+  metricCard: {
+    width: '48%',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 14,
+    borderTopWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  metricValue: { fontSize: 24, fontWeight: '900', marginBottom: 4 },
+  metricLabel: { color: '#64748b', fontSize: 12, lineHeight: 16 },
   badge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
   badgeText: { fontSize: 11, fontWeight: '800' },
   counter: { color: '#2563eb', fontSize: 12, fontWeight: '800' },
