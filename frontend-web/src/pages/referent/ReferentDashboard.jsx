@@ -81,10 +81,31 @@ export default function ReferentDashboard() {
         ) : (
           <>
             <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <StatCard label={t('ux.referentDashboard.assignedGroups')} value={stats.groupes} />
-              <StatCard label={t('ux.referentDashboard.members')} value={stats.membres} />
-              <StatCard label={t('ux.referentDashboard.pendingRequests')} value={stats.demandes} highlight={stats.demandes > 0} />
-              <StatCard label={t('ux.referentDashboard.activities')} value={stats.activites} />
+              <StatCard
+                label={t('ux.referentDashboard.assignedGroups')}
+                value={stats.groupes}
+                to="/referent/groupes"
+                actionLabel={t('referent.viewMyGroups')}
+              />
+              <StatCard
+                label={t('ux.referentDashboard.members')}
+                value={stats.membres}
+                to="/referent/membres"
+                actionLabel={t('referent.membersOfGroups')}
+              />
+              <StatCard
+                label={t('ux.referentDashboard.pendingRequests')}
+                value={stats.demandes}
+                to="/referent/demandes"
+                actionLabel={t('referent.viewRequests')}
+                highlight={stats.demandes > 0}
+              />
+              <StatCard
+                label={t('ux.referentDashboard.activities')}
+                value={stats.activites}
+                to="/referent/activites"
+                actionLabel={t('referent.activitiesTitle')}
+              />
             </section>
 
             <section className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 mb-8">
@@ -182,12 +203,18 @@ export default function ReferentDashboard() {
   )
 }
 
-function StatCard({ label, value, highlight = false }) {
+function StatCard({ label, value, to, actionLabel, highlight = false }) {
   return (
-    <div className={`rounded-2xl shadow p-5 ${highlight ? 'bg-amber-50 border border-amber-200' : 'bg-white'}`}>
+    <Link
+      to={to}
+      className={`group rounded-2xl shadow p-5 transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${highlight ? 'bg-amber-50 border border-amber-200' : 'bg-white'}`}
+    >
       <p className={`text-3xl font-bold ${highlight ? 'text-amber-800' : 'text-teal-700'}`}>{value}</p>
       <p className="text-sm text-gray-500 mt-1">{label}</p>
-    </div>
+      <span className={`inline-flex mt-4 text-xs font-semibold ${highlight ? 'text-amber-800' : 'text-teal-700'} group-hover:underline`}>
+        {actionLabel}
+      </span>
+    </Link>
   )
 }
 
