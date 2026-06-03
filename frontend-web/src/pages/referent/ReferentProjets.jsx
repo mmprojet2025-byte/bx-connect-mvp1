@@ -4,6 +4,7 @@ import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import api from '../../api/axios'
 import StatusBadge from '../../components/StatusBadge'
+import ProjectCover from '../../components/ProjectCover'
 
 export default function ReferentProjets() {
   const { t, i18n } = useTranslation()
@@ -42,30 +43,35 @@ export default function ReferentProjets() {
         ) : projets.length === 0 ? (
           <EmptyState>{t('referent.noProjects')}</EmptyState>
         ) : (
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
             {projets.map(projet => (
-              <article key={projet.id} className="bg-white rounded-2xl shadow p-5">
-                <div className="flex justify-between gap-3">
+              <article key={projet.id} className="bg-white rounded-2xl shadow overflow-hidden">
+                <div className="relative">
+                  <ProjectCover imageUrl={projet.imageUrl} title={projet.titre} className="h-40" />
+                  <div className="absolute left-4 top-4">
+                    <StatusBadge status={projet.statut}>
+                      {t(`statuses.${projet.statut}`, projet.statut)}
+                    </StatusBadge>
+                  </div>
+                </div>
+                <div className="p-5">
                   <div>
-                    <h2 className="font-bold text-blue-900">{projet.titre}</h2>
+                    <h2 className="font-bold text-blue-900 text-lg leading-tight">{projet.titre}</h2>
                     {projet.groupeNom && (
-                      <p className="text-xs text-gray-400 mt-1">{t('referent.projectGroup', { group: projet.groupeNom })}</p>
+                      <p className="text-xs text-blue-700 font-semibold mt-1">{t('referent.projectGroup', { group: projet.groupeNom })}</p>
                     )}
                   </div>
-                  <StatusBadge status={projet.statut}>
-                    {t(`statuses.${projet.statut}`, projet.statut)}
-                  </StatusBadge>
-                </div>
 
-                {projet.description && <p className="text-sm text-gray-500 mt-3">{projet.description}</p>}
+                  {projet.description && <p className="text-sm text-gray-500 mt-3 line-clamp-3">{projet.description}</p>}
 
-                <dl className="text-xs text-gray-500 mt-4 grid gap-1">
+                <dl className="text-xs text-gray-500 mt-4 grid gap-2">
                   <InfoLine label={t('referent.projectOwner')} value={formatOwner(projet, t)} />
                   <InfoLine label={t('referent.projectDate')} value={formatDate(projet.dateSoumission || projet.dateCreation, i18n.language)} />
                   {projet.budgetDemande != null && (
                     <InfoLine label={t('projects.form_budget')} value={`${projet.budgetDemande} €`} />
                   )}
                 </dl>
+                </div>
               </article>
             ))}
           </div>
@@ -79,9 +85,9 @@ export default function ReferentProjets() {
 function InfoLine({ label, value }) {
   if (!value) return null
   return (
-    <div className="flex justify-between gap-4">
-      <dt className="font-semibold text-gray-700">{label}</dt>
-      <dd className="text-right">{value}</dd>
+    <div className="rounded-xl bg-gray-50 px-3 py-2">
+      <dt className="text-[10px] font-semibold uppercase text-gray-400">{label}</dt>
+      <dd className="mt-0.5 font-semibold text-gray-700 truncate">{value}</dd>
     </div>
   )
 }

@@ -5,6 +5,7 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFriendlyError';
 import StatusBadge from '../../components/StatusBadge';
+import ProjectCover from '../../components/ProjectCover';
 
 const STATUTS = ['BROUILLON', 'SOUMIS', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE'];
 const emptyForm = { titre: '', description: '', budgetDemande: '' };
@@ -221,17 +222,25 @@ export default function AdminProjets() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {projetsFiltres.map(p => (
-              <div
+              <article
                 key={p.id}
-                className="bg-white rounded-2xl shadow overflow-hidden"
+                className="bg-white rounded-2xl shadow overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition"
                 style={{ borderTop: `4px solid ${statutColor(p.statut)}` }}
               >
-                <div className="p-5">
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="font-semibold text-blue-900 text-sm leading-tight">{p.titre}</h3>
-                    <StatusBadge status={p.statut} className="ml-2">
+                <div className="relative">
+                  <ProjectCover imageUrl={p.imageUrl} title={p.titre} className="h-36" />
+                  <div className="absolute left-4 top-4">
+                    <StatusBadge status={p.statut}>
                       {t(`statuses.${p.statut}`, p.statut)}
                     </StatusBadge>
+                  </div>
+                </div>
+                <div className="p-5">
+                  <div className="mb-3">
+                    <h3 className="font-bold text-blue-900 text-lg leading-tight">{p.titre}</h3>
+                    {p.groupeNom && (
+                      <p className="text-xs text-blue-700 font-semibold mt-1">{t('projects.group_label', { group: p.groupeNom })}</p>
+                    )}
                   </div>
 
                   {p.description && (
@@ -240,14 +249,10 @@ export default function AdminProjets() {
                     </p>
                   )}
 
-                  <p className="text-xs text-gray-400 mb-1">
-                    {t('admin.budgetLabel')} <strong>{p.budgetDemande ? `${p.budgetDemande} €` : t('admin.notSpecified')}</strong>
-                  </p>
-                  {p.porteurPrenom && (
-                    <p className="text-xs text-gray-400 mb-4">
-                      {t('admin.ownerLabel')} <strong>{p.porteurPrenom} {p.porteurNom}</strong>
-                    </p>
-                  )}
+                  <div className="grid grid-cols-2 gap-2 text-xs mb-4">
+                    <InfoPill label={t('admin.budgetLabel')} value={p.budgetDemande ? `${p.budgetDemande} €` : t('admin.notSpecified')} />
+                    <InfoPill label={t('admin.ownerLabel')} value={p.porteurPrenom ? `${p.porteurPrenom} ${p.porteurNom}` : t('admin.notSpecified')} />
+                  </div>
 
                   <div className="flex gap-2">
                     <select
@@ -267,11 +272,11 @@ export default function AdminProjets() {
                       onClick={() => supprimerProjet(p.id, p.titre)}
                       className="text-xs px-3 py-1.5 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 font-medium transition"
                     >
-                      🗑️
+                      {t('common.delete')}
                     </button>
                   </div>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         )}
@@ -295,6 +300,15 @@ function Input({ label, value, onChange, type = 'text', required = false, min })
         className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
       />
     </label>
+  );
+}
+
+function InfoPill({ label, value }) {
+  return (
+    <div className="rounded-xl bg-gray-50 px-3 py-2">
+      <p className="text-[10px] font-semibold uppercase text-gray-400">{label}</p>
+      <p className="mt-0.5 font-semibold text-gray-700 truncate">{value}</p>
+    </div>
   );
 }
 
