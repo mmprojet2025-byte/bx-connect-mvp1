@@ -8,6 +8,7 @@ import api from '../../api/axios';
 import Alert from '../../components/ui/Alert';
 import EmptyState from '../../components/ui/EmptyState';
 import StatusBadge from '../../components/ui/StatusBadge';
+import { userFriendlyError } from '../../utils/userFriendlyError';
 
 const STATUT_VARIANTS = {
   PUBLIEE: 'success',
@@ -101,7 +102,7 @@ export default function Activites() {
       setMessage(t('activities.success_register'));
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
-      setError(err.response?.data?.message || t('activities.error_register'));
+      setError(userFriendlyError(err, t('activities.error_register')));
       setTimeout(() => setError(''), 3000);
     }
   };

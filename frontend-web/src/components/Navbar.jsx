@@ -238,10 +238,14 @@ function AccountActions({ isAuthenticated, isSuperAdmin, user, notifCount, onLog
       )}
 
       {isSuperAdmin && (
-        <span className="flex items-center gap-2 bg-blue-700 px-3 py-1.5 rounded-full">
+        <Link
+          to="/profil"
+          onClick={onNavigate}
+          className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 px-3 py-1.5 rounded-full transition"
+        >
           <UserInitials user={user} />
           <span className="text-sm">{user?.prenom}</span>
-        </span>
+        </Link>
       )}
 
       <button

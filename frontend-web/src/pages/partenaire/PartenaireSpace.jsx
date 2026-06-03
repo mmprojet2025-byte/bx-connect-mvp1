@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
+import { userFriendlyError } from '../../utils/userFriendlyError';
 
 export default function PartenaireSpace() {
   const { user } = useAuth();
@@ -66,7 +67,7 @@ export default function PartenaireSpace() {
       fetchAll();
       setTimeout(() => setMessage(''), 4000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de la soumission.');
+      setError(userFriendlyError(err, 'Action impossible.'));
     }
   };
 

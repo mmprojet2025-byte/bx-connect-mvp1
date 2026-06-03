@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import api from '../../api/axios'
 import SuperAdminLayout from '../../layouts/SuperAdminLayout'
+import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFriendlyError'
 
 const emptyForm = {
   prenom: '',
@@ -56,14 +57,14 @@ export default function SuperAdminAdmins() {
   }
 
   const disableAdmin = async (admin) => {
-    if (!window.confirm(t('superAdmin.confirmDisableAdmin', { email: admin.email }))) return
+    if (!confirmSensitiveAction(t('superAdmin.confirmDisableAdmin', { email: admin.email }))) return
     clearFeedback()
     try {
       const res = await api.patch(`/super-admin/admins/${admin.id}/disable`)
       setAdmins(prev => prev.map(item => item.id === admin.id ? res.data : item))
       setMessage(t('superAdmin.adminDisabled'))
     } catch (err) {
-      setError(err.response?.data?.message || t('superAdmin.errorDisableAdmin'))
+      setError(userFriendlyError(err, t('superAdmin.errorDisableAdmin')))
     }
   }
 
@@ -74,7 +75,7 @@ export default function SuperAdminAdmins() {
       setAdmins(prev => prev.map(item => item.id === admin.id ? res.data : item))
       setMessage(t('superAdmin.adminEnabled'))
     } catch (err) {
-      setError(err.response?.data?.message || t('superAdmin.errorEnableAdmin'))
+      setError(userFriendlyError(err, t('superAdmin.errorEnableAdmin')))
     }
   }
 
@@ -90,7 +91,7 @@ export default function SuperAdminAdmins() {
       setResetTarget(null)
       setNewPassword('')
     } catch (err) {
-      setError(err.response?.data?.message || t('superAdmin.errorResetPassword'))
+      setError(userFriendlyError(err, t('superAdmin.errorResetPassword')))
     }
   }
 
@@ -237,7 +238,7 @@ function formatCreationError(err, t, fallback) {
     }
     return message || t('users.checkFields')
   }
-  return err.response?.data?.message || fallback
+  return userFriendlyError(err, fallback)
 }
 
 function formatFieldError(field, message, t) {

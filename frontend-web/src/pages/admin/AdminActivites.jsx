@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import api from '../../api/axios';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
+import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFriendlyError';
 
 const STATUTS = ['BROUILLON', 'PUBLIEE', 'ANNULEE', 'TERMINEE'];
 const emptyForm = {
@@ -37,8 +38,8 @@ export default function AdminActivites() {
     try {
       const res = await api.get('/activites/admin/toutes');
       setActivites(res.data);
-    } catch {
-      setError(t('admin.error_load'));
+    } catch (err) {
+      setError(userFriendlyError(err, t('admin.error_load')));
     } finally {
       setLoading(false);
     }
@@ -103,7 +104,7 @@ export default function AdminActivites() {
       }
       resetForm();
     } catch (err) {
-      setError(formatApiError(err, t, editingId ? t('admin.errorActivityUpdate') : t('activities.error_create')));
+      setError(userFriendlyError(err, editingId ? t('admin.errorActivityUpdate') : t('activities.error_create')));
     } finally {
       setCreating(false);
     }
@@ -115,20 +116,20 @@ export default function AdminActivites() {
       setActivites(prev => prev.map(a => a.id === id ? res.data : a));
       setMessage(t('admin.statusUpdatedWithValue', { status: t(`statuses.${statut}`, { defaultValue: statut }) }));
       setError('');
-    } catch {
-      setError(t('admin.errorStatusChange'));
+    } catch (err) {
+      setError(userFriendlyError(err, t('admin.errorStatusChange')));
     }
   };
 
   const supprimerActivite = async (id, titre) => {
-    if (!window.confirm(t('admin.confirmDeleteActivity', { title: titre }))) return;
+    if (!confirmSensitiveAction(t('admin.confirmDeleteActivity', { title: titre }))) return;
     try {
       await api.delete(`/activites/${id}`);
       setActivites(prev => prev.filter(a => a.id !== id));
       setMessage(t('admin.activityDeleted'));
       setError('');
-    } catch {
-      setError(t('admin.errorDelete'));
+    } catch (err) {
+      setError(userFriendlyError(err, t('admin.errorDelete')));
     }
   };
 
@@ -333,12 +334,6 @@ function Input({ label, value, onChange, type = 'text', required = false, min })
       />
     </label>
   );
-}
-
-function formatApiError(err, t, fallback) {
-  if (err.response?.status === 401) return t('errors.session_expired');
-  if (err.response?.status === 403) return t('errors.forbidden');
-  return err.response?.data?.message || fallback;
 }
 
 function statutColor(statut) {

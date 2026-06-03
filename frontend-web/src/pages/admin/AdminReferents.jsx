@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import api from '../../api/axios'
+import { userFriendlyError } from '../../utils/userFriendlyError'
 
 const emptyForm = {
   prenom: '',
@@ -142,7 +143,7 @@ function formatCreationError(err, t, fallback) {
     }
     return message || t('users.checkFields')
   }
-  return err.response?.data?.message || fallback
+  return userFriendlyError(err, fallback)
 }
 
 function Input({ label, value, onChange, type = 'text' }) {

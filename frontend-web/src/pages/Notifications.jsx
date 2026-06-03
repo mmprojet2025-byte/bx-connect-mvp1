@@ -7,6 +7,7 @@ import Footer from '../components/Footer';
 import api from '../api/axios';
 import Alert from '../components/ui/Alert';
 import EmptyState from '../components/ui/EmptyState';
+import { confirmSensitiveAction, userFriendlyError } from '../utils/userFriendlyError';
 
 export default function Notifications() {
   const { t, i18n } = useTranslation();
@@ -24,7 +25,7 @@ export default function Notifications() {
     try {
       const res = await api.get('/notifications');
       setNotifications(res.data);
-    } catch { setError(t('notifications.errorLoad')); }
+    } catch (err) { setError(userFriendlyError(err, t('notifications.errorLoad'))); }
     finally { setLoading(false); }
   };
 
@@ -32,21 +33,22 @@ export default function Notifications() {
     try {
       await api.patch(`/notifications/${id}/lue`);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, lue: true } : n));
-    } catch {}
+    } catch (err) { setError(userFriendlyError(err, t('notifications.errorLoad'))); }
   };
 
   const handleToutesLues = async () => {
     try {
       await api.patch('/notifications/toutes-lues');
       setNotifications(prev => prev.map(n => ({ ...n, lue: true })));
-    } catch {}
+    } catch (err) { setError(userFriendlyError(err, t('notifications.errorLoad'))); }
   };
 
   const handleSupprimer = async (id) => {
+    if (!confirmSensitiveAction('Supprimer cette notification ?')) return;
     try {
       await api.delete(`/notifications/${id}`);
       setNotifications(prev => prev.filter(n => n.id !== id));
-    } catch {}
+    } catch (err) { setError(userFriendlyError(err, t('notifications.errorLoad'))); }
   };
 
   const typeIcon = (type) => {

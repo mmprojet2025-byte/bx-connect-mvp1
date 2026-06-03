@@ -7,6 +7,7 @@ const links = [
   { to: '/super-admin/dashboard', labelKey: 'nav.dashboard', icon: '📊' },
   { to: '/super-admin/admins', labelKey: 'nav.admins', icon: '🛡️' },
   { to: '/super-admin/logs', labelKey: 'nav.logs', icon: '🧾' },
+  { to: '/profil', labelKey: 'nav.profile', icon: '👤' },
 ]
 
 export default function SuperAdminLayout({ children, title, subtitle }) {

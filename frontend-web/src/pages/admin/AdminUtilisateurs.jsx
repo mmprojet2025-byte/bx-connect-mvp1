@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import api from '../../api/axios';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
+import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFriendlyError';
 
 const ROLES = ['MEMBRE', 'REFERENT', 'PARTENAIRE'];
 
@@ -20,8 +21,8 @@ export default function AdminUtilisateurs() {
     try {
       const res = await api.get('/admin/utilisateurs');
       setUtilisateurs(res.data);
-    } catch {
-      setError(t('users.errorLoad'));
+    } catch (err) {
+      setError(userFriendlyError(err, t('users.errorLoad')));
     } finally {
       setLoading(false);
     }
@@ -33,31 +34,32 @@ export default function AdminUtilisateurs() {
       setUtilisateurs(prev => prev.map(u => u.id === id ? res.data : u));
       setMessage(t('users.roleUpdated'));
       setError('');
-    } catch {
-      setError(t('users.errorRoleUpdate'));
+    } catch (err) {
+      setError(userFriendlyError(err, t('users.errorRoleUpdate')));
     }
   };
 
-  const toggleActif = async (id) => {
+  const toggleActif = async (user) => {
+    if (user.actif && !confirmSensitiveAction(`Désactiver le compte de ${user.email} ?`)) return;
     try {
-      const res = await api.patch(`/admin/utilisateurs/${id}/actif`);
-      setUtilisateurs(prev => prev.map(u => u.id === id ? res.data : u));
+      const res = await api.patch(`/admin/utilisateurs/${user.id}/actif`);
+      setUtilisateurs(prev => prev.map(u => u.id === user.id ? res.data : u));
       setMessage(t('users.statusUpdated'));
       setError('');
-    } catch {
-      setError(t('users.errorStatusUpdate'));
+    } catch (err) {
+      setError(userFriendlyError(err, t('users.errorStatusUpdate')));
     }
   };
 
   const supprimerUtilisateur = async (id, email) => {
-    if (!window.confirm(t('users.confirmDelete', { email }))) return;
+    if (!confirmSensitiveAction(t('users.confirmDelete', { email }))) return;
     try {
       await api.delete(`/admin/utilisateurs/${id}`);
       setUtilisateurs(prev => prev.filter(u => u.id !== id));
       setMessage(t('users.deleted'));
       setError('');
-    } catch {
-      setError(t('users.errorDelete'));
+    } catch (err) {
+      setError(userFriendlyError(err, t('users.errorDelete')));
     }
   };
 
@@ -154,7 +156,7 @@ export default function AdminUtilisateurs() {
                             {peutModifier(u) ? (
                               <>
                                 <button
-                                  onClick={() => toggleActif(u.id)}
+                                  onClick={() => toggleActif(u)}
                                   className={`text-xs px-3 py-1 rounded-lg font-medium transition ${u.actif ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
                                 >
                                   {u.actif ? t('users.disable') : t('users.enable')}

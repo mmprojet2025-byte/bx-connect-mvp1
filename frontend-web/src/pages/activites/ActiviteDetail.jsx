@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
+import { userFriendlyError } from '../../utils/userFriendlyError';
 
 export default function ActiviteDetail() {
   const { id } = useParams();
@@ -43,7 +44,7 @@ export default function ActiviteDetail() {
       setMessage(t('activities.success_register'));
       setInscrit(true);
     } catch (err) {
-      setError(err.response?.data?.message || t('activities.error_register'));
+      setError(userFriendlyError(err, t('activities.error_register')));
     }
   };
 

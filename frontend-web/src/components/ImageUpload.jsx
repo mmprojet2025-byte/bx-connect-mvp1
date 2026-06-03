@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import api from '../api/axios';
+import { userFriendlyError } from '../utils/userFriendlyError';
 
 /**
  * Composant réutilisable pour l'upload d'images
@@ -57,7 +58,7 @@ export default function ImageUpload({
       setPreview(url);
       if (onUploadSuccess) onUploadSuccess(url);
     } catch (err) {
-      setError(err.response?.data?.error || 'Erreur lors de l\'upload.');
+      setError(userFriendlyError(err, 'Action impossible.'));
       setPreview(currentUrl); // Revenir à l'image précédente
     } finally {
       setLoading(false);

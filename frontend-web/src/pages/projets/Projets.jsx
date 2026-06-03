@@ -8,6 +8,7 @@ import ImageUpload from '../../components/ImageUpload'
 import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
 import StatusBadge from '../../components/ui/StatusBadge'
+import { userFriendlyError } from '../../utils/userFriendlyError'
 
 const STATUT_VARIANTS = {
   BROUILLON: 'neutral',
@@ -83,7 +84,7 @@ export default function Projets() {
       setForm({ titre: '', description: '', budgetDemande: '', imageUrl: '' })
       fetchProjets()
     } catch (err) {
-      setError(err.response?.data?.message || t('projects.error_submit'))
+      setError(userFriendlyError(err, t('projects.error_submit')))
     }
   }
 

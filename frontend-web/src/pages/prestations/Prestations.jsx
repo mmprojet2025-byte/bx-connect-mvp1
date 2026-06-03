@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
+import { userFriendlyError } from '../../utils/userFriendlyError';
 
 const TYPES = ['ANIMATION', 'LOGISTIQUE', 'COMMUNICATION', 'FORMATION', 'AUTRE'];
 
@@ -53,7 +54,7 @@ export default function Prestations() {
       fetchPrestations();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de l\'encodage.');
+      setError(userFriendlyError(err, 'Action impossible.'));
     }
   };
 

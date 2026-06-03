@@ -76,8 +76,8 @@ export default function ReferentGroupes() {
                     <InfoPanel title={t('nav.requests')} count={demandes.length}>
                       <CompactPeopleList items={demandes} empty={t('referent.noPendingRequests')} />
                     </InfoPanel>
-                    <InfoPanel title={t('referent.linkedActivities')} count={0}>
-                      <p className="text-sm text-gray-400">{t('referent.noLinkedActivities')}</p>
+                    <InfoPanel title={t('referent.linkedActivities')}>
+                      <p className="text-sm text-gray-400">Non disponible.</p>
                     </InfoPanel>
                   </div>
                 </article>
@@ -96,7 +96,9 @@ function InfoPanel({ title, count, children }) {
     <section className="bg-gray-50 rounded-xl p-4">
       <div className="flex justify-between items-center mb-3">
         <h3 className="font-semibold text-blue-900 text-sm">{title}</h3>
-        <span className="text-xs bg-white border border-gray-100 text-gray-500 rounded-full px-2 py-0.5">{count}</span>
+        {count !== undefined && (
+          <span className="text-xs bg-white border border-gray-100 text-gray-500 rounded-full px-2 py-0.5">{count}</span>
+        )}
       </div>
       {children}
     </section>

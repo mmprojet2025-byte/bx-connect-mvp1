@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import api from '../../api/axios';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
+import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFriendlyError';
 
 const STATUTS = ['BROUILLON', 'SOUMIS', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE'];
 const emptyForm = { titre: '', description: '', budgetDemande: '' };
@@ -26,8 +27,8 @@ export default function AdminProjets() {
     try {
       const res = await api.get('/projets/admin/tous');
       setProjets(res.data);
-    } catch {
-      setError(t('admin.error_load'));
+    } catch (err) {
+      setError(userFriendlyError(err, t('admin.error_load')));
     } finally {
       setLoading(false);
     }
@@ -80,7 +81,7 @@ export default function AdminProjets() {
       }
       resetForm();
     } catch (err) {
-      setError(formatApiError(err, t, editingId ? t('admin.errorProjectUpdate') : t('admin.errorProjectCreate')));
+      setError(userFriendlyError(err, editingId ? t('admin.errorProjectUpdate') : t('admin.errorProjectCreate')));
     } finally {
       setCreating(false);
     }
@@ -92,20 +93,20 @@ export default function AdminProjets() {
       setProjets(prev => prev.map(p => p.id === id ? res.data : p));
       setMessage(t('admin.statusUpdatedWithValue', { status: t(`statuses.${statut}`, statut) }));
       setError('');
-    } catch {
-      setError(t('admin.errorStatusChange'));
+    } catch (err) {
+      setError(userFriendlyError(err, t('admin.errorStatusChange')));
     }
   };
 
   const supprimerProjet = async (id, titre) => {
-    if (!window.confirm(t('admin.confirmDeleteProject', { title: titre }))) return;
+    if (!confirmSensitiveAction(t('admin.confirmDeleteProject', { title: titre }))) return;
     try {
       await api.delete(`/projets/${id}`);
       setProjets(prev => prev.filter(p => p.id !== id));
       setMessage(t('admin.projectDeleted'));
       setError('');
-    } catch {
-      setError(t('admin.errorDelete'));
+    } catch (err) {
+      setError(userFriendlyError(err, t('admin.errorDelete')));
     }
   };
 
@@ -297,12 +298,6 @@ function Input({ label, value, onChange, type = 'text', required = false, min })
       />
     </label>
   );
-}
-
-function formatApiError(err, t, fallback) {
-  if (err.response?.status === 401) return t('errors.session_expired');
-  if (err.response?.status === 403) return t('errors.forbidden');
-  return err.response?.data?.message || fallback;
 }
 
 function statutColor(statut) {

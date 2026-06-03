@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
+import { userFriendlyError } from '../../utils/userFriendlyError';
 
 export default function PaiementStripe() {
   const { isAuthenticated } = useAuth();
@@ -51,7 +52,7 @@ export default function PaiementStripe() {
         setError('URL de paiement non reçue.');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de la création du paiement.');
+      setError(userFriendlyError(err, 'Action impossible.'));
     } finally {
       setLoading(false);
     }

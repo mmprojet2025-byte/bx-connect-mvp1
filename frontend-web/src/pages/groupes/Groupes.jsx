@@ -8,6 +8,7 @@ import Footer from '../../components/Footer'
 import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
 import StatusBadge from '../../components/ui/StatusBadge'
+import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFriendlyError'
 
 export default function Groupes() {
   const { isAuthenticated, isMembre } = useAuth()
@@ -60,13 +61,14 @@ export default function Groupes() {
       setMessage(t('ux.groups.requestSent'))
       await Promise.all([fetchGroupes(), fetchAdhesions()])
     } catch (err) {
-      setError(err.response?.data?.message || t('groups.error_load'))
+      setError(userFriendlyError(err, t('groups.error_load')))
     } finally {
       setActionLoading(null)
     }
   }
 
   const handleQuitter = async (groupeId) => {
+    if (!confirmSensitiveAction('Quitter ce groupe ? Vous perdrez l’accès à sa messagerie.')) return
     setMessage('')
     setError('')
     setActionLoading(groupeId)
@@ -75,7 +77,7 @@ export default function Groupes() {
       setMessage(t('groups.success_leave'))
       await Promise.all([fetchGroupes(), fetchAdhesions()])
     } catch (err) {
-      setError(err.response?.data?.message || t('groups.error_load'))
+      setError(userFriendlyError(err, t('groups.error_load')))
     } finally {
       setActionLoading(null)
     }
