@@ -3,6 +3,7 @@ import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import api from '../../api/axios'
 import { useTranslation } from 'react-i18next'
+import StatusBadge from '../../components/StatusBadge'
 
 export default function ReferentMembres() {
   const { t, i18n } = useTranslation()
@@ -64,7 +65,19 @@ export default function ReferentMembres() {
         ) : membresFiltres.length === 0 ? (
           <EmptyState>{t('referent.noAcceptedMembers')}</EmptyState>
         ) : (
-          <div className="bg-white rounded-2xl shadow overflow-hidden">
+          <>
+          <div className="grid gap-3 md:hidden">
+            {membresFiltres.map(membre => (
+              <MembreCard
+                key={`${membre.groupeId}-${membre.id}`}
+                membre={membre}
+                language={i18n.language}
+                t={t}
+              />
+            ))}
+          </div>
+
+          <div className="hidden md:block bg-white rounded-2xl shadow overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse" style={{ minWidth: '760px' }}>
                 <thead>
@@ -88,10 +101,42 @@ export default function ReferentMembres() {
               </table>
             </div>
           </div>
+          </>
         )}
       </main>
       <Footer />
     </div>
+  )
+}
+
+function MembreCard({ membre, language, t }) {
+  const statut = membre.statut || membre.statutAdhesion
+
+  return (
+    <article className="bg-white rounded-2xl shadow p-4 border border-gray-100">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-bold text-blue-900">{membre.prenom} {membre.nom}</h2>
+          <p className="text-sm text-gray-500 mt-1 break-all">{membre.email}</p>
+        </div>
+        {statut && (
+          <StatusBadge status={statut}>
+            {t(`statuses.${statut}`, statut)}
+          </StatusBadge>
+        )}
+      </div>
+
+      <dl className="mt-4 grid grid-cols-1 gap-3 text-sm">
+        <div>
+          <dt className="text-xs font-semibold uppercase text-gray-400">{t('admin.groupName')}</dt>
+          <dd className="mt-1 text-gray-700">{membre.groupeNom || '-'}</dd>
+        </div>
+        <div>
+          <dt className="text-xs font-semibold uppercase text-gray-400">{t('users.memberSince')}</dt>
+          <dd className="mt-1 text-gray-700">{formatDate(membre.dateAdhesion, language)}</dd>
+        </div>
+      </dl>
+    </article>
   )
 }
 
