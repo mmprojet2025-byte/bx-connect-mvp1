@@ -7,7 +7,7 @@ export default function MemberGroupCard({ groupe, referent, messagerieDisponible
 
   if (!groupe) {
     return (
-      <section className="bg-white rounded-2xl shadow overflow-hidden">
+      <section className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
         <GroupBanner />
         <div className="p-6">
           <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold">{t('memberDashboard.group.newMember')}</span>
@@ -28,7 +28,7 @@ export default function MemberGroupCard({ groupe, referent, messagerieDisponible
   const referentLabel = referent ? `${referent.prenom} ${referent.nom}` : t('memberDashboard.group.referentPending')
 
   return (
-    <section className="bg-white rounded-2xl shadow overflow-hidden">
+    <section className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
       <GroupBanner imageUrl={groupe.imageUrl} />
       <div className="p-6">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">

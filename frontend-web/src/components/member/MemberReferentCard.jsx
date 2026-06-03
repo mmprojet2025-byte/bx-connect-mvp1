@@ -5,7 +5,7 @@ export default function MemberReferentCard({ referent, groupe, messagerieDisponi
   const { t } = useTranslation()
 
   return (
-    <section className="bg-white rounded-2xl shadow p-5">
+    <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5">
       <h2 className="text-lg font-bold text-blue-900 mb-4">{t('memberDashboard.referent.title')}</h2>
       {referent && groupe?.statutAdhesion === 'ACCEPTE' ? (
         <div>

@@ -6,6 +6,8 @@ import Footer from '../../components/Footer'
 import api from '../../api/axios'
 import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
+import PageHeader from '../../components/ui/PageHeader'
+import QuickActionCard from '../../components/ui/QuickActionCard'
 
 export default function ReferentDashboard() {
   const [stats, setStats] = useState({ groupes: 0, membres: 0, demandes: 0, activites: 0 })
@@ -66,13 +68,11 @@ export default function ReferentDashboard() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
-        <header className="bg-teal-700 text-white rounded-2xl p-6 mb-6">
-          <p className="text-teal-100 text-sm font-semibold uppercase tracking-wide">{t('ux.referentDashboard.eyebrow')}</p>
-          <h1 className="text-3xl font-bold mt-1">{t('ux.referentDashboard.title')}</h1>
-          <p className="text-teal-100 text-sm mt-2">
-            {t('ux.referentDashboard.intro')}
-          </p>
-        </header>
+        <PageHeader
+          eyebrow={t('ux.referentDashboard.eyebrow')}
+          title={t('ux.referentDashboard.title')}
+          description={t('ux.referentDashboard.intro')}
+        />
 
         {error && <Alert type="error">{error}</Alert>}
 
@@ -109,7 +109,7 @@ export default function ReferentDashboard() {
             </section>
 
             <section className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 mb-8">
-              <div className="bg-white rounded-2xl shadow p-6">
+              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="font-bold text-blue-900">{t('ux.referentDashboard.requestsToHandle')}</h2>
@@ -139,12 +139,12 @@ export default function ReferentDashboard() {
                 )}
               </div>
 
-              <div className="bg-white rounded-2xl shadow p-6">
+              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
                 <h2 className="font-bold text-blue-900 mb-4">{t('ux.referentDashboard.quickActions')}</h2>
                 <div className="grid gap-3">
-                  <QuickAction to="/referent/demandes" label={t('referent.processRequests')} />
-                  <QuickAction to="/referent/activites" label={t('referent.createActivity')} />
-                  <QuickAction to="/referent/messagerie" label={t('ux.referentDashboard.openMessaging')} />
+                  <QuickActionCard to="/referent/demandes" title={t('referent.processRequests')} tone="amber" />
+                  <QuickActionCard to="/referent/activites" title={t('referent.createActivity')} tone="teal" />
+                  <QuickActionCard to="/referent/messagerie" title={t('ux.referentDashboard.openMessaging')} tone="blue" />
                 </div>
               </div>
             </section>
@@ -207,7 +207,7 @@ function StatCard({ label, value, to, actionLabel, highlight = false }) {
   return (
     <Link
       to={to}
-      className={`group rounded-2xl shadow p-5 transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${highlight ? 'bg-amber-50 border border-amber-200' : 'bg-white'}`}
+      className={`group rounded-3xl border shadow-sm p-5 transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${highlight ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-100'}`}
     >
       <p className={`text-3xl font-bold ${highlight ? 'text-amber-800' : 'text-teal-700'}`}>{value}</p>
       <p className="text-sm text-gray-500 mt-1">{label}</p>
@@ -218,17 +218,9 @@ function StatCard({ label, value, to, actionLabel, highlight = false }) {
   )
 }
 
-function QuickAction({ to, label }) {
-  return (
-    <Link to={to} className="bg-teal-700 hover:bg-teal-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl text-center transition">
-      {label}
-    </Link>
-  )
-}
-
 function InfoPanel({ title, to, actionLabel, children }) {
   return (
-    <section className="bg-white rounded-2xl shadow p-6">
+    <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-bold text-blue-900">{title}</h2>
         <Link to={to} className="text-teal-700 text-sm font-semibold hover:underline">

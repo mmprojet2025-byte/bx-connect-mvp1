@@ -48,15 +48,16 @@ export default function Navbar() {
   const closeMenu = () => setMenuOpen(false)
 
   return (
-    <nav className="bg-blue-900 text-white px-4 py-3 shadow-md">
+    <nav className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 px-4 py-3 text-slate-700 shadow-sm backdrop-blur">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-        <Link to="/" onClick={closeMenu} className="text-xl font-bold tracking-tight hover:text-blue-200 transition">
-          BX-CONNECT
+        <Link to="/" onClick={closeMenu} className="flex items-center gap-2 text-xl font-black tracking-tight text-slate-950 transition hover:text-indigo-700">
+          <span className="grid h-9 w-9 place-items-center rounded-2xl bg-indigo-600 text-sm font-black text-white shadow-sm">BX</span>
+          <span>BX-Connect</span>
         </Link>
 
-        <div className="hidden lg:flex items-center gap-4 text-sm font-medium">
+        <div className="hidden lg:flex items-center gap-1 text-sm font-semibold">
           {navLinks.map(link => (
-            <Link key={link.to} to={link.to} className={link.className || 'hover:text-blue-200 transition'}>
+            <Link key={link.to} to={link.to} className={link.className || 'rounded-full px-3 py-2 text-slate-600 transition hover:bg-indigo-50 hover:text-indigo-700'}>
               {link.label}
             </Link>
           ))}
@@ -79,7 +80,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() => setMenuOpen(open => !open)}
-            className="lg:hidden border border-blue-700 hover:bg-blue-800 rounded-xl px-3 py-2 text-sm font-semibold"
+            className="lg:hidden rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
             aria-expanded={menuOpen}
             aria-label={t('nav.openMenu')}
           >
@@ -89,21 +90,21 @@ export default function Navbar() {
       </div>
 
       {menuOpen && (
-        <div className="lg:hidden max-w-7xl mx-auto mt-3 border-t border-blue-800 pt-3">
+        <div className="lg:hidden max-w-7xl mx-auto mt-3 border-t border-slate-100 pt-3">
           <div className="grid gap-1 text-sm font-medium">
             {navLinks.map(link => (
               <Link
                 key={link.to}
                 to={link.to}
                 onClick={closeMenu}
-                className="px-3 py-2 rounded-xl hover:bg-blue-800 transition"
+                className="px-3 py-2 rounded-xl text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition"
               >
                 {link.label}
               </Link>
             ))}
           </div>
 
-          <div className="sm:hidden mt-3 pt-3 border-t border-blue-800 flex flex-wrap items-center gap-2">
+          <div className="sm:hidden mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
             <AccountActions
               isAuthenticated={isAuthenticated}
               isSuperAdmin={isSuperAdmin}
@@ -180,13 +181,13 @@ function getNavLinks({ isSuperAdmin, isAdmin, isReferent, isMembre, isPartenaire
 
 function LanguageSelector({ i18n, onChange }) {
   return (
-    <div className="flex items-center gap-1 bg-blue-800 rounded-full px-2 py-1">
+    <div className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-slate-600">
       {LANGUAGES.map(lang => (
         <button
           key={lang.code}
           type="button"
           onClick={() => onChange(lang.code)}
-          className={`rounded-full px-2 py-0.5 text-xs transition ${i18n.language === lang.code ? 'bg-white/25 font-bold' : 'font-normal'}`}
+          className={`rounded-full px-2 py-0.5 text-xs transition ${i18n.language === lang.code ? 'bg-white font-bold text-indigo-700 shadow-sm' : 'font-normal'}`}
         >
           {lang.label}
         </button>
@@ -199,13 +200,13 @@ function AccountActions({ isAuthenticated, isSuperAdmin, user, notifCount, onLog
   if (!isAuthenticated) {
     return (
       <>
-        <Link to="/login" onClick={onNavigate} className="hover:text-blue-200 transition font-medium">
+        <Link to="/login" onClick={onNavigate} className="text-slate-600 transition hover:text-indigo-700 font-medium">
           {t('nav.login')}
         </Link>
         <Link
           to="/register"
           onClick={onNavigate}
-          className="bg-white text-blue-900 hover:bg-blue-100 px-4 py-1.5 rounded-full transition font-semibold"
+          className="rounded-full bg-indigo-600 px-4 py-1.5 font-semibold text-white transition hover:bg-indigo-500"
         >
           {t('nav.register')}
         </Link>
@@ -217,8 +218,8 @@ function AccountActions({ isAuthenticated, isSuperAdmin, user, notifCount, onLog
     <>
       {!isSuperAdmin && (
         <>
-          <Link to="/notifications" onClick={onNavigate} className="relative p-1.5 hover:bg-blue-800 rounded-full transition">
-            <span className="text-lg">🔔</span>
+          <Link to="/notifications" onClick={onNavigate} className="relative rounded-full border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-indigo-50 hover:text-indigo-700">
+            {t('nav.notifications')}
             {notifCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
                 {notifCount > 9 ? '9+' : notifCount}
@@ -229,7 +230,7 @@ function AccountActions({ isAuthenticated, isSuperAdmin, user, notifCount, onLog
           <Link
             to="/profil"
             onClick={onNavigate}
-            className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 px-3 py-1.5 rounded-full transition"
+            className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700"
           >
             <UserInitials user={user} />
             <span className="text-sm">{user?.prenom}</span>
@@ -241,7 +242,7 @@ function AccountActions({ isAuthenticated, isSuperAdmin, user, notifCount, onLog
         <Link
           to="/profil"
           onClick={onNavigate}
-          className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 px-3 py-1.5 rounded-full transition"
+            className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700"
         >
           <UserInitials user={user} />
           <span className="text-sm">{user?.prenom}</span>
@@ -251,7 +252,7 @@ function AccountActions({ isAuthenticated, isSuperAdmin, user, notifCount, onLog
       <button
         type="button"
         onClick={onLogout}
-        className="bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded-full transition font-medium text-sm"
+        className="rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-sm font-semibold text-red-700 transition hover:bg-red-100"
       >
         {t('nav.logout')}
       </button>
@@ -261,7 +262,7 @@ function AccountActions({ isAuthenticated, isSuperAdmin, user, notifCount, onLog
 
 function UserInitials({ user }) {
   return (
-    <span className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold">
+    <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">
       {user?.prenom?.[0]}{user?.nom?.[0]}
     </span>
   )

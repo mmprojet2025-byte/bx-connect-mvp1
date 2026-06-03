@@ -149,7 +149,7 @@ export default function AdminActivites() {
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-blue-900 mb-1">🎯 {t('admin.activities_title')}</h1>
+            <h1 className="text-2xl font-bold text-blue-900 mb-1">{t('admin.activities_title')}</h1>
             <p className="text-gray-500 text-sm">{t('statistics.activitiesTotal', { count: activites.length })}</p>
           </div>
           <button

@@ -6,6 +6,8 @@ import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
+import PageHeader from '../../components/ui/PageHeader'
+import QuickActionCard from '../../components/ui/QuickActionCard'
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null)
@@ -50,13 +52,11 @@ export default function AdminDashboard() {
       <Navbar />
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
-        <header className="mb-8">
-          <p className="text-sm font-semibold text-blue-700 uppercase tracking-wide">{t('ux.adminDashboard.eyebrow')}</p>
-          <h1 className="text-3xl font-bold text-blue-900 mt-1">{t('ux.adminDashboard.title')}</h1>
-          <p className="text-gray-500 mt-2 text-sm">
-            {t('ux.adminDashboard.intro')}
-          </p>
-        </header>
+        <PageHeader
+          eyebrow={t('ux.adminDashboard.eyebrow')}
+          title={t('ux.adminDashboard.title')}
+          description={t('ux.adminDashboard.intro')}
+        />
 
         {error && <Alert type="error">{error}</Alert>}
 
@@ -74,7 +74,7 @@ export default function AdminDashboard() {
             )}
 
             <section className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 mb-8">
-              <div className="bg-white rounded-2xl shadow p-6">
+	              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-lg font-bold text-blue-900">{t('ux.adminDashboard.priority')}</h2>
@@ -109,13 +109,13 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow p-6">
+	              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
                 <h2 className="text-lg font-bold text-blue-900 mb-4">{t('ux.adminDashboard.quickActions')}</h2>
                 <div className="grid gap-3">
-                  <QuickAction to="/admin/groupes" label={t('ux.adminDashboard.createGroup')} />
-                  <QuickAction to="/admin/referents" label={t('ux.adminDashboard.createReferent')} />
-                  <QuickAction to="/admin/groupes" label={t('ux.adminDashboard.processRequests')} />
-                  <QuickAction to="/admin/activites" label={t('ux.adminDashboard.createActivity')} />
+	                  <QuickActionCard to="/admin/groupes" title={t('ux.adminDashboard.createGroup')} tone="blue" />
+	                  <QuickActionCard to="/admin/referents" title={t('ux.adminDashboard.createReferent')} tone="teal" />
+	                  <QuickActionCard to="/admin/groupes" title={t('ux.adminDashboard.processRequests')} tone="amber" />
+	                  <QuickActionCard to="/admin/activites" title={t('ux.adminDashboard.createActivity')} tone="violet" />
                 </div>
               </div>
             </section>
@@ -169,17 +169,9 @@ function PriorityCard({ label, value, description, to, alert = false }) {
   )
 }
 
-function QuickAction({ to, label }) {
-  return (
-    <Link to={to} className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition text-center">
-      {label}
-    </Link>
-  )
-}
-
 function NavCard({ to, title, description, color }) {
   return (
-    <Link to={to} className="bg-white rounded-2xl shadow p-6 transition hover:-translate-y-1 border-t-4" style={{ borderTopColor: color }}>
+    <Link to={to} className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 transition hover:-translate-y-1 hover:shadow-md border-t-4" style={{ borderTopColor: color }}>
       <h3 className="font-semibold text-blue-900 mb-1">{title}</h3>
       <p className="text-gray-500 text-sm">{description}</p>
     </Link>

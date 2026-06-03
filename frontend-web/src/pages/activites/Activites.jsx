@@ -138,7 +138,7 @@ export default function Activites() {
         {/* En-tête */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-blue-900">🎯 {t('activities.title')}</h1>
+            <h1 className="text-2xl font-bold text-blue-900">{t('activities.title')}</h1>
             {peutGerer && (
               <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full mt-1 inline-block">
                 {t('activities.manage_mode', { count: activites.length })}

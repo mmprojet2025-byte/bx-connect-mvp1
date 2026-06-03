@@ -7,6 +7,7 @@ import Footer from '../components/Footer';
 import api from '../api/axios';
 import Alert from '../components/ui/Alert';
 import EmptyState from '../components/ui/EmptyState';
+import PageHeader from '../components/ui/PageHeader';
 import { confirmSensitiveAction, userFriendlyError } from '../utils/userFriendlyError';
 
 export default function Notifications() {
@@ -53,18 +54,18 @@ export default function Notifications() {
 
   const typeIcon = (type) => {
     switch (type) {
-      case 'VALIDATION_GROUPE':  return '✅';
-      case 'REFUS_GROUPE':       return '❌';
-      case 'VALIDATION_PROJET':  return '🚀';
-      case 'REFUS_PROJET':       return '❌';
-      case 'PAIEMENT':           return '💳';
-      case 'ANNONCE':            return '📢';
-      case 'ADHESION':           return '👥';
-      case 'ADHESION_ACCEPTEE':  return '✅';
-      case 'ADHESION_REFUSEE':   return '❌';
-      case 'PRESTATION_VALIDEE': return '🤝';
-      case 'PRESTATION_REFUSEE': return '❌';
-      default:                   return '🔔';
+      case 'VALIDATION_GROUPE':  return 'OK';
+      case 'REFUS_GROUPE':       return 'NO';
+      case 'VALIDATION_PROJET':  return 'PR';
+      case 'REFUS_PROJET':       return 'NO';
+      case 'PAIEMENT':           return '€';
+      case 'ANNONCE':            return 'AN';
+      case 'ADHESION':           return 'GR';
+      case 'ADHESION_ACCEPTEE':  return 'OK';
+      case 'ADHESION_REFUSEE':   return 'NO';
+      case 'PRESTATION_VALIDEE': return 'OK';
+      case 'PRESTATION_REFUSEE': return 'NO';
+      default:                   return 'BX';
     }
   };
 
@@ -75,20 +76,17 @@ export default function Notifications() {
       <Navbar />
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-10">
 
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-blue-900">🔔 {t('notifications.title')}</h1>
-            {nonLues > 0 && (
-              <p className="text-blue-600 text-sm mt-1">{t('notifications.unreadCount', { count: nonLues })}</p>
-            )}
-          </div>
-          {nonLues > 0 && (
+        <PageHeader
+          eyebrow={t('nav.notifications')}
+          title={t('notifications.title')}
+          description={nonLues > 0 ? t('notifications.unreadCount', { count: nonLues }) : t('notifications.emptyDescription')}
+          action={nonLues > 0 && (
             <button onClick={handleToutesLues}
-              className="bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm font-semibold px-4 py-2 rounded-xl transition">
+              className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
               {t('notifications.markAllAsRead')}
             </button>
           )}
-        </div>
+        />
 
         {error && <Alert type="error">{error}</Alert>}
 
@@ -114,11 +112,11 @@ export default function Notifications() {
               <div
                 key={n.id}
                 onClick={() => !n.lue && handleMarquerLue(n.id)}
-                className={`bg-white rounded-2xl shadow p-4 flex items-start gap-3 cursor-pointer transition hover:shadow-md ${
-                  !n.lue ? 'border-l-4 border-blue-500 bg-blue-50/30' : ''
+                className={`rounded-3xl border p-4 flex items-start gap-3 cursor-pointer transition hover:-translate-y-0.5 hover:shadow-md ${
+                  !n.lue ? 'border-indigo-100 bg-indigo-50/50 shadow-sm' : 'border-slate-100 bg-white shadow-sm'
                 }`}
               >
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xl flex-shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center text-xs font-black text-indigo-700 flex-shrink-0 shadow-sm">
                   {typeIcon(n.type)}
                 </div>
                 <div className="flex-1 min-w-0">

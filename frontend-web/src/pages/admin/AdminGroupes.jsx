@@ -138,7 +138,7 @@ export default function AdminGroupes() {
       <Navbar />
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-10">
 
-        <h1 className="text-2xl font-bold text-blue-900 mb-6">👥 {t('admin.groupsManagement')}</h1>
+        <h1 className="text-2xl font-bold text-blue-900 mb-6">{t('admin.groupsManagement')}</h1>
 
         {message && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>}
         {error   && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>}

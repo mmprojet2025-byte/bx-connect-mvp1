@@ -117,8 +117,9 @@ export default function ReferentMessagerie() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-blue-900">{t('messaging.referentMessaging')}</h1>
+        <div className="mb-6 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-wide text-teal-600">{t('nav.messaging')}</p>
+          <h1 className="mt-1 text-3xl font-black text-slate-950">{t('messaging.referentMessaging')}</h1>
           <p className="text-sm text-gray-500 mt-1">{t('messaging.referentSubtitle')}</p>
         </div>
 
@@ -130,7 +131,7 @@ export default function ReferentMessagerie() {
           <EmptyState>{t('messaging.noAssignedGroups')}</EmptyState>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 min-h-[70vh]">
-            <aside className="bg-white rounded-2xl shadow flex flex-col overflow-hidden">
+            <aside className="bg-white rounded-3xl border border-slate-100 shadow-sm flex flex-col overflow-hidden">
               <div className="px-4 py-3 border-b border-gray-100">
                 <span className="font-semibold text-blue-900 text-sm">{t('nav.myGroups')}</span>
               </div>
@@ -142,7 +143,7 @@ export default function ReferentMessagerie() {
                       key={groupe.id}
                       type="button"
                       onClick={() => selectionnerGroupe(groupe)}
-                      className={`w-full text-left px-4 py-3 border-b border-gray-50 transition ${actif ? 'bg-teal-50 border-l-4 border-l-teal-600' : 'bg-white hover:bg-gray-50 border-l-4 border-l-transparent'}`}
+                      className={`w-full text-left px-4 py-3 border-b border-gray-50 transition ${actif ? 'bg-teal-50 border-l-4 border-l-teal-600' : 'bg-white hover:bg-slate-50 border-l-4 border-l-transparent'}`}
                     >
                       <span className="block text-sm font-semibold text-blue-900">{groupe.nom}</span>
                       <span className="block text-xs text-gray-400">{t('groups.members_count', { count: groupe.nombreMembres ?? 0 })}</span>
@@ -152,7 +153,7 @@ export default function ReferentMessagerie() {
               </div>
             </aside>
 
-            <section className="bg-white rounded-2xl shadow overflow-hidden flex flex-col">
+            <section className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
               {!groupeActif ? (
                 <EmptyConversation>{t('messaging.selectGroup')}</EmptyConversation>
               ) : !filActif ? (
@@ -171,8 +172,8 @@ export default function ReferentMessagerie() {
                 </div>
               ) : (
                 <>
-                  <div className="px-5 py-4 border-b border-gray-100">
-                    <h2 className="font-semibold text-blue-900">{filActif.titre}</h2>
+                  <div className="px-5 py-4 border-b border-gray-100 bg-slate-50/70">
+                    <h2 className="font-bold text-slate-950">{filActif.titre}</h2>
                     <p className="text-xs text-gray-400">{groupeActif.nom} · {t('messaging.messagesCount', { count: messages.length })}</p>
                   </div>
                   <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
@@ -198,9 +199,9 @@ export default function ReferentMessagerie() {
                     <button
                       type="submit"
                       disabled={!nouveauMessage.trim()}
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-white transition disabled:bg-gray-300 bg-teal-700 hover:bg-teal-600"
+                      className="rounded-full bg-teal-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:bg-gray-300"
                     >
-                      ➤
+                      {t('common.send')}
                     </button>
                   </form>
                 </>
@@ -223,7 +224,7 @@ function MessageBubble({ message, currentUser, language }) {
       </div>
       <div className="max-w-xs md:max-w-md">
         {!estMoi && <div className="text-xs text-gray-400 mb-0.5 pl-1">{message.auteurPrenom} {message.auteurNom}</div>}
-        <div className={`px-4 py-2 text-sm leading-relaxed break-words ${estMoi ? 'bg-teal-700 text-white' : 'bg-gray-100 text-blue-900'}`} style={{ borderRadius: estMoi ? '12px 12px 2px 12px' : '12px 12px 12px 2px' }}>
+        <div className={`px-4 py-3 text-sm leading-relaxed break-words shadow-sm ${estMoi ? 'bg-teal-700 text-white' : 'bg-slate-100 text-slate-800'}`} style={{ borderRadius: estMoi ? '18px 18px 4px 18px' : '18px 18px 18px 4px' }}>
           {message.contenu}
         </div>
         <div className={`text-xs text-gray-400 mt-0.5 ${estMoi ? 'text-right pr-1' : 'pl-1'}`}>

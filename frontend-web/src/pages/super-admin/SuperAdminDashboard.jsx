@@ -35,18 +35,18 @@ export default function SuperAdminDashboard() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <Link to="/super-admin/admins" className="bg-white rounded-2xl shadow p-5 hover:-translate-y-1 transition">
+            <Link to="/super-admin/admins" className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 hover:-translate-y-1 hover:shadow-md transition">
               <h2 className="font-bold text-blue-900 mb-1">{t('superAdmin.adminsTitle')}</h2>
               <p className="text-sm text-gray-500">{t('superAdmin.adminsDescription')}</p>
             </Link>
 
-            <Link to="/super-admin/logs" className="bg-white rounded-2xl shadow p-5 hover:-translate-y-1 transition">
+            <Link to="/super-admin/logs" className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 hover:-translate-y-1 hover:shadow-md transition">
               <h2 className="font-bold text-blue-900 mb-1">{t('superAdmin.logsTitle')}</h2>
               <p className="text-sm text-gray-500">{t('superAdmin.logsDescription')}</p>
             </Link>
           </div>
 
-          <section className="mt-8 bg-white rounded-2xl shadow overflow-hidden">
+          <section className="mt-8 bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100">
               <h2 className="font-bold text-blue-900">{t('superAdmin.latestLogs')}</h2>
             </div>
@@ -60,7 +60,7 @@ export default function SuperAdminDashboard() {
 
 function StatCard({ label, value, color }) {
   return (
-    <div className="bg-white rounded-2xl shadow p-5" style={{ borderLeft: `4px solid ${color}` }}>
+    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5" style={{ borderLeft: `4px solid ${color}` }}>
       <div className="text-3xl font-bold" style={{ color }}>{value}</div>
       <div className="text-xs text-gray-500 mt-1">{label}</div>
     </div>
