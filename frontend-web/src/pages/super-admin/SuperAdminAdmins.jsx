@@ -128,8 +128,54 @@ export default function SuperAdminAdmins() {
       {loading ? (
         <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
       ) : (
-        <div className="bg-white rounded-2xl shadow overflow-hidden">
-          <div className="overflow-x-auto">
+        <>
+          <div className="md:hidden space-y-4">
+            {admins.length === 0 ? (
+              <div className="bg-white rounded-2xl shadow p-8 text-center text-gray-400 text-sm">{t('superAdmin.noAdmin')}</div>
+            ) : admins.map(admin => (
+              <article key={admin.id} className="bg-white rounded-2xl shadow p-5">
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className="min-w-0">
+                    <h2 className="font-semibold text-blue-900 text-sm truncate">{admin.prenom} {admin.nom}</h2>
+                    <p className="text-xs text-gray-500 break-all mt-1">{admin.email}</p>
+                  </div>
+                  <StatusBadge actif={admin.actif} t={t} />
+                </div>
+
+                <div className="flex justify-between gap-4 text-xs mb-4">
+                  <span className="text-gray-400">{t('users.registration')}</span>
+                  <span className="font-medium text-gray-700 text-right">{formatDate(admin.dateInscription, i18n.language)}</span>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {admin.actif ? (
+                    <button
+                      onClick={() => disableAdmin(admin)}
+                      className="text-xs px-3 py-2 rounded-lg bg-yellow-100 text-yellow-700 hover:bg-yellow-200 font-medium transition"
+                    >
+                      {t('common.deactivate')}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => enableAdmin(admin)}
+                      className="text-xs px-3 py-2 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium transition"
+                    >
+                      {t('common.reactivate')}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setResetTarget(admin); setNewPassword(''); clearFeedback() }}
+                    className="text-xs px-3 py-2 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 font-medium transition"
+                  >
+                    {t('superAdmin.resetPassword')}
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="hidden md:block bg-white rounded-2xl shadow overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full border-collapse" style={{ minWidth: '760px' }}>
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
@@ -182,8 +228,9 @@ export default function SuperAdminAdmins() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {resetTarget && (

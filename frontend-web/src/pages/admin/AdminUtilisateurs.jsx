@@ -97,8 +97,72 @@ export default function AdminUtilisateurs() {
         {loading ? (
           <p className="text-gray-400 text-center py-10">{t('admin.loading')}</p>
         ) : (
-          <div className="bg-white rounded-2xl shadow overflow-hidden">
-            <div className="overflow-x-auto">
+          <>
+            <div className="md:hidden space-y-4">
+              {utilisateursFiltres.length === 0 ? (
+                <div className="bg-white rounded-2xl shadow p-8 text-center text-gray-400 text-sm">{t('users.noneFound')}</div>
+              ) : (
+                utilisateursFiltres.map(u => (
+                  <article key={u.id} className="bg-white rounded-2xl shadow p-5">
+                    <div className="flex items-start justify-between gap-3 mb-4">
+                      <div className="min-w-0">
+                        <h2 className="font-semibold text-blue-900 text-sm truncate">{u.prenom} {u.nom}</h2>
+                        <p className="text-xs text-gray-500 break-all mt-1">{u.email}</p>
+                      </div>
+                      <span className={`shrink-0 text-xs px-3 py-0.5 rounded-full font-medium ${u.actif ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {u.actif ? t('common.active') : t('common.inactive')}
+                      </span>
+                    </div>
+
+                    <div className="grid gap-3 text-sm">
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">{t('users.role')}</p>
+                        {peutModifier(u) ? (
+                          <select
+                            value={u.role}
+                            onChange={e => changerRole(u.id, e.target.value)}
+                            className="w-full text-xs px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            style={{ background: roleColor(u.role), color: '#fff' }}
+                          >
+                            {ROLES.map(r => (
+                              <option key={r} value={r} style={{ background: '#fff', color: '#333' }}>{t(`roles.${r}`, r)}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="inline-block text-xs px-2 py-1 rounded-lg font-semibold text-white" style={{ background: roleColor(u.role) }}>
+                            {t(`roles.${u.role}`, u.role)}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        {peutModifier(u) ? (
+                          <>
+                            <button
+                              onClick={() => toggleActif(u)}
+                              className={`text-xs px-3 py-2 rounded-lg font-medium transition ${u.actif ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
+                            >
+                              {u.actif ? t('users.disable') : t('users.enable')}
+                            </button>
+                            <button
+                              onClick={() => supprimerUtilisateur(u.id, u.email)}
+                              className="text-xs px-3 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 font-medium transition"
+                            >
+                              {t('common.delete')}
+                            </button>
+                          </>
+                        ) : (
+                          <span className="text-xs text-gray-400">{t('users.readOnly')}</span>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+
+            <div className="hidden md:block bg-white rounded-2xl shadow overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="w-full border-collapse" style={{ minWidth: '700px' }}>
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
@@ -178,8 +242,9 @@ export default function AdminUtilisateurs() {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </main>
 

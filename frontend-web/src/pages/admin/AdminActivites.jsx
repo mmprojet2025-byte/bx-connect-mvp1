@@ -239,8 +239,63 @@ export default function AdminActivites() {
         {loading ? (
           <p className="text-gray-400 text-center py-10">{t('admin.loading')}</p>
         ) : (
-          <div className="bg-white rounded-2xl shadow overflow-hidden">
-            <div className="overflow-x-auto">
+          <>
+            <div className="md:hidden space-y-4">
+              {activitesFiltrees.length === 0 ? (
+                <div className="bg-white rounded-2xl shadow p-8 text-center text-gray-400 text-sm">{t('activities.no_search_results')}</div>
+              ) : (
+                activitesFiltrees.map(a => (
+                  <article key={a.id} className="bg-white rounded-2xl shadow p-5">
+                    <div className="flex items-start justify-between gap-3 mb-4">
+                      <div className="min-w-0">
+                        <h2 className="font-semibold text-blue-900 text-sm">{a.titre}</h2>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {a.dateDebut ? new Date(a.dateDebut).toLocaleDateString(i18n.language) : '—'}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-xs text-gray-500">
+                        {a.gratuite ? '🆓' : `💶 ${a.prix}€`}
+                      </span>
+                    </div>
+
+                    <div className="grid gap-3 text-sm">
+                      <InfoLine label={t('admin.creator')} value={`${a.createurPrenom || ''} ${a.createurNom || ''}`.trim() || '—'} />
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">{t('users.status')}</p>
+                        <select
+                          value={a.statut}
+                          onChange={e => changerStatut(a.id, e.target.value)}
+                          className="w-full text-xs px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          style={{ background: statutColor(a.statut), color: '#fff' }}
+                        >
+                          {STATUTS.map(s => (
+                            <option key={s} value={s} style={{ background: '#fff', color: '#333' }}>{t(`statuses.${s}`, { defaultValue: s })}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        <button
+                          onClick={() => modifierActivite(a)}
+                          className="text-xs px-3 py-2 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 font-medium transition"
+                        >
+                          {t('common.edit')}
+                        </button>
+                        <button
+                          onClick={() => supprimerActivite(a.id, a.titre)}
+                          className="text-xs px-3 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 font-medium transition"
+                        >
+                          {t('common.delete')}
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+
+            <div className="hidden md:block bg-white rounded-2xl shadow overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="w-full border-collapse" style={{ minWidth: '700px' }}>
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
@@ -305,8 +360,9 @@ export default function AdminActivites() {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </main>
 
@@ -333,6 +389,15 @@ function Input({ label, value, onChange, type = 'text', required = false, min })
         className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
       />
     </label>
+  );
+}
+
+function InfoLine({ label, value }) {
+  return (
+    <div className="flex justify-between gap-4 text-xs">
+      <span className="text-gray-400">{label}</span>
+      <span className="font-medium text-gray-700 text-right">{value}</span>
+    </div>
   );
 }
 
