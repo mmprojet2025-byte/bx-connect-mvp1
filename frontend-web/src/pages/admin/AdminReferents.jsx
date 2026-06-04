@@ -4,6 +4,10 @@ import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import api from '../../api/axios'
 import { userFriendlyError } from '../../utils/userFriendlyError'
+import AppIcon from '../../components/ui/AppIcons'
+import PageHeader from '../../components/ui/PageHeader'
+import SectionCard from '../../components/ui/SectionCard'
+import StatusBadge from '../../components/StatusBadge'
 
 const emptyForm = {
   prenom: '',
@@ -20,6 +24,7 @@ export default function AdminReferents() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [form, setForm] = useState(emptyForm)
+  const [recherche, setRecherche] = useState('')
 
   const fetchReferents = useCallback(async () => {
     setLoading(true)
@@ -35,6 +40,16 @@ export default function AdminReferents() {
   }, [])
 
   useEffect(() => { fetchReferents() }, [fetchReferents])
+
+  const referentsFiltres = referents.filter(referent => {
+    const texte = `${referent.prenom || ''} ${referent.nom || ''} ${referent.email || ''}`.toLowerCase()
+    return texte.includes(recherche.toLowerCase())
+  })
+  const stats = {
+    total: referents.length,
+    actifs: referents.filter(referent => referent.actif).length,
+    inactifs: referents.filter(referent => !referent.actif).length,
+  }
 
   const creerReferent = async (e) => {
     e.preventDefault()
@@ -59,15 +74,22 @@ export default function AdminReferents() {
       <Navbar />
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-blue-900">{t('referent.title')}</h1>
-          <p className="text-sm text-gray-500 mt-1">{t('referent.subtitle')}</p>
+        <PageHeader
+          eyebrow={t('admin.referents_title')}
+          title={t('referent.title')}
+          description={t('referent.subtitle')}
+        />
+
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatCard icon="User" label={t('common.total', { defaultValue: 'Total' })} value={stats.total} tone="blue" />
+          <StatCard icon="CheckCircle" label={t('common.active')} value={stats.actifs} tone="green" />
+          <StatCard icon="Clock" label={t('common.inactive')} value={stats.inactifs} tone="amber" />
         </div>
 
         {message && <Alert>{message}</Alert>}
         {error && <Alert type="error">{error}</Alert>}
 
-        <form onSubmit={creerReferent} className="bg-white rounded-2xl shadow p-5 mb-6">
+        <form onSubmit={creerReferent} className="mb-6 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
           <h2 className="font-bold text-blue-900 mb-4">{t('referent.create')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input label={t('users.firstname')} value={form.prenom} onChange={value => setForm({ ...form, prenom: value })} />
@@ -83,16 +105,29 @@ export default function AdminReferents() {
           <button
             type="submit"
             disabled={saving}
-            className="mt-4 bg-blue-900 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-blue-800 disabled:opacity-60 transition"
+            className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-blue-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:opacity-60"
           >
+            <AppIcon name="PlusCircle" className="h-4 w-4" />
             {saving ? t('common.creating') : t('referent.createButton')}
           </button>
         </form>
 
+        <SectionCard className="mb-6" title={t('common.filters', { defaultValue: 'Filtres' })}>
+          <label className="relative block">
+            <AppIcon name="Search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              value={recherche}
+              onChange={e => setRecherche(e.target.value)}
+              placeholder={t('common.search', { defaultValue: 'Rechercher' })}
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </label>
+        </SectionCard>
+
         {loading ? (
           <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
         ) : (
-          <div className="bg-white rounded-2xl shadow overflow-hidden">
+          <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse" style={{ minWidth: '700px' }}>
                 <thead>
@@ -104,18 +139,18 @@ export default function AdminReferents() {
                   </tr>
                 </thead>
                 <tbody>
-                  {referents.length === 0 ? (
+                  {referentsFiltres.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="text-center py-10 text-gray-400 text-sm">{t('referent.none')}</td>
                     </tr>
-                  ) : referents.map((referent, index) => (
-                    <tr key={referent.id} className={`border-b border-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                  ) : referentsFiltres.map((referent, index) => (
+                    <tr key={referent.id} className={`border-b border-gray-50 transition hover:bg-blue-50/50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                       <td className="px-4 py-3 font-medium text-blue-900 text-sm">{referent.prenom} {referent.nom}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{referent.email}</td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs px-3 py-0.5 rounded-full font-medium ${referent.actif ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        <StatusBadge status={referent.actif ? 'VALIDE' : 'ANNULEE'}>
                           {referent.actif ? t('common.active') : t('common.inactive')}
-                        </span>
+                        </StatusBadge>
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-400">{formatDate(referent.dateInscription, i18n.language)}</td>
                     </tr>
@@ -144,6 +179,23 @@ function formatCreationError(err, t, fallback) {
     return message || t('users.checkFields')
   }
   return userFriendlyError(err, fallback)
+}
+
+function StatCard({ icon, label, value, tone = 'blue' }) {
+  const tones = {
+    blue: 'bg-blue-50 text-blue-700 ring-blue-100',
+    green: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
+    amber: 'bg-amber-50 text-amber-700 ring-amber-100',
+  }
+  return (
+    <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl ring-1 ${tones[tone] || tones.blue}`}>
+        <AppIcon name={icon} className="h-5 w-5" />
+      </div>
+      <p className="text-2xl font-black text-slate-950">{value}</p>
+      <p className="mt-1 text-sm font-medium text-slate-500">{label}</p>
+    </div>
+  )
 }
 
 function Input({ label, value, onChange, type = 'text' }) {

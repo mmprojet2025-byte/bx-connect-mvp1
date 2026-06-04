@@ -124,11 +124,11 @@ export default function AdminDashboard() {
             <section>
               <h2 className="text-lg font-bold text-blue-900 mb-4">{t('admin.manage')}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                <NavCard to="/admin/utilisateurs" title={t('admin.users_title')} description={t('admin.users_desc')} color="#2E86AB" />
-                <NavCard to="/admin/referents" title={t('admin.referents_title')} description={t('admin.referents_desc')} color="#0d9488" />
-                <NavCard to="/admin/groupes" title={t('admin.groups_title')} description={t('admin.groups_desc')} color="#7c3aed" />
-                <NavCard to="/admin/activites" title={t('admin.activities_title')} description={t('admin.activities_desc')} color="#F4A261" />
-                <NavCard to="/admin/projets" title={t('admin.projects_title')} description={t('admin.projects_desc')} color="#28a745" />
+                <NavCard to="/admin/utilisateurs" title={t('admin.users_title')} description={t('admin.users_desc')} color="#2E86AB" icon="Users" />
+                <NavCard to="/admin/referents" title={t('admin.referents_title')} description={t('admin.referents_desc')} color="#0d9488" icon="User" />
+                <NavCard to="/admin/groupes" title={t('admin.groups_title')} description={t('admin.groups_desc')} color="#7c3aed" icon="Folder" />
+                <NavCard to="/admin/activites" title={t('admin.activities_title')} description={t('admin.activities_desc')} color="#F4A261" icon="Calendar" />
+                <NavCard to="/admin/projets" title={t('admin.projects_title')} description={t('admin.projects_desc')} color="#28a745" icon="Rocket" />
               </div>
             </section>
 
@@ -153,7 +153,7 @@ export default function AdminDashboard() {
 
 function StatCard({ label, value, color, icon }) {
   return (
-    <div className="bg-white rounded-2xl shadow p-5 border-l-4" style={{ borderLeftColor: color }}>
+    <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md" style={{ borderLeft: `4px solid ${color}` }}>
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="text-2xl font-bold" style={{ color }}>{value ?? 0}</div>
         <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-50" style={{ color }}>
@@ -167,7 +167,7 @@ function StatCard({ label, value, color, icon }) {
 
 function PriorityCard({ label, value, description, to, alert = false }) {
   return (
-    <Link to={to} className={`rounded-2xl border p-4 transition hover:shadow-sm ${alert ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-100'}`}>
+    <Link to={to} className={`rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 ${alert ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-100'}`}>
       <div className={`text-2xl font-bold ${alert ? 'text-amber-800' : 'text-blue-900'}`}>{value}</div>
       <h3 className="text-sm font-semibold text-blue-900 mt-1">{label}</h3>
       <p className="text-xs text-gray-500 mt-1">{description}</p>
@@ -175,9 +175,12 @@ function PriorityCard({ label, value, description, to, alert = false }) {
   )
 }
 
-function NavCard({ to, title, description, color }) {
+function NavCard({ to, title, description, color, icon }) {
   return (
     <Link to={to} className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 transition hover:-translate-y-1 hover:shadow-md border-t-4" style={{ borderTopColor: color }}>
+      <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-50" style={{ color }}>
+        <AppIcon name={icon} className="h-5 w-5" />
+      </div>
       <h3 className="font-semibold text-blue-900 mb-1">{title}</h3>
       <p className="text-gray-500 text-sm">{description}</p>
     </Link>

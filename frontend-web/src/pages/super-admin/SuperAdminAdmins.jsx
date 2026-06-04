@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import api from '../../api/axios'
 import SuperAdminLayout from '../../layouts/SuperAdminLayout'
 import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFriendlyError'
+import AppIcon from '../../components/ui/AppIcons'
+import SectionCard from '../../components/ui/SectionCard'
 
 const emptyForm = {
   prenom: '',
@@ -21,6 +23,7 @@ export default function SuperAdminAdmins() {
   const [form, setForm] = useState(emptyForm)
   const [resetTarget, setResetTarget] = useState(null)
   const [newPassword, setNewPassword] = useState('')
+  const [recherche, setRecherche] = useState('')
 
   useEffect(() => { fetchAdmins() }, [])
 
@@ -95,6 +98,16 @@ export default function SuperAdminAdmins() {
     }
   }
 
+  const adminsFiltres = admins.filter(admin => {
+    const texte = `${admin.prenom || ''} ${admin.nom || ''} ${admin.email || ''}`.toLowerCase()
+    return texte.includes(recherche.toLowerCase())
+  })
+  const stats = {
+    total: admins.length,
+    actifs: admins.filter(admin => admin.actif).length,
+    inactifs: admins.filter(admin => !admin.actif).length,
+  }
+
   return (
     <SuperAdminLayout
       title={t('superAdmin.adminManagementTitle')}
@@ -103,7 +116,13 @@ export default function SuperAdminAdmins() {
       {message && <Alert>{message}</Alert>}
       {error && <Alert type="error">{error}</Alert>}
 
-      <form onSubmit={createAdmin} className="bg-white rounded-2xl shadow p-5 mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard icon="Shield" label={t('common.total', { defaultValue: 'Total' })} value={stats.total} tone="blue" />
+        <StatCard icon="CheckCircle" label={t('superAdmin.activeAdmins')} value={stats.actifs} tone="green" />
+        <StatCard icon="Clock" label={t('superAdmin.inactiveAdmins')} value={stats.inactifs} tone="amber" />
+      </div>
+
+      <form onSubmit={createAdmin} className="mb-6 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
         <h2 className="font-bold text-blue-900 mb-4">{t('superAdmin.createAdmin')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input label={t('users.firstname')} value={form.prenom} onChange={value => setForm({ ...form, prenom: value })} />
@@ -119,21 +138,34 @@ export default function SuperAdminAdmins() {
         <button
           type="submit"
           disabled={saving}
-          className="mt-4 bg-blue-900 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-blue-800 disabled:opacity-60 transition"
+          className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-blue-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:opacity-60"
         >
+          <AppIcon name="PlusCircle" className="h-4 w-4" />
           {saving ? t('common.creating') : t('superAdmin.createAdminButton')}
         </button>
       </form>
+
+      <SectionCard className="mb-6" title={t('common.filters', { defaultValue: 'Filtres' })}>
+        <label className="relative block">
+          <AppIcon name="Search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            value={recherche}
+            onChange={e => setRecherche(e.target.value)}
+            placeholder={t('common.search', { defaultValue: 'Rechercher' })}
+            className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+        </label>
+      </SectionCard>
 
       {loading ? (
         <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
       ) : (
         <>
           <div className="md:hidden space-y-4">
-            {admins.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow p-8 text-center text-gray-400 text-sm">{t('superAdmin.noAdmin')}</div>
-            ) : admins.map(admin => (
-              <article key={admin.id} className="bg-white rounded-2xl shadow p-5">
+            {adminsFiltres.length === 0 ? (
+              <ModernEmpty icon="Shield" title={t('superAdmin.noAdmin')} />
+            ) : adminsFiltres.map(admin => (
+              <article key={admin.id} className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="min-w-0">
                     <h2 className="font-semibold text-blue-900 text-sm truncate">{admin.prenom} {admin.nom}</h2>
@@ -151,22 +183,25 @@ export default function SuperAdminAdmins() {
                   {admin.actif ? (
                     <button
                       onClick={() => disableAdmin(admin)}
-                      className="text-xs px-3 py-2 rounded-lg bg-yellow-100 text-yellow-700 hover:bg-yellow-200 font-medium transition"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-yellow-100 px-3 py-2 text-xs font-medium text-yellow-700 transition hover:bg-yellow-200"
                     >
+                      <AppIcon name="Clock" className="h-3.5 w-3.5" />
                       {t('common.deactivate')}
                     </button>
                   ) : (
                     <button
                       onClick={() => enableAdmin(admin)}
-                      className="text-xs px-3 py-2 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium transition"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-green-100 px-3 py-2 text-xs font-medium text-green-700 transition hover:bg-green-200"
                     >
+                      <AppIcon name="CheckCircle" className="h-3.5 w-3.5" />
                       {t('common.reactivate')}
                     </button>
                   )}
                   <button
                     onClick={() => { setResetTarget(admin); setNewPassword(''); clearFeedback() }}
-                    className="text-xs px-3 py-2 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 font-medium transition"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-blue-100 px-3 py-2 text-xs font-medium text-blue-700 transition hover:bg-blue-200"
                   >
+                    <AppIcon name="Lock" className="h-3.5 w-3.5" />
                     {t('superAdmin.resetPassword')}
                   </button>
                 </div>
@@ -174,7 +209,7 @@ export default function SuperAdminAdmins() {
             ))}
           </div>
 
-          <div className="hidden md:block bg-white rounded-2xl shadow overflow-hidden">
+          <div className="hidden overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm md:block">
             <div className="overflow-x-auto">
             <table className="w-full border-collapse" style={{ minWidth: '760px' }}>
               <thead>
@@ -187,12 +222,12 @@ export default function SuperAdminAdmins() {
                 </tr>
               </thead>
               <tbody>
-                {admins.length === 0 ? (
+                {adminsFiltres.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="text-center py-10 text-gray-400 text-sm">{t('superAdmin.noAdmin')}</td>
                   </tr>
-                ) : admins.map((admin, index) => (
-                  <tr key={admin.id} className={`border-b border-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                ) : adminsFiltres.map((admin, index) => (
+                  <tr key={admin.id} className={`border-b border-gray-50 transition hover:bg-blue-50/50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                     <td className="px-4 py-3 font-medium text-blue-900 text-sm">{admin.prenom} {admin.nom}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{admin.email}</td>
                     <td className="px-4 py-3">
@@ -204,22 +239,25 @@ export default function SuperAdminAdmins() {
                         {admin.actif ? (
                           <button
                             onClick={() => disableAdmin(admin)}
-                            className="text-xs px-3 py-1 rounded-lg bg-yellow-100 text-yellow-700 hover:bg-yellow-200 font-medium transition"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-yellow-100 px-3 py-1.5 text-xs font-medium text-yellow-700 transition hover:bg-yellow-200"
                           >
+                            <AppIcon name="Clock" className="h-3.5 w-3.5" />
                             {t('common.deactivate')}
                           </button>
                         ) : (
                           <button
                             onClick={() => enableAdmin(admin)}
-                            className="text-xs px-3 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium transition"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-green-100 px-3 py-1.5 text-xs font-medium text-green-700 transition hover:bg-green-200"
                           >
+                            <AppIcon name="CheckCircle" className="h-3.5 w-3.5" />
                             {t('common.reactivate')}
                           </button>
                         )}
                         <button
                           onClick={() => { setResetTarget(admin); setNewPassword(''); clearFeedback() }}
-                          className="text-xs px-3 py-1 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 font-medium transition"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-100 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-200"
                         >
+                          <AppIcon name="Lock" className="h-3.5 w-3.5" />
                           {t('superAdmin.resetPassword')}
                         </button>
                       </div>
@@ -301,6 +339,32 @@ function formatFieldError(field, message, t) {
     return t(field === 'prenom' ? 'users.firstnameRequired' : 'users.lastnameRequired')
   }
   return message || null
+}
+
+function StatCard({ icon, label, value, tone = 'blue' }) {
+  const tones = {
+    blue: 'bg-blue-50 text-blue-700 ring-blue-100',
+    green: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
+    amber: 'bg-amber-50 text-amber-700 ring-amber-100',
+  }
+  return (
+    <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl ring-1 ${tones[tone] || tones.blue}`}>
+        <AppIcon name={icon} className="h-5 w-5" />
+      </div>
+      <p className="text-2xl font-black text-slate-950">{value}</p>
+      <p className="mt-1 text-sm font-medium text-slate-500">{label}</p>
+    </div>
+  )
+}
+
+function ModernEmpty({ icon, title }) {
+  return (
+    <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center text-gray-400 shadow-sm">
+      <AppIcon name={icon} className="mx-auto mb-3 h-10 w-10 text-blue-300" />
+      <p className="text-sm">{title}</p>
+    </div>
+  )
 }
 
 function Input({ label, value, onChange, type = 'text' }) {

@@ -36,12 +36,18 @@ export default function SuperAdminDashboard() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <Link to="/super-admin/admins" className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 hover:-translate-y-1 hover:shadow-md transition">
+            <Link to="/super-admin/admins" className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 hover:-translate-y-1 hover:shadow-md transition focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+                <AppIcon name="Shield" className="h-5 w-5" />
+              </div>
               <h2 className="font-bold text-blue-900 mb-1">{t('superAdmin.adminsTitle')}</h2>
               <p className="text-sm text-gray-500">{t('superAdmin.adminsDescription')}</p>
             </Link>
 
-            <Link to="/super-admin/logs" className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 hover:-translate-y-1 hover:shadow-md transition">
+            <Link to="/super-admin/logs" className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 hover:-translate-y-1 hover:shadow-md transition focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
+                <AppIcon name="BarChart" className="h-5 w-5" />
+              </div>
               <h2 className="font-bold text-blue-900 mb-1">{t('superAdmin.logsTitle')}</h2>
               <p className="text-sm text-gray-500">{t('superAdmin.logsDescription')}</p>
             </Link>
@@ -61,7 +67,7 @@ export default function SuperAdminDashboard() {
 
 function StatCard({ label, value, color, icon }) {
   return (
-    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5" style={{ borderLeft: `4px solid ${color}` }}>
+    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 transition hover:-translate-y-0.5 hover:shadow-md" style={{ borderLeft: `4px solid ${color}` }}>
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="text-3xl font-bold" style={{ color }}>{value}</div>
         <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-50" style={{ color }}>
@@ -81,7 +87,7 @@ function LogPreview({ logs, t, language }) {
   return (
     <div className="divide-y divide-gray-100">
       {logs.slice(0, 5).map(log => (
-        <div key={log.id} className="px-5 py-3 text-sm flex flex-col md:flex-row md:items-center md:justify-between gap-1">
+        <div key={log.id} className="px-5 py-3 text-sm flex flex-col md:flex-row md:items-center md:justify-between gap-1 transition hover:bg-slate-50">
           <div>
             <span className="font-semibold text-blue-900">{log.action}</span>
             <span className="text-gray-500"> · {log.cibleEmail}</span>
