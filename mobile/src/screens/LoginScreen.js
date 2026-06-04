@@ -6,6 +6,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
+import AppIcon from '../components/AppIcon';
 
 export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
@@ -55,7 +56,10 @@ export default function LoginScreen({ navigation }) {
         {/* Erreur */}
         {error !== '' && (
           <View style={styles.errorBox}>
-            <Text style={styles.errorText}>❌ {error}</Text>
+            <View style={styles.inlineMessage}>
+              <AppIcon name="warning" size={16} color="#EF4444" />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
           </View>
         )}
 
@@ -114,7 +118,8 @@ export default function LoginScreen({ navigation }) {
           onPress={() => navigation.navigate('Register')}
           activeOpacity={0.8}
         >
-          <Text style={styles.btnRegisterText}>✨ {t('auth.create_free_account')}</Text>
+          <AppIcon name="user" size={17} color="#1E3A8A" />
+          <Text style={styles.btnRegisterText}>{t('auth.create_free_account')}</Text>
         </TouchableOpacity>
 
       </View>
@@ -147,11 +152,11 @@ function getApiError(err, fallback, t) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4f8' },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
   content: { paddingHorizontal: 20, paddingTop: 40, paddingBottom: 40 },
 
   header: { alignItems: 'center', marginBottom: 32 },
-  logo: { fontSize: 28, fontWeight: 'bold', color: '#1e3a5f', letterSpacing: 1 },
+  logo: { fontSize: 28, fontWeight: 'bold', color: '#1E3A8A', letterSpacing: 1 },
   subtitle: { fontSize: 14, color: '#64748b', marginTop: 6 },
 
   card: {
@@ -164,7 +169,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca',
     borderRadius: 12, padding: 12, marginBottom: 16,
   },
-  errorText: { color: '#dc2626', fontSize: 13 },
+  errorText: { color: '#EF4444', fontSize: 13 },
+  inlineMessage: { flexDirection: 'row', alignItems: 'center', gap: 7 },
 
   field: { marginBottom: 16 },
   label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
@@ -175,7 +181,7 @@ const styles = StyleSheet.create({
   },
 
   btnLogin: {
-    backgroundColor: '#1e3a5f', paddingVertical: 14,
+    backgroundColor: '#1E3A8A', paddingVertical: 14,
     borderRadius: 12, alignItems: 'center', marginTop: 4,
   },
   btnDisabled: { backgroundColor: '#94a3b8' },
@@ -191,13 +197,14 @@ const styles = StyleSheet.create({
 
   // ✅ Bouton Register bien visible
   btnRegister: {
-    backgroundColor: '#eff6ff', borderWidth: 2, borderColor: '#bfdbfe',
+    backgroundColor: '#F0F9FF', borderWidth: 2, borderColor: '#BAE6FD',
     paddingVertical: 13, borderRadius: 12, alignItems: 'center',
+    justifyContent: 'center', flexDirection: 'row', gap: 8,
   },
-  btnRegisterText: { color: '#1e3a5f', fontWeight: '700', fontSize: 15 },
+  btnRegisterText: { color: '#1E3A8A', fontWeight: '700', fontSize: 15 },
 
   linkBtn: { marginTop: 20, alignItems: 'center' },
-  linkText: { color: '#2563eb', fontSize: 13 },
+  linkText: { color: '#38BDF8', fontSize: 13 },
 
   backBtn: { marginTop: 12, alignItems: 'center' },
   backText: { color: '#64748b', fontSize: 13 },

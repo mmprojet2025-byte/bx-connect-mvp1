@@ -186,19 +186,19 @@ export default function PaymentScreen({ route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4f8' },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
   content: { padding: 20, paddingBottom: 40 },
 
   header: { alignItems: 'center', marginBottom: 24 },
   headerIcon: { fontSize: 48, marginBottom: 8 },
-  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#1e3a5f', marginBottom: 4 },
+  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#1E3A8A', marginBottom: 4 },
   headerSubtitle: { fontSize: 13, color: '#64748b', textAlign: 'center' },
 
   errorBox: {
-    backgroundColor: '#fef2f2', borderLeftWidth: 4, borderLeftColor: '#dc2626',
+    backgroundColor: '#fef2f2', borderLeftWidth: 4, borderLeftColor: '#EF4444',
     padding: 12, borderRadius: 8, marginBottom: 16,
   },
-  errorText: { color: '#dc2626', fontSize: 13 },
+  errorText: { color: '#EF4444', fontSize: 13 },
 
   label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8 },
 
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     flex: 1, borderWidth: 2, borderColor: '#e2e8f0',
     borderRadius: 12, paddingVertical: 10, alignItems: 'center',
   },
-  montantBtnActive: { borderColor: '#1e3a5f', backgroundColor: '#1e3a5f' },
+  montantBtnActive: { borderColor: '#1E3A8A', backgroundColor: '#1E3A8A' },
   montantBtnText: { fontSize: 14, fontWeight: '700', color: '#64748b' },
   montantBtnTextActive: { color: '#fff' },
 
@@ -227,15 +227,15 @@ const styles = StyleSheet.create({
   },
 
   recap: {
-    backgroundColor: '#eff6ff', borderRadius: 12, padding: 14,
-    marginBottom: 20, borderWidth: 1, borderColor: '#bfdbfe',
+    backgroundColor: '#F0F9FF', borderRadius: 12, padding: 14,
+    marginBottom: 20, borderWidth: 1, borderColor: '#BAE6FD',
   },
   recapRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   recapLabel: { fontSize: 13, color: '#64748b' },
-  recapValue: { fontSize: 13, fontWeight: '600', color: '#1e3a5f', maxWidth: '60%' },
+  recapValue: { fontSize: 13, fontWeight: '600', color: '#1E3A8A', maxWidth: '60%' },
 
   btnPayer: {
-    backgroundColor: '#1e3a5f', paddingVertical: 16,
+    backgroundColor: '#1E3A8A', paddingVertical: 16,
     borderRadius: 14, alignItems: 'center', marginBottom: 12,
   },
   btnDisabled: { backgroundColor: '#94a3b8' },
@@ -245,11 +245,11 @@ const styles = StyleSheet.create({
 
   // Succès
   successContainer: {
-    flex: 1, backgroundColor: '#f0f4f8',
+    flex: 1, backgroundColor: '#F8FAFC',
     alignItems: 'center', justifyContent: 'center', padding: 40,
   },
   successIcon: { fontSize: 64, marginBottom: 16 },
-  successTitle: { fontSize: 22, fontWeight: 'bold', color: '#16a34a', marginBottom: 8 },
+  successTitle: { fontSize: 22, fontWeight: 'bold', color: '#22C55E', marginBottom: 8 },
   successText: { fontSize: 14, color: '#64748b', textAlign: 'center', lineHeight: 20, marginBottom: 8 },
   successHint: { fontSize: 12, color: '#94a3b8', textAlign: 'center' },
 });

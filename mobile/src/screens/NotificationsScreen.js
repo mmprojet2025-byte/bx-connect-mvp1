@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList,
-  TouchableOpacity, ActivityIndicator, Linking
+  TouchableOpacity, ActivityIndicator, Linking, Alert
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import AppIcon from '../components/AppIcon';
 
 export default function NotificationsScreen({ navigation }) {
   const { t, i18n } = useTranslation();
-  const { isMembre, isReferent, isAdmin, isSuperAdmin } = useAuth();
+  const { isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -63,6 +64,21 @@ export default function NotificationsScreen({ navigation }) {
   };
 
   const handleSupprimer = async (id) => {
+    Alert.alert(
+      t('common.delete'),
+      t('notifications.confirmDelete', { defaultValue: 'Supprimer cette notification ?' }),
+      [
+        { text: t('common.cancel', { defaultValue: 'Annuler' }), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: () => supprimerNotification(id),
+        },
+      ],
+    );
+  };
+
+  const supprimerNotification = async (id) => {
     setError('');
     try {
       await api.delete(`/notifications/${id}`);
@@ -82,6 +98,7 @@ export default function NotificationsScreen({ navigation }) {
       isReferent,
       isAdmin,
       isSuperAdmin,
+      isPartenaire,
     });
 
     if (!target) {
@@ -94,7 +111,7 @@ export default function NotificationsScreen({ navigation }) {
       return;
     }
 
-    navigation.getParent()?.navigate(target.tab);
+    navigation.getParent()?.navigate(target.tab, target.params);
   };
 
   const nonLues = notifications.filter(n => !n.lue).length;
@@ -107,7 +124,7 @@ export default function NotificationsScreen({ navigation }) {
     >
       <View style={styles.notifLeft}>
         <View style={[styles.notifIcon, { backgroundColor: typeColor(item.type) }]}>
-          <Text style={styles.notifIconText}>{typeIcon(item.type)}</Text>
+          <AppIcon name={typeIcon(item.type)} size={20} color={typeIconColor(item.type)} />
         </View>
         {!item.lue && <View style={styles.unreadDot} />}
       </View>
@@ -144,7 +161,7 @@ export default function NotificationsScreen({ navigation }) {
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         accessibilityLabel={t('common.delete')}
       >
-        <Text style={styles.deleteBtnText}>×</Text>
+        <AppIcon name="trash" size={18} color="#EF4444" />
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -169,7 +186,7 @@ export default function NotificationsScreen({ navigation }) {
               disabled={actionLoading}
             >
               {actionLoading
-                ? <ActivityIndicator color="#2563eb" size="small" />
+                ? <ActivityIndicator color="#38BDF8" size="small" />
                 : <Text style={styles.btnToutesLuesText}>{t('notifications.markAllAsReadShort')}</Text>
               }
             </TouchableOpacity>
@@ -191,12 +208,14 @@ export default function NotificationsScreen({ navigation }) {
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#1e3a5f" />
+          <ActivityIndicator size="large" color="#1E3A8A" />
           <Text style={styles.loadingText}>{t('notifications.loading')}</Text>
         </View>
       ) : notifications.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyIcon}>🔔</Text>
+          <View style={styles.emptyIconCircle}>
+            <AppIcon name="bell" size={34} color="#38BDF8" />
+          </View>
           <Text style={styles.emptyTitle}>{t('notifications.emptyShort')}</Text>
           <Text style={styles.emptyText}>
             {t('notifications.emptyDescriptionMobile')}
@@ -222,19 +241,31 @@ export default function NotificationsScreen({ navigation }) {
 
 function typeIcon(type) {
   switch (type) {
-    case 'INSCRIPTION': return '🎯';
-    case 'PROJET': return '🚀';
-    case 'ANNONCE': return '📢';
-    case 'PAIEMENT': return '💶';
-    case 'MESSAGE': return '💬';
-    case 'GROUPE': return '👥';
-    default: return '🔔';
+    case 'INSCRIPTION': return 'activity';
+    case 'PROJET': return 'project';
+    case 'ANNONCE': return 'alert';
+    case 'PAIEMENT': return 'wallet';
+    case 'MESSAGE': return 'message';
+    case 'GROUPE': return 'group';
+    default: return 'bell';
+  }
+}
+
+function typeIconColor(type) {
+  switch (type) {
+    case 'INSCRIPTION': return '#38BDF8';
+    case 'PROJET': return '#22C55E';
+    case 'ANNONCE': return '#ca8a04';
+    case 'PAIEMENT': return '#db2777';
+    case 'MESSAGE': return '#7c3aed';
+    case 'GROUPE': return '#0f766e';
+    default: return '#64748b';
   }
 }
 
 function typeColor(type) {
   switch (type) {
-    case 'INSCRIPTION': return '#dbeafe';
+    case 'INSCRIPTION': return '#E0F2FE';
     case 'PROJET': return '#dcfce7';
     case 'ANNONCE': return '#fef9c3';
     case 'PAIEMENT': return '#fce7f3';
@@ -257,14 +288,18 @@ function resolveActionTarget(lienAction, roles) {
   if (path.includes('/dashboard') && availableTabs.has('TabDashboard')) {
     return { tab: 'TabDashboard' };
   }
-  if (path.includes('/groupes') && availableTabs.has('TabGroupes')) {
-    return { tab: 'TabGroupes' };
+  if (path.includes('/groupes')) {
+    return availableTabs.has('TabGroupes')
+      ? { tab: 'TabGroupes' }
+      : { tab: 'TabDashboard', params: { screen: 'GroupesAccess' } };
   }
   if (path.includes('/activites') && availableTabs.has('TabActivities')) {
     return { tab: 'TabActivities' };
   }
-  if (path.includes('/projets') && availableTabs.has('TabProjects')) {
-    return { tab: 'TabProjects' };
+  if (path.includes('/projets')) {
+    return availableTabs.has('TabProjects')
+      ? { tab: 'TabProjects' }
+      : { tab: 'TabDashboard', params: { screen: 'ProjectsAccess' } };
   }
   if (path.includes('/messagerie') && availableTabs.has('TabMessagerie')) {
     return { tab: 'TabMessagerie' };
@@ -279,13 +314,15 @@ function resolveActionTarget(lienAction, roles) {
   return null;
 }
 
-function getAvailableTabs({ isMembre, isReferent, isAdmin, isSuperAdmin }) {
-  if (isSuperAdmin) return new Set(['TabDashboard', 'TabProfile']);
-  if (isAdmin) return new Set(['TabDashboard', 'TabNotifications', 'TabProfile']);
+function getAvailableTabs({ isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire }) {
+  if (isSuperAdmin) return new Set(['TabDashboard', 'TabUsers', 'TabNotifications', 'TabProfile']);
+  if (isAdmin) return new Set(['TabDashboard', 'TabUsers', 'TabActivities', 'TabNotifications', 'TabProfile']);
+  if (isPartenaire) {
+    return new Set(['TabDashboard', 'TabProjects', 'TabActivities', 'TabNotifications', 'TabProfile']);
+  }
   if (isReferent) {
     return new Set([
       'TabDashboard',
-      'TabGroupes',
       'TabActivities',
       'TabMessagerie',
       'TabNotifications',
@@ -296,9 +333,8 @@ function getAvailableTabs({ isMembre, isReferent, isAdmin, isSuperAdmin }) {
     return new Set([
       'TabDashboard',
       'TabActivities',
-      'TabGroupes',
-      'TabProjects',
       'TabMessagerie',
+      'TabNotifications',
       'TabProfile',
     ]);
   }
@@ -327,7 +363,7 @@ function getApiError(err, t, fallback) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4f8' },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -338,7 +374,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
   },
-  headerTitle: { fontSize: 18, fontWeight: '900', color: '#1e3a5f' },
+  headerTitle: { fontSize: 18, fontWeight: '900', color: '#1E3A8A' },
   headerSub: { fontSize: 12, color: '#64748b', marginTop: 2 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   btnLight: {
@@ -349,20 +385,20 @@ const styles = StyleSheet.create({
   },
   btnLightText: { color: '#64748b', fontSize: 12, fontWeight: '800' },
   btnToutesLues: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#F0F9FF',
     paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#bfdbfe',
+    borderColor: '#BAE6FD',
   },
-  btnToutesLuesText: { color: '#2563eb', fontSize: 12, fontWeight: '800' },
+  btnToutesLuesText: { color: '#38BDF8', fontSize: 12, fontWeight: '800' },
   btnDisabled: { opacity: 0.6 },
 
   successBox: {
     backgroundColor: '#f0fdf4',
     borderLeftWidth: 4,
-    borderLeftColor: '#16a34a',
+    borderLeftColor: '#22C55E',
     marginHorizontal: 16,
     marginTop: 8,
     padding: 12,
@@ -372,42 +408,43 @@ const styles = StyleSheet.create({
   errorBox: {
     backgroundColor: '#fef2f2',
     borderLeftWidth: 4,
-    borderLeftColor: '#dc2626',
+    borderLeftColor: '#EF4444',
     marginHorizontal: 16,
     marginTop: 8,
     padding: 12,
     borderRadius: 8,
   },
-  errorText: { color: '#dc2626', fontSize: 13 },
+  errorText: { color: '#EF4444', fontSize: 13 },
 
-  listContent: { padding: 12, paddingBottom: 40 },
+  listContent: { padding: 12, paddingBottom: 28 },
   notifCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 13,
+    padding: 12,
     marginBottom: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 1,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   notifCardUnread: {
     backgroundColor: '#f0f7ff',
     borderLeftWidth: 3,
-    borderLeftColor: '#2563eb',
+    borderLeftColor: '#38BDF8',
   },
-  notifLeft: { position: 'relative', marginRight: 12 },
+  notifLeft: { position: 'relative', marginRight: 10 },
   notifIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  notifIconText: { fontSize: 20 },
   unreadDot: {
     position: 'absolute',
     top: 0,
@@ -415,48 +452,60 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#2563eb',
+    backgroundColor: '#38BDF8',
     borderWidth: 2,
     borderColor: '#fff',
   },
   notifContent: { flex: 1 },
-  titleRow: { marginBottom: 4 },
-  notifTitle: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 5 },
-  notifTitleUnread: { fontWeight: '900', color: '#1e3a5f' },
+  titleRow: { marginBottom: 3 },
+  notifTitle: { fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 4, lineHeight: 18 },
+  notifTitleUnread: { fontWeight: '900', color: '#1E3A8A' },
   readBadge: {
     alignSelf: 'flex-start',
     backgroundColor: '#f1f5f9',
     color: '#64748b',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '900',
     paddingHorizontal: 7,
-    paddingVertical: 3,
+    paddingVertical: 2,
     borderRadius: 20,
     overflow: 'hidden',
   },
-  unreadBadge: { backgroundColor: '#dbeafe', color: '#2563eb' },
-  notifMessage: { fontSize: 12, color: '#64748b', lineHeight: 17, marginBottom: 4 },
+  unreadBadge: { backgroundColor: '#E0F2FE', color: '#38BDF8' },
+  notifMessage: { fontSize: 12, color: '#64748b', lineHeight: 16, marginBottom: 5 },
   actionButton: {
     alignSelf: 'flex-start',
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#F0F9FF',
     borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     marginBottom: 5,
   },
-  actionButtonText: { color: '#2563eb', fontSize: 12, fontWeight: '900' },
+  actionButtonText: { color: '#38BDF8', fontSize: 11, fontWeight: '900' },
   notifDate: { fontSize: 11, color: '#94a3b8' },
-  deleteBtn: { padding: 4, marginLeft: 8 },
-  deleteBtnText: { color: '#94a3b8', fontSize: 20, fontWeight: '900', lineHeight: 20 },
+  deleteBtn: {
+    padding: 5,
+    marginLeft: 6,
+    borderRadius: 18,
+    backgroundColor: '#fef2f2',
+  },
 
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   loadingText: { marginTop: 12, color: '#64748b', fontSize: 14 },
-  emptyIcon: { fontSize: 56, marginBottom: 16 },
-  emptyTitle: { fontSize: 18, fontWeight: '900', color: '#1e3a5f', marginBottom: 8 },
+  emptyIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#E0F2FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: { fontSize: 18, fontWeight: '900', color: '#1E3A8A', marginBottom: 8 },
   emptyText: { color: '#64748b', fontSize: 14, textAlign: 'center', lineHeight: 20 },
   retryButton: {
     marginTop: 18,
-    backgroundColor: '#1e3a5f',
+    backgroundColor: '#1E3A8A',
     borderRadius: 12,
     paddingHorizontal: 18,
     paddingVertical: 12,

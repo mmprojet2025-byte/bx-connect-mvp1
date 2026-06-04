@@ -8,11 +8,13 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { changeAppLanguage } from '../i18n';
+import AppIcon from '../components/AppIcon';
+import { Avatar } from '../components/MobileUI';
 
 const LANGUES = [
-  { value: 'FR', labelKey: 'common.language_fr', icon: '🇫🇷' },
-  { value: 'NL', labelKey: 'common.language_nl', icon: '🇧🇪' },
-  { value: 'EN', labelKey: 'common.language_en', icon: '🇬🇧' },
+  { value: 'FR', labelKey: 'common.language_fr' },
+  { value: 'NL', labelKey: 'common.language_nl' },
+  { value: 'EN', labelKey: 'common.language_en' },
 ];
 
 export default function ProfileScreen() {
@@ -124,7 +126,7 @@ export default function ProfileScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#1e3a5f" />
+        <ActivityIndicator size="large" color="#1E3A8A" />
         <Text style={styles.loadingText}>{t('profile.loading')}</Text>
       </View>
     );
@@ -133,7 +135,9 @@ export default function ProfileScreen() {
   if (!profil) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.emptyIcon}>👤</Text>
+        <View style={styles.emptyIconCircle}>
+          <AppIcon name="profile" size={34} color="#38BDF8" />
+        </View>
         <Text style={styles.emptyTitle}>{t('profile.unavailable')}</Text>
         {error !== '' && <Text style={styles.emptyText}>{error}</Text>}
         <TouchableOpacity style={styles.retryButton} onPress={fetchProfil}>
@@ -161,11 +165,7 @@ export default function ProfileScreen() {
       {/* Carte profil */}
       <View style={styles.profileCard}>
         {/* Avatar */}
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {profil?.prenom?.[0]}{profil?.nom?.[0]}
-          </Text>
-        </View>
+        <Avatar prenom={profil?.prenom} nom={profil?.nom} size={64} />
 
         {!editMode ? (
           <>
@@ -173,10 +173,16 @@ export default function ProfileScreen() {
             <View style={styles.roleBadge}>
               <Text style={styles.roleText}>{t(`roles.${profil?.role}`, profil?.role)}</Text>
             </View>
-            <Text style={styles.profileEmail}>📧 {profil?.email}</Text>
-            <Text style={styles.profileLang}>
-              🌐 {t('profile.language_display', { language: languageLabel(profil?.languePreference, t) })}
-            </Text>
+            <View style={styles.profileMetaRow}>
+              <AppIcon name="message" size={16} color="#64748b" />
+              <Text style={styles.profileMetaText}>{profil?.email}</Text>
+            </View>
+            <View style={styles.profileMetaRow}>
+              <AppIcon name="settings" size={16} color="#64748b" />
+              <Text style={styles.profileMetaText}>
+                {t('profile.language_display', { language: languageLabel(profil?.languePreference, t) })}
+              </Text>
+            </View>
             <Text style={styles.profileDate}>
               {t('profile.member_since', { date: formatDate(profil?.dateInscription, i18n.language, t) })}
             </Text>
@@ -185,7 +191,8 @@ export default function ProfileScreen() {
               onPress={() => setEditMode(true)}
               activeOpacity={0.8}
             >
-              <Text style={styles.btnEditText}>✏️ {t('profile.edit_btn')}</Text>
+              <AppIcon name="edit" size={16} color="#fff" />
+              <Text style={styles.btnEditText}>{t('profile.edit_btn')}</Text>
             </TouchableOpacity>
           </>
         ) : (
@@ -223,7 +230,7 @@ export default function ProfileScreen() {
                     styles.langueBtnText,
                     form.languePreference === l.value && styles.langueBtnTextActive,
                   ]}>
-                    {l.icon} {t(l.labelKey)}
+                    {t(l.labelKey)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -239,7 +246,10 @@ export default function ProfileScreen() {
                 {saving ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={styles.btnSaveText}>💾 {t('profile.save_btn')}</Text>
+                  <>
+                    <AppIcon name="save" size={16} color="#fff" />
+                    <Text style={styles.btnSaveText}>{t('profile.save_btn')}</Text>
+                  </>
                 )}
               </TouchableOpacity>
               <TouchableOpacity
@@ -255,7 +265,10 @@ export default function ProfileScreen() {
 
       {/* Sécurité */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>🔒 {t('profile.security')}</Text>
+        <View style={styles.sectionTitleRow}>
+          <AppIcon name="lock" size={20} color="#1E3A8A" />
+          <Text style={styles.sectionTitle}>{t('profile.security')}</Text>
+        </View>
 
         {!showPasswordForm ? (
           <TouchableOpacity
@@ -304,7 +317,8 @@ export default function ProfileScreen() {
 
       {/* Déconnexion */}
       <TouchableOpacity style={styles.btnLogout} onPress={handleLogout} activeOpacity={0.8}>
-        <Text style={styles.btnLogoutText}>🚪 {t('profile.logout')}</Text>
+        <AppIcon name="logout" size={18} color="#EF4444" />
+        <Text style={styles.btnLogoutText}>{t('profile.logout')}</Text>
       </TouchableOpacity>
 
     </ScrollView>
@@ -336,16 +350,24 @@ function formatDate(dateStr, language, t) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4f8' },
-  content: { padding: 16, paddingBottom: 40 },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, backgroundColor: '#f0f4f8' },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  content: { padding: 14, paddingBottom: 28 },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, backgroundColor: '#F8FAFC' },
   loadingText: { marginTop: 12, color: '#64748b', fontSize: 14 },
-  emptyIcon: { fontSize: 54, marginBottom: 14 },
-  emptyTitle: { fontSize: 18, fontWeight: '900', color: '#1e3a5f', marginBottom: 8 },
+  emptyIconCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: '#E0F2FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  emptyTitle: { fontSize: 18, fontWeight: '900', color: '#1E3A8A', marginBottom: 8 },
   emptyText: { color: '#64748b', fontSize: 14, textAlign: 'center', lineHeight: 20 },
   retryButton: {
     marginTop: 18,
-    backgroundColor: '#1e3a5f',
+    backgroundColor: '#1E3A8A',
     borderRadius: 12,
     paddingHorizontal: 18,
     paddingVertical: 12,
@@ -353,64 +375,67 @@ const styles = StyleSheet.create({
   retryButtonText: { color: '#fff', fontWeight: '900', fontSize: 13 },
 
   successBox: {
-    backgroundColor: '#f0fdf4', borderLeftWidth: 4, borderLeftColor: '#16a34a',
+    backgroundColor: '#f0fdf4', borderLeftWidth: 4, borderLeftColor: '#22C55E',
     padding: 12, borderRadius: 8, marginBottom: 12,
   },
   successText: { color: '#15803d', fontSize: 13 },
   errorBox: {
-    backgroundColor: '#fef2f2', borderLeftWidth: 4, borderLeftColor: '#dc2626',
+    backgroundColor: '#fef2f2', borderLeftWidth: 4, borderLeftColor: '#EF4444',
     padding: 12, borderRadius: 8, marginBottom: 12,
   },
-  errorText: { color: '#dc2626', fontSize: 13 },
+  errorText: { color: '#EF4444', fontSize: 13 },
 
   profileCard: {
-    backgroundColor: '#fff', borderRadius: 20, padding: 24,
-    alignItems: 'center', marginBottom: 16,
+    backgroundColor: '#fff', borderRadius: 20, padding: 18,
+    alignItems: 'center', marginBottom: 12,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07, shadowRadius: 8, elevation: 2,
+    shadowOpacity: 0.06, shadowRadius: 7, elevation: 2,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   avatar: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: '#1e3a5f', alignItems: 'center',
-    justifyContent: 'center', marginBottom: 12,
+    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: '#1E3A8A', alignItems: 'center',
+    justifyContent: 'center', marginBottom: 10,
   },
-  avatarText: { color: '#fff', fontSize: 24, fontWeight: 'bold' },
-  profileName: { fontSize: 20, fontWeight: 'bold', color: '#1e3a5f', marginBottom: 6 },
+  avatarText: { color: '#fff', fontSize: 22, fontWeight: '900' },
+  profileName: { fontSize: 19, fontWeight: '900', color: '#1E3A8A', marginBottom: 6 },
   roleBadge: {
-    backgroundColor: '#2563eb', paddingHorizontal: 12, paddingVertical: 3,
-    borderRadius: 20, marginBottom: 10,
+    backgroundColor: '#1E3A8A', paddingHorizontal: 11, paddingVertical: 4,
+    borderRadius: 20, marginBottom: 9,
   },
-  roleText: { color: '#fff', fontSize: 12, fontWeight: '600' },
-  profileEmail: { fontSize: 14, color: '#64748b', marginBottom: 4 },
-  profileLang: { fontSize: 14, color: '#64748b', marginBottom: 4 },
+  roleText: { color: '#fff', fontSize: 11, fontWeight: '800' },
+  profileMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 4 },
+  profileMetaText: { fontSize: 13, color: '#64748b' },
   bold: { fontWeight: '600' },
-  profileDate: { fontSize: 12, color: '#94a3b8', marginBottom: 16 },
+  profileDate: { fontSize: 12, color: '#94a3b8', marginTop: 2, marginBottom: 13 },
   btnEdit: {
-    backgroundColor: '#1e3a5f', paddingVertical: 10, paddingHorizontal: 24,
-    borderRadius: 12, alignItems: 'center',
+    backgroundColor: '#1E3A8A', paddingVertical: 11, paddingHorizontal: 18,
+    borderRadius: 12, alignItems: 'center', flexDirection: 'row', gap: 7,
   },
-  btnEditText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  btnEditText: { color: '#fff', fontWeight: '800', fontSize: 13 },
 
   editForm: { width: '100%' },
-  editTitle: { fontSize: 16, fontWeight: 'bold', color: '#1e3a5f', marginBottom: 16 },
+  editTitle: { fontSize: 16, fontWeight: 'bold', color: '#1E3A8A', marginBottom: 16 },
   label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
   input: {
     borderWidth: 1, borderColor: '#d1d5db', borderRadius: 12,
-    paddingHorizontal: 16, paddingVertical: 12, fontSize: 15,
-    color: '#1e293b', backgroundColor: '#f8fafc', marginBottom: 14,
+    paddingHorizontal: 14, paddingVertical: 10, fontSize: 14,
+    color: '#1e293b', backgroundColor: '#f8fafc', marginBottom: 12,
   },
   languesRow: { flexDirection: 'row', marginBottom: 16 },
   langueBtn: {
     flex: 1, borderWidth: 2, borderColor: '#e2e8f0',
     borderRadius: 10, padding: 8, alignItems: 'center', marginRight: 6,
   },
-  langueBtnActive: { borderColor: '#1e3a5f', backgroundColor: '#eff6ff' },
+  langueBtnActive: { borderColor: '#1E3A8A', backgroundColor: '#F0F9FF' },
   langueBtnText: { fontSize: 12, color: '#64748b', fontWeight: '500' },
-  langueBtnTextActive: { color: '#1e3a5f', fontWeight: '700' },
+  langueBtnTextActive: { color: '#1E3A8A', fontWeight: '700' },
   editActions: { flexDirection: 'row', gap: 10 },
   btnSave: {
-    flex: 1, backgroundColor: '#1e3a5f', paddingVertical: 12,
-    borderRadius: 12, alignItems: 'center',
+    flex: 1, backgroundColor: '#1E3A8A', paddingVertical: 12,
+    borderRadius: 12, alignItems: 'center', justifyContent: 'center',
+    flexDirection: 'row', gap: 7,
   },
   btnDisabled: { backgroundColor: '#94a3b8' },
   btnSaveText: { color: '#fff', fontWeight: '600', fontSize: 14 },
@@ -421,21 +446,25 @@ const styles = StyleSheet.create({
   btnCancelText: { color: '#64748b', fontWeight: '600', fontSize: 14 },
 
   section: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 20,
-    marginBottom: 16,
+    backgroundColor: '#fff', borderRadius: 16, padding: 16,
+    marginBottom: 12,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#1e3a5f', marginBottom: 14 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#1E3A8A' },
   btnPassword: {
     backgroundColor: '#fff7ed', borderWidth: 1, borderColor: '#fed7aa',
-    paddingVertical: 12, borderRadius: 12, alignItems: 'center',
+    paddingVertical: 11, borderRadius: 12, alignItems: 'center',
   },
-  btnPasswordText: { color: '#ea580c', fontWeight: '600', fontSize: 14 },
+  btnPasswordText: { color: '#F97316', fontWeight: '800', fontSize: 13 },
 
   btnLogout: {
     backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca',
-    paddingVertical: 14, borderRadius: 12, alignItems: 'center',
+    paddingVertical: 12, borderRadius: 12, alignItems: 'center',
+    justifyContent: 'center', flexDirection: 'row', gap: 8,
   },
-  btnLogoutText: { color: '#dc2626', fontWeight: '600', fontSize: 15 },
+  btnLogoutText: { color: '#EF4444', fontWeight: '800', fontSize: 14 },
 });

@@ -83,23 +83,23 @@ function getApiError(err, fallback, t) {
 }
 
 const styles = StyleSheet.create({
-  container:{flex:1,backgroundColor:'#f0f4f8'},
+  container:{flex:1,backgroundColor:'#F8FAFC'},
   content:{paddingHorizontal:20,paddingTop:32,paddingBottom:40},
   header:{alignItems:'center',marginBottom:24},
-  logo:{fontSize:26,fontWeight:'bold',color:'#1e3a5f',letterSpacing:1},
+  logo:{fontSize:26,fontWeight:'bold',color:'#1E3A8A',letterSpacing:1},
   subtitle:{fontSize:14,color:'#64748b',marginTop:4},
   card:{backgroundColor:'#fff',borderRadius:20,padding:24,shadowColor:'#000',shadowOffset:{width:0,height:2},shadowOpacity:0.08,shadowRadius:12,elevation:3},
   errorBox:{backgroundColor:'#fef2f2',borderWidth:1,borderColor:'#fecaca',borderRadius:12,padding:12,marginBottom:16},
-  errorText:{color:'#dc2626',fontSize:13},
+  errorText:{color:'#EF4444',fontSize:13},
   row:{flexDirection:'row',marginBottom:0},
   field:{marginBottom:16},
   label:{fontSize:13,fontWeight:'600',color:'#374151',marginBottom:6},
   input:{borderWidth:1,borderColor:'#d1d5db',borderRadius:12,paddingHorizontal:16,paddingVertical:12,fontSize:15,color:'#1e293b',backgroundColor:'#f8fafc'},
-  btn:{backgroundColor:'#1e3a5f',paddingVertical:14,borderRadius:12,alignItems:'center',marginTop:8},
+  btn:{backgroundColor:'#1E3A8A',paddingVertical:14,borderRadius:12,alignItems:'center',marginTop:8},
   btnDisabled:{backgroundColor:'#94a3b8'},
   btnText:{color:'#fff',fontWeight:'bold',fontSize:16},
   link:{marginTop:16,alignItems:'center'},
-  linkText:{color:'#2563eb',fontSize:13},
+  linkText:{color:'#38BDF8',fontSize:13},
   back:{marginTop:20,alignItems:'center'},
   backText:{color:'#64748b',fontSize:13},
 });

@@ -43,10 +43,10 @@ export default function PaymentHistoryScreen() {
 
   const statutColor = (statut) => {
     switch (statut) {
-      case 'PAYE':       return { bg: '#dcfce7', color: '#16a34a' };
+      case 'PAYE':       return { bg: '#dcfce7', color: '#22C55E' };
       case 'EN_ATTENTE': return { bg: '#fef9c3', color: '#d97706' };
       case 'ANNULE':     return { bg: '#f1f5f9', color: '#64748b' };
-      case 'ECHOUE':     return { bg: '#fef2f2', color: '#dc2626' };
+      case 'ECHOUE':     return { bg: '#fef2f2', color: '#EF4444' };
       case 'REMBOURSE':  return { bg: '#f3e8ff', color: '#7c3aed' };
       default:           return { bg: '#f1f5f9', color: '#64748b' };
     }
@@ -144,7 +144,7 @@ export default function PaymentHistoryScreen() {
       {/* Liste */}
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#1e3a5f" />
+          <ActivityIndicator size="large" color="#1E3A8A" />
           <Text style={styles.loadingText}>Chargement...</Text>
         </View>
       ) : paiementsFiltres.length === 0 ? (
@@ -173,16 +173,16 @@ export default function PaymentHistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4f8' },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
 
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 16, paddingVertical: 14,
     backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e2e8f0',
   },
-  headerTitle: { fontSize: 17, fontWeight: 'bold', color: '#1e3a5f' },
+  headerTitle: { fontSize: 17, fontWeight: 'bold', color: '#1E3A8A' },
   headerSub: { fontSize: 12, color: '#64748b', marginTop: 2 },
-  totalPaye: { fontWeight: 'bold', color: '#16a34a' },
+  totalPaye: { fontWeight: 'bold', color: '#22C55E' },
   refreshBtn: {
     width: 36, height: 36, backgroundColor: '#f1f5f9',
     borderRadius: 10, alignItems: 'center', justifyContent: 'center',
@@ -198,15 +198,15 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 20,
     paddingHorizontal: 10, paddingVertical: 4,
   },
-  filtreBtnActive: { backgroundColor: '#1e3a5f', borderColor: '#1e3a5f' },
+  filtreBtnActive: { backgroundColor: '#1E3A8A', borderColor: '#1E3A8A' },
   filtreBtnText: { fontSize: 11, color: '#64748b', fontWeight: '500' },
   filtreBtnTextActive: { color: '#fff', fontWeight: '700' },
 
   errorBox: {
-    backgroundColor: '#fef2f2', borderLeftWidth: 4, borderLeftColor: '#dc2626',
+    backgroundColor: '#fef2f2', borderLeftWidth: 4, borderLeftColor: '#EF4444',
     marginHorizontal: 16, marginTop: 8, padding: 12, borderRadius: 8,
   },
-  errorText: { color: '#dc2626', fontSize: 13 },
+  errorText: { color: '#EF4444', fontSize: 13 },
 
   listContent: { padding: 12 },
 
@@ -223,18 +223,18 @@ const styles = StyleSheet.create({
   },
   icon: { fontSize: 22 },
   cardInfo: { flex: 1 },
-  cardTitle: { fontSize: 14, fontWeight: '600', color: '#1e3a5f', marginBottom: 2 },
+  cardTitle: { fontSize: 14, fontWeight: '600', color: '#1E3A8A', marginBottom: 2 },
   cardDate: { fontSize: 11, color: '#94a3b8' },
   cardMessage: { fontSize: 11, color: '#64748b', fontStyle: 'italic', marginTop: 2 },
 
   cardRight: { alignItems: 'flex-end' },
-  montant: { fontSize: 15, fontWeight: 'bold', color: '#1e3a5f', marginBottom: 4 },
+  montant: { fontSize: 15, fontWeight: 'bold', color: '#1E3A8A', marginBottom: 4 },
   statutBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
   statutText: { fontSize: 10, fontWeight: '600' },
 
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   loadingText: { marginTop: 12, color: '#64748b', fontSize: 14 },
   emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyTitle: { fontSize: 16, fontWeight: 'bold', color: '#1e3a5f', marginBottom: 6 },
+  emptyTitle: { fontSize: 16, fontWeight: 'bold', color: '#1E3A8A', marginBottom: 6 },
   emptyText: { color: '#64748b', fontSize: 13, textAlign: 'center' },
 });

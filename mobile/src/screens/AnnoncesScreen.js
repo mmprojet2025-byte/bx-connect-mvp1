@@ -28,7 +28,7 @@ export default function AnnoncesScreen() {
   };
 
   const typeStyle = (type) => ({
-    GLOBALE: { bg: '#dbeafe', color: '#1d4ed8' },
+    GLOBALE: { bg: '#E0F2FE', color: '#1d4ed8' },
     GROUPE:  { bg: '#ede9fe', color: '#7c3aed' },
     SYSTEME: { bg: '#f1f5f9', color: '#64748b' },
   }[type] || { bg: '#f1f5f9', color: '#64748b' });
@@ -75,7 +75,7 @@ export default function AnnoncesScreen() {
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#1e3a5f" />
+          <ActivityIndicator size="large" color="#1E3A8A" />
           <Text style={styles.loadingText}>Chargement...</Text>
         </View>
       ) : annonces.length === 0 ? (
@@ -99,33 +99,33 @@ export default function AnnoncesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4f8' },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 16, paddingVertical: 14,
     backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e2e8f0',
   },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1e3a5f' },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1E3A8A' },
   refreshBtn: { padding: 4 },
   errorBox: {
-    backgroundColor: '#fef2f2', borderLeftWidth: 4, borderLeftColor: '#dc2626',
+    backgroundColor: '#fef2f2', borderLeftWidth: 4, borderLeftColor: '#EF4444',
     marginHorizontal: 16, marginTop: 8, padding: 12, borderRadius: 8,
   },
-  errorText: { color: '#dc2626', fontSize: 13 },
+  errorText: { color: '#EF4444', fontSize: 13 },
   listContent: { padding: 16 },
   card: {
     backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
   },
-  cardEpinglee: { borderLeftWidth: 4, borderLeftColor: '#2563eb' },
+  cardEpinglee: { borderLeftWidth: 4, borderLeftColor: '#38BDF8' },
   cardHeader: {
     flexDirection: 'row', justifyContent: 'space-between',
     alignItems: 'flex-start', marginBottom: 8,
   },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 },
   pinIcon: { fontSize: 14, marginRight: 4 },
-  cardTitle: { fontSize: 15, fontWeight: 'bold', color: '#1e3a5f', flex: 1 },
+  cardTitle: { fontSize: 15, fontWeight: 'bold', color: '#1E3A8A', flex: 1 },
   typeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
   typeBadgeText: { fontSize: 10, fontWeight: '600' },
   cardContenu: { fontSize: 13, color: '#374151', lineHeight: 19, marginBottom: 8 },

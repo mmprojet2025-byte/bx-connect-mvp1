@@ -6,6 +6,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import AppIcon from '../components/AppIcon';
 
 export default function MessagerieScreen() {
   const { t, i18n } = useTranslation();
@@ -158,7 +159,7 @@ export default function MessagerieScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#1e3a5f" />
+        <ActivityIndicator size="large" color="#1E3A8A" />
         <Text style={styles.loadingText}>{t('messaging.loadingMessaging')}</Text>
       </View>
     );
@@ -215,7 +216,7 @@ export default function MessagerieScreen() {
 
           {loadingMessages ? (
             <View style={styles.messagesLoading}>
-              <ActivityIndicator color="#1e3a5f" />
+              <ActivityIndicator color="#1E3A8A" />
               <Text style={styles.loadingText}>{t('messaging.loadingMessages')}</Text>
             </View>
           ) : (
@@ -226,7 +227,9 @@ export default function MessagerieScreen() {
               showsVerticalScrollIndicator={false}
               ListEmptyComponent={
                 <View style={styles.emptyMessages}>
-                  <Text style={styles.emptyIcon}>💬</Text>
+                  <View style={styles.emptyIconCircle}>
+                    <AppIcon name="message" size={34} color="#38BDF8" />
+                  </View>
                   <Text style={styles.emptyText}>{t('messaging.noMessages')}</Text>
                 </View>
               }
@@ -258,7 +261,7 @@ export default function MessagerieScreen() {
               {sending ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.sendBtnText}>➤</Text>
+                <AppIcon name="send" size={18} color="#fff" />
               )}
             </TouchableOpacity>
           </View>
@@ -364,7 +367,9 @@ function MessageBubble({ message, currentUser, language }) {
 function ForbiddenState({ title, text }) {
   return (
     <View style={styles.centered}>
-      <Text style={styles.forbiddenIcon}>🔒</Text>
+      <View style={styles.emptyIconCircle}>
+        <AppIcon name="lock" size={34} color="#38BDF8" />
+      </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyText}>{text}</Text>
     </View>
@@ -375,7 +380,9 @@ function EmptyState({ title, text, onRetry }) {
   const { t } = useTranslation();
   return (
     <View style={styles.centered}>
-      <Text style={styles.emptyIcon}>💬</Text>
+      <View style={styles.emptyIconCircle}>
+        <AppIcon name="message" size={34} color="#38BDF8" />
+      </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyText}>{text}</Text>
       <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
@@ -423,56 +430,56 @@ function formatDate(dateStr, language) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4f8' },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
 
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
   },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1e3a5f' },
+  headerTitle: { fontSize: 17, fontWeight: '900', color: '#1E3A8A' },
   headerSub: { fontSize: 12, color: '#64748b', marginTop: 3 },
   retrySmall: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#F0F9FF',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
-  retrySmallText: { color: '#2563eb', fontSize: 12, fontWeight: '700' },
+  retrySmallText: { color: '#38BDF8', fontSize: 12, fontWeight: '700' },
 
   groupSelector: {
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
   },
-  groupSelectorContent: { paddingHorizontal: 12, paddingVertical: 10 },
+  groupSelectorContent: { paddingHorizontal: 12, paddingVertical: 8 },
   groupChip: {
     minWidth: 130,
     borderWidth: 1,
-    borderColor: '#dbeafe',
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
+    borderColor: '#E0F2FE',
+    borderRadius: 13,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
     marginRight: 8,
     backgroundColor: '#fff',
   },
-  groupChipActive: { backgroundColor: '#1e3a5f', borderColor: '#1e3a5f' },
-  groupChipTitle: { color: '#1e3a5f', fontSize: 13, fontWeight: '800', marginBottom: 2 },
+  groupChipActive: { backgroundColor: '#1E3A8A', borderColor: '#1E3A8A' },
+  groupChipTitle: { color: '#1E3A8A', fontSize: 13, fontWeight: '800', marginBottom: 2 },
   groupChipTitleActive: { color: '#fff' },
   groupChipSub: { color: '#64748b', fontSize: 11 },
-  groupChipSubActive: { color: '#bfdbfe' },
+  groupChipSubActive: { color: '#BAE6FD' },
 
   conversationHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
   },
@@ -480,33 +487,33 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#dbeafe',
+    backgroundColor: '#E0F2FE',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
-  filAvatarText: { color: '#1e3a5f', fontSize: 16, fontWeight: '900' },
+  filAvatarText: { color: '#1E3A8A', fontSize: 16, fontWeight: '900' },
   conversationInfo: { flex: 1 },
-  conversationTitle: { color: '#1e3a5f', fontSize: 15, fontWeight: '800' },
+  conversationTitle: { color: '#1E3A8A', fontSize: 15, fontWeight: '800' },
   conversationSub: { color: '#64748b', fontSize: 12, marginTop: 2 },
 
   errorBox: {
     backgroundColor: '#fef2f2',
     borderLeftWidth: 4,
-    borderLeftColor: '#dc2626',
+    borderLeftColor: '#EF4444',
     marginHorizontal: 16,
     marginTop: 8,
     padding: 12,
     borderRadius: 8,
   },
-  errorText: { color: '#dc2626', fontSize: 13 },
+  errorText: { color: '#EF4444', fontSize: 13 },
 
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 28,
-    backgroundColor: '#f0f4f8',
+    backgroundColor: '#F8FAFC',
   },
   messagesLoading: {
     flex: 1,
@@ -516,10 +523,17 @@ const styles = StyleSheet.create({
   },
   loadingText: { marginTop: 10, color: '#64748b', fontSize: 14 },
   emptyMessages: { alignItems: 'center', justifyContent: 'center', paddingTop: 80 },
-  emptyIcon: { fontSize: 42, marginBottom: 12 },
-  forbiddenIcon: { fontSize: 42, marginBottom: 12 },
+  emptyIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#E0F2FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
   emptyTitle: {
-    color: '#1e3a5f',
+    color: '#1E3A8A',
     fontSize: 18,
     fontWeight: '800',
     marginBottom: 8,
@@ -534,32 +548,32 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     marginTop: 18,
-    backgroundColor: '#1e3a5f',
+    backgroundColor: '#1E3A8A',
     borderRadius: 12,
     paddingHorizontal: 18,
     paddingVertical: 12,
   },
   retryButtonText: { color: '#fff', fontWeight: '800', fontSize: 13 },
 
-  messagesContent: { padding: 14, paddingBottom: 18 },
-  messageRow: { flexDirection: 'row', marginBottom: 12, alignItems: 'flex-end' },
+  messagesContent: { padding: 12, paddingBottom: 16 },
+  messageRow: { flexDirection: 'row', marginBottom: 10, alignItems: 'flex-end' },
   messageRowLeft: { justifyContent: 'flex-start' },
   messageRowRight: { justifyContent: 'flex-end' },
   msgAvatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#dbeafe',
+    backgroundColor: '#E0F2FE',
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 6,
   },
-  msgAvatarMoi: { backgroundColor: '#1e3a5f' },
-  msgAvatarText: { color: '#1e3a5f', fontSize: 11, fontWeight: '900' },
+  msgAvatarMoi: { backgroundColor: '#1E3A8A' },
+  msgAvatarText: { color: '#1E3A8A', fontSize: 11, fontWeight: '900' },
   msgBubbleContainer: { maxWidth: '74%' },
   msgSender: { fontSize: 11, color: '#64748b', marginBottom: 3, marginLeft: 4 },
-  msgBubble: { paddingHorizontal: 13, paddingVertical: 9 },
-  msgBubbleMoi: { backgroundColor: '#1e3a5f', borderRadius: 14, borderBottomRightRadius: 3 },
+  msgBubble: { paddingHorizontal: 12, paddingVertical: 8 },
+  msgBubbleMoi: { backgroundColor: '#1E3A8A', borderRadius: 14, borderBottomRightRadius: 3 },
   msgBubbleAutre: { backgroundColor: '#fff', borderRadius: 14, borderBottomLeftRadius: 3 },
   msgText: { fontSize: 14, lineHeight: 20 },
   msgTextMoi: { color: '#fff' },
@@ -575,28 +589,27 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#e2e8f0',
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   messageInput: {
     flex: 1,
-    minHeight: 42,
+    minHeight: 40,
     maxHeight: 110,
     backgroundColor: '#f1f5f9',
     borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     fontSize: 14,
     color: '#1e293b',
     marginRight: 8,
   },
   sendBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#1e3a5f',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1E3A8A',
     alignItems: 'center',
     justifyContent: 'center',
   },
   sendBtnDisabled: { backgroundColor: '#cbd5e1' },
-  sendBtnText: { color: '#fff', fontSize: 18, fontWeight: '900', paddingLeft: 2 },
 });

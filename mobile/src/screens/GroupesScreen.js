@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, ActivityIndicator
+  TextInput, ActivityIndicator, Alert
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import AppIcon from '../components/AppIcon';
 
 export default function GroupesScreen() {
   const { t } = useTranslation();
@@ -34,13 +35,17 @@ export default function GroupesScreen() {
     setError('');
     setMessage('');
 
-    if (isAdmin || isSuperAdmin) {
+    if (isSuperAdmin) {
       setLoading(false);
       return;
     }
 
     try {
-      if (isReferent) {
+      if (isAdmin) {
+        const res = await api.get('/admin/groupes');
+        setGroupes(res.data);
+        setAdhesions([]);
+      } else if (isReferent) {
         const res = await api.get('/referent/groupes');
         setGroupes(res.data);
         setAdhesions([]);
@@ -86,6 +91,21 @@ export default function GroupesScreen() {
   const handleQuitter = async (groupeId) => {
     if (!isMembre) return;
 
+    Alert.alert(
+      t('groups.leave_btn'),
+      t('groups.confirm_leave', { defaultValue: 'Voulez-vous vraiment quitter ce groupe ?' }),
+      [
+        { text: t('common.cancel', { defaultValue: 'Annuler' }), style: 'cancel' },
+        {
+          text: t('groups.leave_btn'),
+          style: 'destructive',
+          onPress: () => quitterGroupe(groupeId),
+        },
+      ],
+    );
+  };
+
+  const quitterGroupe = async (groupeId) => {
     setActionLoadingId(groupeId);
     setError('');
     setMessage('');
@@ -108,15 +128,6 @@ export default function GroupesScreen() {
     const texte = `${groupe.nom || ''} ${groupe.description || ''} ${groupe.theme || ''}`;
     return texte.toLowerCase().includes(recherche.toLowerCase());
   });
-
-  if (isAdmin) {
-    return (
-      <RoleBlockedState
-        title={t('groups.title')}
-        text={t('groups.mobile_admin_web')}
-      />
-    );
-  }
 
   if (isSuperAdmin) {
     return (
@@ -158,6 +169,10 @@ export default function GroupesScreen() {
         <InfoBox text={t('groups.referent_mobile_info')} />
       )}
 
+      {isAdmin && (
+        <InfoBox text={t('adminMobile.groupsReadOnly', { defaultValue: 'Vue mobile de suivi des groupes, référents et statuts.' })} />
+      )}
+
       {message !== '' && (
         <View style={styles.successBox}>
           <Text style={styles.successText}>{message}</Text>
@@ -172,7 +187,7 @@ export default function GroupesScreen() {
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#1e3a5f" />
+          <ActivityIndicator size="large" color="#1E3A8A" />
           <Text style={styles.loadingText}>{t('groups.loading')}</Text>
         </View>
       ) : groupesFiltres.length === 0 ? (
@@ -214,8 +229,8 @@ export default function GroupesScreen() {
 function MemberStatus({ adhesionAcceptee, adhesionEnAttente, t }) {
   let title = t('statuses.AUCUN_GROUPE', { defaultValue: t('memberDashboard.status.noGroupLabel') });
   let text = t('groups.can_request_group');
-  let color = '#2563eb';
-  let bg = '#dbeafe';
+  let color = '#38BDF8';
+  let bg = '#E0F2FE';
 
   if (adhesionEnAttente) {
     title = t('statuses.EN_ATTENTE');
@@ -227,7 +242,7 @@ function MemberStatus({ adhesionAcceptee, adhesionEnAttente, t }) {
   if (adhesionAcceptee) {
     title = t('statuses.ACCEPTE');
     text = t('groups.member_of', { group: adhesionAcceptee.groupeNom });
-    color = '#16a34a';
+    color = '#22C55E';
     bg = '#dcfce7';
   }
 
@@ -259,13 +274,16 @@ function GroupeCard({
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
+        <View style={[styles.cardIcon, { backgroundColor: acceptedHere ? '#dcfce7' : '#E0F2FE' }]}>
+          <AppIcon name="group" size={20} color={acceptedHere ? '#22C55E' : '#38BDF8'} />
+        </View>
         <View style={styles.cardTitleWrap}>
           <Text style={styles.cardTitle} numberOfLines={1}>{groupe.nom}</Text>
           <Text style={styles.cardSub}>
             {t('groups.members_count', { count: groupe.nombreMembres ?? 0 })}
           </Text>
         </View>
-        <StatusBadge label={translateGroupeStatut(groupe.statut, t)} color={groupe.statut === 'VALIDE' ? '#16a34a' : '#d97706'} />
+        <StatusBadge label={translateGroupeStatut(groupe.statut, t)} color={groupe.statut === 'VALIDE' ? '#22C55E' : '#d97706'} />
       </View>
 
       {groupe.description && (
@@ -315,7 +333,7 @@ function GroupeCard({
           )}
 
           {refusedHere && !hasActiveOrPendingAdhesion && (
-            <StatusLine text={t('groups.previous_refused')} color="#dc2626" />
+            <StatusLine text={t('groups.previous_refused')} color="#EF4444" />
           )}
 
           {!acceptedHere && !pendingHere && (
@@ -341,7 +359,9 @@ function GroupeCard({
 function RoleBlockedState({ title, text }) {
   return (
     <View style={styles.centered}>
-      <Text style={styles.emptyIcon}>👥</Text>
+      <View style={styles.emptyIconCircle}>
+        <AppIcon name="group" size={34} color="#38BDF8" />
+      </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyText}>{text}</Text>
     </View>
@@ -352,7 +372,9 @@ function EmptyState({ title, text, onRetry }) {
   const { t } = useTranslation();
   return (
     <View style={styles.centered}>
-      <Text style={styles.emptyIcon}>👥</Text>
+      <View style={styles.emptyIconCircle}>
+        <AppIcon name="group" size={34} color="#38BDF8" />
+      </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyText}>{text}</Text>
       <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
@@ -406,7 +428,7 @@ function getApiError(err, t, fallback) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4f8' },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
 
   searchContainer: {
     flexDirection: 'row',
@@ -428,12 +450,12 @@ const styles = StyleSheet.create({
     color: '#1e293b',
   },
   retrySmall: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#F0F9FF',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  retrySmallText: { color: '#2563eb', fontSize: 12, fontWeight: '800' },
+  retrySmallText: { color: '#38BDF8', fontSize: 12, fontWeight: '800' },
 
   statusCard: {
     marginHorizontal: 16,
@@ -446,9 +468,9 @@ const styles = StyleSheet.create({
   statusText: { color: '#334155', fontSize: 13, lineHeight: 18 },
 
   infoBox: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#F0F9FF',
     borderLeftWidth: 4,
-    borderLeftColor: '#2563eb',
+    borderLeftColor: '#38BDF8',
     marginHorizontal: 16,
     marginTop: 10,
     padding: 12,
@@ -459,7 +481,7 @@ const styles = StyleSheet.create({
   successBox: {
     backgroundColor: '#f0fdf4',
     borderLeftWidth: 4,
-    borderLeftColor: '#16a34a',
+    borderLeftColor: '#22C55E',
     marginHorizontal: 16,
     marginTop: 8,
     padding: 12,
@@ -469,57 +491,67 @@ const styles = StyleSheet.create({
   errorBox: {
     backgroundColor: '#fef2f2',
     borderLeftWidth: 4,
-    borderLeftColor: '#dc2626',
+    borderLeftColor: '#EF4444',
     marginHorizontal: 16,
     marginTop: 8,
     padding: 12,
     borderRadius: 8,
   },
-  errorText: { color: '#dc2626', fontSize: 13 },
+  errorText: { color: '#EF4444', fontSize: 13 },
 
-  listContent: { padding: 16, paddingBottom: 40 },
+  listContent: { padding: 14, paddingBottom: 30 },
   card: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+    padding: 14,
+    marginBottom: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 1,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  cardTitleWrap: { flex: 1, marginRight: 10 },
-  cardTitle: { fontSize: 16, fontWeight: '900', color: '#1e3a5f', marginBottom: 3 },
+  cardIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  cardTitleWrap: { flex: 1, marginRight: 8 },
+  cardTitle: { fontSize: 15, fontWeight: '900', color: '#1E3A8A', marginBottom: 3, lineHeight: 20 },
   cardSub: { color: '#64748b', fontSize: 12 },
-  cardDesc: { color: '#475569', fontSize: 13, lineHeight: 19, marginBottom: 12 },
-  statusBadge: { borderRadius: 20, paddingHorizontal: 9, paddingVertical: 5 },
-  statusBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900' },
+  cardDesc: { color: '#475569', fontSize: 12, lineHeight: 18, marginBottom: 10 },
+  statusBadge: { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
+  statusBadgeText: { color: '#fff', fontSize: 9, fontWeight: '900' },
 
   metaBox: {
     backgroundColor: '#f8fafc',
     borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginBottom: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginBottom: 10,
   },
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderBottomWidth: 1,
     borderBottomColor: '#eef2f7',
   },
-  metaLabel: { color: '#64748b', fontSize: 12 },
+  metaLabel: { color: '#64748b', fontSize: 11 },
   metaValue: {
-    color: '#1e3a5f',
-    fontSize: 12,
+    color: '#1E3A8A',
+    fontSize: 11,
     fontWeight: '700',
     maxWidth: '58%',
     textAlign: 'right',
@@ -527,18 +559,18 @@ const styles = StyleSheet.create({
 
   notice: { backgroundColor: '#f8fafc', borderRadius: 12, padding: 12, marginTop: 2 },
   noticeText: { color: '#64748b', fontSize: 12, lineHeight: 18 },
-  visitorHint: { color: '#2563eb', fontSize: 13, fontWeight: '700', marginTop: 4 },
+  visitorHint: { color: '#38BDF8', fontSize: 13, fontWeight: '700', marginTop: 4 },
 
   actions: { marginTop: 4 },
   btnPrimary: {
-    backgroundColor: '#1e3a5f',
+    backgroundColor: '#1E3A8A',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
   },
   btnPrimaryText: { color: '#fff', fontSize: 13, fontWeight: '900' },
   btnDanger: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#EF4444',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
@@ -552,12 +584,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 30,
-    backgroundColor: '#f0f4f8',
+    backgroundColor: '#F8FAFC',
+  },
+  emptyIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#E0F2FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
   },
   loadingText: { marginTop: 12, color: '#64748b', fontSize: 14 },
   emptyIcon: { fontSize: 42, marginBottom: 12 },
   emptyTitle: {
-    color: '#1e3a5f',
+    color: '#1E3A8A',
     fontSize: 18,
     fontWeight: '900',
     textAlign: 'center',
@@ -572,7 +613,7 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     marginTop: 18,
-    backgroundColor: '#1e3a5f',
+    backgroundColor: '#1E3A8A',
     borderRadius: 12,
     paddingHorizontal: 18,
     paddingVertical: 12,

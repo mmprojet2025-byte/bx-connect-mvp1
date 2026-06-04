@@ -6,13 +6,16 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import AppIcon from '../components/AppIcon';
+import { ActionCard, Avatar, COLORS, StatCard } from '../components/MobileUI';
 
 export default function DashboardScreen({ navigation }) {
   const { t, i18n } = useTranslation();
-  const { user, isMembre, isReferent, role } = useAuth();
+  const { user, isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire, role } = useAuth();
   const [dashboard, setDashboard] = useState(null);
   const [referentDashboard, setReferentDashboard] = useState(null);
-  const [loading, setLoading] = useState(isMembre || isReferent);
+  const [roleDashboard, setRoleDashboard] = useState(null);
+  const [loading, setLoading] = useState(isMembre || isReferent || isAdmin || isPartenaire);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -20,10 +23,14 @@ export default function DashboardScreen({ navigation }) {
       chargerDashboard();
     } else if (isReferent) {
       chargerReferentDashboard();
+    } else if (isAdmin) {
+      chargerAdminDashboard();
+    } else if (isPartenaire) {
+      chargerPartenaireDashboard();
     } else {
       setLoading(false);
     }
-  }, [isMembre, isReferent]);
+  }, [isMembre, isReferent, isAdmin, isPartenaire]);
 
   const chargerDashboard = async () => {
     setLoading(true);
@@ -64,7 +71,67 @@ export default function DashboardScreen({ navigation }) {
       } else if (err.response?.status === 403) {
         setError(t('memberDashboard.errorForbidden'));
       } else {
-        setError('Impossible de charger le dashboard référent.');
+        setError(t('referentDashboard.errorLoad', { defaultValue: 'Impossible de charger le dashboard référent.' }));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const chargerAdminDashboard = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [statsRes, groupesRes, groupesAttenteRes, referentsRes] = await Promise.all([
+        api.get('/admin/stats'),
+        api.get('/admin/groupes'),
+        api.get('/admin/groupes/en-attente'),
+        api.get('/admin/referents'),
+      ]);
+      setRoleDashboard({
+        type: 'ADMIN',
+        stats: statsRes.data || {},
+        groupes: groupesRes.data || [],
+        groupesEnAttente: groupesAttenteRes.data || [],
+        referents: referentsRes.data || [],
+      });
+    } catch (err) {
+      if (err.response?.status === 401) {
+        setError(t('errors.session_expired'));
+      } else if (err.response?.status === 403) {
+        setError(t('errors.forbidden'));
+      } else {
+        setError(t('adminMobile.dashboardLoadError', { defaultValue: 'Impossible de charger le dashboard administrateur.' }));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const chargerPartenaireDashboard = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [statsRes, soutiensRes, projetsRes, activitesRes] = await Promise.all([
+        api.get('/partenaire/statistiques'),
+        api.get('/partenaire/mes-soutiens'),
+        api.get('/partenaire/projets-ouverts'),
+        api.get('/partenaire/activites-ouvertes'),
+      ]);
+      setRoleDashboard({
+        type: 'PARTENAIRE',
+        stats: statsRes.data || {},
+        soutiens: soutiensRes.data || [],
+        projetsOuverts: projetsRes.data || [],
+        activitesOuvertes: activitesRes.data || [],
+      });
+    } catch (err) {
+      if (err.response?.status === 401) {
+        setError(t('errors.session_expired'));
+      } else if (err.response?.status === 403) {
+        setError(t('errors.forbidden'));
+      } else {
+        setError(t('partner.dashboardLoadError', { defaultValue: 'Impossible de charger le dashboard partenaire.' }));
       }
     } finally {
       setLoading(false);
@@ -76,7 +143,7 @@ export default function DashboardScreen({ navigation }) {
       if (loading) {
         return (
           <View style={styles.centered}>
-            <ActivityIndicator size="large" color="#1e3a5f" />
+            <ActivityIndicator size="large" color="#1E3A8A" />
             <Text style={styles.loadingText}>Chargement de l’espace référent...</Text>
           </View>
         );
@@ -85,7 +152,7 @@ export default function DashboardScreen({ navigation }) {
       if (error) {
         return (
           <View style={styles.centered}>
-            <Text style={styles.emptyIcon}>!</Text>
+            <AppIcon name="warning" size={42} color="#EF4444" style={styles.emptyIcon} />
             <Text style={styles.errorTitle}>{t('memberDashboard.unavailableTitle')}</Text>
             <Text style={styles.emptyText}>{error}</Text>
             <TouchableOpacity style={styles.primaryButton} onPress={chargerReferentDashboard}>
@@ -106,13 +173,49 @@ export default function DashboardScreen({ navigation }) {
       );
     }
 
-    return <RoleDashboard user={user} role={role} navigation={navigation} t={t} />;
+    if ((isAdmin || isPartenaire) && loading) {
+      return (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color="#1E3A8A" />
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
+        </View>
+      );
+    }
+
+    if ((isAdmin || isPartenaire) && error) {
+      return (
+        <View style={styles.centered}>
+          <AppIcon name="warning" size={42} color="#EF4444" style={styles.emptyIcon} />
+          <Text style={styles.errorTitle}>{t('memberDashboard.unavailableTitle')}</Text>
+          <Text style={styles.emptyText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={isAdmin ? chargerAdminDashboard : chargerPartenaireDashboard}
+          >
+            <Text style={styles.primaryButtonText}>{t('memberDashboard.buttons.retry')}</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <RoleDashboard
+        user={user}
+        role={role}
+        isAdmin={isAdmin}
+        isSuperAdmin={isSuperAdmin}
+        isPartenaire={isPartenaire}
+        dashboard={roleDashboard}
+        navigation={navigation}
+        t={t}
+      />
+    );
   }
 
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#1e3a5f" />
+        <ActivityIndicator size="large" color="#1E3A8A" />
         <Text style={styles.loadingText}>{t('memberDashboard.loadingSpace')}</Text>
       </View>
     );
@@ -177,82 +280,79 @@ function ReferentDashboard({ user, dashboard, navigation, t, language }) {
       <WelcomeCard user={user} t={t} />
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Mon espace référent</Text>
+        <Text style={styles.cardTitle}>{t('referentDashboard.mobileTitle', { defaultValue: 'Mon espace référent' })}</Text>
         <Text style={styles.cardText}>
-          Vue mobile légère pour suivre vos groupes, vos activités, les projets de vos groupes et accéder rapidement à la messagerie.
+          {t('referentDashboard.mobileDescription', {
+            defaultValue: 'Vue mobile légère pour suivre vos groupes, vos activités, les projets de vos groupes et accéder rapidement à la messagerie.',
+          })}
         </Text>
       </View>
 
       <View style={styles.metricGrid}>
-        <MetricCard label="Groupes assignés" value={groupes.length} color="#2563eb" />
-        <MetricCard label="Activités" value={dashboard?.totalActivites ?? activites.length} color="#0f766e" />
-        <MetricCard label="Projets" value={dashboard?.projetsSoumis ?? projets.length} color="#7c3aed" />
-        <MetricCard label="Notifications non lues" value={nonLues} color="#d97706" />
+        <MetricCard label={t('referentDashboard.assignedGroups', { defaultValue: 'Groupes assignés' })} value={groupes.length} color="#38BDF8" icon="group" />
+        <MetricCard label={t('navigation.activities', { defaultValue: 'Activités' })} value={dashboard?.totalActivites ?? activites.length} color="#0f766e" icon="activity" />
+        <MetricCard label={t('navigation.projects', { defaultValue: 'Projets' })} value={dashboard?.projetsSoumis ?? projets.length} color="#7c3aed" icon="project" />
+        <MetricCard label={t('referentDashboard.unreadNotifications', { defaultValue: 'Notifications non lues' })} value={nonLues} color="#d97706" icon="bell" />
       </View>
 
-      <ReferentGroupsCard groupes={groupes} navigation={navigation} />
-      <ReferentActivitiesCard activites={activites} navigation={navigation} language={language} />
-      <ReferentProjectsCard projets={projets} navigation={navigation} />
-      <ReferentNotificationsCard notifications={notifications} navigation={navigation} />
-      <ReferentQuickActions navigation={navigation} />
+      <ReferentGroupsCard groupes={groupes} navigation={navigation} t={t} />
+      <ReferentActivitiesCard activites={activites} navigation={navigation} language={language} t={t} />
+      <ReferentProjectsCard projets={projets} navigation={navigation} t={t} />
+      <ReferentNotificationsCard notifications={notifications} navigation={navigation} t={t} />
+      <ReferentQuickActions navigation={navigation} t={t} />
     </ScrollView>
   );
 }
 
-function MetricCard({ label, value, color }) {
-  return (
-    <View style={[styles.metricCard, { borderTopColor: color }]}>
-      <Text style={[styles.metricValue, { color }]}>{value ?? 0}</Text>
-      <Text style={styles.metricLabel}>{label}</Text>
-    </View>
-  );
+function MetricCard({ label, value, color, icon }) {
+  return <StatCard label={label} value={value} color={color} icon={icon} />;
 }
 
-function ReferentGroupsCard({ groupes, navigation }) {
+function ReferentGroupsCard({ groupes, navigation, t }) {
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>Groupes assignés</Text>
+        <Text style={styles.cardTitle}>{t('referentDashboard.assignedGroups', { defaultValue: 'Groupes assignés' })}</Text>
         <Text style={styles.counter}>{groupes.length}</Text>
       </View>
       {groupes.length === 0 ? (
-        <EmptyText text="Aucun groupe assigné pour le moment." />
+        <EmptyText text={t('referentDashboard.noAssignedGroups', { defaultValue: 'Aucun groupe assigné pour le moment.' })} />
       ) : (
         groupes.slice(0, 3).map((groupe) => (
           <ListItem
             key={groupe.id}
-            title={groupe.nom || 'Groupe'}
-            subtitle={groupe.description || 'Description non disponible'}
+            title={groupe.nom || t('groups.title', { defaultValue: 'Groupe' })}
+            subtitle={groupe.description || t('common.notAvailable', { defaultValue: 'Description non disponible' })}
             badge={groupe.statut || 'GROUPE'}
-            color="#2563eb"
+            color="#38BDF8"
           />
         ))
       )}
       <TouchableOpacity
         style={styles.secondaryButton}
-        onPress={() => navigation.getParent()?.navigate('TabGroupes')}
+        onPress={() => navigateAccess(navigation, 'TabGroupes', 'GroupesAccess')}
       >
-        <Text style={styles.secondaryButtonText}>Voir mes groupes</Text>
+        <Text style={styles.secondaryButtonText}>{t('referentDashboard.viewMyGroups', { defaultValue: 'Voir mes groupes' })}</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-function ReferentActivitiesCard({ activites, navigation, language }) {
+function ReferentActivitiesCard({ activites, navigation, language, t }) {
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>Activités</Text>
+        <Text style={styles.cardTitle}>{t('navigation.activities', { defaultValue: 'Activités' })}</Text>
         <Text style={styles.counter}>{activites.length}</Text>
       </View>
       {activites.length === 0 ? (
-        <EmptyText text="Aucune activité référent pour le moment." />
+        <EmptyText text={t('referentDashboard.noActivities', { defaultValue: 'Aucune activité référent pour le moment.' })} />
       ) : (
         activites.slice(0, 3).map((activite) => (
           <ListItem
             key={activite.id}
-            title={activite.titre || 'Activité'}
-            subtitle={formatReferentDate(activite.dateDebut, activite.lieu, language)}
+            title={activite.titre || t('navigation.activities', { defaultValue: 'Activité' })}
+            subtitle={formatReferentDate(activite.dateDebut, activite.lieu, language, t)}
             badge={activite.statut || 'ACTIVITE'}
             color={statusColor(activite.statut)}
           />
@@ -260,29 +360,29 @@ function ReferentActivitiesCard({ activites, navigation, language }) {
       )}
       <TouchableOpacity
         style={styles.secondaryButton}
-        onPress={() => navigation.getParent()?.navigate('TabActivities')}
+        onPress={() => navigateAccess(navigation, 'TabActivities')}
       >
-        <Text style={styles.secondaryButtonText}>Voir mes activités</Text>
+        <Text style={styles.secondaryButtonText}>{t('referentDashboard.viewMyActivities', { defaultValue: 'Voir mes activités' })}</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-function ReferentProjectsCard({ projets, navigation }) {
+function ReferentProjectsCard({ projets, navigation, t }) {
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>Projets</Text>
+        <Text style={styles.cardTitle}>{t('navigation.projects', { defaultValue: 'Projets' })}</Text>
         <Text style={styles.counter}>{projets.length}</Text>
       </View>
       {projets.length === 0 ? (
-        <EmptyText text="Aucun projet dans vos groupes pour le moment." />
+        <EmptyText text={t('referentDashboard.noProjects', { defaultValue: 'Aucun projet dans vos groupes pour le moment.' })} />
       ) : (
         projets.slice(0, 3).map((projet) => (
           <ListItem
             key={projet.id}
-            title={projet.titre || 'Projet'}
-            subtitle={projet.groupeNom || 'Groupe non précisé'}
+            title={projet.titre || t('navigation.projects', { defaultValue: 'Projet' })}
+            subtitle={projet.groupeNom || t('referentDashboard.groupNotSpecified', { defaultValue: 'Groupe non précisé' })}
             badge={projet.statut || 'PROJET'}
             color={statusColor(projet.statut)}
           />
@@ -290,99 +390,264 @@ function ReferentProjectsCard({ projets, navigation }) {
       )}
       <TouchableOpacity
         style={styles.secondaryButton}
-        onPress={() => navigation.getParent()?.navigate('TabProjects')}
+        onPress={() => navigateAccess(navigation, 'TabProjects', 'ProjectsAccess')}
       >
-        <Text style={styles.secondaryButtonText}>Voir les projets</Text>
+        <Text style={styles.secondaryButtonText}>{t('referentDashboard.viewProjects', { defaultValue: 'Voir les projets' })}</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-function ReferentNotificationsCard({ notifications, navigation }) {
+function ReferentNotificationsCard({ notifications, navigation, t }) {
   const nonLues = notifications.filter((notification) => !notification.lue).length;
 
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>Notifications</Text>
-        <Text style={styles.counter}>{nonLues} non lue(s)</Text>
+        <Text style={styles.cardTitle}>{t('navigation.notifications', { defaultValue: 'Notifications' })}</Text>
+        <Text style={styles.counter}>{t('referentDashboard.unreadCount', { count: nonLues, defaultValue: `${nonLues} non lue(s)` })}</Text>
       </View>
       {notifications.length === 0 ? (
-        <EmptyText text="Aucune notification pour le moment." />
+        <EmptyText text={t('referentDashboard.noNotifications', { defaultValue: 'Aucune notification pour le moment.' })} />
       ) : (
         notifications.slice(0, 3).map((notification) => (
           <ListItem
             key={notification.id}
-            title={notification.titre || 'Notification'}
+            title={notification.titre || t('navigation.notifications', { defaultValue: 'Notification' })}
             subtitle={notification.message || ''}
-            badge={notification.lue ? 'Lue' : 'Nouvelle'}
-            color={notification.lue ? '#64748b' : '#2563eb'}
+            badge={notification.lue ? t('notifications.read', { defaultValue: 'Lue' }) : t('notifications.unread', { defaultValue: 'Nouvelle' })}
+            color={notification.lue ? '#64748b' : '#38BDF8'}
           />
         ))
       )}
       <TouchableOpacity
         style={styles.secondaryButton}
-        onPress={() => navigation.getParent()?.navigate('TabNotifications')}
+        onPress={() => navigateAccess(navigation, 'TabNotifications')}
       >
-        <Text style={styles.secondaryButtonText}>Voir les notifications</Text>
+        <Text style={styles.secondaryButtonText}>{t('referentDashboard.viewNotifications', { defaultValue: 'Voir les notifications' })}</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-function ReferentQuickActions({ navigation }) {
+function ReferentQuickActions({ navigation, t }) {
   return (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>Accès rapides</Text>
-      <TouchableOpacity
-        style={styles.primaryButton}
-        onPress={() => navigation.getParent()?.navigate('TabMessagerie')}
-      >
-        <Text style={styles.primaryButtonText}>Ouvrir la messagerie</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.secondaryButton}
-        onPress={() => navigation.getParent()?.navigate('TabProjects')}
-      >
-        <Text style={styles.secondaryButtonText}>Consulter les projets</Text>
-      </TouchableOpacity>
+      <Text style={styles.cardTitle}>{t('referentDashboard.quickActions', { defaultValue: 'Accès rapides' })}</Text>
+      <ActionCard
+        label={t('referentMobile.requestsTitle', { defaultValue: 'Demandes d’adhésion' })}
+        description={t('referentMobile.requestsAction', { defaultValue: 'Accepter ou refuser les demandes de vos groupes.' })}
+        icon="warning"
+        color="#d97706"
+        onPress={() => navigation.navigate('ReferentRequestsAccess')}
+      />
+      <ActionCard
+        label={t('referentMobile.membersTitle', { defaultValue: 'Membres des groupes' })}
+        description={t('referentMobile.membersAction', { defaultValue: 'Consulter les membres acceptés de vos groupes.' })}
+        icon="group"
+        color="#0f766e"
+        onPress={() => navigation.navigate('ReferentMembersAccess')}
+      />
+      <ActionCard
+        label={t('referentDashboard.openMessaging', { defaultValue: 'Ouvrir la messagerie' })}
+        description={t('referentMobile.messagingAction', { defaultValue: 'Échanger avec les groupes que vous encadrez.' })}
+        icon="message"
+        color={COLORS.info}
+        onPress={() => navigateAccess(navigation, 'TabMessagerie')}
+      />
+      <ActionCard
+        label={t('referentDashboard.viewProjects', { defaultValue: 'Consulter les projets' })}
+        description={t('referentMobile.projectsAction', { defaultValue: 'Voir les projets liés à vos groupes.' })}
+        icon="project"
+        color={COLORS.impactOrange}
+        onPress={() => navigateAccess(navigation, 'TabProjects', 'ProjectsAccess')}
+      />
     </View>
   );
 }
 
-function RoleDashboard({ user, role, navigation, t }) {
+function RoleDashboard({ user, role, isAdmin, isSuperAdmin, isPartenaire, dashboard, navigation, t }) {
   const roleLabel = role ? t(`roles.${role}`, { defaultValue: role }) : t('memberDashboard.userFallback');
+  const config = roleDashboardConfig({
+    roleLabel,
+    isAdmin,
+    isSuperAdmin,
+    isPartenaire,
+    dashboard,
+    navigation,
+    t,
+  });
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <WelcomeCard user={user} t={t} />
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>{t('memberDashboard.mobileSpace')}</Text>
-        <Text style={styles.cardText}>
-          {t('memberDashboard.mobileLimited', { role: roleLabel })}
-        </Text>
-        <Text style={styles.cardHint}>
-          {t('memberDashboard.mobileAdvancedWeb')}
-        </Text>
+      <View style={styles.roleHero}>
+        <Avatar prenom={user?.prenom} nom={user?.nom} size={56} color="rgba(255,255,255,0.18)" />
+        <View style={styles.roleHeroText}>
+          <Text style={styles.roleHeroTitle}>{config.title}</Text>
+          <Text style={styles.roleHeroSubtitle}>{config.subtitle}</Text>
+          <Text style={styles.roleHeroMeta}>{roleLabel}</Text>
+        </View>
       </View>
-      <TouchableOpacity
-        style={styles.primaryButton}
-        onPress={() => navigation.getParent()?.navigate('TabProfile')}
-      >
-        <Text style={styles.primaryButtonText}>{t('memberDashboard.openProfile')}</Text>
-      </TouchableOpacity>
+
+      <View style={styles.metricGrid}>
+        {config.stats.map((stat) => (
+          <MetricCard
+            key={stat.label}
+            label={stat.label}
+            value={stat.value}
+            color={stat.color}
+            icon={stat.icon}
+          />
+        ))}
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>{config.sectionTitle}</Text>
+        <Text style={styles.cardText}>{config.sectionText}</Text>
+      </View>
+
+      {config.actions.map((action) => (
+        <ActionCard
+          key={action.label}
+          label={action.label}
+          description={action.description}
+          icon={action.icon}
+          color={action.color}
+          onPress={action.onPress}
+        />
+      ))}
     </ScrollView>
   );
+}
+
+function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, dashboard, navigation, t }) {
+  if (isSuperAdmin) {
+    return {
+      title: t('superAdmin.mobile.title', { defaultValue: 'Pilotage plateforme' }),
+      subtitle: t('superAdmin.mobile.subtitle', { defaultValue: 'Indicateurs essentiels et suivi de la sécurité BX-Connect.' }),
+      sectionTitle: t('superAdmin.mobile.sectionTitle', { defaultValue: 'Vue synthétique' }),
+      sectionText: t('superAdmin.mobile.sectionText', { defaultValue: 'Suivez les comptes clés, les administrateurs et les signaux importants de la plateforme.' }),
+      stats: [
+        stat(t('users.title', { defaultValue: 'Utilisateurs' }), 'Suivi', 'group', COLORS.info),
+        stat(t('superAdmin.admins', { defaultValue: 'Administrateurs' }), 'Admin', 'shield', COLORS.bxBlue),
+        stat(t('navigation.notifications', { defaultValue: 'Notifications' }), 'Alertes', 'bell', COLORS.impactOrange),
+        stat(t('profile.security', { defaultValue: 'Sécurité' }), 'Actif', 'lock', COLORS.success),
+      ],
+      actions: [
+        action(t('navigation.users', { defaultValue: 'Utilisateurs' }), t('superAdmin.mobile.usersAction', { defaultValue: 'Consulter les administrateurs plateforme.' }), 'group', COLORS.info, () => navigateAccess(navigation, 'TabUsers')),
+        action(t('navigation.notifications', { defaultValue: 'Notifications' }), t('superAdmin.mobile.notificationsAction', { defaultValue: 'Consulter les alertes importantes.' }), 'bell', COLORS.impactOrange, () => navigateAccess(navigation, 'TabNotifications')),
+        action(t('navigation.profile', { defaultValue: 'Profil' }), t('superAdmin.mobile.profileAction', { defaultValue: 'Gérer vos informations et votre sécurité.' }), 'profile', COLORS.info, () => navigateAccess(navigation, 'TabProfile')),
+      ],
+    };
+  }
+
+  if (isAdmin) {
+    const stats = dashboard?.stats || {};
+    const groupes = dashboard?.groupes || [];
+    const groupesEnAttente = dashboard?.groupesEnAttente || [];
+    const referents = dashboard?.referents || [];
+
+    return {
+      title: t('admin.mobile.title', { defaultValue: 'Tableau de bord administrateur' }),
+      subtitle: t('admin.mobile.subtitle', { defaultValue: 'Pilotage mobile : consultez les indicateurs essentiels et suivez l’activité de la plateforme.' }),
+      sectionTitle: t('admin.mobile.sectionTitle', { defaultValue: 'Pilotage rapide' }),
+      sectionText: t('admin.mobile.sectionText', { defaultValue: 'Gardez une vue claire sur les utilisateurs, groupes, activités et projets de BX-Jeunes Impact.' }),
+      stats: [
+        stat(t('navigation.users', { defaultValue: 'Utilisateurs' }), pickNumber(stats, ['utilisateurs', 'totalUtilisateurs', 'users', 'totalUsers']), 'group', COLORS.info),
+        stat(t('navigation.activities', { defaultValue: 'Activités' }), pickNumber(stats, ['activites', 'totalActivites', 'activities', 'totalActivities']), 'activity', COLORS.success),
+        stat(t('navigation.groups', { defaultValue: 'Groupes' }), pickNumber(stats, ['groupes', 'totalGroupes', 'groups', 'totalGroups'], groupes.length), 'group', COLORS.bxBlue),
+        stat(t('navigation.projects', { defaultValue: 'Projets' }), pickNumber(stats, ['projets', 'totalProjets', 'projects', 'totalProjects']), 'project', COLORS.impactOrange),
+        stat(t('adminMobile.pendingGroups', { defaultValue: 'Groupes en attente' }), groupesEnAttente.length, 'warning', '#d97706'),
+        stat(t('navigation.mentors', { defaultValue: 'Référents' }), referents.length, 'profile', '#0f766e'),
+      ],
+      actions: [
+        action(t('navigation.users', { defaultValue: 'Utilisateurs' }), t('adminMobile.usersAction', { defaultValue: 'Consulter les comptes métier.' }), 'group', COLORS.info, () => navigateAccess(navigation, 'TabUsers')),
+        action(t('navigation.groups', { defaultValue: 'Groupes' }), t('adminMobile.groupsAction', { defaultValue: 'Suivre les groupes et leurs référents.' }), 'group', COLORS.bxBlue, () => navigateAccess(navigation, 'TabGroupes', 'GroupesAccess')),
+        action(t('adminMobile.pendingGroupsTitle', { defaultValue: 'Groupes en attente' }), t('adminMobile.pendingGroupsAction', { defaultValue: 'Valider ou refuser les groupes proposés.' }), 'warning', '#d97706', () => navigation.navigate('AdminPendingGroupsAccess')),
+        action(t('navigation.activities', { defaultValue: 'Activités' }), t('adminMobile.activitiesAction', { defaultValue: 'Voir les activités de l’association.' }), 'activity', COLORS.success, () => navigateAccess(navigation, 'TabActivities')),
+        action(t('navigation.projects', { defaultValue: 'Projets' }), t('adminMobile.projectsAction', { defaultValue: 'Voir les projets suivis par l’association.' }), 'project', COLORS.impactOrange, () => navigateAccess(navigation, 'TabProjects', 'ProjectsAccess')),
+        action(t('navigation.notifications', { defaultValue: 'Notifications' }), t('admin.mobile.notificationsAction', { defaultValue: 'Suivre les alertes et demandes importantes.' }), 'bell', COLORS.impactOrange, () => navigateAccess(navigation, 'TabNotifications')),
+        action(t('navigation.profile', { defaultValue: 'Profil' }), t('admin.mobile.profileAction', { defaultValue: 'Mettre à jour vos informations et préférences.' }), 'profile', COLORS.info, () => navigateAccess(navigation, 'TabProfile')),
+      ],
+    };
+  }
+
+  if (isPartenaire) {
+    const stats = dashboard?.stats || {};
+    const soutiens = dashboard?.soutiens || [];
+    const projetsOuverts = dashboard?.projetsOuverts || [];
+    const activitesOuvertes = dashboard?.activitesOuvertes || [];
+
+    return {
+      title: t('partner.mobile.title', { defaultValue: 'Espace partenaire' }),
+      subtitle: t('partner.mobile.subtitle', { defaultValue: 'Découvrez les initiatives, suivez les projets et restez connecté à la communauté.' }),
+      sectionTitle: t('partner.mobile.sectionTitle', { defaultValue: 'Initiatives à suivre' }),
+      sectionText: t('partner.mobile.sectionText', { defaultValue: 'Une vue claire pour soutenir les projets, suivre les activités et collaborer avec BX-Jeunes Impact.' }),
+      stats: [
+        stat(t('partner.openProjects', { defaultValue: 'Projets ouverts' }), pickNumber(stats, ['projetsOuverts', 'totalProjetsOuverts'], projetsOuverts.length), 'project', COLORS.impactOrange),
+        stat(t('partner.openActivities', { defaultValue: 'Activités ouvertes' }), pickNumber(stats, ['activitesOuvertes', 'totalActivitesOuvertes'], activitesOuvertes.length), 'activity', COLORS.success),
+        stat(t('partner.totalSupports', { defaultValue: 'Soutiens' }), pickNumber(stats, ['totalSoutiens', 'soutiens'], soutiens.length), 'wallet', COLORS.info),
+        stat(t('partner.totalAmount', { defaultValue: 'Montant total' }), `${pickNumber(stats, ['totalMontant', 'montantTotal'], 0)} €`, 'payment', COLORS.bxBlue),
+      ],
+      actions: [
+        action(t('partner.mobile.discoverProjects', { defaultValue: 'Découvrir les projets' }), t('partner.mobile.discoverProjectsText', { defaultValue: 'Explorer les initiatives portées par les jeunes.' }), 'project', COLORS.impactOrange, () => navigateAccess(navigation, 'TabProjects', 'ProjectsAccess')),
+        action(t('partner.mobile.followInitiatives', { defaultValue: 'Suivre les initiatives' }), t('partner.mobile.followInitiativesText', { defaultValue: 'Voir les activités et temps forts de la communauté.' }), 'activity', COLORS.success, () => navigateAccess(navigation, 'TabActivities')),
+        action(t('partner.supports', { defaultValue: 'Mes soutiens' }), t('partner.supportsAction', { defaultValue: 'Consulter les soutiens déclarés.' }), 'wallet', COLORS.info, () => navigateAccess(navigation, 'TabSupports', 'SupportsAccess')),
+        action(t('partner.mobile.contactTeam', { defaultValue: 'Contacter l’équipe' }), t('partner.mobile.contactTeamText', { defaultValue: 'Retrouver vos informations de contact et préférences.' }), 'profile', COLORS.info, () => navigateAccess(navigation, 'TabProfile')),
+      ],
+    };
+  }
+
+  return {
+    title: t('memberDashboard.mobileSpace', { defaultValue: 'Espace mobile' }),
+    subtitle: t('memberDashboard.mobileOverview', { defaultValue: 'Vue synthétique de votre espace BX-Connect.' }),
+    sectionTitle: t('memberDashboard.status.title', { defaultValue: 'Indicateurs essentiels' }),
+    sectionText: roleLabel,
+    stats: [
+      stat(t('navigation.notifications', { defaultValue: 'Notifications' }), 'Infos', 'bell', COLORS.info),
+      stat(t('navigation.profile', { defaultValue: 'Profil' }), 'Compte', 'profile', COLORS.bxBlue),
+    ],
+    actions: [
+      action(t('navigation.profile', { defaultValue: 'Profil' }), t('memberDashboard.openProfile', { defaultValue: 'Ouvrir mon profil' }), 'profile', COLORS.info, () => navigateAccess(navigation, 'TabProfile')),
+    ],
+  };
+}
+
+function pickNumber(source, keys, fallback = 0) {
+  for (const key of keys) {
+    const value = source?.[key];
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string' && value.trim() !== '' && !Number.isNaN(Number(value))) return Number(value);
+  }
+  return fallback;
+}
+
+function stat(label, value, icon, color) {
+  return { label, value, icon, color };
+}
+
+function action(label, description, icon, color, onPress) {
+  return { label, description, icon, color, onPress };
+}
+
+function navigateAccess(navigation, tabName, stackRoute) {
+  const parent = navigation.getParent?.();
+  const parentRoutes = parent?.getState?.()?.routeNames || [];
+
+  if (parentRoutes.includes(tabName)) {
+    parent.navigate(tabName);
+    return;
+  }
+
+  if (stackRoute) {
+    navigation.navigate(stackRoute);
+  }
 }
 
 function WelcomeCard({ user, t }) {
   return (
     <View style={styles.welcomeCard}>
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>
-          {initiales(user?.prenom, user?.nom)}
-        </Text>
-      </View>
+      <Avatar prenom={user?.prenom} nom={user?.nom} size={52} color="rgba(255,255,255,0.18)" />
       <View style={styles.welcomeContent}>
         <Text style={styles.welcomeTitle}>
           {t('memberDashboard.hello', { name: user?.prenom || t('memberDashboard.memberFallback') })}
@@ -417,7 +682,7 @@ function MemberGroupCard({ groupe, messagerieDisponible, navigation, t }) {
         <EmptyText text={t('memberDashboard.group.noActiveGroup')} />
         <TouchableOpacity
           style={styles.primaryButton}
-          onPress={() => navigation.getParent()?.navigate('TabGroupes')}
+          onPress={() => navigateAccess(navigation, 'TabGroupes', 'GroupesAccess')}
         >
           <Text style={styles.primaryButtonText}>{t('memberDashboard.buttons.discoverGroups')}</Text>
         </TouchableOpacity>
@@ -441,7 +706,7 @@ function MemberGroupCard({ groupe, messagerieDisponible, navigation, t }) {
       <InfoRow label={t('memberDashboard.group.upcomingActivities')} value={`${groupe.nombreActivitesAVenir || 0}`} t={t} />
       <TouchableOpacity
         style={styles.primaryButton}
-        onPress={() => navigation.getParent()?.navigate('TabGroupes')}
+        onPress={() => navigateAccess(navigation, 'TabGroupes', 'GroupesAccess')}
       >
         <Text style={styles.primaryButtonText}>{t('memberDashboard.buttons.openMyGroup')}</Text>
       </TouchableOpacity>
@@ -497,7 +762,7 @@ function MemberActivitiesCard({ inscriptions, navigation, t, language }) {
       )}
       <TouchableOpacity
         style={styles.secondaryButton}
-        onPress={() => navigation.getParent()?.navigate('TabActivities')}
+        onPress={() => navigateAccess(navigation, 'TabActivities')}
       >
         <Text style={styles.secondaryButtonText}>{t('memberDashboard.buttons.viewActivities')}</Text>
       </TouchableOpacity>
@@ -523,13 +788,13 @@ function MemberNotificationsCard({ notifications, navigation, t }) {
             title={notification.titre || t('memberDashboard.notifications.fallbackTitle')}
             subtitle={notification.message || t('memberDashboard.notifications.fallbackMessage')}
             badge={notification.lue ? t('memberDashboard.notifications.read') : t('memberDashboard.notifications.new')}
-            color={notification.lue ? '#64748b' : '#2563eb'}
+            color={notification.lue ? '#64748b' : '#38BDF8'}
           />
         ))
       )}
       <TouchableOpacity
         style={styles.secondaryButton}
-        onPress={() => navigation.getParent()?.navigate('TabNotifications')}
+        onPress={() => navigateAccess(navigation, 'TabNotifications')}
       >
         <Text style={styles.secondaryButtonText}>{t('memberDashboard.buttons.viewNotifications')}</Text>
       </TouchableOpacity>
@@ -559,7 +824,7 @@ function MemberProjectsCard({ projets, navigation, t }) {
       )}
       <TouchableOpacity
         style={styles.secondaryButton}
-        onPress={() => navigation.getParent()?.navigate('TabProjects')}
+        onPress={() => navigateAccess(navigation, 'TabProjects', 'ProjectsAccess')}
       >
         <Text style={styles.secondaryButtonText}>{t('memberDashboard.buttons.viewProjects')}</Text>
       </TouchableOpacity>
@@ -597,12 +862,12 @@ function buildNextActions({ statut, hasActivities, hasProjects, messagerieDispon
       {
         label: t('memberDashboard.nextActions.joinGroup'),
         description: t('memberDashboard.nextActions.joinGroupDescription'),
-        onPress: () => navigation.getParent()?.navigate('TabGroupes'),
+        onPress: () => navigateAccess(navigation, 'TabGroupes', 'GroupesAccess'),
       },
       {
         label: t('memberDashboard.nextActions.discoverActivities'),
         description: t('memberDashboard.nextActions.discoverActivitiesDescription'),
-        onPress: () => navigation.getParent()?.navigate('TabActivities'),
+        onPress: () => navigateAccess(navigation, 'TabActivities'),
       },
     ];
   }
@@ -616,7 +881,7 @@ function buildNextActions({ statut, hasActivities, hasProjects, messagerieDispon
       {
         label: t('memberDashboard.nextActions.exploreActivities'),
         description: t('memberDashboard.nextActions.exploreActivitiesDescription'),
-        onPress: () => navigation.getParent()?.navigate('TabActivities'),
+        onPress: () => navigateAccess(navigation, 'TabActivities'),
       },
     ];
   }
@@ -630,17 +895,17 @@ function buildNextActions({ statut, hasActivities, hasProjects, messagerieDispon
     {
       label: hasActivities ? t('memberDashboard.nextActions.trackRegistrations') : t('memberDashboard.nextActions.joinActivity'),
       description: hasActivities ? t('memberDashboard.nextActions.trackRegistrationsDescription') : t('memberDashboard.nextActions.joinActivityDescription'),
-      onPress: () => navigation.getParent()?.navigate('TabActivities'),
+      onPress: () => navigateAccess(navigation, 'TabActivities'),
     },
     {
       label: messagerieDisponible ? t('memberDashboard.nextActions.useMessaging') : t('memberDashboard.nextActions.messagingUnavailable'),
       description: messagerieDisponible ? t('memberDashboard.nextActions.useMessagingDescription') : t('memberDashboard.nextActions.messagingUnavailableDescription'),
-      onPress: messagerieDisponible ? () => navigation.getParent()?.navigate('TabMessagerie') : null,
+      onPress: messagerieDisponible ? () => navigateAccess(navigation, 'TabMessagerie') : null,
     },
     {
       label: hasProjects ? t('memberDashboard.nextActions.trackProjects') : t('memberDashboard.nextActions.proposeProject'),
       description: hasProjects ? t('memberDashboard.nextActions.trackProjectsDescription') : t('memberDashboard.nextActions.proposeProjectDescription'),
-      onPress: () => navigation.getParent()?.navigate('TabProjects'),
+      onPress: () => navigateAccess(navigation, 'TabProjects', 'ProjectsAccess'),
     },
   ];
 }
@@ -676,16 +941,12 @@ function EmptyText({ text }) {
   );
 }
 
-function initiales(prenom, nom) {
-  return `${prenom?.[0] || ''}${nom?.[0] || ''}`.toUpperCase() || '?';
-}
-
 function statutInfo(statut, t) {
   if (statut === 'ACCEPTE') {
     return {
       label: t('memberDashboard.status.acceptedLabel'),
       description: t('memberDashboard.status.acceptedMessagingAvailable'),
-      color: '#16a34a',
+      color: '#22C55E',
       bg: '#dcfce7',
     };
   }
@@ -700,8 +961,8 @@ function statutInfo(statut, t) {
   return {
     label: t('memberDashboard.status.noGroupLabel'),
     description: t('memberDashboard.status.noGroupDescription'),
-    color: '#2563eb',
-    bg: '#dbeafe',
+    color: '#38BDF8',
+    bg: '#E0F2FE',
   };
 }
 
@@ -731,17 +992,17 @@ function statusColor(statut) {
     case 'CONFIRMEE':
     case 'APPROUVE':
     case 'ACCEPTE':
-      return '#16a34a';
+      return '#22C55E';
     case 'EN_ATTENTE':
     case 'EN_ATTENTE_PAIEMENT':
     case 'SOUMIS':
       return '#d97706';
     case 'EN_COURS':
-      return '#2563eb';
+      return '#38BDF8';
     case 'ANNULEE':
     case 'REJETE':
     case 'REFUSE':
-      return '#dc2626';
+      return '#EF4444';
     case 'TERMINE':
       return '#64748b';
     default:
@@ -762,7 +1023,7 @@ function formatDate(dateStr, lieu, language, t) {
   return fragments.length > 0 ? fragments.join(' · ') : t('memberDashboard.activities.dateToConfirm');
 }
 
-function formatReferentDate(dateStr, lieu, language) {
+function formatReferentDate(dateStr, lieu, language, t) {
   const fragments = [];
   if (dateStr) {
     fragments.push(new Date(dateStr).toLocaleDateString(language || 'fr-BE', {
@@ -772,28 +1033,30 @@ function formatReferentDate(dateStr, lieu, language) {
     }));
   }
   if (lieu) fragments.push(lieu);
-  return fragments.length > 0 ? fragments.join(' · ') : 'Date à confirmer';
+  return fragments.length > 0 ? fragments.join(' · ') : t('activities.to_confirm', { defaultValue: 'Date à confirmer' });
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4f8' },
-  content: { padding: 16, paddingBottom: 40 },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  content: { padding: 14, paddingBottom: 30 },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 28,
-    backgroundColor: '#f0f4f8',
+    backgroundColor: '#F8FAFC',
   },
   loadingText: { marginTop: 12, color: '#64748b', fontSize: 14 },
-  errorTitle: { color: '#1e3a5f', fontSize: 18, fontWeight: '800', marginBottom: 8 },
+  errorTitle: { color: '#1E3A8A', fontSize: 18, fontWeight: '800', marginBottom: 8 },
   welcomeCard: {
-    backgroundColor: '#1e3a5f',
-    borderRadius: 18,
+    backgroundColor: '#1E3A8A',
+    borderRadius: 20,
     padding: 18,
-    marginBottom: 14,
+    marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#38BDF8',
   },
   avatar: {
     width: 52,
@@ -806,13 +1069,13 @@ const styles = StyleSheet.create({
   },
   avatarText: { color: '#fff', fontSize: 17, fontWeight: '800' },
   welcomeContent: { flex: 1 },
-  welcomeTitle: { color: '#fff', fontSize: 18, fontWeight: '800', marginBottom: 4 },
-  welcomeSubtitle: { color: '#bfdbfe', fontSize: 13 },
+  welcomeTitle: { color: '#fff', fontSize: 19, fontWeight: '900', marginBottom: 4 },
+  welcomeSubtitle: { color: '#BAE6FD', fontSize: 13 },
   card: {
     backgroundColor: '#fff',
     borderRadius: 14,
-    padding: 16,
-    marginBottom: 14,
+    padding: 14,
+    marginBottom: 12,
     borderLeftWidth: 4,
     borderLeftColor: '#e2e8f0',
     shadowColor: '#000',
@@ -820,6 +1083,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 1,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -827,79 +1092,81 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
-  cardTitle: { fontSize: 16, fontWeight: '800', color: '#1e3a5f', marginBottom: 8 },
-  cardText: { fontSize: 13, color: '#475569', lineHeight: 19, marginBottom: 10 },
+  cardTitle: { fontSize: 15, fontWeight: '900', color: '#1E3A8A', marginBottom: 7 },
+  cardText: { fontSize: 12, color: '#475569', lineHeight: 18, marginBottom: 8 },
   cardHint: { fontSize: 12, color: '#64748b', lineHeight: 18 },
   metricGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 14,
+    gap: 8,
+    marginBottom: 12,
   },
   metricCard: {
     width: '48%',
     backgroundColor: '#fff',
     borderRadius: 14,
-    padding: 14,
-    borderTopWidth: 4,
+    padding: 12,
+    borderTopWidth: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 1,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
-  metricValue: { fontSize: 24, fontWeight: '900', marginBottom: 4 },
-  metricLabel: { color: '#64748b', fontSize: 12, lineHeight: 16 },
+  metricValue: { fontSize: 22, fontWeight: '900', marginBottom: 3 },
+  metricLabel: { color: '#64748b', fontSize: 11, lineHeight: 15 },
   badge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
   badgeText: { fontSize: 11, fontWeight: '800' },
-  counter: { color: '#2563eb', fontSize: 12, fontWeight: '800' },
+  counter: { color: '#38BDF8', fontSize: 12, fontWeight: '800' },
   groupImage: {
     width: '100%',
-    height: 120,
+    height: 104,
     borderRadius: 12,
     marginBottom: 12,
     backgroundColor: '#e2e8f0',
   },
   groupBanner: {
-    height: 110,
+    height: 96,
     borderRadius: 12,
-    backgroundColor: '#dbeafe',
+    backgroundColor: '#E0F2FE',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
   },
-  groupBannerText: { color: '#1e3a5f', fontSize: 36, fontWeight: '900' },
+  groupBannerText: { color: '#1E3A8A', fontSize: 36, fontWeight: '900' },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 7,
+    paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
   infoLabel: { color: '#64748b', fontSize: 12 },
-  infoValue: { color: '#1e3a5f', fontSize: 12, fontWeight: '700', maxWidth: '58%', textAlign: 'right' },
+  infoValue: { color: '#1E3A8A', fontSize: 12, fontWeight: '700', maxWidth: '58%', textAlign: 'right' },
   primaryButton: {
-    backgroundColor: '#1e3a5f',
+    backgroundColor: '#1E3A8A',
     borderRadius: 12,
-    paddingVertical: 12,
+    paddingVertical: 11,
     alignItems: 'center',
     marginTop: 12,
   },
   primaryButtonText: { color: '#fff', fontWeight: '800', fontSize: 13 },
   secondaryButton: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#F0F9FF',
     borderRadius: 12,
-    paddingVertical: 11,
+    paddingVertical: 10,
     alignItems: 'center',
     marginTop: 10,
   },
-  secondaryButtonText: { color: '#2563eb', fontWeight: '800', fontSize: 13 },
+  secondaryButtonText: { color: '#38BDF8', fontWeight: '800', fontSize: 13 },
   notice: { borderRadius: 10, padding: 10, marginTop: 10 },
   noticeOk: { backgroundColor: '#dcfce7' },
   noticeMuted: { backgroundColor: '#f1f5f9' },
   noticeText: { color: '#334155', fontSize: 12, lineHeight: 17 },
   emptyBox: { backgroundColor: '#f8fafc', borderRadius: 12, padding: 14, marginBottom: 8 },
-  emptyIcon: { fontSize: 34, color: '#dc2626', marginBottom: 10 },
+  emptyIcon: { fontSize: 34, color: '#EF4444', marginBottom: 10 },
   emptyText: { color: '#64748b', fontSize: 13, lineHeight: 19, textAlign: 'center' },
   listItem: {
     flexDirection: 'row',
@@ -910,7 +1177,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f1f5f9',
   },
   listText: { flex: 1, marginRight: 10 },
-  listTitle: { color: '#1e3a5f', fontSize: 14, fontWeight: '800', marginBottom: 3 },
+  listTitle: { color: '#1E3A8A', fontSize: 14, fontWeight: '800', marginBottom: 3 },
   listSubtitle: { color: '#64748b', fontSize: 12, lineHeight: 17 },
   smallBadge: { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
   smallBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
@@ -926,12 +1193,12 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: '#2563eb',
+    borderColor: '#38BDF8',
     marginTop: 4,
     marginRight: 10,
   },
-  actionDotDone: { backgroundColor: '#16a34a', borderColor: '#16a34a' },
+  actionDotDone: { backgroundColor: '#22C55E', borderColor: '#22C55E' },
   actionTextWrap: { flex: 1 },
-  actionLabel: { color: '#1e3a5f', fontSize: 14, fontWeight: '800', marginBottom: 2 },
+  actionLabel: { color: '#1E3A8A', fontSize: 14, fontWeight: '800', marginBottom: 2 },
   actionDescription: { color: '#64748b', fontSize: 12, lineHeight: 17 },
 });

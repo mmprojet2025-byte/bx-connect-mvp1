@@ -6,6 +6,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import AppIcon from '../components/AppIcon';
 
 export default function ProjectsScreen() {
   const { t, i18n } = useTranslation();
@@ -15,6 +16,7 @@ export default function ProjectsScreen() {
     isReferent,
     isAdmin,
     isSuperAdmin,
+    isPartenaire,
   } = useAuth();
 
   const [projets, setProjets] = useState([]);
@@ -34,19 +36,33 @@ export default function ProjectsScreen() {
 
   useEffect(() => {
     chargerProjets();
-  }, [isAuthenticated, isMembre, isReferent, isAdmin, isSuperAdmin]);
+  }, [isAuthenticated, isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire]);
 
   const chargerProjets = async () => {
     setLoading(true);
     setError('');
     setMessage('');
 
-    if (isAdmin || isSuperAdmin) {
+    if (isSuperAdmin) {
       setLoading(false);
       return;
     }
 
     try {
+      if (isAdmin) {
+        const res = await api.get('/projets/admin/tous');
+        setProjets(res.data);
+        setMembreDashboard(null);
+        return;
+      }
+
+      if (isPartenaire) {
+        const res = await api.get('/partenaire/projets-ouverts');
+        setProjets(res.data);
+        setMembreDashboard(null);
+        return;
+      }
+
       if (isReferent) {
         const res = await api.get('/projets/referent/mes-groupes');
         setProjets(res.data);
@@ -125,15 +141,6 @@ export default function ProjectsScreen() {
     return texte.toLowerCase().includes(recherche.toLowerCase());
   });
 
-  if (isAdmin) {
-    return (
-      <RoleBlockedState
-        title={t('projects.title')}
-        text={t('projects.mobile_admin_web')}
-      />
-    );
-  }
-
   if (isSuperAdmin) {
     return (
       <RoleBlockedState
@@ -158,7 +165,8 @@ export default function ProjectsScreen() {
             style={[styles.btnNew, !canProposeProject && styles.btnNewDisabled]}
             onPress={() => canProposeProject ? setShowForm(true) : setError(t('projects.needGroup'))}
           >
-            <Text style={styles.btnNewText}>+</Text>
+            <AppIcon name="project" size={16} color="#fff" />
+            <Text style={styles.btnNewText}>{t('projects.propose')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -179,6 +187,14 @@ export default function ProjectsScreen() {
         <InfoBox text={t('projects.referent_mobile_info')} />
       )}
 
+      {isAdmin && (
+        <InfoBox text={t('adminMobile.projectsReadOnly', { defaultValue: 'Vue mobile de suivi des projets. Les actions de gestion restent protégées.' })} />
+      )}
+
+      {isPartenaire && (
+        <InfoBox text={t('partner.projectsReadOnly', { defaultValue: 'Projets ouverts au soutien et initiatives à découvrir.' })} />
+      )}
+
       {message !== '' && (
         <View style={styles.successBox}>
           <Text style={styles.successText}>{message}</Text>
@@ -193,7 +209,7 @@ export default function ProjectsScreen() {
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#1e3a5f" />
+          <ActivityIndicator size="large" color="#1E3A8A" />
           <Text style={styles.loadingText}>{t('projects.loading')}</Text>
         </View>
       ) : projetsFiltres.length === 0 ? (
@@ -208,7 +224,7 @@ export default function ProjectsScreen() {
         <FlatList
           data={projetsFiltres}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => <ProjectCard projet={item} t={t} language={i18n.language} />}
+          renderItem={({ item }) => <ProjectCard projet={item} t={t} language={i18n.language} isPartenaire={isPartenaire} />}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           onRefresh={chargerProjets}
@@ -230,10 +246,13 @@ export default function ProjectsScreen() {
   );
 }
 
-function ProjectCard({ projet, t, language }) {
+function ProjectCard({ projet, t, language, isPartenaire }) {
   return (
     <View style={[styles.card, { borderTopColor: statusColor(projet.statut) }]}>
       <View style={styles.cardHeader}>
+        <View style={[styles.cardIcon, { backgroundColor: `${statusColor(projet.statut)}18` }]}>
+          <AppIcon name="project" size={20} color={statusColor(projet.statut)} />
+        </View>
         <View style={styles.cardTitleWrap}>
           <Text style={styles.cardTitle} numberOfLines={2}>{projet.titre}</Text>
           <Text style={styles.cardSub}>{formatDate(projet.dateCreation, language, t)}</Text>
@@ -256,6 +275,12 @@ function ProjectCard({ projet, t, language }) {
         <MetaRow label={t('projects.budget')} value={projet.budgetDemande ? `${projet.budgetDemande} €` : t('projects.not_provided')} />
         <MetaRow label={t('projects.participants')} value={`${projet.nombreParticipants ?? 0}`} />
         <MetaRow label={t('projects.comments')} value={`${projet.nombreCommentaires ?? 0}`} />
+        {isPartenaire && (
+          <MetaRow
+            label={t('partner.support')}
+            value={t('partner.secureFinalization', { defaultValue: 'Finalisation sécurisée depuis l’espace partenaire.' })}
+          />
+        )}
       </View>
     </View>
   );
@@ -347,7 +372,9 @@ function ProjectFormModal({
 function RoleBlockedState({ title, text }) {
   return (
     <View style={styles.centered}>
-      <Text style={styles.emptyIcon}>🚀</Text>
+      <View style={styles.emptyIconCircle}>
+        <AppIcon name="project" size={34} color="#38BDF8" />
+      </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyText}>{text}</Text>
     </View>
@@ -358,7 +385,9 @@ function EmptyState({ title, text, onRetry }) {
   const { t } = useTranslation();
   return (
     <View style={styles.centered}>
-      <Text style={styles.emptyIcon}>🚀</Text>
+      <View style={styles.emptyIconCircle}>
+        <AppIcon name="project" size={34} color="#38BDF8" />
+      </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyText}>{text}</Text>
       <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
@@ -399,10 +428,10 @@ function translateProjetStatut(statut, t) {
 
 function statusColor(statut) {
   switch (statut) {
-    case 'APPROUVE': return '#16a34a';
-    case 'EN_COURS': return '#2563eb';
+    case 'APPROUVE': return '#22C55E';
+    case 'EN_COURS': return '#38BDF8';
     case 'TERMINE': return '#64748b';
-    case 'REJETE': return '#dc2626';
+    case 'REJETE': return '#EF4444';
     case 'SOUMIS': return '#0891b2';
     default: return '#d97706';
   }
@@ -428,7 +457,7 @@ function getApiError(err, t, fallback) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4f8' },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
 
   searchContainer: {
     flexDirection: 'row',
@@ -450,30 +479,33 @@ const styles = StyleSheet.create({
     color: '#1e293b',
   },
   btnNew: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#1e3a5f',
-    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    minHeight: 40,
+    height: 40,
+    backgroundColor: '#F97316',
+    borderRadius: 12,
     justifyContent: 'center',
+    paddingHorizontal: 12,
   },
   btnNewDisabled: { backgroundColor: '#cbd5e1' },
-  btnNewText: { color: '#fff', fontSize: 24, fontWeight: '900', lineHeight: 28 },
+  btnNewText: { color: '#fff', fontSize: 12, fontWeight: '900' },
 
   infoBox: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#fff7ed',
     borderLeftWidth: 4,
-    borderLeftColor: '#2563eb',
+    borderLeftColor: '#F97316',
     marginHorizontal: 16,
     marginTop: 10,
     padding: 12,
     borderRadius: 10,
   },
-  infoBoxText: { color: '#1e40af', fontSize: 13, lineHeight: 18 },
+  infoBoxText: { color: '#9a3412', fontSize: 13, lineHeight: 18 },
   successBox: {
     backgroundColor: '#f0fdf4',
     borderLeftWidth: 4,
-    borderLeftColor: '#16a34a',
+    borderLeftColor: '#22C55E',
     marginHorizontal: 16,
     marginTop: 8,
     padding: 12,
@@ -483,57 +515,67 @@ const styles = StyleSheet.create({
   errorBox: {
     backgroundColor: '#fef2f2',
     borderLeftWidth: 4,
-    borderLeftColor: '#dc2626',
+    borderLeftColor: '#EF4444',
     marginHorizontal: 16,
     marginTop: 8,
     padding: 12,
     borderRadius: 8,
   },
-  errorText: { color: '#dc2626', fontSize: 13 },
+  errorText: { color: '#EF4444', fontSize: 13 },
 
-  listContent: { padding: 16, paddingBottom: 40 },
+  listContent: { padding: 14, paddingBottom: 30 },
   card: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderTopWidth: 4,
+    padding: 14,
+    marginBottom: 10,
+    borderTopWidth: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 1,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  cardTitleWrap: { flex: 1, marginRight: 10 },
-  cardTitle: { fontSize: 16, fontWeight: '900', color: '#1e3a5f', marginBottom: 4 },
+  cardIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  cardTitleWrap: { flex: 1, marginRight: 8 },
+  cardTitle: { fontSize: 15, fontWeight: '900', color: '#1E3A8A', marginBottom: 3, lineHeight: 20 },
   cardSub: { color: '#64748b', fontSize: 12 },
-  cardDesc: { color: '#475569', fontSize: 13, lineHeight: 19, marginBottom: 12 },
-  statusBadge: { borderRadius: 20, paddingHorizontal: 9, paddingVertical: 5 },
-  statusBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900' },
+  cardDesc: { color: '#475569', fontSize: 12, lineHeight: 18, marginBottom: 10 },
+  statusBadge: { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
+  statusBadgeText: { color: '#fff', fontSize: 9, fontWeight: '900' },
 
   metaBox: {
     backgroundColor: '#f8fafc',
     borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderBottomWidth: 1,
     borderBottomColor: '#eef2f7',
   },
-  metaLabel: { color: '#64748b', fontSize: 12 },
+  metaLabel: { color: '#64748b', fontSize: 11 },
   metaValue: {
-    color: '#1e3a5f',
-    fontSize: 12,
+    color: '#1E3A8A',
+    fontSize: 11,
     fontWeight: '700',
     maxWidth: '58%',
     textAlign: 'right',
@@ -544,12 +586,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 30,
-    backgroundColor: '#f0f4f8',
+    backgroundColor: '#F8FAFC',
+  },
+  emptyIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#E0F2FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
   },
   loadingText: { marginTop: 12, color: '#64748b', fontSize: 14 },
   emptyIcon: { fontSize: 42, marginBottom: 12 },
   emptyTitle: {
-    color: '#1e3a5f',
+    color: '#1E3A8A',
     fontSize: 18,
     fontWeight: '900',
     textAlign: 'center',
@@ -564,7 +615,7 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     marginTop: 18,
-    backgroundColor: '#1e3a5f',
+    backgroundColor: '#1E3A8A',
     borderRadius: 12,
     paddingHorizontal: 18,
     paddingVertical: 12,
@@ -589,7 +640,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 18,
   },
-  modalTitle: { color: '#1e3a5f', fontSize: 18, fontWeight: '900' },
+  modalTitle: { color: '#1E3A8A', fontSize: 18, fontWeight: '900' },
   modalSub: { color: '#64748b', fontSize: 12, marginTop: 3 },
   modalClose: { color: '#64748b', fontSize: 28, lineHeight: 30 },
   label: { fontSize: 13, fontWeight: '800', color: '#374151', marginBottom: 6 },
@@ -606,7 +657,7 @@ const styles = StyleSheet.create({
   },
   inputMultiline: { minHeight: 90, textAlignVertical: 'top' },
   btnCreate: {
-    backgroundColor: '#1e3a5f',
+    backgroundColor: '#1E3A8A',
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',

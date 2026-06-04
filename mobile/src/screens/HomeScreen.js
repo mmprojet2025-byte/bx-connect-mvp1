@@ -110,7 +110,7 @@ function FeatureCard({ icon, title, description, onPress }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f4f8',
+    backgroundColor: '#F8FAFC',
   },
   content: {
     paddingBottom: 40,
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
 
   // Hero
   hero: {
-    backgroundColor: '#1e3a5f',
+    backgroundColor: '#1E3A8A',
     paddingHorizontal: 24,
     paddingTop: 48,
     paddingBottom: 40,
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   btnPrimaryText: {
-    color: '#1e3a5f',
+    color: '#1E3A8A',
     fontWeight: 'bold',
     fontSize: 15,
   },
@@ -172,17 +172,17 @@ const styles = StyleSheet.create({
 
   // Welcome card
   welcomeCard: {
-    backgroundColor: '#dbeafe',
+    backgroundColor: '#E0F2FE',
     marginHorizontal: 16,
     marginTop: 16,
     padding: 16,
     borderRadius: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#2563eb',
+    borderLeftColor: '#38BDF8',
   },
   welcomeText: {
     fontSize: 16,
-    color: '#1e3a5f',
+    color: '#1E3A8A',
   },
   welcomeName: {
     fontWeight: 'bold',
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1e3a5f',
+    color: '#1E3A8A',
     marginHorizontal: 16,
     marginTop: 28,
     marginBottom: 16,
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   featureTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#1e3a5f',
+    color: '#1E3A8A',
     marginBottom: 6,
   },
   featureDesc: {

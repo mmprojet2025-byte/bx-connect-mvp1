@@ -6,6 +6,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import AppIcon from '../components/AppIcon';
 
 export default function ActivitiesScreen() {
   const { t, i18n } = useTranslation();
@@ -15,6 +16,7 @@ export default function ActivitiesScreen() {
     isReferent,
     isAdmin,
     isSuperAdmin,
+    isPartenaire,
   } = useAuth();
 
   const [activites, setActivites] = useState([]);
@@ -27,19 +29,33 @@ export default function ActivitiesScreen() {
 
   useEffect(() => {
     chargerActivites();
-  }, [isAuthenticated, isMembre, isReferent, isAdmin, isSuperAdmin]);
+  }, [isAuthenticated, isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire]);
 
   const chargerActivites = async () => {
     setLoading(true);
     setError('');
     setMessage('');
 
-    if (isAdmin || isSuperAdmin) {
+    if (isSuperAdmin) {
       setLoading(false);
       return;
     }
 
     try {
+      if (isAdmin) {
+        const res = await api.get('/activites/admin/toutes');
+        setActivites(res.data);
+        setInscriptions([]);
+        return;
+      }
+
+      if (isPartenaire) {
+        const res = await api.get('/partenaire/activites-ouvertes');
+        setActivites(res.data);
+        setInscriptions([]);
+        return;
+      }
+
       if (isReferent) {
         const res = await api.get('/activites/mes-activites');
         setActivites(res.data);
@@ -89,15 +105,6 @@ export default function ActivitiesScreen() {
     return texte.toLowerCase().includes(recherche.toLowerCase());
   });
 
-  if (isAdmin) {
-    return (
-      <RoleBlockedState
-        title={t('activities.title')}
-        text={t('activities.mobile_admin_web')}
-      />
-    );
-  }
-
   if (isSuperAdmin) {
     return (
       <RoleBlockedState
@@ -130,6 +137,14 @@ export default function ActivitiesScreen() {
         <InfoBox text={t('activities.referent_mobile_info')} />
       )}
 
+      {isAdmin && (
+        <InfoBox text={t('adminMobile.activitiesReadOnly', { defaultValue: 'Vue mobile de suivi des activités. Les actions de gestion restent protégées.' })} />
+      )}
+
+      {isPartenaire && (
+        <InfoBox text={t('partner.activitiesReadOnly', { defaultValue: 'Activités ouvertes au soutien et initiatives à suivre.' })} />
+      )}
+
       {message !== '' && (
         <View style={styles.successBox}>
           <Text style={styles.successText}>{message}</Text>
@@ -144,7 +159,7 @@ export default function ActivitiesScreen() {
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#1e3a5f" />
+          <ActivityIndicator size="large" color="#1E3A8A" />
           <Text style={styles.loadingText}>{t('activities.loading')}</Text>
         </View>
       ) : activitesFiltrees.length === 0 ? (
@@ -165,6 +180,8 @@ export default function ActivitiesScreen() {
               isAuthenticated={isAuthenticated}
               isMembre={isMembre}
               isReferent={isReferent}
+              isAdmin={isAdmin}
+              isPartenaire={isPartenaire}
               inscription={inscriptions.find((ins) => ins.activiteId === item.id)}
               actionLoading={actionLoadingId === item.id}
               onInscrire={() => handleInscrire(item.id)}
@@ -187,6 +204,8 @@ function ActivityCard({
   isAuthenticated,
   isMembre,
   isReferent,
+  isAdmin,
+  isPartenaire,
   inscription,
   actionLoading,
   onInscrire,
@@ -201,6 +220,9 @@ function ActivityCard({
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
+        <View style={[styles.cardIcon, { backgroundColor: `${status.color}18` }]}>
+          <AppIcon name="activity" size={20} color={status.color} />
+        </View>
         <View style={styles.cardTitleWrap}>
           <Text style={styles.cardTitle} numberOfLines={2}>{activite.titre}</Text>
           <Text style={styles.cardSub}>{formatDateRange(activite.dateDebut, activite.dateFin, language, t)}</Text>
@@ -217,10 +239,16 @@ function ActivityCard({
         <MetaRow label={t('activities.price')} value={activite.gratuite ? t('activities.free') : t('activities.price_value', { price: activite.prix ?? 0 })} />
         <MetaRow label={t('activities.capacity')} value={formatCapacite(activite, t)} />
         {activite.theme && <MetaRow label={t('activities.form_theme')} value={activite.theme} />}
-        {isReferent && activite.createurPrenom && (
+        {(isReferent || isAdmin) && activite.createurPrenom && (
           <MetaRow
             label={t('activities.created_by')}
             value={`${activite.createurPrenom || ''} ${activite.createurNom || ''}`.trim()}
+          />
+        )}
+        {isPartenaire && (
+          <MetaRow
+            label={t('partner.support')}
+            value={t('partner.secureFinalization', { defaultValue: 'Finalisation sécurisée depuis l’espace partenaire.' })}
           />
         )}
       </View>
@@ -237,7 +265,7 @@ function ActivityCard({
               color={status.color}
             />
           ) : complete ? (
-            <StatusLine text={t('activities.full')} color="#dc2626" />
+            <StatusLine text={t('activities.full')} color="#EF4444" />
           ) : activite.statut !== 'PUBLIEE' ? (
             <StatusLine text={t('activities.registration_unavailable')} color="#64748b" />
           ) : (
@@ -261,7 +289,9 @@ function ActivityCard({
 function RoleBlockedState({ title, text }) {
   return (
     <View style={styles.centered}>
-      <Text style={styles.emptyIcon}>🎯</Text>
+      <View style={styles.emptyIconCircle}>
+        <AppIcon name="activity" size={34} color="#38BDF8" />
+      </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyText}>{text}</Text>
     </View>
@@ -272,7 +302,9 @@ function EmptyState({ title, text, onRetry }) {
   const { t } = useTranslation();
   return (
     <View style={styles.centered}>
-      <Text style={styles.emptyIcon}>🎯</Text>
+      <View style={styles.emptyIconCircle}>
+        <AppIcon name="activity" size={34} color="#38BDF8" />
+      </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyText}>{text}</Text>
       <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
@@ -313,7 +345,7 @@ function MetaRow({ label, value }) {
 
 function getActivityStatus({ activite, inscription, complete }, t) {
   if (inscription?.statut === 'CONFIRMEE') {
-    return { label: t('activities.registered'), color: '#16a34a' };
+    return { label: t('activities.registered'), color: '#22C55E' };
   }
   if (inscription?.statut === 'EN_ATTENTE_PAIEMENT') {
     return { label: t('statuses.EN_ATTENTE_PAIEMENT'), color: '#d97706' };
@@ -322,10 +354,10 @@ function getActivityStatus({ activite, inscription, complete }, t) {
     return { label: t('statuses.ANNULEE'), color: '#64748b' };
   }
   if (complete) {
-    return { label: t('activities.full_status'), color: '#dc2626' };
+    return { label: t('activities.full_status'), color: '#EF4444' };
   }
   if (activite.statut === 'PUBLIEE') {
-    return { label: t('activities.available'), color: '#2563eb' };
+    return { label: t('activities.available'), color: '#38BDF8' };
   }
   return { label: translateActiviteStatut(activite.statut, t), color: statusColor(activite.statut) };
 }
@@ -366,8 +398,8 @@ function translateActiviteStatut(statut, t) {
 
 function statusColor(statut) {
   switch (statut) {
-    case 'PUBLIEE': return '#2563eb';
-    case 'ANNULEE': return '#dc2626';
+    case 'PUBLIEE': return '#38BDF8';
+    case 'ANNULEE': return '#EF4444';
     case 'TERMINEE': return '#64748b';
     default: return '#d97706';
   }
@@ -401,7 +433,7 @@ function getApiError(err, t, fallback) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4f8' },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
 
   searchContainer: {
     flexDirection: 'row',
@@ -423,17 +455,17 @@ const styles = StyleSheet.create({
     color: '#1e293b',
   },
   retrySmall: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#F0F9FF',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  retrySmallText: { color: '#2563eb', fontSize: 12, fontWeight: '800' },
+  retrySmallText: { color: '#38BDF8', fontSize: 12, fontWeight: '800' },
 
   infoBox: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#F0F9FF',
     borderLeftWidth: 4,
-    borderLeftColor: '#2563eb',
+    borderLeftColor: '#38BDF8',
     marginHorizontal: 16,
     marginTop: 10,
     padding: 12,
@@ -443,7 +475,7 @@ const styles = StyleSheet.create({
   successBox: {
     backgroundColor: '#f0fdf4',
     borderLeftWidth: 4,
-    borderLeftColor: '#16a34a',
+    borderLeftColor: '#22C55E',
     marginHorizontal: 16,
     marginTop: 8,
     padding: 12,
@@ -453,66 +485,76 @@ const styles = StyleSheet.create({
   errorBox: {
     backgroundColor: '#fef2f2',
     borderLeftWidth: 4,
-    borderLeftColor: '#dc2626',
+    borderLeftColor: '#EF4444',
     marginHorizontal: 16,
     marginTop: 8,
     padding: 12,
     borderRadius: 8,
   },
-  errorText: { color: '#dc2626', fontSize: 13 },
+  errorText: { color: '#EF4444', fontSize: 13 },
 
-  listContent: { padding: 16, paddingBottom: 40 },
+  listContent: { padding: 14, paddingBottom: 30 },
   card: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+    padding: 14,
+    marginBottom: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 1,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  cardTitleWrap: { flex: 1, marginRight: 10 },
-  cardTitle: { fontSize: 16, fontWeight: '900', color: '#1e3a5f', marginBottom: 4 },
+  cardIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  cardTitleWrap: { flex: 1, marginRight: 8 },
+  cardTitle: { fontSize: 15, fontWeight: '900', color: '#1E3A8A', marginBottom: 3, lineHeight: 20 },
   cardSub: { color: '#64748b', fontSize: 12 },
-  cardDesc: { color: '#475569', fontSize: 13, lineHeight: 19, marginBottom: 12 },
-  statusBadge: { borderRadius: 20, paddingHorizontal: 9, paddingVertical: 5 },
-  statusBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900' },
+  cardDesc: { color: '#475569', fontSize: 12, lineHeight: 18, marginBottom: 10 },
+  statusBadge: { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
+  statusBadgeText: { color: '#fff', fontSize: 9, fontWeight: '900' },
 
   metaBox: {
     backgroundColor: '#f8fafc',
     borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginBottom: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginBottom: 10,
   },
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderBottomWidth: 1,
     borderBottomColor: '#eef2f7',
   },
-  metaLabel: { color: '#64748b', fontSize: 12 },
+  metaLabel: { color: '#64748b', fontSize: 11 },
   metaValue: {
-    color: '#1e3a5f',
-    fontSize: 12,
+    color: '#1E3A8A',
+    fontSize: 11,
     fontWeight: '700',
     maxWidth: '58%',
     textAlign: 'right',
   },
 
-  visitorHint: { color: '#2563eb', fontSize: 13, fontWeight: '700', marginTop: 2 },
+  visitorHint: { color: '#38BDF8', fontSize: 13, fontWeight: '700', marginTop: 2 },
   actions: { marginTop: 2 },
   btnPrimary: {
-    backgroundColor: '#1e3a5f',
+    backgroundColor: '#1E3A8A',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
@@ -526,12 +568,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 30,
-    backgroundColor: '#f0f4f8',
+    backgroundColor: '#F8FAFC',
+  },
+  emptyIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#E0F2FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
   },
   loadingText: { marginTop: 12, color: '#64748b', fontSize: 14 },
   emptyIcon: { fontSize: 42, marginBottom: 12 },
   emptyTitle: {
-    color: '#1e3a5f',
+    color: '#1E3A8A',
     fontSize: 18,
     fontWeight: '900',
     textAlign: 'center',
@@ -546,7 +597,7 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     marginTop: 18,
-    backgroundColor: '#1e3a5f',
+    backgroundColor: '#1E3A8A',
     borderRadius: 12,
     paddingHorizontal: 18,
     paddingVertical: 12,

@@ -99,8 +99,8 @@ export default function PrestationsMobileScreen() {
   };
 
   const statutColor = (s) => ({
-    VALIDEE:    { bg: '#dcfce7', color: '#16a34a' },
-    REFUSEE:    { bg: '#fef2f2', color: '#dc2626' },
+    VALIDEE:    { bg: '#dcfce7', color: '#22C55E' },
+    REFUSEE:    { bg: '#fef2f2', color: '#EF4444' },
     EN_ATTENTE: { bg: '#fef9c3', color: '#d97706' },
   }[s] || { bg: '#f1f5f9', color: '#64748b' });
 
@@ -191,7 +191,7 @@ export default function PrestationsMobileScreen() {
       {/* Liste */}
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#1e3a5f" />
+          <ActivityIndicator size="large" color="#1E3A8A" />
         </View>
       ) : prestations.length === 0 ? (
         <View style={styles.centered}>
@@ -263,16 +263,16 @@ export default function PrestationsMobileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4f8' },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 16, paddingVertical: 14,
     backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e2e8f0',
   },
-  headerTitle: { fontSize: 17, fontWeight: 'bold', color: '#1e3a5f' },
-  headerSub: { fontSize: 12, color: '#16a34a', marginTop: 2 },
+  headerTitle: { fontSize: 17, fontWeight: 'bold', color: '#1E3A8A' },
+  headerSub: { fontSize: 12, color: '#22C55E', marginTop: 2 },
   btnNew: {
-    width: 36, height: 36, backgroundColor: '#1e3a5f',
+    width: 36, height: 36, backgroundColor: '#1E3A8A',
     borderRadius: 10, alignItems: 'center', justifyContent: 'center',
   },
   btnNewText: { color: '#fff', fontSize: 22, fontWeight: 'bold', lineHeight: 26 },
@@ -281,19 +281,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: '#e2e8f0',
   },
   onglet: { flex: 1, paddingVertical: 10, alignItems: 'center' },
-  ongletActive: { borderBottomWidth: 2, borderBottomColor: '#1e3a5f' },
+  ongletActive: { borderBottomWidth: 2, borderBottomColor: '#1E3A8A' },
   ongletText: { fontSize: 13, color: '#64748b' },
-  ongletTextActive: { color: '#1e3a5f', fontWeight: '700' },
+  ongletTextActive: { color: '#1E3A8A', fontWeight: '700' },
   successBox: {
-    backgroundColor: '#f0fdf4', borderLeftWidth: 4, borderLeftColor: '#16a34a',
+    backgroundColor: '#f0fdf4', borderLeftWidth: 4, borderLeftColor: '#22C55E',
     marginHorizontal: 16, marginTop: 8, padding: 12, borderRadius: 8,
   },
   successText: { color: '#15803d', fontSize: 13 },
   errorBox: {
-    backgroundColor: '#fef2f2', borderLeftWidth: 4, borderLeftColor: '#dc2626',
+    backgroundColor: '#fef2f2', borderLeftWidth: 4, borderLeftColor: '#EF4444',
     marginHorizontal: 16, marginTop: 8, padding: 12, borderRadius: 8,
   },
-  errorText: { color: '#dc2626', fontSize: 13 },
+  errorText: { color: '#EF4444', fontSize: 13 },
   listContent: { padding: 16 },
   card: {
     backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 10,
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 },
   cardLeft: { flex: 1, marginRight: 8 },
-  cardTitle: { fontSize: 14, fontWeight: '600', color: '#1e3a5f', marginBottom: 2 },
+  cardTitle: { fontSize: 14, fontWeight: '600', color: '#1E3A8A', marginBottom: 2 },
   cardMeta: { fontSize: 11, color: '#94a3b8' },
   statutBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
   statutText: { fontSize: 10, fontWeight: '600' },
@@ -312,12 +312,12 @@ const styles = StyleSheet.create({
     flex: 1, backgroundColor: '#dcfce7', borderWidth: 1, borderColor: '#86efac',
     paddingVertical: 8, borderRadius: 10, alignItems: 'center',
   },
-  btnValiderText: { color: '#16a34a', fontWeight: '600', fontSize: 12 },
+  btnValiderText: { color: '#22C55E', fontWeight: '600', fontSize: 12 },
   btnRefuser: {
     flex: 1, backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fca5a5',
     paddingVertical: 8, borderRadius: 10, alignItems: 'center',
   },
-  btnRefuserText: { color: '#dc2626', fontWeight: '600', fontSize: 12 },
+  btnRefuserText: { color: '#EF4444', fontWeight: '600', fontSize: 12 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   emptyIcon: { fontSize: 48, marginBottom: 12 },
   emptyText: { color: '#64748b', fontSize: 14, textAlign: 'center' },
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
     padding: 24, maxHeight: '85%',
   },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  modalTitle: { fontSize: 17, fontWeight: 'bold', color: '#1e3a5f' },
+  modalTitle: { fontSize: 17, fontWeight: 'bold', color: '#1E3A8A' },
   modalClose: { fontSize: 20, color: '#94a3b8', fontWeight: 'bold' },
   label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
   input: {
@@ -340,11 +340,11 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 8,
     paddingHorizontal: 10, paddingVertical: 5, marginRight: 6, marginBottom: 6,
   },
-  typeBtnActive: { borderColor: '#1e3a5f', backgroundColor: '#eff6ff' },
+  typeBtnActive: { borderColor: '#1E3A8A', backgroundColor: '#F0F9FF' },
   typeBtnText: { fontSize: 11, color: '#64748b', fontWeight: '500' },
-  typeBtnTextActive: { color: '#1e3a5f', fontWeight: '700' },
+  typeBtnTextActive: { color: '#1E3A8A', fontWeight: '700' },
   btnCreate: {
-    backgroundColor: '#1e3a5f', paddingVertical: 14,
+    backgroundColor: '#1E3A8A', paddingVertical: 14,
     borderRadius: 12, alignItems: 'center', marginTop: 4,
   },
   btnCreateText: { color: '#fff', fontWeight: '700', fontSize: 15 },
