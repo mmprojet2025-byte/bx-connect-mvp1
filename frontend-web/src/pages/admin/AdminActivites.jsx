@@ -7,6 +7,8 @@ import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFrien
 import ActivityCover from '../../components/ActivityCover';
 import StatusBadge from '../../components/StatusBadge';
 import AppIcon from '../../components/ui/AppIcons';
+import PageHeader from '../../components/ui/PageHeader';
+import SectionCard from '../../components/ui/SectionCard';
 
 const STATUTS = ['BROUILLON', 'PUBLIEE', 'ANNULEE', 'TERMINEE'];
 const emptyForm = {
@@ -30,6 +32,7 @@ export default function AdminActivites() {
   const [message, setMessage] = useState('');
   const [recherche, setRecherche] = useState('');
   const [filtreStatut, setFiltreStatut] = useState('');
+  const [filtreCategorie, setFiltreCategorie] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -140,26 +143,43 @@ export default function AdminActivites() {
     const matchRecherche = a.titre?.toLowerCase().includes(recherche.toLowerCase()) ||
       a.lieu?.toLowerCase().includes(recherche.toLowerCase());
     const matchStatut = filtreStatut ? a.statut === filtreStatut : true;
-    return matchRecherche && matchStatut;
+    const matchCategorie = filtreCategorie ? a.categorie === filtreCategorie : true;
+    return matchRecherche && matchStatut && matchCategorie;
   });
+  const categories = [...new Set(activites.map(a => a.categorie).filter(Boolean))];
+  const stats = {
+    total: activites.length,
+    publiees: activites.filter(a => a.statut === 'PUBLIEE').length,
+    brouillons: activites.filter(a => a.statut === 'BROUILLON').length,
+    gratuites: activites.filter(a => a.gratuite).length,
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-blue-900 mb-1">{t('admin.activities_title')}</h1>
-            <p className="text-gray-500 text-sm">{t('statistics.activitiesTotal', { count: activites.length })}</p>
-          </div>
-          <button
-            type="button"
-            onClick={showForm ? resetForm : openCreateForm}
-            className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
-          >
-            {showForm ? t('common.cancel') : t('admin.createActivity')}
-          </button>
+        <PageHeader
+          eyebrow={t('nav.activities')}
+          title={t('admin.activities_title')}
+          description={t('statistics.activitiesTotal', { count: activites.length })}
+          action={(
+            <button
+              type="button"
+              onClick={showForm ? resetForm : openCreateForm}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-600"
+            >
+              <AppIcon name={showForm ? 'XCircle' : 'PlusCircle'} className="h-4 w-4" />
+              {showForm ? t('common.cancel') : t('admin.createActivity')}
+            </button>
+          )}
+        />
+
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <AdminStatCard icon="Calendar" label={t('common.total', { defaultValue: 'Total' })} value={stats.total} tone="blue" />
+          <AdminStatCard icon="CheckCircle" label={t('statuses.PUBLIEE', { defaultValue: 'Publiées' })} value={stats.publiees} tone="green" />
+          <AdminStatCard icon="Clock" label={t('statuses.BROUILLON', { defaultValue: 'Brouillons' })} value={stats.brouillons} tone="amber" />
+          <AdminStatCard icon="Wallet" label={t('activities.free', { defaultValue: 'Gratuites' })} value={stats.gratuites} tone="violet" />
         </div>
 
         {message && (
@@ -170,7 +190,7 @@ export default function AdminActivites() {
         )}
 
         {showForm && (
-          <form onSubmit={enregistrerActivite} className="bg-white rounded-2xl shadow p-5 mb-6 grid md:grid-cols-2 gap-4">
+          <form onSubmit={enregistrerActivite} className="mb-6 grid rounded-3xl border border-slate-100 bg-white p-5 shadow-sm md:grid-cols-2 gap-4">
             <div className="md:col-span-2 flex items-center justify-between gap-3">
               <h2 className="text-lg font-bold text-blue-900">
                 {editingId ? t('common.edit') : t('admin.createActivity')}
@@ -212,32 +232,45 @@ export default function AdminActivites() {
               <button
                 type="submit"
                 disabled={creating}
-                className="bg-blue-700 hover:bg-blue-600 disabled:bg-gray-300 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-600 disabled:bg-gray-300"
               >
+                <AppIcon name={editingId ? 'Save' : 'PlusCircle'} className="h-4 w-4" />
                 {creating ? t('common.saving') : editingId ? t('common.saveChanges') : t('admin.createActivity')}
               </button>
             </div>
           </form>
         )}
 
-        {/* Filtres */}
-        <div className="flex gap-3 mb-6 flex-wrap">
-          <input
-            type="text"
-            placeholder={t('admin.searchActivityPlaceholder')}
-            value={recherche}
-            onChange={e => { setRecherche(e.target.value); setMessage(''); setError(''); }}
-            className="flex-1 min-w-48 border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <select
-            value={filtreStatut}
-            onChange={e => setFiltreStatut(e.target.value)}
-            className="border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-          >
-            <option value="">{t('common.all_statuses')}</option>
-            {STATUTS.map(s => <option key={s} value={s}>{t(`statuses.${s}`, { defaultValue: s })}</option>)}
-          </select>
-        </div>
+        <SectionCard className="mb-6" title={t('common.filters', { defaultValue: 'Filtres' })}>
+          <div className="grid gap-3 md:grid-cols-[1fr_220px_220px]">
+            <label className="relative block">
+              <AppIcon name="Search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder={t('admin.searchActivityPlaceholder')}
+                value={recherche}
+                onChange={e => { setRecherche(e.target.value); setMessage(''); setError(''); }}
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </label>
+            <select
+              value={filtreStatut}
+              onChange={e => setFiltreStatut(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              <option value="">{t('common.all_statuses')}</option>
+              {STATUTS.map(s => <option key={s} value={s}>{t(`statuses.${s}`, { defaultValue: s })}</option>)}
+            </select>
+            <select
+              value={filtreCategorie}
+              onChange={e => setFiltreCategorie(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              <option value="">{t('activities.form_category')}</option>
+              {categories.map(categorie => <option key={categorie} value={categorie}>{categorie}</option>)}
+            </select>
+          </div>
+        </SectionCard>
 
         {loading ? (
           <p className="text-gray-400 text-center py-10">{t('admin.loading')}</p>
@@ -248,7 +281,7 @@ export default function AdminActivites() {
                 <div className="bg-white rounded-2xl shadow p-8 text-center text-gray-400 text-sm">{t('activities.no_search_results')}</div>
               ) : (
                 activitesFiltrees.map(a => (
-                  <article key={a.id} className="bg-white rounded-2xl shadow overflow-hidden">
+                  <article key={a.id} className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
                     <ActivityCover imageUrl={a.imageUrl} title={a.titre} className="h-32" />
                     <div className="p-5">
                     <div className="flex items-start justify-between gap-3 mb-4">
@@ -285,14 +318,16 @@ export default function AdminActivites() {
                       <div className="flex flex-wrap gap-2 pt-2">
                         <button
                           onClick={() => modifierActivite(a)}
-                          className="text-xs px-3 py-2 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 font-medium transition"
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-blue-100 px-3 py-2 text-xs font-medium text-blue-700 transition hover:bg-blue-200"
                         >
+                          <AppIcon name="Edit" className="h-3.5 w-3.5" />
                           {t('common.edit')}
                         </button>
                         <button
                           onClick={() => supprimerActivite(a.id, a.titre)}
-                          className="text-xs px-3 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 font-medium transition"
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-red-100 px-3 py-2 text-xs font-medium text-red-700 transition hover:bg-red-200"
                         >
+                          <AppIcon name="XCircle" className="h-3.5 w-3.5" />
                           {t('common.delete')}
                         </button>
                       </div>
@@ -303,7 +338,7 @@ export default function AdminActivites() {
               )}
             </div>
 
-            <div className="hidden md:block bg-white rounded-2xl shadow overflow-hidden">
+            <div className="hidden overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm md:block">
               <div className="overflow-x-auto">
               <table className="w-full border-collapse" style={{ minWidth: '700px' }}>
                 <thead>
@@ -323,7 +358,7 @@ export default function AdminActivites() {
                     </tr>
                   ) : (
                     activitesFiltrees.map((a, i) => (
-                      <tr key={a.id} className={`border-b border-gray-50 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                      <tr key={a.id} className={`border-b border-gray-50 transition hover:bg-blue-50/50 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className="h-12 w-16 shrink-0 overflow-hidden rounded-xl">
@@ -359,14 +394,16 @@ export default function AdminActivites() {
                           <div className="flex flex-wrap gap-2">
                             <button
                               onClick={() => modifierActivite(a)}
-                              className="text-xs px-3 py-1 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 font-medium transition"
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-100 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-200"
                             >
+                              <AppIcon name="Edit" className="h-3.5 w-3.5" />
                               {t('common.edit')}
                             </button>
                             <button
                               onClick={() => supprimerActivite(a.id, a.titre)}
-                              className="text-xs px-3 py-1 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 font-medium transition"
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-red-100 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-200"
                             >
+                              <AppIcon name="XCircle" className="h-3.5 w-3.5" />
                               {t('common.delete')}
                             </button>
                           </div>
@@ -413,6 +450,25 @@ function InfoLine({ label, value }) {
     <div className="flex justify-between gap-4 text-xs">
       <span className="text-gray-400">{label}</span>
       <span className="font-medium text-gray-700 text-right">{value}</span>
+    </div>
+  );
+}
+
+function AdminStatCard({ icon, label, value, tone = 'blue' }) {
+  const tones = {
+    blue: 'bg-blue-50 text-blue-700 ring-blue-100',
+    green: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
+    amber: 'bg-amber-50 text-amber-700 ring-amber-100',
+    violet: 'bg-violet-50 text-violet-700 ring-violet-100',
+  };
+
+  return (
+    <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl ring-1 ${tones[tone] || tones.blue}`}>
+        <AppIcon name={icon} className="h-5 w-5" />
+      </div>
+      <p className="text-2xl font-black text-slate-950">{value}</p>
+      <p className="mt-1 text-sm font-medium text-slate-500">{label}</p>
     </div>
   );
 }

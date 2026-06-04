@@ -6,6 +6,9 @@ import Footer from '../../components/Footer';
 import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFriendlyError';
 import StatusBadge from '../../components/StatusBadge';
 import ProjectCover from '../../components/ProjectCover';
+import AppIcon from '../../components/ui/AppIcons';
+import PageHeader from '../../components/ui/PageHeader';
+import SectionCard from '../../components/ui/SectionCard';
 
 const STATUTS = ['BROUILLON', 'SOUMIS', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE'];
 const emptyForm = { titre: '', description: '', budgetDemande: '' };
@@ -18,6 +21,7 @@ export default function AdminProjets() {
   const [message, setMessage] = useState('');
   const [recherche, setRecherche] = useState('');
   const [filtreStatut, setFiltreStatut] = useState('');
+  const [filtreGroupe, setFiltreGroupe] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -113,28 +117,46 @@ export default function AdminProjets() {
   };
 
   const projetsFiltres = projets.filter(p => {
-    const matchRecherche = p.titre?.toLowerCase().includes(recherche.toLowerCase());
+    const texte = `${p.titre || ''} ${p.description || ''} ${p.porteurPrenom || ''} ${p.porteurNom || ''}`.toLowerCase();
+    const matchRecherche = texte.includes(recherche.toLowerCase());
     const matchStatut = filtreStatut ? p.statut === filtreStatut : true;
-    return matchRecherche && matchStatut;
+    const matchGroupe = filtreGroupe ? p.groupeNom === filtreGroupe : true;
+    return matchRecherche && matchStatut && matchGroupe;
   });
+  const groupes = [...new Set(projets.map(p => p.groupeNom).filter(Boolean))];
+  const stats = {
+    total: projets.length,
+    soumis: projets.filter(p => p.statut === 'SOUMIS').length,
+    actifs: projets.filter(p => ['APPROUVE', 'EN_COURS'].includes(p.statut)).length,
+    budget: projets.reduce((total, projet) => total + (Number(projet.budgetDemande) || 0), 0),
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-blue-900 mb-1">{t('admin.projects_title')}</h1>
-            <p className="text-gray-500 text-sm">{t('statistics.projectsTotal', { count: projets.length })}</p>
-          </div>
-          <button
-            type="button"
-            onClick={showForm ? resetForm : openCreateForm}
-            className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
-          >
-            {showForm ? t('common.cancel') : t('admin.createProject')}
-          </button>
+        <PageHeader
+          eyebrow={t('nav.projects')}
+          title={t('admin.projects_title')}
+          description={t('statistics.projectsTotal', { count: projets.length })}
+          action={(
+            <button
+              type="button"
+              onClick={showForm ? resetForm : openCreateForm}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-600"
+            >
+              <AppIcon name={showForm ? 'XCircle' : 'PlusCircle'} className="h-4 w-4" />
+              {showForm ? t('common.cancel') : t('admin.createProject')}
+            </button>
+          )}
+        />
+
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <AdminStatCard icon="Rocket" label={t('common.total', { defaultValue: 'Total' })} value={stats.total} tone="blue" />
+          <AdminStatCard icon="Clock" label={t('statuses.SOUMIS', { defaultValue: 'Soumis' })} value={stats.soumis} tone="amber" />
+          <AdminStatCard icon="CheckCircle" label={t('statuses.EN_COURS', { defaultValue: 'Actifs' })} value={stats.actifs} tone="green" />
+          <AdminStatCard icon="Wallet" label={t('admin.budgetLabel')} value={`${stats.budget} €`} tone="violet" />
         </div>
 
         {message && (
@@ -145,7 +167,7 @@ export default function AdminProjets() {
         )}
 
         {showForm && (
-          <form onSubmit={enregistrerProjet} className="bg-white rounded-2xl shadow p-5 mb-6 grid md:grid-cols-2 gap-4">
+          <form onSubmit={enregistrerProjet} className="mb-6 grid rounded-3xl border border-slate-100 bg-white p-5 shadow-sm md:grid-cols-2 gap-4">
             <div className="md:col-span-2 flex items-center justify-between gap-3">
               <h2 className="text-lg font-bold text-blue-900">
                 {editingId ? t('common.edit') : t('admin.createProject')}
@@ -175,43 +197,56 @@ export default function AdminProjets() {
               <button
                 type="submit"
                 disabled={creating}
-                className="bg-blue-700 hover:bg-blue-600 disabled:bg-gray-300 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-600 disabled:bg-gray-300"
               >
+                <AppIcon name={editingId ? 'Save' : 'PlusCircle'} className="h-4 w-4" />
                 {creating ? t('common.saving') : editingId ? t('common.saveChanges') : t('admin.createProject')}
               </button>
             </div>
           </form>
         )}
 
-        {/* Badges statuts */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {STATUTS.map(s => {
-            const count = projets.filter(p => p.statut === s).length;
-            return (
-              <button
-                key={s}
-                onClick={() => setFiltreStatut(filtreStatut === s ? '' : s)}
-                className="text-xs px-3 py-1 rounded-full font-semibold border-2 transition"
-                style={{
-                  background: filtreStatut === s ? statutColor(s) : '#F0F4F8',
-                  color: filtreStatut === s ? '#fff' : '#4A6A8A',
-                  borderColor: statutColor(s),
-                }}
-              >
-                {t(`statuses.${s}`, s)} ({count})
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Recherche */}
-        <input
-          type="text"
-          placeholder={t('admin.searchProjectPlaceholder')}
-          value={recherche}
-          onChange={e => { setRecherche(e.target.value); setMessage(''); setError(''); }}
-          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm mb-6 focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
+        <SectionCard className="mb-6" title={t('common.filters', { defaultValue: 'Filtres' })}>
+          <div className="mb-4 flex flex-wrap gap-2">
+            {STATUTS.map(s => {
+              const count = projets.filter(p => p.statut === s).length;
+              return (
+                <button
+                  key={s}
+                  onClick={() => setFiltreStatut(filtreStatut === s ? '' : s)}
+                  className="rounded-full border-2 px-3 py-1 text-xs font-semibold transition hover:-translate-y-0.5"
+                  style={{
+                    background: filtreStatut === s ? statutColor(s) : '#F8FAFC',
+                    color: filtreStatut === s ? '#fff' : '#4A6A8A',
+                    borderColor: statutColor(s),
+                  }}
+                >
+                  {t(`statuses.${s}`, s)} ({count})
+                </button>
+              );
+            })}
+          </div>
+          <div className="grid gap-3 md:grid-cols-[1fr_240px]">
+            <label className="relative block">
+              <AppIcon name="Search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder={t('admin.searchProjectPlaceholder')}
+                value={recherche}
+                onChange={e => { setRecherche(e.target.value); setMessage(''); setError(''); }}
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </label>
+            <select
+              value={filtreGroupe}
+              onChange={e => setFiltreGroupe(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              <option value="">{t('nav.groups')}</option>
+              {groupes.map(groupe => <option key={groupe} value={groupe}>{groupe}</option>)}
+            </select>
+          </div>
+        </SectionCard>
 
         {loading ? (
           <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
@@ -224,7 +259,7 @@ export default function AdminProjets() {
             {projetsFiltres.map(p => (
               <article
                 key={p.id}
-                className="bg-white rounded-2xl shadow overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition"
+                className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                 style={{ borderTop: `4px solid ${statutColor(p.statut)}` }}
               >
                 <div className="relative">
@@ -264,14 +299,16 @@ export default function AdminProjets() {
                     </select>
                     <button
                       onClick={() => modifierProjet(p)}
-                      className="text-xs px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 font-medium transition"
+                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-100 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-200"
                     >
+                      <AppIcon name="Edit" className="h-3.5 w-3.5" />
                       {t('common.edit')}
                     </button>
                     <button
                       onClick={() => supprimerProjet(p.id, p.titre)}
-                      className="text-xs px-3 py-1.5 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 font-medium transition"
+                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-100 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-200"
                     >
+                      <AppIcon name="XCircle" className="h-3.5 w-3.5" />
                       {t('common.delete')}
                     </button>
                   </div>
@@ -308,6 +345,25 @@ function InfoPill({ label, value }) {
     <div className="rounded-xl bg-gray-50 px-3 py-2">
       <p className="text-[10px] font-semibold uppercase text-gray-400">{label}</p>
       <p className="mt-0.5 font-semibold text-gray-700 truncate">{value}</p>
+    </div>
+  );
+}
+
+function AdminStatCard({ icon, label, value, tone = 'blue' }) {
+  const tones = {
+    blue: 'bg-blue-50 text-blue-700 ring-blue-100',
+    green: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
+    amber: 'bg-amber-50 text-amber-700 ring-amber-100',
+    violet: 'bg-violet-50 text-violet-700 ring-violet-100',
+  };
+
+  return (
+    <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl ring-1 ${tones[tone] || tones.blue}`}>
+        <AppIcon name={icon} className="h-5 w-5" />
+      </div>
+      <p className="text-2xl font-black text-slate-950">{value}</p>
+      <p className="mt-1 text-sm font-medium text-slate-500">{label}</p>
     </div>
   );
 }

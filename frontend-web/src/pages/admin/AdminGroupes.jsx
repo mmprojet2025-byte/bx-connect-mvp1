@@ -6,6 +6,8 @@ import api from '../../api/axios';
 import StatusBadge from '../../components/StatusBadge';
 import GroupAvatar from '../../components/GroupAvatar';
 import AppIcon from '../../components/ui/AppIcons';
+import PageHeader from '../../components/ui/PageHeader';
+import SectionCard from '../../components/ui/SectionCard';
 
 const emptyGroupeForm = {
   nom: '',
@@ -27,6 +29,8 @@ export default function AdminGroupes() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [onglet, setOnglet] = useState('en-attente');
+  const [recherche, setRecherche] = useState('');
+  const [filtreStatut, setFiltreStatut] = useState('');
   const [motifRefus, setMotifRefus] = useState('');
   const [groupeARefuser, setGroupeARefuser] = useState(null);
   const [groupeForm, setGroupeForm] = useState(emptyGroupeForm);
@@ -134,18 +138,42 @@ export default function AdminGroupes() {
     return `${groupe.referentPrenom || ''} ${groupe.referentNom || ''}`.trim() || t('admin.noReferentAssigned');
   };
 
+  const statutsDisponibles = [...new Set(groupes.map(groupe => groupe.statut).filter(Boolean))];
+  const groupesFiltres = groupes.filter(groupe => {
+    const texte = `${groupe.nom || ''} ${groupe.description || ''} ${groupe.categorie || ''} ${groupe.theme || ''} ${referentAssigne(groupe)}`.toLowerCase();
+    const matchRecherche = texte.includes(recherche.toLowerCase());
+    const matchStatut = filtreStatut ? groupe.statut === filtreStatut : true;
+    return matchRecherche && matchStatut;
+  });
+  const stats = {
+    total: groupes.length,
+    enAttente: groupes.filter(groupe => groupe.statut === 'EN_ATTENTE').length,
+    valides: groupes.filter(groupe => groupe.statut === 'VALIDE').length,
+    referents: referentsActifs.length,
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-10">
 
-        <h1 className="text-2xl font-bold text-blue-900 mb-6">{t('admin.groupsManagement')}</h1>
+        <PageHeader
+          eyebrow={t('nav.groups')}
+          title={t('admin.groupsManagement')}
+          description={t('admin.groupsDescription', { defaultValue: 'Créez les groupes, attribuez un référent et suivez leur statut.' })}
+        />
+
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <AdminStatCard icon="Users" label={t('common.total', { defaultValue: 'Total' })} value={stats.total} tone="blue" />
+          <AdminStatCard icon="Clock" label={t('statuses.EN_ATTENTE', { defaultValue: 'En attente' })} value={stats.enAttente} tone="amber" />
+          <AdminStatCard icon="CheckCircle" label={t('statuses.VALIDE', { defaultValue: 'Validés' })} value={stats.valides} tone="green" />
+          <AdminStatCard icon="User" label={t('admin.activeReferent')} value={stats.referents} tone="violet" />
+        </div>
 
         {message && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>}
         {error   && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>}
 
-        <section className="bg-white rounded-2xl shadow p-5 mb-8">
-          <h2 className="text-lg font-bold text-blue-900 mb-4">{t('admin.createGroup')}</h2>
+        <SectionCard className="mb-8" title={t('admin.createGroup')} subtitle={t('admin.selectReferent')}>
           <form onSubmit={handleCreateGroupe} className="grid md:grid-cols-2 gap-4">
             <Input
               label={t('admin.groupName')}
@@ -201,32 +229,57 @@ export default function AdminGroupes() {
               <button
                 type="submit"
                 disabled={creating || referentsActifs.length === 0}
-                className="bg-blue-700 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-gray-300"
               >
+                <AppIcon name="PlusCircle" className="h-4 w-4" />
                 {creating ? t('common.creating') : t('admin.createGroup')}
               </button>
             </div>
           </form>
-        </section>
+        </SectionCard>
 
-        {/* Onglets */}
-        <div className="flex gap-3 mb-6">
-          {[
-            { id: 'en-attente', label: t('admin.pendingTab') },
-            { id: 'tous',       label: t('admin.allGroupsTab') },
-          ].map(o => (
-            <button key={o.id} onClick={() => setOnglet(o.id)}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
-                onglet === o.id ? 'bg-blue-700 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-blue-400'
-              }`}>
-              {o.label}
-            </button>
-          ))}
-        </div>
+        <SectionCard className="mb-6" title={t('common.filters', { defaultValue: 'Filtres' })}>
+          <div className="mb-4 flex flex-wrap gap-3">
+            {[
+              { id: 'en-attente', label: t('admin.pendingTab'), icon: 'Clock' },
+              { id: 'tous',       label: t('admin.allGroupsTab'), icon: 'Users' },
+            ].map(o => (
+              <button key={o.id} onClick={() => setOnglet(o.id)}
+                className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+                  onglet === o.id ? 'bg-blue-700 text-white shadow-sm' : 'border border-gray-200 bg-white text-gray-600 hover:border-blue-400'
+                }`}>
+                <AppIcon name={o.icon} className="h-4 w-4" />
+                {o.label}
+              </button>
+            ))}
+          </div>
+          <div className="grid gap-3 md:grid-cols-[1fr_220px]">
+            <label className="relative block">
+              <AppIcon name="Search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={recherche}
+                onChange={e => { setRecherche(e.target.value); setMessage(''); setError(''); }}
+                placeholder={t('common.search', { defaultValue: 'Rechercher' })}
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </label>
+            <select
+              value={filtreStatut}
+              onChange={e => setFiltreStatut(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              <option value="">{t('common.all_statuses')}</option>
+              {statutsDisponibles.map(statut => (
+                <option key={statut} value={statut}>{t(`statuses.${statut}`, { defaultValue: statut })}</option>
+              ))}
+            </select>
+          </div>
+        </SectionCard>
 
         {loading ? (
           <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
-        ) : groupes.length === 0 ? (
+        ) : groupesFiltres.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-2xl shadow">
             <AppIcon name="Users" className="mx-auto mb-3 h-10 w-10 text-blue-300" />
             <p className="text-gray-400 text-sm">
@@ -235,8 +288,8 @@ export default function AdminGroupes() {
           </div>
         ) : (
           <div className="space-y-4">
-            {groupes.map(g => (
-              <div key={g.id} className="bg-white rounded-2xl shadow p-5 border border-gray-100">
+            {groupesFiltres.map(g => (
+              <div key={g.id} className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-start gap-4">
                     <GroupAvatar name={g.nom} />
@@ -273,7 +326,7 @@ export default function AdminGroupes() {
                   </div>
                 )}
 
-                <div className="bg-gray-50 rounded-xl p-3 mb-4">
+                <div className="bg-gray-50 rounded-2xl p-3 mb-4">
                   <label className="block text-xs font-semibold text-gray-600 mb-1">{t('admin.assignedReferent')}</label>
                   <select
                     value={g.referentId || ''}
@@ -293,11 +346,13 @@ export default function AdminGroupes() {
                 {g.statut === 'EN_ATTENTE' && (
                   <div className="flex gap-3">
                     <button onClick={() => handleValider(g.id)}
-                      className="flex-1 bg-green-600 hover:bg-green-500 text-white text-sm font-semibold py-2.5 rounded-xl transition">
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-green-600 py-2.5 text-sm font-semibold text-white transition hover:bg-green-500">
+                      <AppIcon name="CheckCircle" className="h-4 w-4" />
                       {t('admin.validateGroup')}
                     </button>
                     <button onClick={() => setGroupeARefuser(g.id)}
-                      className="flex-1 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold py-2.5 rounded-xl transition">
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-600 py-2.5 text-sm font-semibold text-white transition hover:bg-red-500">
+                      <AppIcon name="XCircle" className="h-4 w-4" />
                       {t('admin.refuse')}
                     </button>
                   </div>
@@ -375,5 +430,24 @@ function InfoChip({ children }) {
     <span className="rounded-xl bg-gray-50 px-3 py-2 font-semibold text-gray-600">
       {children}
     </span>
+  );
+}
+
+function AdminStatCard({ icon, label, value, tone = 'blue' }) {
+  const tones = {
+    blue: 'bg-blue-50 text-blue-700 ring-blue-100',
+    green: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
+    amber: 'bg-amber-50 text-amber-700 ring-amber-100',
+    violet: 'bg-violet-50 text-violet-700 ring-violet-100',
+  };
+
+  return (
+    <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl ring-1 ${tones[tone] || tones.blue}`}>
+        <AppIcon name={icon} className="h-5 w-5" />
+      </div>
+      <p className="text-2xl font-black text-slate-950">{value}</p>
+      <p className="mt-1 text-sm font-medium text-slate-500">{label}</p>
+    </div>
   );
 }
