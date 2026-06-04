@@ -83,7 +83,8 @@ export default function Notifications() {
           description={nonLues > 0 ? t('notifications.unreadCount', { count: nonLues }) : t('notifications.emptyDescription')}
           action={nonLues > 0 && (
             <button onClick={handleToutesLues}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
+              className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">
+              <AppIcon name="CheckCircle" className="h-4 w-4" />
               {t('notifications.markAllAsRead')}
             </button>
           )}
@@ -113,11 +114,11 @@ export default function Notifications() {
               <div
                 key={n.id}
                 onClick={() => !n.lue && handleMarquerLue(n.id)}
-                className={`rounded-3xl border p-4 flex items-start gap-3 cursor-pointer transition hover:-translate-y-0.5 hover:shadow-md ${
-                  !n.lue ? 'border-indigo-100 bg-indigo-50/50 shadow-sm' : 'border-slate-100 bg-white shadow-sm'
+                className={`rounded-3xl border p-4 flex items-start gap-3 cursor-pointer transition hover:-translate-y-0.5 hover:shadow-lg ${
+                  !n.lue ? 'border-indigo-200 bg-gradient-to-r from-indigo-50 to-white shadow-sm' : 'border-slate-100 bg-white shadow-sm'
                 }`}
               >
-                <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center text-indigo-700 flex-shrink-0 shadow-sm">
+                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm ${n.lue ? 'bg-slate-50 text-slate-500' : 'bg-white text-indigo-700'}`}>
                   <AppIcon name={typeIcon(n.type)} className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -129,8 +130,9 @@ export default function Notifications() {
                     <Link
                       to={n.lienAction}
                       onClick={e => { e.stopPropagation(); if (!n.lue) handleMarquerLue(n.id); }}
-                      className="inline-flex mt-2 text-xs font-semibold text-blue-700 hover:underline"
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
                     >
+                      <AppIcon name="Eye" className="h-3.5 w-3.5" />
                       {t('common.open')}
                     </Link>
                   )}
@@ -148,7 +150,7 @@ export default function Notifications() {
                   {!n.lue && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
                   <button
                     onClick={e => { e.stopPropagation(); handleSupprimer(n.id); }}
-                    className="text-gray-300 hover:text-red-400 leading-none"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-300 transition hover:bg-red-50 hover:text-red-500"
                     aria-label={t('common.delete')}
                   >
                     <AppIcon name="XCircle" className="h-4 w-4" />

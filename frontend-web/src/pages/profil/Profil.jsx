@@ -7,6 +7,8 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import ImageUpload from '../../components/ImageUpload';
 import AppIcon from '../../components/ui/AppIcons';
+import PageHeader from '../../components/ui/PageHeader';
+import StatusBadge from '../../components/StatusBadge';
 
 export default function Profil() {
   const navigate = useNavigate();
@@ -54,8 +56,8 @@ export default function Profil() {
       setEditMode(false);
       setMessage(t('profile.success_update'));
 
-      // ✅ Synchroniser la langue de l'interface avec la préférence sauvegardée
-      const langCode = form.languePreference.toLowerCase(); // FR → fr, NL → nl, EN → en
+      // Synchroniser la langue de l'interface avec la préférence sauvegardée.
+      const langCode = form.languePreference.toLowerCase();
       i18n.changeLanguage(langCode);
       localStorage.setItem('bxconnect_lang', langCode);
     } catch (err) {
@@ -97,12 +99,11 @@ export default function Profil() {
       <Navbar />
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-10">
-        <header className="mb-6">
-          <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">{t('profile.title')}</p>
-          <h1 className="text-3xl font-bold text-blue-900 mt-1">
-            {profil?.prenom} {profil?.nom}
-          </h1>
-        </header>
+        <PageHeader
+          eyebrow={t('profile.title')}
+          title={`${profil?.prenom || ''} ${profil?.nom || ''}`.trim() || t('profile.title')}
+          description={profil?.email}
+        />
 
         {message && (
           <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">
@@ -117,12 +118,12 @@ export default function Profil() {
 
         <div className="grid lg:grid-cols-[1fr_340px] gap-6">
           {/* Carte profil */}
-          <div className="bg-white rounded-2xl shadow p-6 mb-6">
+          <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm mb-6">
             <div className="flex gap-6 items-start flex-wrap">
 
               {/* Avatar */}
               <div className="flex flex-col items-center gap-2">
-                <div className="rounded-3xl bg-blue-50 p-3">
+                <div className="rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-50 p-3 ring-1 ring-blue-100">
                   <ImageUpload
                     type="avatar"
                     currentUrl={avatarUrl}
@@ -140,7 +141,8 @@ export default function Profil() {
                   <h2 className="text-2xl font-bold text-blue-900 mb-2">
                     {profil?.prenom} {profil?.nom}
                   </h2>
-                  <span className="inline-flex rounded-full bg-blue-100 text-blue-800 text-xs px-3 py-1 font-semibold mb-4">
+                  <span className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
+                    <AppIcon name={profil?.role === 'SUPER_ADMIN' ? 'Shield' : 'User'} className="h-3.5 w-3.5" />
                     {t(`roles.${profil?.role}`, profil?.role)}
                   </span>
                   <div className="grid sm:grid-cols-2 gap-3 mb-5">
@@ -150,11 +152,15 @@ export default function Profil() {
                       label={t('users.memberSince')}
                       value={formatDate(profil?.dateInscription, i18n.language, t)}
                     />
-                    <ProfileInfo label={t('users.status')} value={profil?.actif === false ? t('users.inactive') : t('users.active')} />
+                    <ProfileInfo label={t('users.status')} value={(
+                      <StatusBadge status={profil?.actif === false ? 'ANNULEE' : 'VALIDE'}>
+                        {profil?.actif === false ? t('users.inactive') : t('users.active')}
+                      </StatusBadge>
+                    )} />
                   </div>
                   <button
                     onClick={() => setEditMode(true)}
-                    className="inline-flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-600"
                   >
                     <AppIcon name="Edit" className="h-4 w-4" />
                     {t('profile.edit_btn')}
@@ -191,11 +197,12 @@ export default function Profil() {
                     </select>
                   </div>
                   <div className="flex gap-3">
-                    <button type="submit" className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-2 rounded-xl transition">
+                    <button type="submit" className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-sm text-white transition hover:bg-blue-500">
                       <AppIcon name="Save" className="h-4 w-4" />
                       {t('profile.save_btn')}
                     </button>
-                    <button type="button" onClick={() => setEditMode(false)} className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-4 py-2 rounded-xl transition">
+                    <button type="button" onClick={() => setEditMode(false)} className="inline-flex items-center gap-2 rounded-2xl bg-gray-200 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-300">
+                      <AppIcon name="XCircle" className="h-4 w-4" />
                       {t('profile.cancel_btn')}
                     </button>
                   </div>
@@ -206,7 +213,7 @@ export default function Profil() {
           </div>
 
           {/* Sécurité — Changer mot de passe */}
-          <aside className="bg-white rounded-2xl shadow p-6 mb-6 h-fit">
+          <aside className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm mb-6 h-fit">
           <div className="flex items-start gap-3 mb-4">
             <div className="h-11 w-11 rounded-2xl bg-orange-100 text-orange-700 flex items-center justify-center">
               <AppIcon name="Lock" className="h-5 w-5" />
@@ -219,8 +226,9 @@ export default function Profil() {
           {!showPasswordForm ? (
             <button
               onClick={() => setShowPasswordForm(true)}
-              className="w-full bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-400"
             >
+              <AppIcon name="Lock" className="h-4 w-4" />
               {t('profile.change_password')}
             </button>
           ) : (
@@ -244,10 +252,12 @@ export default function Profil() {
                 />
               </div>
               <div className="flex gap-3">
-                <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-2 rounded-xl transition">
+                <button type="submit" className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-sm text-white transition hover:bg-blue-500">
+                  <AppIcon name="Save" className="h-4 w-4" />
                   {t('profile.save_password')}
                 </button>
-                <button type="button" onClick={() => setShowPasswordForm(false)} className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-4 py-2 rounded-xl transition">
+                <button type="button" onClick={() => setShowPasswordForm(false)} className="inline-flex items-center gap-2 rounded-2xl bg-gray-200 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-300">
+                  <AppIcon name="XCircle" className="h-4 w-4" />
                   {t('profile.cancel_btn')}
                 </button>
               </div>
@@ -259,7 +269,7 @@ export default function Profil() {
         {/* Déconnexion */}
         <button
           onClick={handleLogout}
-          className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition"
+          className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-red-500"
         >
           <AppIcon name="LogOut" className="h-4 w-4" />
           {t('nav.logout')}
@@ -281,7 +291,7 @@ function ProfileInfo({ label, value }) {
   return (
     <div className="rounded-2xl bg-gray-50 px-4 py-3">
       <p className="text-xs font-semibold uppercase text-gray-400">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-gray-700 break-words">{value || '—'}</p>
+      <div className="mt-1 text-sm font-semibold text-gray-700 break-words">{value || '—'}</div>
     </div>
   );
 }

@@ -4,12 +4,16 @@ import Footer from '../../components/Footer'
 import api from '../../api/axios'
 import { useTranslation } from 'react-i18next'
 import StatusBadge from '../../components/StatusBadge'
+import AppIcon from '../../components/ui/AppIcons'
+import PageHeader from '../../components/ui/PageHeader'
+import SectionCard from '../../components/ui/SectionCard'
 
 export default function ReferentMembres() {
   const { t, i18n } = useTranslation()
   const [groupes, setGroupes] = useState([])
   const [membres, setMembres] = useState([])
   const [groupeFiltre, setGroupeFiltre] = useState('')
+  const [recherche, setRecherche] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -35,28 +39,49 @@ export default function ReferentMembres() {
 
   useEffect(() => { fetchMembres() }, [fetchMembres])
 
-  const membresFiltres = groupeFiltre
-    ? membres.filter(membre => String(membre.groupeId) === groupeFiltre)
-    : membres
+  const membresFiltres = membres.filter(membre => {
+    const matchGroupe = groupeFiltre ? String(membre.groupeId) === groupeFiltre : true
+    const texte = `${membre.prenom || ''} ${membre.nom || ''} ${membre.email || ''} ${membre.groupeNom || ''}`.toLowerCase()
+    return matchGroupe && texte.includes(recherche.toLowerCase())
+  })
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-blue-900">{t('referent.membersOfGroups')}</h1>
-            <p className="text-sm text-gray-500 mt-1">{t('referent.visibleMembersCount', { count: membresFiltres.length })}</p>
-          </div>
-          <select
-            value={groupeFiltre}
-            onChange={e => setGroupeFiltre(e.target.value)}
-            className="border border-gray-300 rounded-xl px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-400"
-          >
-            <option value="">{t('referent.allMyGroups')}</option>
-            {groupes.map(groupe => <option key={groupe.id} value={groupe.id}>{groupe.nom}</option>)}
-          </select>
+        <PageHeader
+          eyebrow={t('nav.members', { defaultValue: t('ux.referentDashboard.members') })}
+          title={t('referent.membersOfGroups')}
+          description={t('referent.visibleMembersCount', { count: membresFiltres.length })}
+        />
+
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatCard icon="Users" label={t('ux.referentDashboard.members')} value={membres.length} tone="blue" />
+          <StatCard icon="Folder" label={t('ux.referentDashboard.assignedGroups')} value={groupes.length} tone="green" />
+          <StatCard icon="Search" label={t('common.results', { defaultValue: 'Résultats' })} value={membresFiltres.length} tone="amber" />
         </div>
+
+        <SectionCard className="mb-6" title={t('common.filters', { defaultValue: 'Filtres' })}>
+          <div className="grid gap-3 md:grid-cols-[1fr_260px]">
+            <label className="relative block">
+              <AppIcon name="Search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                value={recherche}
+                onChange={e => setRecherche(e.target.value)}
+                placeholder={t('common.search', { defaultValue: 'Rechercher' })}
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+              />
+            </label>
+            <select
+              value={groupeFiltre}
+              onChange={e => setGroupeFiltre(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+            >
+              <option value="">{t('referent.allMyGroups')}</option>
+              {groupes.map(groupe => <option key={groupe.id} value={groupe.id}>{groupe.nom}</option>)}
+            </select>
+          </div>
+        </SectionCard>
 
         {error && <Alert type="error">{error}</Alert>}
 
@@ -77,7 +102,7 @@ export default function ReferentMembres() {
             ))}
           </div>
 
-          <div className="hidden md:block bg-white rounded-2xl shadow overflow-hidden">
+          <div className="hidden overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm md:block">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse" style={{ minWidth: '760px' }}>
                 <thead>
@@ -90,7 +115,7 @@ export default function ReferentMembres() {
                 </thead>
                 <tbody>
                   {membresFiltres.map(membre => (
-                    <tr key={`${membre.groupeId}-${membre.id}`} className="border-b border-gray-50">
+                    <tr key={`${membre.groupeId}-${membre.id}`} className="border-b border-gray-50 transition hover:bg-teal-50/50">
                       <td className="px-4 py-3 text-sm font-medium text-blue-900">{membre.prenom} {membre.nom}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{membre.email}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{membre.groupeNom}</td>
@@ -113,7 +138,7 @@ function MembreCard({ membre, language, t }) {
   const statut = membre.statut || membre.statutAdhesion
 
   return (
-    <article className="bg-white rounded-2xl shadow p-4 border border-gray-100">
+    <article className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-bold text-blue-900">{membre.prenom} {membre.nom}</h2>
@@ -137,6 +162,23 @@ function MembreCard({ membre, language, t }) {
         </div>
       </dl>
     </article>
+  )
+}
+
+function StatCard({ icon, label, value, tone = 'blue' }) {
+  const tones = {
+    blue: 'bg-blue-50 text-blue-700 ring-blue-100',
+    green: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
+    amber: 'bg-amber-50 text-amber-700 ring-amber-100',
+  }
+  return (
+    <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+      <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-2xl ring-1 ${tones[tone] || tones.blue}`}>
+        <AppIcon name={icon} className="h-5 w-5" />
+      </div>
+      <p className="text-2xl font-black text-slate-950">{value}</p>
+      <p className="mt-1 text-sm text-slate-500">{label}</p>
+    </div>
   )
 }
 

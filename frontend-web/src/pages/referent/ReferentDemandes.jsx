@@ -5,6 +5,9 @@ import api from '../../api/axios'
 import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
 import { useTranslation } from 'react-i18next'
+import AppIcon from '../../components/ui/AppIcons'
+import PageHeader from '../../components/ui/PageHeader'
+import SectionCard from '../../components/ui/SectionCard'
 
 export default function ReferentDemandes() {
   const { t, i18n } = useTranslation()
@@ -13,6 +16,7 @@ export default function ReferentDemandes() {
   const [processingId, setProcessingId] = useState(null)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [recherche, setRecherche] = useState('')
 
   const fetchDemandes = useCallback(async () => {
     setLoading(true)
@@ -33,6 +37,11 @@ export default function ReferentDemandes() {
 
   useEffect(() => { fetchDemandes() }, [fetchDemandes])
 
+  const demandesFiltrees = demandes.filter(demande => {
+    const texte = `${demande.prenom || ''} ${demande.nom || ''} ${demande.email || ''} ${demande.groupeNom || ''}`.toLowerCase()
+    return texte.includes(recherche.toLowerCase())
+  })
+
   const traiterDemande = async (demande, action) => {
     setProcessingId(demande.id)
     setMessage('')
@@ -52,10 +61,29 @@ export default function ReferentDemandes() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-blue-900">{t('referent.requestsTitle')}</h1>
-          <p className="text-sm text-gray-500 mt-1">{t('referent.pendingRequestsCount', { count: demandes.length })}</p>
+        <PageHeader
+          eyebrow={t('nav.requests')}
+          title={t('referent.requestsTitle')}
+          description={t('referent.pendingRequestsCount', { count: demandes.length })}
+        />
+
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatCard icon="Clock" label={t('ux.referentDashboard.pendingRequests')} value={demandes.length} tone="amber" />
+          <StatCard icon="Search" label={t('common.results', { defaultValue: 'Résultats' })} value={demandesFiltrees.length} tone="blue" />
+          <StatCard icon="Users" label={t('nav.myGroups')} value={new Set(demandes.map(demande => demande.groupeId)).size} tone="green" />
         </div>
+
+        <SectionCard className="mb-6" title={t('common.filters', { defaultValue: 'Filtres' })}>
+          <label className="relative block">
+            <AppIcon name="Search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              value={recherche}
+              onChange={e => setRecherche(e.target.value)}
+              placeholder={t('common.search', { defaultValue: 'Rechercher' })}
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+            />
+          </label>
+        </SectionCard>
 
         {message && <Alert>{message}</Alert>}
         {error && <Alert type="error">{error}</Alert>}
@@ -69,10 +97,15 @@ export default function ReferentDemandes() {
             actionLabel={t('referent.viewMyGroups')}
             actionTo="/referent/groupes"
           />
+        ) : demandesFiltrees.length === 0 ? (
+          <EmptyState
+            title={t('common.noResults', { defaultValue: 'Aucun résultat trouvé.' })}
+            description={t('referent.noPendingRequestsDesc')}
+          />
         ) : (
           <div className="space-y-4">
-            {demandes.map(demande => (
-              <div key={`${demande.groupeId}-${demande.id}`} className="bg-white rounded-2xl shadow p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            {demandesFiltrees.map(demande => (
+              <div key={`${demande.groupeId}-${demande.id}`} className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                   <h2 className="font-bold text-blue-900">{demande.prenom} {demande.nom}</h2>
                   <p className="text-sm text-gray-500">{demande.email}</p>
@@ -82,15 +115,17 @@ export default function ReferentDemandes() {
                   <button
                     onClick={() => traiterDemande(demande, 'accepter')}
                     disabled={processingId === demande.id}
-                    className="bg-green-600 hover:bg-green-500 disabled:bg-gray-300 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-500 disabled:bg-gray-300"
                   >
+                    <AppIcon name="CheckCircle" className="h-4 w-4" />
                     {t('referent.accept')}
                   </button>
                   <button
                     onClick={() => traiterDemande(demande, 'refuser')}
                     disabled={processingId === demande.id}
-                    className="bg-red-600 hover:bg-red-500 disabled:bg-gray-300 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-500 disabled:bg-gray-300"
                   >
+                    <AppIcon name="XCircle" className="h-4 w-4" />
                     {t('referent.refuse')}
                   </button>
                 </div>
@@ -100,6 +135,23 @@ export default function ReferentDemandes() {
         )}
       </main>
       <Footer />
+    </div>
+  )
+}
+
+function StatCard({ icon, label, value, tone = 'blue' }) {
+  const tones = {
+    blue: 'bg-blue-50 text-blue-700 ring-blue-100',
+    green: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
+    amber: 'bg-amber-50 text-amber-700 ring-amber-100',
+  }
+  return (
+    <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+      <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-2xl ring-1 ${tones[tone] || tones.blue}`}>
+        <AppIcon name={icon} className="h-5 w-5" />
+      </div>
+      <p className="text-2xl font-black text-slate-950">{value}</p>
+      <p className="mt-1 text-sm text-slate-500">{label}</p>
     </div>
   )
 }

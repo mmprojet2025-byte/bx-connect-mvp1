@@ -4,6 +4,8 @@ import { useAuth } from '../../context/AuthContext'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import api from '../../api/axios'
+import AppIcon from '../../components/ui/AppIcons'
+import PageHeader from '../../components/ui/PageHeader'
 
 export default function ReferentMessagerie() {
   const { t, i18n } = useTranslation()
@@ -117,11 +119,11 @@ export default function ReferentMessagerie() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
-        <div className="mb-6 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-wide text-teal-600">{t('nav.messaging')}</p>
-          <h1 className="mt-1 text-3xl font-black text-slate-950">{t('messaging.referentMessaging')}</h1>
-          <p className="text-sm text-gray-500 mt-1">{t('messaging.referentSubtitle')}</p>
-        </div>
+        <PageHeader
+          eyebrow={t('nav.messaging')}
+          title={t('messaging.referentMessaging')}
+          description={t('messaging.referentSubtitle')}
+        />
 
         {error && <Alert type="error">{error}</Alert>}
 
@@ -130,10 +132,13 @@ export default function ReferentMessagerie() {
         ) : groupes.length === 0 ? (
           <EmptyState>{t('messaging.noAssignedGroups')}</EmptyState>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 min-h-[70vh]">
+          <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 min-h-[70vh]">
             <aside className="bg-white rounded-3xl border border-slate-100 shadow-sm flex flex-col overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-100">
-                <span className="font-semibold text-blue-900 text-sm">{t('nav.myGroups')}</span>
+              <div className="px-4 py-4 border-b border-gray-100 bg-gradient-to-r from-teal-50 to-white">
+                <span className="inline-flex items-center gap-2 font-semibold text-blue-900 text-sm">
+                  <AppIcon name="Users" className="h-4 w-4 text-teal-700" />
+                  {t('nav.myGroups')}
+                </span>
               </div>
               <div className="overflow-y-auto flex-1">
                 {groupes.map(groupe => {
@@ -143,10 +148,15 @@ export default function ReferentMessagerie() {
                       key={groupe.id}
                       type="button"
                       onClick={() => selectionnerGroupe(groupe)}
-                      className={`w-full text-left px-4 py-3 border-b border-gray-50 transition ${actif ? 'bg-teal-50 border-l-4 border-l-teal-600' : 'bg-white hover:bg-slate-50 border-l-4 border-l-transparent'}`}
+                      className={`w-full text-left px-4 py-3 border-b border-gray-50 transition hover:bg-teal-50/70 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-400 ${actif ? 'bg-teal-50 border-l-4 border-l-teal-600' : 'bg-white border-l-4 border-l-transparent'}`}
                     >
-                      <span className="block text-sm font-semibold text-blue-900">{groupe.nom}</span>
-                      <span className="block text-xs text-gray-400">{t('groups.members_count', { count: groupe.nombreMembres ?? 0 })}</span>
+                      <span className="flex items-center gap-2 text-sm font-semibold text-blue-900">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-teal-100 text-teal-700">
+                          <AppIcon name="MessageCircle" className="h-4 w-4" />
+                        </span>
+                        {groupe.nom}
+                      </span>
+                      <span className="mt-1 block pl-10 text-xs text-gray-400">{t('groups.members_count', { count: groupe.nombreMembres ?? 0 })}</span>
                     </button>
                   )
                 })}
@@ -164,23 +174,34 @@ export default function ReferentMessagerie() {
                       type="button"
                       onClick={creerFil}
                       disabled={creatingFil}
-                      className="bg-teal-700 hover:bg-teal-600 disabled:bg-gray-300 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:bg-gray-300"
                     >
+                      <AppIcon name="PlusCircle" className="h-4 w-4" />
                       {creatingFil ? t('messaging.creatingThread') : t('messaging.createGroupThread')}
                     </button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <div className="px-5 py-4 border-b border-gray-100 bg-slate-50/70">
-                    <h2 className="font-bold text-slate-950">{filActif.titre}</h2>
-                    <p className="text-xs text-gray-400">{groupeActif.nom} · {t('messaging.messagesCount', { count: messages.length })}</p>
+                  <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-teal-50 to-white">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-100 text-teal-700">
+                        <AppIcon name="MessageCircle" className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h2 className="font-bold text-slate-950">{filActif.titre}</h2>
+                        <p className="text-xs text-gray-400">{groupeActif.nom} · {t('messaging.messagesCount', { count: messages.length })}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+                  <div className="flex-1 overflow-y-auto bg-slate-50/40 p-4 flex flex-col gap-3">
                     {loadingMessages ? (
                       <p className="text-gray-400 text-center text-sm">{t('messaging.loadingMessages')}</p>
                     ) : messages.length === 0 ? (
-                      <p className="text-gray-400 text-center text-sm mt-8">{t('messaging.noMessages')}</p>
+                      <div className="mx-auto mt-8 max-w-sm rounded-3xl border border-dashed border-slate-200 bg-white px-6 py-8 text-center text-sm text-gray-400">
+                        <AppIcon name="MessageCircle" className="mx-auto mb-3 h-10 w-10 text-teal-200" />
+                        {t('messaging.noMessages')}
+                      </div>
                     ) : (
                       messages.map(message => (
                         <MessageBubble key={message.id} message={message} currentUser={user} language={i18n.language} />
@@ -194,13 +215,14 @@ export default function ReferentMessagerie() {
                       placeholder={t('messaging.writeInGroup')}
                       value={nouveauMessage}
                       onChange={e => setNouveauMessage(e.target.value)}
-                      className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                      className="flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition focus:outline-none focus:ring-2 focus:ring-teal-400"
                     />
                     <button
                       type="submit"
                       disabled={!nouveauMessage.trim()}
-                      className="rounded-full bg-teal-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:bg-gray-300"
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-teal-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:bg-gray-300"
                     >
+                      <AppIcon name="MessageCircle" className="h-4 w-4" />
                       {t('common.send')}
                     </button>
                   </form>
@@ -219,12 +241,12 @@ function MessageBubble({ message, currentUser, language }) {
   const estMoi = message.auteurPrenom === currentUser?.prenom && message.auteurNom === currentUser?.nom
   return (
     <div className={`flex items-end gap-2 ${estMoi ? 'flex-row-reverse' : 'flex-row'}`}>
-      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 bg-teal-100 text-teal-900">
+      <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl text-xs font-bold shadow-sm ${estMoi ? 'bg-teal-100 text-teal-900' : 'bg-white text-teal-900 ring-1 ring-slate-100'}`}>
         {getInitiales(message.auteurPrenom, message.auteurNom)}
       </div>
       <div className="max-w-xs md:max-w-md">
         {!estMoi && <div className="text-xs text-gray-400 mb-0.5 pl-1">{message.auteurPrenom} {message.auteurNom}</div>}
-        <div className={`px-4 py-3 text-sm leading-relaxed break-words shadow-sm ${estMoi ? 'bg-teal-700 text-white' : 'bg-slate-100 text-slate-800'}`} style={{ borderRadius: estMoi ? '18px 18px 4px 18px' : '18px 18px 18px 4px' }}>
+        <div className={`px-4 py-3 text-sm leading-relaxed break-words shadow-sm ${estMoi ? 'bg-teal-700 text-white' : 'bg-white text-slate-800 ring-1 ring-slate-100'}`} style={{ borderRadius: estMoi ? '18px 18px 4px 18px' : '18px 18px 18px 4px' }}>
           {message.contenu}
         </div>
         <div className={`text-xs text-gray-400 mt-0.5 ${estMoi ? 'text-right pr-1' : 'pl-1'}`}>

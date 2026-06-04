@@ -93,8 +93,9 @@ export default function Annonces() {
           </h1>
           {peutPublier && (
             <button onClick={() => setShowForm(!showForm)}
-              className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
-              {showForm ? 'Annuler' : '+ Nouvelle annonce'}
+              className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600">
+              <AppIcon name={showForm ? 'XCircle' : 'PlusCircle'} className="h-4 w-4" />
+              {showForm ? 'Annuler' : 'Nouvelle annonce'}
             </button>
           )}
         </div>
@@ -147,7 +148,8 @@ export default function Annonces() {
                   </label>
                 </div>
               )}
-              <button type="submit" className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition">
+              <button type="submit" className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-600">
+                <AppIcon name="Megaphone" className="h-4 w-4" />
                 Publier l'annonce
               </button>
             </form>

@@ -108,9 +108,10 @@ export default function PartenaireSpace() {
           </div>
           <button
             onClick={() => setShowSoutienForm(true)}
-            className="bg-white text-orange-600 font-bold text-sm px-4 py-2 rounded-xl hover:bg-orange-50 transition"
+            className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-bold text-orange-600 transition hover:bg-orange-50"
           >
-            + Nouveau soutien
+            <AppIcon name="PlusCircle" className="h-4 w-4" />
+            Nouveau soutien
           </button>
         </div>
 
@@ -157,9 +158,10 @@ export default function PartenaireSpace() {
                   <p className="text-sm">Aucun soutien soumis pour le moment.</p>
                   <button
                     onClick={() => setShowSoutienForm(true)}
-                    className="mt-3 text-orange-600 text-sm hover:underline"
+                    className="mt-3 inline-flex items-center justify-center gap-1.5 text-orange-600 text-sm hover:underline"
                   >
-                    Soumettre un premier soutien →
+                    Soumettre un premier soutien
+                    <AppIcon name="Wallet" className="h-4 w-4" />
                   </button>
                 </div>
               ) : (

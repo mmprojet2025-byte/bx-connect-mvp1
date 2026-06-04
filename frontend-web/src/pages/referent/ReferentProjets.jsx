@@ -5,12 +5,17 @@ import Footer from '../../components/Footer'
 import api from '../../api/axios'
 import StatusBadge from '../../components/StatusBadge'
 import ProjectCover from '../../components/ProjectCover'
+import AppIcon from '../../components/ui/AppIcons'
+import PageHeader from '../../components/ui/PageHeader'
+import SectionCard from '../../components/ui/SectionCard'
 
 export default function ReferentProjets() {
   const { t, i18n } = useTranslation()
   const [projets, setProjets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [recherche, setRecherche] = useState('')
+  const [filtreStatut, setFiltreStatut] = useState('')
 
   const fetchProjets = useCallback(async () => {
     setLoading(true)
@@ -27,25 +32,65 @@ export default function ReferentProjets() {
 
   useEffect(() => { fetchProjets() }, [fetchProjets])
 
+  const projetsFiltres = projets.filter(projet => {
+    const texte = `${projet.titre || ''} ${projet.description || ''} ${projet.groupeNom || ''} ${projet.porteurPrenom || ''} ${projet.porteurNom || ''}`.toLowerCase()
+    const matchRecherche = texte.includes(recherche.toLowerCase())
+    const matchStatut = filtreStatut ? projet.statut === filtreStatut : true
+    return matchRecherche && matchStatut
+  })
+  const statuts = [...new Set(projets.map(projet => projet.statut).filter(Boolean))]
+  const groupes = new Set(projets.map(projet => projet.groupeNom).filter(Boolean)).size
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-blue-900">{t('referent.projectsTitle')}</h1>
-          <p className="text-sm text-gray-500 mt-1">{t('referent.projectsSubtitle')}</p>
+        <PageHeader
+          eyebrow={t('nav.projects')}
+          title={t('referent.projectsTitle')}
+          description={t('referent.projectsSubtitle')}
+        />
+
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatCard icon="Rocket" label={t('common.total', { defaultValue: 'Total' })} value={projets.length} tone="blue" />
+          <StatCard icon="Folder" label={t('nav.myGroups')} value={groupes} tone="green" />
+          <StatCard icon="Search" label={t('common.results', { defaultValue: 'Résultats' })} value={projetsFiltres.length} tone="amber" />
         </div>
 
         {error && <Alert type="error">{error}</Alert>}
+
+        <SectionCard className="mb-6" title={t('common.filters', { defaultValue: 'Filtres' })}>
+          <div className="grid gap-3 md:grid-cols-[1fr_220px]">
+            <label className="relative block">
+              <AppIcon name="Search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                value={recherche}
+                onChange={e => setRecherche(e.target.value)}
+                placeholder={t('common.search', { defaultValue: 'Rechercher' })}
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+              />
+            </label>
+            <select
+              value={filtreStatut}
+              onChange={e => setFiltreStatut(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+            >
+              <option value="">{t('common.all_statuses')}</option>
+              {statuts.map(statut => <option key={statut} value={statut}>{t(`statuses.${statut}`, statut)}</option>)}
+            </select>
+          </div>
+        </SectionCard>
 
         {loading ? (
           <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
         ) : projets.length === 0 ? (
           <EmptyState>{t('referent.noProjects')}</EmptyState>
+        ) : projetsFiltres.length === 0 ? (
+          <EmptyState>{t('common.noResults', { defaultValue: 'Aucun résultat trouvé.' })}</EmptyState>
         ) : (
           <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {projets.map(projet => (
-              <article key={projet.id} className="bg-white rounded-2xl shadow overflow-hidden">
+            {projetsFiltres.map(projet => (
+              <article key={projet.id} className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
                 <div className="relative">
                   <ProjectCover imageUrl={projet.imageUrl} title={projet.titre} className="h-40" />
                   <div className="absolute left-4 top-4">
@@ -88,6 +133,23 @@ function InfoLine({ label, value }) {
     <div className="rounded-xl bg-gray-50 px-3 py-2">
       <dt className="text-[10px] font-semibold uppercase text-gray-400">{label}</dt>
       <dd className="mt-0.5 font-semibold text-gray-700 truncate">{value}</dd>
+    </div>
+  )
+}
+
+function StatCard({ icon, label, value, tone = 'blue' }) {
+  const tones = {
+    blue: 'bg-blue-50 text-blue-700 ring-blue-100',
+    green: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
+    amber: 'bg-amber-50 text-amber-700 ring-amber-100',
+  }
+  return (
+    <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+      <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-2xl ring-1 ${tones[tone] || tones.blue}`}>
+        <AppIcon name={icon} className="h-5 w-5" />
+      </div>
+      <p className="text-2xl font-black text-slate-950">{value}</p>
+      <p className="mt-1 text-sm text-slate-500">{label}</p>
     </div>
   )
 }

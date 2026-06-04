@@ -68,9 +68,10 @@ export default function HistoriquePaiements() {
           </div>
           <Link
             to="/activites"
-            className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
+            className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600"
           >
-            + Nouveau soutien
+            <AppIcon name="PlusCircle" className="h-4 w-4" />
+            Nouveau soutien
           </Link>
         </div>
 
@@ -110,8 +111,9 @@ export default function HistoriquePaiements() {
             <p className="text-gray-500 text-sm mb-4">
               {filtre === 'TOUS' ? 'Aucun paiement pour le moment.' : `Aucun paiement avec le statut "${filtre}".`}
             </p>
-            <Link to="/activites" className="text-blue-700 text-sm hover:underline">
-              Découvrir les activités à soutenir →
+            <Link to="/activites" className="inline-flex items-center justify-center gap-1.5 text-blue-700 text-sm hover:underline">
+              Découvrir les activités à soutenir
+              <AppIcon name="Calendar" className="h-4 w-4" />
             </Link>
           </div>
         ) : (

@@ -178,9 +178,10 @@ export default function PaiementStripe() {
         {/* Retour */}
         <button
           onClick={() => navigate(-1)}
-          className="mt-4 w-full text-center text-gray-500 text-sm hover:underline"
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 text-center text-sm text-gray-500 hover:underline"
         >
-          ← Retour
+          <AppIcon name="Home" className="h-4 w-4" />
+          Retour
         </button>
 
       </main>

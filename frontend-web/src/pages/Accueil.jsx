@@ -99,7 +99,7 @@ export default function Accueil() {
                   to="/activites"
                   className="mt-3 block text-center bg-blue-700 hover:bg-blue-600 text-white text-sm py-1.5 rounded-lg transition"
                 >
-                  {t('home.see_all').replace(' →', '')}
+                  {t('home.see_all').replace(/\s*\u2192\s*$/, '')}
                 </Link>
               </div>
             ))}
