@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import api from '../../api/axios'
 import Alert from '../../components/ui/Alert'
-import EmptyState from '../../components/ui/EmptyState'
 import { useTranslation } from 'react-i18next'
 import AppIcon from '../../components/ui/AppIcons'
 import PageHeader from '../../components/ui/PageHeader'
@@ -91,14 +91,16 @@ export default function ReferentDemandes() {
         {loading ? (
           <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
         ) : demandes.length === 0 ? (
-          <EmptyState
+          <ModernEmpty
+            icon="Clock"
             title={t('referent.noPendingRequests')}
             description={t('referent.noPendingRequestsDesc')}
             actionLabel={t('referent.viewMyGroups')}
             actionTo="/referent/groupes"
           />
         ) : demandesFiltrees.length === 0 ? (
-          <EmptyState
+          <ModernEmpty
+            icon="Search"
             title={t('common.noResults', { defaultValue: 'Aucun résultat trouvé.' })}
             description={t('referent.noPendingRequestsDesc')}
           />
@@ -146,12 +148,28 @@ function StatCard({ icon, label, value, tone = 'blue' }) {
     amber: 'bg-amber-50 text-amber-700 ring-amber-100',
   }
   return (
-    <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+    <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-2xl ring-1 ${tones[tone] || tones.blue}`}>
         <AppIcon name={icon} className="h-5 w-5" />
       </div>
       <p className="text-2xl font-black text-slate-950">{value}</p>
       <p className="mt-1 text-sm text-slate-500">{label}</p>
+    </div>
+  )
+}
+
+function ModernEmpty({ icon, title, description, actionLabel, actionTo }) {
+  return (
+    <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center shadow-sm">
+      <AppIcon name={icon} className="mx-auto mb-3 h-10 w-10 text-teal-200" />
+      <h2 className="font-semibold text-blue-900">{title}</h2>
+      {description && <p className="mx-auto mt-2 max-w-md text-sm text-gray-500">{description}</p>}
+      {actionLabel && actionTo && (
+        <Link to={actionTo} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-600">
+          <AppIcon name="Users" className="h-4 w-4" />
+          {actionLabel}
+        </Link>
+      )}
     </div>
   )
 }

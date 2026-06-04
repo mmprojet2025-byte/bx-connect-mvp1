@@ -168,7 +168,7 @@ function StatCard({ icon, label, value, tone = 'blue' }) {
     amber: 'bg-amber-50 text-amber-700 ring-amber-100',
   }
   return (
-    <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+    <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-2xl ring-1 ${tones[tone] || tones.blue}`}>
         <AppIcon name={icon} className="h-5 w-5" />
       </div>
@@ -193,7 +193,12 @@ function CompactPeopleList({ items, empty }) {
 }
 
 function EmptyState({ children }) {
-  return <div className="bg-white rounded-2xl shadow p-10 text-center text-gray-400 text-sm">{children}</div>
+  return (
+    <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center text-gray-400 shadow-sm">
+      <AppIcon name="Users" className="mx-auto mb-3 h-10 w-10 text-teal-200" />
+      <p className="text-sm">{children}</p>
+    </div>
+  )
 }
 
 function Alert({ type, children }) {

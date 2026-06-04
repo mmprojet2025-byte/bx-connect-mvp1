@@ -9,6 +9,7 @@ import EmptyState from '../../components/ui/EmptyState'
 import PageHeader from '../../components/ui/PageHeader'
 import QuickActionCard from '../../components/ui/QuickActionCard'
 import AppIcon from '../../components/ui/AppIcons'
+import SectionCard from '../../components/ui/SectionCard'
 
 export default function ReferentDashboard() {
   const [stats, setStats] = useState({ groupes: 0, membres: 0, demandes: 0, activites: 0 })
@@ -73,6 +74,11 @@ export default function ReferentDashboard() {
           eyebrow={t('ux.referentDashboard.eyebrow')}
           title={t('ux.referentDashboard.title')}
           description={t('ux.referentDashboard.intro')}
+          action={(
+            <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
+              <AppIcon name="User" className="h-7 w-7" />
+            </div>
+          )}
         />
 
         {error && <Alert type="error">{error}</Alert>}
@@ -114,13 +120,16 @@ export default function ReferentDashboard() {
             </section>
 
             <section className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 mb-8">
-              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+              <SectionCard>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="font-bold text-blue-900">{t('ux.referentDashboard.requestsToHandle')}</h2>
+                    <h2 className="inline-flex items-center gap-2 font-bold text-blue-900">
+                      <AppIcon name="Clock" className="h-5 w-5 text-amber-600" />
+                      {t('ux.referentDashboard.requestsToHandle')}
+                    </h2>
                     <p className="text-sm text-gray-500">{t('ux.referentDashboard.requestsDesc')}</p>
                   </div>
-                  <Link to="/referent/demandes" className="text-teal-700 text-sm font-semibold hover:underline">
+                  <Link to="/referent/demandes" className="rounded-full bg-teal-50 px-3 py-1.5 text-sm font-semibold text-teal-700 transition hover:bg-teal-100">
                     {t('referent.viewRequests')}
                   </Link>
                 </div>
@@ -142,27 +151,33 @@ export default function ReferentDashboard() {
                     ))}
                   </div>
                 )}
-              </div>
+              </SectionCard>
 
-              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-                <h2 className="font-bold text-blue-900 mb-4">{t('ux.referentDashboard.quickActions')}</h2>
+              <SectionCard>
+                <h2 className="inline-flex items-center gap-2 font-bold text-blue-900 mb-4">
+                  <AppIcon name="Rocket" className="h-5 w-5 text-teal-700" />
+                  {t('ux.referentDashboard.quickActions')}
+                </h2>
                 <div className="grid gap-3">
                   <QuickActionCard to="/referent/demandes" title={t('referent.processRequests')} tone="amber" icon="Clock" />
                   <QuickActionCard to="/referent/activites" title={t('referent.createActivity')} tone="teal" icon="PlusCircle" />
                   <QuickActionCard to="/referent/messagerie" title={t('ux.referentDashboard.openMessaging')} tone="blue" icon="MessageCircle" />
                 </div>
-              </div>
+              </SectionCard>
             </section>
 
             <section className="grid lg:grid-cols-2 gap-6 mb-8">
               <InfoPanel title={t('ux.referentDashboard.assignedGroups')} to="/referent/groupes" actionLabel={t('common.open')}>
                 {groupes.length === 0 ? (
-                  <p className="text-sm text-gray-400">{t('referent.noAssignedGroups')}</p>
+                  <MiniEmpty icon="Users" text={t('referent.noAssignedGroups')} />
                 ) : (
                   <div className="grid gap-3">
                     {groupes.map(groupe => (
-                      <div key={groupe.id} className="border border-gray-100 rounded-xl p-4">
-                        <h3 className="font-semibold text-blue-900">{groupe.nom}</h3>
+                      <div key={groupe.id} className="rounded-2xl border border-gray-100 p-4 transition hover:bg-teal-50/40">
+                        <h3 className="inline-flex items-center gap-2 font-semibold text-blue-900">
+                          <AppIcon name="Users" className="h-4 w-4 text-teal-700" />
+                          {groupe.nom}
+                        </h3>
                         <p className="text-xs text-gray-400 mt-2">{t('groups.members_count', { count: groupe.nombreMembres ?? 0 })}</p>
                       </div>
                     ))}
@@ -172,11 +187,11 @@ export default function ReferentDashboard() {
 
               <InfoPanel title={t('ux.referentDashboard.recentMembers')} to="/referent/membres" actionLabel={t('common.open')}>
                 {membresRecents.length === 0 ? (
-                  <p className="text-sm text-gray-400">{t('referent.noMembersYet')}</p>
+                  <MiniEmpty icon="User" text={t('referent.noMembersYet')} />
                 ) : (
                   <div className="grid gap-3">
                     {membresRecents.map(membre => (
-                      <div key={`${membre.groupeNom}-${membre.id}`} className="border border-gray-100 rounded-xl p-3">
+                      <div key={`${membre.groupeNom}-${membre.id}`} className="rounded-2xl border border-gray-100 p-3 transition hover:bg-teal-50/40">
                         <p className="font-semibold text-blue-900 text-sm">{membre.prenom} {membre.nom}</p>
                         <p className="text-xs text-gray-400">{membre.groupeNom}</p>
                       </div>
@@ -188,12 +203,15 @@ export default function ReferentDashboard() {
 
             <InfoPanel title={t('ux.referentDashboard.upcomingActivities')} to="/referent/activites" actionLabel={t('common.open')}>
               {prochainesActivites.length === 0 ? (
-                <p className="text-sm text-gray-400">{t('referent.noActivitiesYet')}</p>
+                <MiniEmpty icon="Calendar" text={t('referent.noActivitiesYet')} />
               ) : (
                 <div className="grid md:grid-cols-2 gap-3">
                   {prochainesActivites.map(activite => (
-                    <div key={activite.id} className="border border-gray-100 rounded-xl p-4">
-                      <h3 className="font-semibold text-blue-900">{activite.titre}</h3>
+                    <div key={activite.id} className="rounded-2xl border border-gray-100 p-4 transition hover:bg-teal-50/40">
+                      <h3 className="inline-flex items-center gap-2 font-semibold text-blue-900">
+                        <AppIcon name="Calendar" className="h-4 w-4 text-teal-700" />
+                        {activite.titre}
+                      </h3>
                       <p className="text-xs text-gray-400 mt-1">{activite.dateDebut ? formatDate(activite.dateDebut, i18n.language) : t('memberDashboard.activities.dateToConfirm')}</p>
                     </div>
                   ))}
@@ -212,7 +230,7 @@ function StatCard({ label, value, to, actionLabel, highlight = false, icon = 'Ba
   return (
     <Link
       to={to}
-      className={`group rounded-3xl border shadow-sm p-5 transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${highlight ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-100'}`}
+      className={`group rounded-3xl border shadow-sm p-5 transition hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${highlight ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-100'}`}
     >
       <div className="mb-2 flex items-center justify-between gap-3">
         <p className={`text-3xl font-bold ${highlight ? 'text-amber-800' : 'text-teal-700'}`}>{value}</p>
@@ -233,12 +251,21 @@ function InfoPanel({ title, to, actionLabel, children }) {
     <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-bold text-blue-900">{title}</h2>
-        <Link to={to} className="text-teal-700 text-sm font-semibold hover:underline">
+        <Link to={to} className="rounded-full bg-teal-50 px-3 py-1.5 text-sm font-semibold text-teal-700 transition hover:bg-teal-100">
           {actionLabel}
         </Link>
       </div>
       {children}
     </section>
+  )
+}
+
+function MiniEmpty({ icon, text }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center">
+      <AppIcon name={icon} className="mx-auto mb-2 h-8 w-8 text-teal-200" />
+      <p className="text-sm text-gray-400">{text}</p>
+    </div>
   )
 }
 
