@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   header: { backgroundColor: '#fff', padding: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   list: { padding: 14, paddingBottom: 28 },
-  card: { marginBottom: 10 },
+  card: { marginBottom: 12 },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   iconBox: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   cardText: { flex: 1 },
@@ -158,5 +158,5 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
   metaLabel: { color: COLORS.muted, fontSize: 11 },
   metaValue: { color: COLORS.bxBlue, fontSize: 11, fontWeight: '900', maxWidth: '58%', textAlign: 'right' },
-  message: { color: '#475569', fontSize: 12, lineHeight: 18, marginTop: 10 },
+  message: { color: '#475569', fontSize: 12, lineHeight: 18, marginTop: 10, backgroundColor: '#f8fafc', borderRadius: 10, padding: 9 },
 });

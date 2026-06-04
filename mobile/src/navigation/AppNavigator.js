@@ -194,7 +194,23 @@ function PrivateTabs() {
         },
         tabBarActiveTintColor: '#fff',
         tabBarInactiveTintColor: '#93c5fd',
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
+        tabBarLabel: ({ color, children }) => (
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.72}
+            style={{
+              color,
+              fontSize: 10,
+              fontWeight: '700',
+              maxWidth: 74,
+              textAlign: 'center',
+              marginTop: 1,
+            }}
+          >
+            {children}
+          </Text>
+        ),
       }}
     >
       {tabs.map((tab) => (

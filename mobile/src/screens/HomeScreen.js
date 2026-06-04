@@ -1,236 +1,301 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import AppIcon from '../components/AppIcon';
+import { COLORS, Card, SectionHeader } from '../components/MobileUI';
+
+const features = [
+  {
+    title: 'Activités',
+    text: 'Découvre les prochains rendez-vous de BX-Jeunes Impact.',
+    icon: 'activity',
+    color: COLORS.info,
+    route: 'Activities',
+  },
+  {
+    title: 'Projets',
+    text: 'Suis les initiatives portées par la communauté.',
+    icon: 'project',
+    color: COLORS.impactOrange,
+    route: 'Login',
+  },
+  {
+    title: 'Groupes',
+    text: 'Trouve un groupe qui correspond à tes envies.',
+    icon: 'group',
+    color: COLORS.success,
+    route: 'Groupes',
+  },
+  {
+    title: 'Communauté',
+    text: 'Échange avec ton groupe après connexion.',
+    icon: 'message',
+    color: '#8B5CF6',
+    route: 'Login',
+  },
+];
+
+const audiences = [
+  { label: 'Jeunes', icon: 'user', color: COLORS.info },
+  { label: 'Référents', icon: 'shield', color: COLORS.success },
+  { label: 'Partenaires', icon: 'wallet', color: COLORS.impactOrange },
+];
 
 export default function HomeScreen({ navigation }) {
   const { isAuthenticated, user } = useAuth();
 
-  const goToPublicOrLogin = (screenName) => {
-    if (screenName === 'Activities' || screenName === 'Groupes') {
-      navigation.navigate(screenName);
+  const goTo = (route) => {
+    if (route === 'Login' && isAuthenticated) {
+      navigation.navigate('Activities');
       return;
     }
-    navigation.navigate('Login');
+    navigation.navigate(route);
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-
-      {/* Hero */}
       <View style={styles.hero}>
-        <Text style={styles.heroTitle}>BX-CONNECT</Text>
-        <Text style={styles.heroSubtitle}>
-          La plateforme numérique des jeunes et associations de Bruxelles
+        <View style={styles.heroTop}>
+          <View style={styles.brandMark}>
+            <AppIcon name="group" size={26} color="#fff" />
+          </View>
+          <View style={styles.brandTextWrap}>
+            <Text style={styles.kicker}>BX-Jeunes Impact</Text>
+            <Text style={styles.logo}>BX-CONNECT</Text>
+          </View>
+        </View>
+
+        <Text style={styles.slogan}>Connecter. Inspirer. Impacter.</Text>
+        <Text style={styles.heroText}>
+          La plateforme communautaire pour découvrir des activités, rejoindre un groupe
+          et porter des projets qui ont du sens.
         </Text>
 
-        <View style={styles.heroButtons}>
-          {isAuthenticated ? (
+        <View style={styles.heroActions}>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={() => navigation.navigate(isAuthenticated ? 'Activities' : 'Login')}
+            activeOpacity={0.86}
+          >
+            <AppIcon name={isAuthenticated ? 'activity' : 'lock'} size={18} color="#fff" />
+            <Text style={styles.primaryButtonText}>
+              {isAuthenticated ? 'Voir les activités' : 'Se connecter'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => navigation.navigate('Activities')}
+            activeOpacity={0.86}
+          >
+            <AppIcon name="search" size={18} color={COLORS.bxBlue} />
+            <Text style={styles.secondaryButtonText}>Découvrir</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {isAuthenticated ? (
+        <Card style={styles.welcomeCard}>
+          <View style={styles.welcomeIcon}>
+            <AppIcon name="check" size={22} color={COLORS.success} />
+          </View>
+          <View style={styles.welcomeTextWrap}>
+            <Text style={styles.welcomeTitle}>Bon retour{user?.prenom ? `, ${user.prenom}` : ''}</Text>
+            <Text style={styles.welcomeText}>
+              Continue ton parcours et retrouve rapidement tes activités.
+            </Text>
+          </View>
+        </Card>
+      ) : null}
+
+      <View style={styles.section}>
+        <SectionHeader
+          title="Ce que tu peux faire"
+          subtitle="Un espace simple pour participer, collaborer et rester connecté."
+          icon="project"
+        />
+        <View style={styles.featureGrid}>
+          {features.map((feature) => (
             <TouchableOpacity
-              style={styles.btnPrimary}
-              onPress={() => navigation.navigate('Activities')}
+              key={feature.title}
+              style={styles.featureCard}
+              onPress={() => goTo(feature.route)}
+              activeOpacity={0.86}
             >
-              <Text style={styles.btnPrimaryText}>🎯 Voir les activités</Text>
+              <View style={[styles.featureIcon, { backgroundColor: `${feature.color}18` }]}>
+                <AppIcon name={feature.icon} size={22} color={feature.color} />
+              </View>
+              <Text style={styles.featureTitle}>{feature.title}</Text>
+              <Text style={styles.featureText}>{feature.text}</Text>
             </TouchableOpacity>
-          ) : (
-            <>
-              <TouchableOpacity
-                style={styles.btnPrimary}
-                onPress={() => navigation.navigate('Login')}
-              >
-                <Text style={styles.btnPrimaryText}>Se connecter</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.btnSecondary}
-                onPress={() => navigation.navigate('Activities')}
-              >
-                <Text style={styles.btnSecondaryText}>🎯 Voir les activités</Text>
-              </TouchableOpacity>
-            </>
-          )}
+          ))}
         </View>
       </View>
 
-      {/* Message de bienvenue si connecté */}
-      {isAuthenticated && (
-        <View style={styles.welcomeCard}>
-          <Text style={styles.welcomeText}>
-            👋 Bonjour, <Text style={styles.welcomeName}>{user?.prenom}</Text> !
-          </Text>
-          <Text style={styles.welcomeRole}>Rôle : {user?.role}</Text>
+      <View style={styles.section}>
+        <SectionHeader
+          title="Pour qui ?"
+          subtitle="Une même application, adaptée aux rôles de la communauté."
+          icon="group"
+        />
+        <View style={styles.audienceRow}>
+          {audiences.map((audience) => (
+            <View key={audience.label} style={styles.audiencePill}>
+              <View style={[styles.audienceIcon, { backgroundColor: `${audience.color}18` }]}>
+                <AppIcon name={audience.icon} size={18} color={audience.color} />
+              </View>
+              <Text style={styles.audienceText}>{audience.label}</Text>
+            </View>
+          ))}
         </View>
-      )}
-
-      {/* Fonctionnalités */}
-      <Text style={styles.sectionTitle}>Ce que tu peux faire</Text>
-
-      <View style={styles.featuresGrid}>
-        <FeatureCard
-          icon="🎯"
-          title="Activités"
-          description="Découvre et inscris-toi aux activités organisées par Bx-Jeunes Impact."
-          onPress={() => navigation.navigate('Activities')}
-        />
-        <FeatureCard
-          icon="🚀"
-          title="Projets"
-          description="Propose ou rejoins des projets collaboratifs avec d'autres membres."
-          onPress={() => goToPublicOrLogin('Projects')}
-        />
-        <FeatureCard
-          icon="👥"
-          title="Groupes"
-          description="Rejoins des groupes et échange avec d'autres membres."
-          onPress={() => navigation.navigate('Groupes')}
-        />
-        <FeatureCard
-          icon="💬"
-          title="Messagerie"
-          description="Communique avec les membres de ton groupe."
-          onPress={() => navigation.navigate('Login')}
-        />
       </View>
 
+      {!isAuthenticated ? (
+        <Card style={styles.joinCard}>
+          <View style={styles.joinContent}>
+            <Text style={styles.joinTitle}>Prêt à rejoindre la communauté ?</Text>
+            <Text style={styles.joinText}>
+              Crée ton compte pour demander à rejoindre un groupe et accéder à la messagerie.
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.joinButton}
+            onPress={() => navigation.navigate('Register')}
+            activeOpacity={0.86}
+          >
+            <Text style={styles.joinButtonText}>Créer un compte</Text>
+          </TouchableOpacity>
+        </Card>
+      ) : null}
     </ScrollView>
   );
 }
 
-function FeatureCard({ icon, title, description, onPress }) {
-  return (
-    <TouchableOpacity
-      style={styles.featureCard}
-      onPress={onPress}
-      activeOpacity={onPress ? 0.7 : 1}
-    >
-      <Text style={styles.featureIcon}>{icon}</Text>
-      <Text style={styles.featureTitle}>{title}</Text>
-      <Text style={styles.featureDesc}>{description}</Text>
-    </TouchableOpacity>
-  );
-}
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  content: {
-    paddingBottom: 40,
-  },
-
-  // Hero
+  container: { flex: 1, backgroundColor: COLORS.page },
+  content: { padding: 18, paddingBottom: 32 },
   hero: {
-    backgroundColor: '#1E3A8A',
-    paddingHorizontal: 24,
-    paddingTop: 48,
-    paddingBottom: 40,
-    alignItems: 'center',
-  },
-  heroTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 12,
-    letterSpacing: 1,
-  },
-  heroSubtitle: {
-    fontSize: 15,
-    color: '#93c5fd',
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 28,
-    maxWidth: 300,
-  },
-  heroButtons: {
-    gap: 12,
-    width: '100%',
-    maxWidth: 300,
-  },
-  btnPrimary: {
-    backgroundColor: '#fff',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 50,
-    alignItems: 'center',
-  },
-  btnPrimaryText: {
-    color: '#1E3A8A',
-    fontWeight: 'bold',
-    fontSize: 15,
-  },
-  btnSecondary: {
-    borderWidth: 2,
-    borderColor: '#fff',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 50,
-    alignItems: 'center',
-  },
-  btnSecondaryText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-
-  // Welcome card
-  welcomeCard: {
-    backgroundColor: '#E0F2FE',
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#38BDF8',
-  },
-  welcomeText: {
-    fontSize: 16,
-    color: '#1E3A8A',
-  },
-  welcomeName: {
-    fontWeight: 'bold',
-  },
-  welcomeRole: {
-    fontSize: 13,
-    color: '#3b82f6',
-    marginTop: 4,
-  },
-
-  // Section
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1E3A8A',
-    marginHorizontal: 16,
-    marginTop: 28,
+    backgroundColor: COLORS.bxBlue,
+    borderRadius: 28,
+    padding: 22,
     marginBottom: 16,
+    overflow: 'hidden',
+    shadowColor: COLORS.bxBlue,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    elevation: 4,
   },
-
-  // Features
-  featuresGrid: {
-    paddingHorizontal: 16,
-    gap: 12,
+  heroTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  brandMark: {
+    width: 54,
+    height: 54,
+    borderRadius: 19,
+    backgroundColor: '#38BDF8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
   },
-  featureCard: {
-    backgroundColor: '#fff',
+  brandTextWrap: { flex: 1 },
+  kicker: { color: '#BAE6FD', fontSize: 12, fontWeight: '800', marginBottom: 3 },
+  logo: { color: '#fff', fontSize: 24, fontWeight: '900', letterSpacing: 0.6 },
+  slogan: { color: '#fff', fontSize: 24, lineHeight: 30, fontWeight: '900', marginBottom: 10 },
+  heroText: { color: '#DBEAFE', fontSize: 14, lineHeight: 21, marginBottom: 18 },
+  heroActions: { flexDirection: 'row', gap: 10 },
+  primaryButton: {
+    flex: 1,
+    minHeight: 48,
     borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.impactOrange,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  primaryButtonText: { color: '#fff', fontSize: 14, fontWeight: '900' },
+  secondaryButton: {
+    minHeight: 48,
+    borderRadius: 16,
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 7,
+  },
+  secondaryButtonText: { color: COLORS.bxBlue, fontSize: 14, fontWeight: '900' },
+  welcomeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 18,
+    padding: 14,
+  },
+  welcomeIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 15,
+    backgroundColor: COLORS.softGreen,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  welcomeTextWrap: { flex: 1 },
+  welcomeTitle: { color: COLORS.bxBlue, fontSize: 16, fontWeight: '900' },
+  welcomeText: { color: COLORS.muted, fontSize: 12, lineHeight: 17, marginTop: 2 },
+  section: { marginBottom: 18 },
+  featureGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  featureCard: {
+    width: '48.4%',
+    minHeight: 148,
+    backgroundColor: COLORS.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.05,
+    shadowRadius: 7,
+    elevation: 1,
   },
   featureIcon: {
-    fontSize: 32,
-    marginBottom: 8,
+    width: 42,
+    height: 42,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
   },
-  featureTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1E3A8A',
-    marginBottom: 6,
+  featureTitle: { color: COLORS.bxBlue, fontSize: 15, fontWeight: '900', marginBottom: 5 },
+  featureText: { color: COLORS.muted, fontSize: 12, lineHeight: 17 },
+  audienceRow: { flexDirection: 'row', gap: 9 },
+  audiencePill: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 11,
+    alignItems: 'center',
   },
-  featureDesc: {
-    fontSize: 13,
-    color: '#64748b',
-    lineHeight: 18,
+  audienceIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 7,
   },
+  audienceText: { color: COLORS.bxBlue, fontSize: 12, fontWeight: '900', textAlign: 'center' },
+  joinCard: { padding: 16 },
+  joinContent: { marginBottom: 13 },
+  joinTitle: { color: COLORS.bxBlue, fontSize: 17, fontWeight: '900', marginBottom: 5 },
+  joinText: { color: COLORS.muted, fontSize: 13, lineHeight: 19 },
+  joinButton: {
+    minHeight: 46,
+    borderRadius: 15,
+    backgroundColor: COLORS.bxBlue,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  joinButtonText: { color: '#fff', fontSize: 14, fontWeight: '900' },
 });
