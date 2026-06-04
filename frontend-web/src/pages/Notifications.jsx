@@ -8,6 +8,7 @@ import api from '../api/axios';
 import Alert from '../components/ui/Alert';
 import EmptyState from '../components/ui/EmptyState';
 import PageHeader from '../components/ui/PageHeader';
+import AppIcon from '../components/ui/AppIcons';
 import { confirmSensitiveAction, userFriendlyError } from '../utils/userFriendlyError';
 
 export default function Notifications() {
@@ -54,18 +55,18 @@ export default function Notifications() {
 
   const typeIcon = (type) => {
     switch (type) {
-      case 'VALIDATION_GROUPE':  return 'OK';
-      case 'REFUS_GROUPE':       return 'NO';
-      case 'VALIDATION_PROJET':  return 'PR';
-      case 'REFUS_PROJET':       return 'NO';
-      case 'PAIEMENT':           return '€';
-      case 'ANNONCE':            return 'AN';
-      case 'ADHESION':           return 'GR';
-      case 'ADHESION_ACCEPTEE':  return 'OK';
-      case 'ADHESION_REFUSEE':   return 'NO';
-      case 'PRESTATION_VALIDEE': return 'OK';
-      case 'PRESTATION_REFUSEE': return 'NO';
-      default:                   return 'BX';
+      case 'VALIDATION_GROUPE':  return 'CheckCircle';
+      case 'REFUS_GROUPE':       return 'XCircle';
+      case 'VALIDATION_PROJET':  return 'Rocket';
+      case 'REFUS_PROJET':       return 'XCircle';
+      case 'PAIEMENT':           return 'Wallet';
+      case 'ANNONCE':            return 'Bell';
+      case 'ADHESION':           return 'Users';
+      case 'ADHESION_ACCEPTEE':  return 'CheckCircle';
+      case 'ADHESION_REFUSEE':   return 'XCircle';
+      case 'PRESTATION_VALIDEE': return 'CheckCircle';
+      case 'PRESTATION_REFUSEE': return 'XCircle';
+      default:                   return 'Bell';
     }
   };
 
@@ -116,8 +117,8 @@ export default function Notifications() {
                   !n.lue ? 'border-indigo-100 bg-indigo-50/50 shadow-sm' : 'border-slate-100 bg-white shadow-sm'
                 }`}
               >
-                <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center text-xs font-black text-indigo-700 flex-shrink-0 shadow-sm">
-                  {typeIcon(n.type)}
+                <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center text-indigo-700 flex-shrink-0 shadow-sm">
+                  <AppIcon name={typeIcon(n.type)} className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm ${!n.lue ? 'font-bold text-blue-900' : 'font-medium text-gray-700'}`}>
@@ -147,10 +148,10 @@ export default function Notifications() {
                   {!n.lue && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
                   <button
                     onClick={e => { e.stopPropagation(); handleSupprimer(n.id); }}
-                    className="text-gray-300 hover:text-red-400 text-lg leading-none"
+                    className="text-gray-300 hover:text-red-400 leading-none"
                     aria-label={t('common.delete')}
                   >
-                    ✕
+                    <AppIcon name="XCircle" className="h-4 w-4" />
                   </button>
                 </div>
               </div>

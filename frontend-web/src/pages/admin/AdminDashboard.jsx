@@ -8,6 +8,7 @@ import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
 import PageHeader from '../../components/ui/PageHeader'
 import QuickActionCard from '../../components/ui/QuickActionCard'
+import AppIcon from '../../components/ui/AppIcons'
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null)
@@ -66,10 +67,10 @@ export default function AdminDashboard() {
           <>
             {stats && (
               <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <StatCard label={t('admin.stats_total_users')} value={stats.totalUtilisateurs} color="#2E86AB" />
-                <StatCard label={t('admin.activeReferents')} value={referentsActifs} color="#0d9488" />
-                <StatCard label={t('admin.groups')} value={groupes.length} color="#7c3aed" />
-                <StatCard label={t('admin.stats_activities')} value={stats.totalActivites} color="#F4A261" />
+                <StatCard label={t('admin.stats_total_users')} value={stats.totalUtilisateurs} color="#2E86AB" icon="Users" />
+                <StatCard label={t('admin.activeReferents')} value={referentsActifs} color="#0d9488" icon="User" />
+                <StatCard label={t('admin.groups')} value={groupes.length} color="#7c3aed" icon="Users" />
+                <StatCard label={t('admin.stats_activities')} value={stats.totalActivites} color="#F4A261" icon="Calendar" />
               </section>
             )}
 
@@ -112,10 +113,10 @@ export default function AdminDashboard() {
 	              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
                 <h2 className="text-lg font-bold text-blue-900 mb-4">{t('ux.adminDashboard.quickActions')}</h2>
                 <div className="grid gap-3">
-	                  <QuickActionCard to="/admin/groupes" title={t('ux.adminDashboard.createGroup')} tone="blue" />
-	                  <QuickActionCard to="/admin/referents" title={t('ux.adminDashboard.createReferent')} tone="teal" />
-	                  <QuickActionCard to="/admin/groupes" title={t('ux.adminDashboard.processRequests')} tone="amber" />
-	                  <QuickActionCard to="/admin/activites" title={t('ux.adminDashboard.createActivity')} tone="violet" />
+	                  <QuickActionCard to="/admin/groupes" title={t('ux.adminDashboard.createGroup')} tone="blue" icon="Users" />
+	                  <QuickActionCard to="/admin/referents" title={t('ux.adminDashboard.createReferent')} tone="teal" icon="User" />
+	                  <QuickActionCard to="/admin/groupes" title={t('ux.adminDashboard.processRequests')} tone="amber" icon="Clock" />
+	                  <QuickActionCard to="/admin/activites" title={t('ux.adminDashboard.createActivity')} tone="violet" icon="PlusCircle" />
                 </div>
               </div>
             </section>
@@ -150,10 +151,15 @@ export default function AdminDashboard() {
   )
 }
 
-function StatCard({ label, value, color }) {
+function StatCard({ label, value, color, icon }) {
   return (
     <div className="bg-white rounded-2xl shadow p-5 border-l-4" style={{ borderLeftColor: color }}>
-      <div className="text-2xl font-bold" style={{ color }}>{value ?? 0}</div>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="text-2xl font-bold" style={{ color }}>{value ?? 0}</div>
+        <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-50" style={{ color }}>
+          <AppIcon name={icon} className="h-5 w-5" />
+        </span>
+      </div>
       <div className="text-xs text-gray-500 mt-1">{label}</div>
     </div>
   )

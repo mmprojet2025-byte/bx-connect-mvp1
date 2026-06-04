@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import api from '../api/axios';
 import { userFriendlyError } from '../utils/userFriendlyError';
+import AppIcon from './ui/AppIcons';
 
 /**
  * Composant réutilisable pour l'upload d'images
@@ -105,8 +106,9 @@ export default function ImageUpload({
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (
-          <span style={{ color: '#4A6A8A', fontSize: '0.85rem', textAlign: 'center', padding: '8px' }}>
-            📷 Cliquer pour ajouter une image
+          <span style={{ color: '#4A6A8A', fontSize: '0.85rem', textAlign: 'center', padding: '8px', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+            <AppIcon name="Camera" className="h-5 w-5" />
+            Cliquer pour ajouter une image
           </span>
         )}
 
@@ -124,7 +126,10 @@ export default function ImageUpload({
               fontSize: '0.85rem',
             }}
           >
-            ⏳ Upload...
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <AppIcon name="Clock" className="h-4 w-4" />
+              Upload...
+            </span>
           </div>
         )}
       </div>

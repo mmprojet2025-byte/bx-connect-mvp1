@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import api from '../api/axios'
+import AppIcon from '../components/ui/AppIcons'
 
 export default function Accueil() {
   const [activites, setActivites] = useState([])
@@ -50,17 +51,17 @@ export default function Accueil() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-2xl shadow p-6 text-center">
-            <div className="text-4xl mb-3">🎯</div>
+            <AppIcon name="Folder" className="mx-auto mb-3 h-10 w-10 text-blue-700" />
             <h3 className="font-semibold text-lg text-blue-800 mb-2">{t('home.feature_activities_title')}</h3>
             <p className="text-gray-500 text-sm">{t('home.feature_activities_desc')}</p>
           </div>
           <div className="bg-white rounded-2xl shadow p-6 text-center">
-            <div className="text-4xl mb-3">🚀</div>
+            <AppIcon name="Rocket" className="mx-auto mb-3 h-10 w-10 text-blue-700" />
             <h3 className="font-semibold text-lg text-blue-800 mb-2">{t('home.feature_projects_title')}</h3>
             <p className="text-gray-500 text-sm">{t('home.feature_projects_desc')}</p>
           </div>
           <div className="bg-white rounded-2xl shadow p-6 text-center">
-            <div className="text-4xl mb-3">🤝</div>
+            <AppIcon name="Handshake" className="mx-auto mb-3 h-10 w-10 text-blue-700" />
             <h3 className="font-semibold text-lg text-blue-800 mb-2">{t('home.feature_community_title')}</h3>
             <p className="text-gray-500 text-sm">{t('home.feature_community_desc')}</p>
           </div>
@@ -89,8 +90,10 @@ export default function Accueil() {
                 </span>
                 <h3 className="font-semibold text-gray-800 mt-3 mb-1">{a.titre}</h3>
                 <p className="text-gray-500 text-sm mb-3 line-clamp-2">{a.description}</p>
-                <div className="text-xs text-gray-400">
-                  📍 {a.lieu || 'Bruxelles'} · {a.gratuite ? `🆓 ${t('activities.free')}` : `💶 ${a.prix} €`}
+                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                  <span className="inline-flex items-center gap-1"><AppIcon name="MapPin" className="h-3.5 w-3.5" />{a.lieu || 'Bruxelles'}</span>
+                  <span>·</span>
+                  <span className="inline-flex items-center gap-1"><AppIcon name={a.gratuite ? 'CheckCircle' : 'Wallet'} className="h-3.5 w-3.5" />{a.gratuite ? t('activities.free') : `${a.prix} €`}</span>
                 </div>
                 <Link
                   to="/activites"

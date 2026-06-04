@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
+import AppIcon from '../../components/ui/AppIcons';
 
 export default function HistoriquePaiements() {
   const [paiements, setPaiements] = useState([]);
@@ -46,7 +47,7 @@ export default function HistoriquePaiements() {
     }
   };
 
-  const fournisseurIcon = (f) => f === 'STRIPE' ? '💳' : f === 'PAYPAL' ? '🅿️' : '📋';
+  const fournisseurIcon = () => 'CreditCard';
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -57,7 +58,10 @@ export default function HistoriquePaiements() {
         {/* En-tête */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-blue-900">📋 Historique des paiements</h1>
+            <h1 className="flex items-center gap-2 text-2xl font-bold text-blue-900">
+              <AppIcon name="Folder" className="h-6 w-6" />
+              Historique des paiements
+            </h1>
             <p className="text-gray-500 text-sm mt-1">
               Total payé : <strong className="text-green-700">{totalPaye.toFixed(2)} €</strong>
             </p>
@@ -97,12 +101,12 @@ export default function HistoriquePaiements() {
         {/* Liste */}
         {loading ? (
           <div className="text-center py-12 text-gray-400">
-            <div className="text-4xl mb-2">⏳</div>
+            <AppIcon name="Clock" className="mx-auto mb-3 h-10 w-10 text-blue-300" />
             <p>Chargement...</p>
           </div>
         ) : paiementsFiltres.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-2xl shadow">
-            <div className="text-5xl mb-3">💳</div>
+            <AppIcon name="CreditCard" className="mx-auto mb-3 h-12 w-12 text-blue-300" />
             <p className="text-gray-500 text-sm mb-4">
               {filtre === 'TOUS' ? 'Aucun paiement pour le moment.' : `Aucun paiement avec le statut "${filtre}".`}
             </p>
@@ -116,16 +120,18 @@ export default function HistoriquePaiements() {
               <div key={p.id} className="bg-white rounded-2xl shadow p-5 flex items-center justify-between gap-4">
 
                 {/* Icône fournisseur */}
-                <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
-                  {fournisseurIcon(p.fournisseur)}
+                <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-blue-700 flex-shrink-0">
+                  <AppIcon name={fournisseurIcon(p.fournisseur)} className="h-6 w-6" />
                 </div>
 
                 {/* Infos */}
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-blue-900 text-sm truncate">
-                    {p.activiteTitre ? `🎯 ${p.activiteTitre}` :
-                     p.projetTitre   ? `🚀 ${p.projetTitre}` :
-                     'Soutien BX-CONNECT'}
+                    {p.activiteTitre ? (
+                      <span className="inline-flex items-center gap-1.5"><AppIcon name="Folder" className="h-4 w-4" />{p.activiteTitre}</span>
+                    ) : p.projetTitre ? (
+                      <span className="inline-flex items-center gap-1.5"><AppIcon name="Rocket" className="h-4 w-4" />{p.projetTitre}</span>
+                    ) : 'Soutien BX-CONNECT'}
                   </p>
                   <p className="text-xs text-gray-400 mt-0.5">
                     {p.fournisseur || 'STRIPE'} ·{' '}

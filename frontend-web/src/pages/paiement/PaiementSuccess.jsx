@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
+import AppIcon from '../../components/ui/AppIcons';
 
 export default function PaiementSuccess() {
   const [searchParams] = useSearchParams();
@@ -40,12 +41,12 @@ export default function PaiementSuccess() {
 
           {loading ? (
             <div>
-              <div className="text-5xl mb-4">⏳</div>
+              <AppIcon name="Clock" className="mx-auto mb-4 h-12 w-12 text-blue-300" />
               <p className="text-gray-500">Vérification du paiement...</p>
             </div>
           ) : error ? (
             <div>
-              <div className="text-5xl mb-4">⚠️</div>
+              <AppIcon name="AlertTriangle" className="mx-auto mb-4 h-12 w-12 text-orange-400" />
               <h1 className="text-xl font-bold text-gray-700 mb-2">Vérification impossible</h1>
               <p className="text-gray-500 text-sm mb-6">{error}</p>
               <Link to="/dashboard" className="bg-blue-700 text-white px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-blue-600 transition">
@@ -56,7 +57,7 @@ export default function PaiementSuccess() {
             <div>
               {/* Icône succès */}
               <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-4xl">✅</span>
+                <AppIcon name="CheckCircle" className="h-10 w-10 text-green-700" />
               </div>
 
               <h1 className="text-2xl font-bold text-green-700 mb-2">Paiement réussi !</h1>
@@ -74,7 +75,7 @@ export default function PaiementSuccess() {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Statut</span>
                     <span className="font-semibold text-green-600">
-                      {paiement.statutPaiement === 'PAYE' ? '✅ Payé' : paiement.statutPaiement}
+                      {paiement.statutPaiement === 'PAYE' ? 'Payé' : paiement.statutPaiement}
                     </span>
                   </div>
                   {paiement.activiteTitre && (
@@ -107,15 +108,17 @@ export default function PaiementSuccess() {
               <div className="flex flex-col gap-3">
                 <Link
                   to="/paiement/historique"
-                  className="bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-xl transition text-sm"
+                  className="inline-flex items-center justify-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-xl transition text-sm"
                 >
-                  📋 Voir l'historique des paiements
+                  <AppIcon name="Folder" className="h-4 w-4" />
+                  Voir l'historique des paiements
                 </Link>
                 <Link
                   to="/dashboard"
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl transition text-sm"
+                  className="inline-flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl transition text-sm"
                 >
-                  🏠 Retour au dashboard
+                  <AppIcon name="Home" className="h-4 w-4" />
+                  Retour au dashboard
                 </Link>
               </div>
             </div>

@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
+import AppIcon from '../../components/ui/AppIcons';
 
 export default function Annonces() {
   const { isAuthenticated, isAdmin, isReferent } = useAuth();
@@ -46,7 +47,7 @@ export default function Annonces() {
       const payload = { ...form };
       if (form.type === 'GLOBALE') payload.groupeId = null;
       await api.post('/annonces', payload);
-      setMessage('✅ Annonce publiée !');
+      setMessage('Annonce publiée !');
       setShowForm(false);
       setForm({ titre: '', contenu: '', type: 'GLOBALE', groupeId: null, epinglee: false });
       fetchAnnonces();
@@ -86,7 +87,10 @@ export default function Annonces() {
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-10">
 
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-blue-900">📢 Annonces</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-blue-900">
+            <AppIcon name="Megaphone" className="h-6 w-6" />
+            Annonces
+          </h1>
           {peutPublier && (
             <button onClick={() => setShowForm(!showForm)}
               className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
@@ -119,8 +123,8 @@ export default function Annonces() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                     <select value={form.type} onChange={e => setForm({...form, type: e.target.value})}
                       className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
-                      <option value="GLOBALE">🌍 Globale (tous les membres)</option>
-                      <option value="GROUPE">👥 Groupe spécifique</option>
+                      <option value="GLOBALE">Globale (tous les membres)</option>
+                      <option value="GROUPE">Groupe spécifique</option>
                     </select>
                   </div>
                 )}
@@ -137,7 +141,10 @@ export default function Annonces() {
               {isAdmin && (
                 <div className="flex items-center gap-2">
                   <input type="checkbox" id="epinglee" checked={form.epinglee} onChange={e => setForm({...form, epinglee: e.target.checked})} />
-                  <label htmlFor="epinglee" className="text-sm text-gray-700">📌 Épingler cette annonce</label>
+                  <label htmlFor="epinglee" className="inline-flex items-center gap-1.5 text-sm text-gray-700">
+                    <AppIcon name="Pin" className="h-4 w-4" />
+                    Épingler cette annonce
+                  </label>
                 </div>
               )}
               <button type="submit" className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition">
@@ -152,7 +159,7 @@ export default function Annonces() {
           <p className="text-gray-400 text-center py-10">Chargement...</p>
         ) : annonces.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-2xl shadow">
-            <div className="text-4xl mb-2">📢</div>
+            <AppIcon name="Megaphone" className="mx-auto mb-3 h-10 w-10 text-blue-300" />
             <p className="text-gray-400 text-sm">Aucune annonce pour le moment.</p>
           </div>
         ) : (
@@ -161,10 +168,10 @@ export default function Annonces() {
               <div key={a.id} className={`bg-white rounded-2xl shadow p-5 ${a.epinglee ? 'border-l-4 border-blue-500' : ''}`}>
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-2">
-                    {a.epinglee && <span className="text-blue-500">📌</span>}
+                    {a.epinglee && <AppIcon name="Pin" className="h-4 w-4 text-blue-500" />}
                     <h3 className="font-bold text-blue-900">{a.titre}</h3>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${typeStyle(a.type)}`}>
-                      {a.type === 'GLOBALE' ? '🌍 Global' : a.type === 'GROUPE' ? `👥 ${a.groupeNom}` : '⚙️ Système'}
+                      {a.type === 'GLOBALE' ? 'Global' : a.type === 'GROUPE' ? a.groupeNom : 'Système'}
                     </span>
                   </div>
                   {peutPublier && (
@@ -172,7 +179,7 @@ export default function Annonces() {
                       {isAdmin && (
                         <button onClick={() => handleEpingler(a.id)}
                           className="text-xs text-blue-600 hover:underline">
-                          {a.epinglee ? 'Désépingler' : '📌 Épingler'}
+                          {a.epinglee ? 'Désépingler' : 'Épingler'}
                         </button>
                       )}
                       <button onClick={() => handleSupprimer(a.id)}

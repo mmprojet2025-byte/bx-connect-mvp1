@@ -6,6 +6,7 @@ import api from '../../api/axios';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import ImageUpload from '../../components/ImageUpload';
+import AppIcon from '../../components/ui/AppIcons';
 
 export default function Profil() {
   const navigate = useNavigate();
@@ -153,9 +154,10 @@ export default function Profil() {
                   </div>
                   <button
                     onClick={() => setEditMode(true)}
-                    className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
+                    className="inline-flex items-center gap-2 bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
                   >
-                    ✏️ {t('profile.edit_btn')}
+                    <AppIcon name="Edit" className="h-4 w-4" />
+                    {t('profile.edit_btn')}
                   </button>
                 </>
               ) : (
@@ -183,14 +185,15 @@ export default function Profil() {
                       onChange={(e) => setForm({ ...form, languePreference: e.target.value })}
                       className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                     >
-                      <option value="FR">🇫🇷 {t('common.language_fr')}</option>
-                      <option value="NL">🇧🇪 {t('common.language_nl')}</option>
-                      <option value="EN">🇬🇧 {t('common.language_en')}</option>
+                      <option value="FR">{t('common.language_fr')}</option>
+                      <option value="NL">{t('common.language_nl')}</option>
+                      <option value="EN">{t('common.language_en')}</option>
                     </select>
                   </div>
                   <div className="flex gap-3">
-                    <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-2 rounded-xl transition">
-                      💾 {t('profile.save_btn')}
+                    <button type="submit" className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-2 rounded-xl transition">
+                      <AppIcon name="Save" className="h-4 w-4" />
+                      {t('profile.save_btn')}
                     </button>
                     <button type="button" onClick={() => setEditMode(false)} className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-4 py-2 rounded-xl transition">
                       {t('profile.cancel_btn')}
@@ -205,7 +208,9 @@ export default function Profil() {
           {/* Sécurité — Changer mot de passe */}
           <aside className="bg-white rounded-2xl shadow p-6 mb-6 h-fit">
           <div className="flex items-start gap-3 mb-4">
-            <div className="h-11 w-11 rounded-2xl bg-orange-100 text-orange-700 flex items-center justify-center font-black">🔒</div>
+            <div className="h-11 w-11 rounded-2xl bg-orange-100 text-orange-700 flex items-center justify-center">
+              <AppIcon name="Lock" className="h-5 w-5" />
+            </div>
             <div>
               <h3 className="text-lg font-bold text-blue-900">{t('profile.security')}</h3>
               <p className="text-xs text-gray-500 mt-1">{profil?.email}</p>
@@ -254,9 +259,10 @@ export default function Profil() {
         {/* Déconnexion */}
         <button
           onClick={handleLogout}
-          className="bg-red-600 hover:bg-red-500 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition"
+          className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition"
         >
-          🚪 {t('nav.logout')}
+          <AppIcon name="LogOut" className="h-4 w-4" />
+          {t('nav.logout')}
         </button>
       </main>
 

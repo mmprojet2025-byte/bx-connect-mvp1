@@ -3,6 +3,7 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
 import { userFriendlyError } from '../../utils/userFriendlyError';
+import AppIcon from '../../components/ui/AppIcons';
 
 const TYPES = ['ANIMATION', 'LOGISTIQUE', 'COMMUNICATION', 'FORMATION', 'AUTRE'];
 
@@ -48,7 +49,7 @@ export default function Prestations() {
         dureeHeures: parseFloat(form.dureeHeures),
         groupeId: parseInt(form.groupeId),
       });
-      setMessage('✅ Prestation encodée avec succès !');
+      setMessage('Prestation encodée avec succès !');
       setShowForm(false);
       setForm({ titre: '', type: 'ANIMATION', datePrestation: '', dureeHeures: '', description: '', groupeId: mesGroupes[0]?.id || '' });
       fetchPrestations();
@@ -77,7 +78,10 @@ export default function Prestations() {
 
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-blue-900">🤝 Mes prestations bénévoles</h1>
+            <h1 className="flex items-center gap-2 text-2xl font-bold text-blue-900">
+              <AppIcon name="Handshake" className="h-6 w-6" />
+              Mes prestations bénévoles
+            </h1>
             <p className="text-gray-500 text-sm mt-1">
               Total validé : <strong className="text-green-700">{totalHeures.toFixed(1)}h</strong>
             </p>
@@ -146,7 +150,7 @@ export default function Prestations() {
           <p className="text-gray-400 text-center py-10">Chargement...</p>
         ) : prestations.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-2xl shadow">
-            <div className="text-4xl mb-2">🤝</div>
+            <AppIcon name="Handshake" className="mx-auto mb-3 h-10 w-10 text-blue-300" />
             <p className="text-gray-400 text-sm">Aucune prestation encodée pour le moment.</p>
           </div>
         ) : (
@@ -158,11 +162,15 @@ export default function Prestations() {
                     <h3 className="font-semibold text-blue-900">{p.titre}</h3>
                     <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{p.type}</span>
                   </div>
-                  <p className="text-xs text-gray-400">
-                    📅 {p.datePrestation} · ⏱️ {p.dureeHeures}h · 👥 {p.groupeNom}
+                  <p className="flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                    <span className="inline-flex items-center gap-1"><AppIcon name="Calendar" className="h-3.5 w-3.5" />{p.datePrestation}</span>
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1"><AppIcon name="Clock" className="h-3.5 w-3.5" />{p.dureeHeures}h</span>
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1"><AppIcon name="Users" className="h-3.5 w-3.5" />{p.groupeNom}</span>
                   </p>
                   {p.commentaire && (
-                    <p className="text-xs text-gray-500 mt-1 italic">💬 {p.commentaire}</p>
+                    <p className="mt-1 inline-flex items-center gap-1 text-xs text-gray-500 italic"><AppIcon name="MessageCircle" className="h-3.5 w-3.5" />{p.commentaire}</p>
                   )}
                 </div>
                 <span className={`text-xs px-3 py-1 rounded-full font-semibold ml-4 ${statutStyle(p.statut)}`}>

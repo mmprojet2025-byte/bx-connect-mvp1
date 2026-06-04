@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
+import AppIcon from '../../components/ui/AppIcons';
 
 export default function PaiementCancel() {
   return (
@@ -11,7 +12,7 @@ export default function PaiementCancel() {
         <div className="bg-white rounded-2xl shadow p-8 max-w-md w-full text-center">
 
           <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-4xl">❌</span>
+            <AppIcon name="XCircle" className="h-10 w-10 text-orange-600" />
           </div>
 
           <h1 className="text-2xl font-bold text-orange-600 mb-2">Paiement annulé</h1>
@@ -23,15 +24,17 @@ export default function PaiementCancel() {
           <div className="flex flex-col gap-3">
             <Link
               to="/activites"
-              className="bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-xl transition text-sm"
+              className="inline-flex items-center justify-center gap-2 bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-xl transition text-sm"
             >
-              🎯 Voir les activités
+              <AppIcon name="Folder" className="h-4 w-4" />
+              Voir les activités
             </Link>
             <Link
               to="/projets"
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl transition text-sm"
+              className="inline-flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl transition text-sm"
             >
-              🚀 Voir les projets
+              <AppIcon name="Rocket" className="h-4 w-4" />
+              Voir les projets
             </Link>
             <Link
               to="/dashboard"

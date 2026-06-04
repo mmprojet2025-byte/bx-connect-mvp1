@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import api from '../../api/axios'
 import SuperAdminLayout from '../../layouts/SuperAdminLayout'
+import AppIcon from '../../components/ui/AppIcons'
 
 export default function SuperAdminDashboard() {
   const { t, i18n } = useTranslation()
@@ -29,9 +30,9 @@ export default function SuperAdminDashboard() {
       ) : dashboard && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <StatCard label={t('superAdmin.activeAdmins')} value={dashboard.adminsActifs} color="#2563eb" />
-            <StatCard label={t('superAdmin.inactiveAdmins')} value={dashboard.adminsInactifs} color="#d97706" />
-            <StatCard label={t('superAdmin.criticalActions')} value={dashboard.totalActionsCritiques} color="#7c3aed" />
+            <StatCard label={t('superAdmin.activeAdmins')} value={dashboard.adminsActifs} color="#2563eb" icon="Shield" />
+            <StatCard label={t('superAdmin.inactiveAdmins')} value={dashboard.adminsInactifs} color="#d97706" icon="Clock" />
+            <StatCard label={t('superAdmin.criticalActions')} value={dashboard.totalActionsCritiques} color="#7c3aed" icon="BarChart" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -58,10 +59,15 @@ export default function SuperAdminDashboard() {
   )
 }
 
-function StatCard({ label, value, color }) {
+function StatCard({ label, value, color, icon }) {
   return (
     <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5" style={{ borderLeft: `4px solid ${color}` }}>
-      <div className="text-3xl font-bold" style={{ color }}>{value}</div>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="text-3xl font-bold" style={{ color }}>{value}</div>
+        <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-50" style={{ color }}>
+          <AppIcon name={icon} className="h-5 w-5" />
+        </span>
+      </div>
       <div className="text-xs text-gray-500 mt-1">{label}</div>
     </div>
   )

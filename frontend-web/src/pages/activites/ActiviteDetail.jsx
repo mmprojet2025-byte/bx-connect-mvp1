@@ -8,6 +8,7 @@ import api from '../../api/axios';
 import { userFriendlyError } from '../../utils/userFriendlyError';
 import StatusBadge from '../../components/StatusBadge';
 import ActivityCover from '../../components/ActivityCover';
+import AppIcon from '../../components/ui/AppIcons';
 
 export default function ActiviteDetail() {
   const { id } = useParams();
@@ -65,7 +66,7 @@ export default function ActiviteDetail() {
       <Navbar />
       <main className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-5xl mb-4">😕</div>
+          <AppIcon name="AlertTriangle" className="mx-auto mb-4 h-12 w-12 text-orange-300" />
           <p className="text-gray-500">{error}</p>
           <button onClick={() => navigate('/activites')} className="mt-4 text-blue-700 hover:underline text-sm">
             {t('activities.back_to_activities')}

@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
+import AppIcon from '../../components/ui/AppIcons';
 
 export default function GestionPrestations() {
   const { isAdmin } = useAuth();
@@ -57,7 +58,7 @@ export default function GestionPrestations() {
   const handleValider = async (id) => {
     try {
       await api.patch(`/prestations/${id}/valider`, { commentaire: 'Validée par le référent' });
-      setMessage('✅ Prestation validée !');
+      setMessage('Prestation validée !');
       if (isAdmin) fetchToutesPrestations();
       else if (groupeSelectionne) fetchPrestationsGroupe(groupeSelectionne);
       setTimeout(() => setMessage(''), 3000);
@@ -68,7 +69,7 @@ export default function GestionPrestations() {
     const commentaire = prompt('Motif du refus :') || 'Non précisé';
     try {
       await api.patch(`/prestations/${id}/refuser`, { commentaire });
-      setMessage('✅ Prestation refusée.');
+      setMessage('Prestation refusée.');
       if (isAdmin) fetchToutesPrestations();
       else if (groupeSelectionne) fetchPrestationsGroupe(groupeSelectionne);
       setTimeout(() => setMessage(''), 3000);
@@ -93,7 +94,10 @@ export default function GestionPrestations() {
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-10">
 
         <h1 className="text-2xl font-bold text-blue-900 mb-6">
-          🤝 {isAdmin ? 'Toutes les prestations' : 'Validation des prestations'}
+          <span className="inline-flex items-center gap-2">
+            <AppIcon name="Handshake" className="h-6 w-6" />
+            {isAdmin ? 'Toutes les prestations' : 'Validation des prestations'}
+          </span>
         </h1>
 
         {message && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>}
@@ -125,7 +129,7 @@ export default function GestionPrestations() {
           <p className="text-gray-400 text-center py-10">Chargement...</p>
         ) : prestationsFiltrees.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-2xl shadow">
-            <div className="text-4xl mb-2">🤝</div>
+            <AppIcon name="Handshake" className="mx-auto mb-3 h-10 w-10 text-blue-300" />
             <p className="text-gray-400 text-sm">Aucune prestation {filtre !== 'TOUS' ? `avec le statut "${filtre}"` : ''}.</p>
           </div>
         ) : (
@@ -135,10 +139,16 @@ export default function GestionPrestations() {
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <h3 className="font-semibold text-blue-900">{p.titre}</h3>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      👤 {p.membrePrenom} {p.membreNom} · 📅 {p.datePrestation} · ⏱️ {p.dureeHeures}h · 🏷️ {p.type}
+                    <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                      <span className="inline-flex items-center gap-1"><AppIcon name="User" className="h-3.5 w-3.5" />{p.membrePrenom} {p.membreNom}</span>
+                      <span>·</span>
+                      <span className="inline-flex items-center gap-1"><AppIcon name="Calendar" className="h-3.5 w-3.5" />{p.datePrestation}</span>
+                      <span>·</span>
+                      <span className="inline-flex items-center gap-1"><AppIcon name="Clock" className="h-3.5 w-3.5" />{p.dureeHeures}h</span>
+                      <span>·</span>
+                      <span>{p.type}</span>
                     </p>
-                    {p.groupeNom && <p className="text-xs text-gray-400">👥 {p.groupeNom}</p>}
+                    {p.groupeNom && <p className="inline-flex items-center gap-1 text-xs text-gray-400"><AppIcon name="Users" className="h-3.5 w-3.5" />{p.groupeNom}</p>}
                   </div>
                   <span className={`text-xs px-3 py-1 rounded-full font-semibold ${statutStyle(p.statut)}`}>
                     {p.statut}
@@ -147,18 +157,20 @@ export default function GestionPrestations() {
 
                 {p.description && <p className="text-sm text-gray-600 mb-3">{p.description}</p>}
                 {p.commentaire && (
-                  <p className="text-xs text-gray-500 italic mb-3">💬 {p.commentaire}</p>
+                  <p className="mb-3 inline-flex items-center gap-1 text-xs text-gray-500 italic"><AppIcon name="MessageCircle" className="h-3.5 w-3.5" />{p.commentaire}</p>
                 )}
 
                 {p.statut === 'EN_ATTENTE' && (
                   <div className="flex gap-3">
                     <button onClick={() => handleValider(p.id)}
-                      className="flex-1 bg-green-600 hover:bg-green-500 text-white text-sm font-semibold py-2 rounded-xl transition">
-                      ✅ Valider
+                      className="inline-flex flex-1 items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white text-sm font-semibold py-2 rounded-xl transition">
+                      <AppIcon name="CheckCircle" className="h-4 w-4" />
+                      Valider
                     </button>
                     <button onClick={() => handleRefuser(p.id)}
-                      className="flex-1 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold py-2 rounded-xl transition">
-                      ❌ Refuser
+                      className="inline-flex flex-1 items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold py-2 rounded-xl transition">
+                      <AppIcon name="XCircle" className="h-4 w-4" />
+                      Refuser
                     </button>
                   </div>
                 )}

@@ -8,6 +8,7 @@ import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
 import PageHeader from '../../components/ui/PageHeader'
 import QuickActionCard from '../../components/ui/QuickActionCard'
+import AppIcon from '../../components/ui/AppIcons'
 
 export default function ReferentDashboard() {
   const [stats, setStats] = useState({ groupes: 0, membres: 0, demandes: 0, activites: 0 })
@@ -86,12 +87,14 @@ export default function ReferentDashboard() {
                 value={stats.groupes}
                 to="/referent/groupes"
                 actionLabel={t('referent.viewMyGroups')}
+                icon="Users"
               />
               <StatCard
                 label={t('ux.referentDashboard.members')}
                 value={stats.membres}
                 to="/referent/membres"
                 actionLabel={t('referent.membersOfGroups')}
+                icon="Users"
               />
               <StatCard
                 label={t('ux.referentDashboard.pendingRequests')}
@@ -99,12 +102,14 @@ export default function ReferentDashboard() {
                 to="/referent/demandes"
                 actionLabel={t('referent.viewRequests')}
                 highlight={stats.demandes > 0}
+                icon="Clock"
               />
               <StatCard
                 label={t('ux.referentDashboard.activities')}
                 value={stats.activites}
                 to="/referent/activites"
                 actionLabel={t('referent.activitiesTitle')}
+                icon="Calendar"
               />
             </section>
 
@@ -142,9 +147,9 @@ export default function ReferentDashboard() {
               <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
                 <h2 className="font-bold text-blue-900 mb-4">{t('ux.referentDashboard.quickActions')}</h2>
                 <div className="grid gap-3">
-                  <QuickActionCard to="/referent/demandes" title={t('referent.processRequests')} tone="amber" />
-                  <QuickActionCard to="/referent/activites" title={t('referent.createActivity')} tone="teal" />
-                  <QuickActionCard to="/referent/messagerie" title={t('ux.referentDashboard.openMessaging')} tone="blue" />
+                  <QuickActionCard to="/referent/demandes" title={t('referent.processRequests')} tone="amber" icon="Clock" />
+                  <QuickActionCard to="/referent/activites" title={t('referent.createActivity')} tone="teal" icon="PlusCircle" />
+                  <QuickActionCard to="/referent/messagerie" title={t('ux.referentDashboard.openMessaging')} tone="blue" icon="MessageCircle" />
                 </div>
               </div>
             </section>
@@ -203,13 +208,18 @@ export default function ReferentDashboard() {
   )
 }
 
-function StatCard({ label, value, to, actionLabel, highlight = false }) {
+function StatCard({ label, value, to, actionLabel, highlight = false, icon = 'BarChart' }) {
   return (
     <Link
       to={to}
       className={`group rounded-3xl border shadow-sm p-5 transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-500 ${highlight ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-100'}`}
     >
-      <p className={`text-3xl font-bold ${highlight ? 'text-amber-800' : 'text-teal-700'}`}>{value}</p>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <p className={`text-3xl font-bold ${highlight ? 'text-amber-800' : 'text-teal-700'}`}>{value}</p>
+        <span className={`inline-flex h-9 w-9 items-center justify-center rounded-2xl ${highlight ? 'bg-white text-amber-800' : 'bg-teal-50 text-teal-700'}`}>
+          <AppIcon name={icon} className="h-5 w-5" />
+        </span>
+      </div>
       <p className="text-sm text-gray-500 mt-1">{label}</p>
       <span className={`inline-flex mt-4 text-xs font-semibold ${highlight ? 'text-amber-800' : 'text-teal-700'} group-hover:underline`}>
         {actionLabel}

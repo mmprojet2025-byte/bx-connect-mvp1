@@ -6,6 +6,7 @@ import Footer from '../../components/Footer';
 import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFriendlyError';
 import ActivityCover from '../../components/ActivityCover';
 import StatusBadge from '../../components/StatusBadge';
+import AppIcon from '../../components/ui/AppIcons';
 
 const STATUTS = ['BROUILLON', 'PUBLIEE', 'ANNULEE', 'TERMINEE'];
 const emptyForm = {
@@ -258,7 +259,7 @@ export default function AdminActivites() {
                         </p>
                       </div>
                       <span className="shrink-0 text-xs text-gray-500">
-                        {a.gratuite ? '🆓' : `💶 ${a.prix}€`}
+                        {a.gratuite ? t('activities.free') : `${a.prix}€`}
                       </span>
                     </div>
 
@@ -331,8 +332,8 @@ export default function AdminActivites() {
                             <div>
                               <span className="font-medium text-blue-900 text-sm">{a.titre}</span>
                               {a.gratuite
-                                ? <span className="ml-2 text-xs text-green-600">🆓</span>
-                                : <span className="ml-2 text-xs text-orange-500">💶 {a.prix}€</span>
+                                ? <span className="ml-2 inline-flex items-center gap-1 text-xs text-green-600"><AppIcon name="CheckCircle" className="h-3.5 w-3.5" />{t('activities.free')}</span>
+                                : <span className="ml-2 inline-flex items-center gap-1 text-xs text-orange-500"><AppIcon name="Wallet" className="h-3.5 w-3.5" />{a.prix}€</span>
                               }
                             </div>
                           </div>

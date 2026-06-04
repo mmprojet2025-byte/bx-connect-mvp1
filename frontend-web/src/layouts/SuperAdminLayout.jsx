@@ -2,12 +2,13 @@ import { NavLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import AppIcon from '../components/ui/AppIcons'
 
 const links = [
-  { to: '/super-admin/dashboard', labelKey: 'nav.dashboard', icon: '📊' },
-  { to: '/super-admin/admins', labelKey: 'nav.admins', icon: '🛡️' },
-  { to: '/super-admin/logs', labelKey: 'nav.logs', icon: '🧾' },
-  { to: '/profil', labelKey: 'nav.profile', icon: '👤' },
+  { to: '/super-admin/dashboard', labelKey: 'nav.dashboard', icon: 'Dashboard' },
+  { to: '/super-admin/admins', labelKey: 'nav.admins', icon: 'Shield' },
+  { to: '/super-admin/logs', labelKey: 'nav.logs', icon: 'Folder' },
+  { to: '/profil', labelKey: 'nav.profile', icon: 'User' },
 ]
 
 export default function SuperAdminLayout({ children, title, subtitle }) {
@@ -34,7 +35,7 @@ export default function SuperAdminLayout({ children, title, subtitle }) {
                     }`
                   }
                 >
-                  <span>{link.icon}</span>
+                  <AppIcon name={link.icon} className="h-4 w-4" />
                   <span>{t(link.labelKey)}</span>
                 </NavLink>
               ))}

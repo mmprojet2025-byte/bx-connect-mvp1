@@ -5,6 +5,7 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
 import { userFriendlyError } from '../../utils/userFriendlyError';
+import AppIcon from '../../components/ui/AppIcons';
 
 export default function PaiementStripe() {
   const { isAuthenticated } = useAuth();
@@ -66,17 +67,18 @@ export default function PaiementStripe() {
 
         {/* En-tête */}
         <div className="text-center mb-8">
-          <div className="text-5xl mb-3">💳</div>
+          <AppIcon name="CreditCard" className="mx-auto mb-3 h-12 w-12 text-blue-700" />
           <h1 className="text-2xl font-bold text-blue-900">Soutenir via Stripe</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            {projetId ? '🚀 Projet' : '🎯 Activité'} : <strong>{decodeURIComponent(titre)}</strong>
+          <p className="mt-1 inline-flex items-center justify-center gap-1.5 text-gray-500 text-sm">
+            <AppIcon name={projetId ? 'Rocket' : 'Folder'} className="h-4 w-4" />
+            {projetId ? 'Projet' : 'Activité'} : <strong>{decodeURIComponent(titre)}</strong>
           </p>
         </div>
 
         {/* Erreur */}
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">
-            ❌ {error}
+            <span className="inline-flex items-center gap-2"><AppIcon name="XCircle" className="h-4 w-4" />{error}</span>
           </div>
         )}
 
@@ -142,7 +144,7 @@ export default function PaiementStripe() {
               </div>
               <div className="flex justify-between text-sm mt-1">
                 <span className="text-gray-600">Fournisseur</span>
-                <span className="font-semibold text-gray-700">💳 Stripe (sécurisé)</span>
+                <span className="inline-flex items-center gap-1.5 font-semibold text-gray-700"><AppIcon name="CreditCard" className="h-4 w-4" />Stripe (sécurisé)</span>
               </div>
               <div className="flex justify-between text-sm mt-1">
                 <span className="text-gray-600">Cible</span>
@@ -158,12 +160,16 @@ export default function PaiementStripe() {
               disabled={loading || !montant || parseFloat(montant) < 1}
               className="w-full bg-blue-700 hover:bg-blue-600 disabled:bg-gray-300 text-white font-bold py-3.5 rounded-xl transition text-base"
             >
-              {loading ? '⏳ Redirection...' : `💳 Payer ${montant} € avec Stripe`}
+              {loading ? (
+                <span className="inline-flex items-center justify-center gap-2"><AppIcon name="Clock" className="h-4 w-4" />Redirection...</span>
+              ) : (
+                <span className="inline-flex items-center justify-center gap-2"><AppIcon name="CreditCard" className="h-4 w-4" />Payer {montant} € avec Stripe</span>
+              )}
             </button>
 
             {/* Sécurité */}
             <p className="text-center text-xs text-gray-400">
-              🔒 Paiement sécurisé par Stripe — Vos données bancaires ne sont jamais stockées
+              <span className="inline-flex items-center justify-center gap-1.5"><AppIcon name="Lock" className="h-3.5 w-3.5" />Paiement sécurisé par Stripe — Vos données bancaires ne sont jamais stockées</span>
             </p>
 
           </form>

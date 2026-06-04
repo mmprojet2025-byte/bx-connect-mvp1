@@ -5,6 +5,7 @@ import Footer from '../../components/Footer';
 import api from '../../api/axios';
 import StatusBadge from '../../components/StatusBadge';
 import GroupAvatar from '../../components/GroupAvatar';
+import AppIcon from '../../components/ui/AppIcons';
 
 const emptyGroupeForm = {
   nom: '',
@@ -227,7 +228,7 @@ export default function AdminGroupes() {
           <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
         ) : groupes.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-2xl shadow">
-            <div className="text-4xl mb-2">👥</div>
+            <AppIcon name="Users" className="mx-auto mb-3 h-10 w-10 text-blue-300" />
             <p className="text-gray-400 text-sm">
               {onglet === 'en-attente' ? t('admin.noPendingGroups') : t('admin.noGroups')}
             </p>

@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useTranslation } from 'react-i18next'
 import api from '../../api/axios'
 import { getDefaultRouteForRole } from '../../routes/roleRoutes'
+import AppIcon from '../../components/ui/AppIcons'
 
 export default function Login() {
   const { login } = useAuth()
@@ -42,8 +43,9 @@ export default function Login() {
 
         {/* Erreur */}
         {erreur && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-5">
-            ❌ {erreur}
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-5">
+            <AppIcon name="XCircle" className="h-4 w-4 shrink-0" />
+            <span>{erreur}</span>
           </div>
         )}
 

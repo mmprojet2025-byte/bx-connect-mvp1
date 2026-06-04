@@ -4,6 +4,7 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
 import { userFriendlyError } from '../../utils/userFriendlyError';
+import AppIcon from '../../components/ui/AppIcons';
 
 export default function PartenaireSpace() {
   const { user } = useAuth();
@@ -98,7 +99,7 @@ export default function PartenaireSpace() {
         <div className="bg-orange-600 text-white rounded-2xl p-6 mb-6 flex items-center justify-between">
           <div>
             <h1 className="flex items-center gap-3 text-2xl font-bold">
-              <Icon name="Handshake" className="h-7 w-7" />
+              <AppIcon name="Handshake" className="h-7 w-7" />
               Espace Partenaire
             </h1>
             <p className="text-orange-200 mt-1 text-sm">
@@ -129,7 +130,7 @@ export default function PartenaireSpace() {
                   : 'bg-white text-gray-600 hover:bg-orange-50 border border-gray-200'
               }`}
             >
-              <Icon name={o.icon} className="h-4 w-4" />
+              <AppIcon name={o.icon} className="h-4 w-4" />
               {o.label}
             </button>
           ))}
@@ -147,12 +148,12 @@ export default function PartenaireSpace() {
 
             <div className="bg-white rounded-2xl shadow p-6">
               <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900 mb-4">
-                <Icon name="Wallet" className="h-5 w-5 text-orange-600" />
+                <AppIcon name="Wallet" className="h-5 w-5 text-orange-600" />
                 Mes derniers soutiens
               </h2>
               {mesSoutiens.length === 0 ? (
                 <div className="text-center py-8 text-gray-400">
-                  <Icon name="Wallet" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
+                  <AppIcon name="Wallet" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
                   <p className="text-sm">Aucun soutien soumis pour le moment.</p>
                   <button
                     onClick={() => setShowSoutienForm(true)}
@@ -193,12 +194,12 @@ export default function PartenaireSpace() {
         {onglet === 'projets' && (
           <div>
             <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900 mb-4">
-              <Icon name="Rocket" className="h-5 w-5 text-orange-600" />
+              <AppIcon name="Rocket" className="h-5 w-5 text-orange-600" />
               Projets ouverts au soutien
             </h2>
             {projetsOuverts.length === 0 ? (
               <div className="text-center py-12 text-gray-400 bg-white rounded-2xl shadow">
-                <Icon name="Rocket" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
+                <AppIcon name="Rocket" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
                 <p>Aucun projet ouvert au soutien pour le moment.</p>
               </div>
             ) : (
@@ -221,7 +222,7 @@ export default function PartenaireSpace() {
                       }}
                       className="inline-flex w-full items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white text-sm font-semibold py-2 rounded-xl transition"
                     >
-                      <Icon name="Wallet" className="h-4 w-4" />
+                      <AppIcon name="Wallet" className="h-4 w-4" />
                       Soutenir ce projet
                     </button>
                   </div>
@@ -235,12 +236,12 @@ export default function PartenaireSpace() {
         {onglet === 'activites' && (
           <div>
             <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900 mb-4">
-              <Icon name="Folder" className="h-5 w-5 text-orange-600" />
+              <AppIcon name="Folder" className="h-5 w-5 text-orange-600" />
               Activités ouvertes au soutien
             </h2>
             {activitesOuvertes.length === 0 ? (
               <div className="text-center py-12 text-gray-400 bg-white rounded-2xl shadow">
-                <Icon name="Folder" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
+                <AppIcon name="Folder" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
                 <p>Aucune activité ouverte au soutien pour le moment.</p>
               </div>
             ) : (
@@ -261,7 +262,7 @@ export default function PartenaireSpace() {
                       }}
                       className="inline-flex w-full items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white text-sm font-semibold py-2 rounded-xl transition"
                     >
-                      <Icon name="Wallet" className="h-4 w-4" />
+                      <AppIcon name="Wallet" className="h-4 w-4" />
                       Soutenir cette activité
                     </button>
                   </div>
@@ -275,12 +276,12 @@ export default function PartenaireSpace() {
         {onglet === 'soutiens' && (
           <div>
             <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900 mb-4">
-              <Icon name="Wallet" className="h-5 w-5 text-orange-600" />
+              <AppIcon name="Wallet" className="h-5 w-5 text-orange-600" />
               Mes déclarations de soutien
             </h2>
             {mesSoutiens.length === 0 ? (
               <div className="text-center py-12 text-gray-400 bg-white rounded-2xl shadow">
-                <Icon name="Wallet" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
+                <AppIcon name="Wallet" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
                 <p>Aucune déclaration soumise.</p>
               </div>
             ) : (
@@ -330,11 +331,11 @@ export default function PartenaireSpace() {
             <div className="bg-white rounded-2xl p-6 w-full max-w-md">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900">
-                  <Icon name="Wallet" className="h-5 w-5 text-orange-600" />
+                  <AppIcon name="Wallet" className="h-5 w-5 text-orange-600" />
                   Déclarer un soutien
                 </h2>
                 <button onClick={() => setShowSoutienForm(false)} className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600" aria-label="Fermer">
-                  <Icon name="XCircle" className="h-5 w-5" />
+                  <AppIcon name="XCircle" className="h-5 w-5" />
                 </button>
               </div>
 
@@ -355,7 +356,7 @@ export default function PartenaireSpace() {
                         }`}
                       >
                         <span className="inline-flex items-center justify-center gap-2">
-                          <Icon name={type === 'projet' ? 'Rocket' : 'Folder'} className="h-4 w-4" />
+                          <AppIcon name={type === 'projet' ? 'Rocket' : 'Folder'} className="h-4 w-4" />
                           {type === 'projet' ? 'Projet' : 'Activité'}
                         </span>
                       </button>
@@ -449,7 +450,7 @@ function StatCard({ label, value, color, icon }) {
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="text-2xl font-bold" style={{ color }}>{value}</div>
         <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-orange-50" style={{ color }}>
-          <Icon name={icon} className="h-5 w-5" />
+          <AppIcon name={icon} className="h-5 w-5" />
         </span>
       </div>
       <div className="text-xs text-gray-500">{label}</div>
@@ -460,93 +461,8 @@ function StatCard({ label, value, color, icon }) {
 function InlineIconLabel({ icon, children }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <Icon name={icon} className="h-3.5 w-3.5 shrink-0 text-orange-500" />
+      <AppIcon name={icon} className="h-3.5 w-3.5 shrink-0 text-orange-500" />
       <span>{children}</span>
     </span>
-  );
-}
-
-function Icon({ name, className = 'h-5 w-5' }) {
-  const icons = {
-    Handshake: (
-      <>
-        <path d="M7 11l2.2-2.2a2.7 2.7 0 013.8 0l.5.5" />
-        <path d="M12.5 8.5l1.1-1.1a2.7 2.7 0 013.8 0L21 11" />
-        <path d="M3 11l4 4 2-2" />
-        <path d="M21 11l-5.8 5.8a2 2 0 01-2.8 0L9 13.4" />
-        <path d="M8 16l1.5 1.5" />
-        <path d="M11 18l1 1" />
-      </>
-    ),
-    Wallet: (
-      <>
-        <path d="M4 7.5A2.5 2.5 0 016.5 5H18a2 2 0 012 2v10a2 2 0 01-2 2H6.5A2.5 2.5 0 014 16.5v-9z" />
-        <path d="M4 8h15" />
-        <path d="M16 12.5h4v3h-4a1.5 1.5 0 010-3z" />
-      </>
-    ),
-    BarChart: (
-      <>
-        <path d="M4 20h16" />
-        <path d="M7 16V9" />
-        <path d="M12 16V5" />
-        <path d="M17 16v-4" />
-      </>
-    ),
-    Rocket: (
-      <>
-        <path d="M5 15c2-6 6-10 14-10-1 8-4 12-10 14l-4-4z" />
-        <path d="M14 6l4 4" />
-        <path d="M6 18l-3 3 1-5" />
-        <path d="M9 15l-5 1" />
-      </>
-    ),
-    Folder: (
-      <>
-        <path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
-      </>
-    ),
-    Calendar: (
-      <>
-        <path d="M7 3v4" />
-        <path d="M17 3v4" />
-        <path d="M4 8h16" />
-        <path d="M5 5h14a1 1 0 011 1v14H4V6a1 1 0 011-1z" />
-      </>
-    ),
-    CheckCircle: (
-      <>
-        <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        <path d="M8.5 12.5l2.2 2.2 4.8-5.2" />
-      </>
-    ),
-    Clock: (
-      <>
-        <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        <path d="M12 7v5l3 2" />
-      </>
-    ),
-    XCircle: (
-      <>
-        <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        <path d="M9 9l6 6" />
-        <path d="M15 9l-6 6" />
-      </>
-    ),
-  };
-
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className={className}
-    >
-      {icons[name] || icons.Folder}
-    </svg>
   );
 }

@@ -120,13 +120,14 @@ export default function Dashboard() {
 function QuickActions({ messagerieDisponible, t }) {
   return (
     <div className="grid sm:grid-cols-3 lg:grid-cols-1 gap-3">
-      <QuickActionCard to="/activites" title={t('nav.activities')} description={t('memberDashboard.nextActions.viewActivities')} tone="blue" />
-      <QuickActionCard to="/projets" title={t('nav.projects')} description={t('memberDashboard.nextActions.discoverProjects')} tone="violet" />
+      <QuickActionCard to="/activites" title={t('nav.activities')} description={t('memberDashboard.nextActions.viewActivities')} tone="blue" icon="Calendar" />
+      <QuickActionCard to="/projets" title={t('nav.projects')} description={t('memberDashboard.nextActions.discoverProjects')} tone="violet" icon="Rocket" />
       <QuickActionCard
         to={messagerieDisponible ? '/messagerie' : '/groupes'}
         title={t('nav.groups')}
         description={messagerieDisponible ? t('memberDashboard.nextActions.openGroupMessaging') : t('memberDashboard.nextActions.viewMyGroup')}
         tone="teal"
+        icon={messagerieDisponible ? 'MessageCircle' : 'Users'}
       />
     </div>
   )
