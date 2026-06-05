@@ -187,13 +187,21 @@ function PrivateTabs() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#1E3A8A',
-          borderTopColor: '#2d4f7c',
-          paddingBottom: 4,
-          height: 58,
+          backgroundColor: '#fff',
+          borderTopColor: '#e2e8f0',
+          borderTopWidth: 1,
+          paddingTop: 3,
+          paddingBottom: 2,
+          height: 54,
+          shadowColor: '#0f172a',
+          shadowOffset: { width: 0, height: -3 },
+          shadowOpacity: 0.06,
+          shadowRadius: 10,
+          elevation: 8,
         },
-        tabBarActiveTintColor: '#fff',
-        tabBarInactiveTintColor: '#93c5fd',
+        tabBarActiveTintColor: '#1E3A8A',
+        tabBarInactiveTintColor: '#94a3b8',
+        tabBarHideOnKeyboard: true,
         tabBarLabel: ({ color, children }) => (
           <Text
             numberOfLines={1}
@@ -201,11 +209,11 @@ function PrivateTabs() {
             minimumFontScale={0.72}
             style={{
               color,
-              fontSize: 10,
-              fontWeight: '700',
+              fontSize: 9,
+              fontWeight: '800',
               maxWidth: 74,
               textAlign: 'center',
-              marginTop: 1,
+              marginTop: 0,
             }}
           >
             {children}
@@ -231,14 +239,14 @@ function PrivateTabs() {
             },
             tabBarIcon: ({ color, focused }) => (
               <View style={{
-                width: 34,
-                height: 28,
-                borderRadius: 14,
+                width: 36,
+                height: 26,
+                borderRadius: 13,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: focused ? 'rgba(56, 189, 248, 0.24)' : 'transparent',
+                backgroundColor: focused ? '#E0F2FE' : 'transparent',
               }}>
-                <AppIcon name={tab.icon} size={21} color={color} />
+                <AppIcon name={tab.icon} size={focused ? 21 : 20} color={color} />
               </View>
             ),
           }}

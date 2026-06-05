@@ -20,6 +20,7 @@ export default function ProjectsScreen() {
   } = useAuth();
 
   const [projets, setProjets] = useState([]);
+  const [groupesCreateur, setGroupesCreateur] = useState([]);
   const [membreDashboard, setMembreDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -32,7 +33,8 @@ export default function ProjectsScreen() {
     description: '',
     objectifs: '',
     budgetDemande: '',
-    visibilite: 'GROUPE',
+    groupeId: '',
+    visibilite: isAdmin ? 'PUBLIC' : 'GROUPE',
   });
 
   useEffect(() => {
@@ -42,7 +44,6 @@ export default function ProjectsScreen() {
   const chargerProjets = async () => {
     setLoading(true);
     setError('');
-    setMessage('');
 
     if (isSuperAdmin) {
       setLoading(false);
@@ -51,28 +52,46 @@ export default function ProjectsScreen() {
 
     try {
       if (isAdmin) {
-        const res = await api.get('/projets/admin/tous');
-        setProjets(res.data);
+        const [projetsRes, groupesRes] = await Promise.all([
+          api.get('/projets/admin/tous'),
+          api.get('/admin/groupes'),
+        ]);
+        setProjets(projetsRes.data || []);
+        setGroupesCreateur(groupesRes.data || []);
         setMembreDashboard(null);
         return;
       }
 
       if (isPartenaire) {
         const res = await api.get('/partenaire/projets-ouverts');
-        setProjets(res.data);
+        setProjets(res.data || []);
+        setGroupesCreateur([]);
         setMembreDashboard(null);
         return;
       }
 
       if (isReferent) {
-        const res = await api.get('/projets/referent/mes-groupes');
-        setProjets(res.data);
+        const [projetsRes, groupesRes] = await Promise.all([
+          api.get('/projets/referent/mes-groupes'),
+          api.get('/referent/groupes'),
+        ]);
+        setProjets(projetsRes.data || []);
+        setGroupesCreateur(groupesRes.data || []);
         setMembreDashboard(null);
         return;
       }
 
-      const projetsRes = await api.get('/projets');
-      setProjets(projetsRes.data);
+      if (isMembre) {
+        const [projetsRes, mesProjetsRes] = await Promise.all([
+          api.get('/projets'),
+          api.get('/projets/mes-projets'),
+        ]);
+        setProjets(mergeProjects(projetsRes.data, mesProjetsRes.data));
+      } else {
+        const projetsRes = await api.get('/projets');
+        setProjets(projetsRes.data || []);
+      }
+      setGroupesCreateur([]);
 
       if (isMembre) {
         try {
@@ -103,11 +122,15 @@ export default function ProjectsScreen() {
 
   const handleProposer = async () => {
     if (!canProposeProject) {
-      setError(t('projects.needGroup'));
+      setError(isMembre ? t('projects.needGroup') : t('projects.creator_group_required'));
       return;
     }
     if (!form.titre.trim()) {
       setError(t('projects.error_title_required'));
+      return;
+    }
+    if ((isReferent || (isAdmin && form.visibilite === 'GROUPE')) && !form.groupeId) {
+      setError(t('projects.creator_group_required'));
       return;
     }
 
@@ -120,17 +143,23 @@ export default function ProjectsScreen() {
         description: form.description.trim(),
         objectifs: form.objectifs.trim(),
         budgetDemande: form.budgetDemande ? parseFloat(form.budgetDemande) : null,
+        groupeId: isMembre || !form.groupeId ? null : Number(form.groupeId),
         visibilite: form.visibilite,
       });
-      await api.patch(`/projets/${response.data.id}/soumettre`);
-      setMessage(t('projects.project_submitted_mobile'));
+      if (!isAdmin) {
+        await api.patch(`/projets/${response.data.id}/soumettre`);
+      }
+      setMessage(isAdmin
+        ? t('projects.project_created_admin')
+        : t('projects.project_submitted_mobile'));
       setShowForm(false);
       setForm({
         titre: '',
         description: '',
         objectifs: '',
         budgetDemande: '',
-        visibilite: 'GROUPE',
+        groupeId: '',
+        visibilite: isAdmin ? 'PUBLIC' : 'GROUPE',
       });
       await chargerProjets();
     } catch (err) {
@@ -143,7 +172,26 @@ export default function ProjectsScreen() {
   const groupeActif = membreDashboard?.groupe?.statutAdhesion === 'ACCEPTE'
     ? membreDashboard.groupe
     : null;
-  const canProposeProject = isMembre && !!groupeActif;
+  const canProposeProject = (isMembre && !!groupeActif)
+    || (isReferent && groupesCreateur.length > 0)
+    || isAdmin;
+  const visibilityOptions = isAdmin
+    ? ['GROUPE', 'COMMUNAUTE', 'PARTENAIRES', 'PUBLIC']
+    : ['GROUPE', 'COMMUNAUTE'];
+  const selectedGroup = groupesCreateur.find((groupe) => String(groupe.id) === String(form.groupeId));
+
+  const openProjectForm = () => {
+    setError('');
+    setMessage('');
+    setForm((current) => ({
+      ...current,
+      groupeId: isReferent && !current.groupeId && groupesCreateur.length > 0
+        ? String(groupesCreateur[0].id)
+        : current.groupeId,
+      visibilite: isAdmin ? (current.visibilite || 'PUBLIC') : 'GROUPE',
+    }));
+    setShowForm(true);
+  };
 
   const projetsFiltres = projets.filter((projet) => {
     const texte = `${projet.titre || ''} ${projet.description || ''} ${projet.groupeNom || ''}`;
@@ -169,13 +217,17 @@ export default function ProjectsScreen() {
           value={recherche}
           onChangeText={setRecherche}
         />
-        {isMembre && (
+        {(isMembre || isReferent || isAdmin) && (
           <TouchableOpacity
             style={[styles.btnNew, !canProposeProject && styles.btnNewDisabled]}
-            onPress={() => canProposeProject ? setShowForm(true) : setError(t('projects.needGroup'))}
+            onPress={() => canProposeProject
+              ? openProjectForm()
+              : setError(isMembre ? t('projects.needGroup') : t('projects.creator_group_required'))}
           >
             <AppIcon name="project" size={16} color="#fff" />
-            <Text style={styles.btnNewText}>{t('projects.propose')}</Text>
+            <Text style={styles.btnNewText}>
+              {isAdmin ? t('projects.create') : t('projects.propose')}
+            </Text>
           </TouchableOpacity>
         )}
       </View>
@@ -193,11 +245,13 @@ export default function ProjectsScreen() {
       )}
 
       {isReferent && (
-        <InfoBox text={t('projects.referent_mobile_info')} />
+        <InfoBox text={groupesCreateur.length > 0
+          ? t('projects.referent_can_create')
+          : t('projects.referent_no_group')} />
       )}
 
       {isAdmin && (
-        <InfoBox text={t('adminMobile.projectsReadOnly', { defaultValue: 'Vue mobile de suivi des projets. Les actions de gestion restent protégées.' })} />
+        <InfoBox text={t('projects.admin_can_create')} />
       )}
 
       {isPartenaire && (
@@ -248,7 +302,13 @@ export default function ProjectsScreen() {
         creating={creating}
         onClose={() => setShowForm(false)}
         onSubmit={handleProposer}
-        groupeNom={groupeActif?.nom}
+        groupeNom={groupeActif?.nom || selectedGroup?.nom}
+        groupes={groupesCreateur}
+        requireGroup={isReferent || (isAdmin && form.visibilite === 'GROUPE')}
+        allowNoGroup={isAdmin}
+        visibilityOptions={visibilityOptions}
+        submitLabel={isAdmin ? t('projects.create_project') : t('projects.submit_project')}
+        title={isAdmin ? t('projects.create_project') : t('projects.propose')}
         t={t}
       />
     </View>
@@ -305,6 +365,12 @@ function ProjectFormModal({
   onClose,
   onSubmit,
   groupeNom,
+  groupes,
+  requireGroup,
+  allowNoGroup,
+  visibilityOptions,
+  submitLabel,
+  title,
   t,
 }) {
   return (
@@ -313,7 +379,7 @@ function ProjectFormModal({
         <View style={styles.modalCard}>
           <View style={styles.modalHeader}>
             <View>
-              <Text style={styles.modalTitle}>{t('projects.propose')}</Text>
+              <Text style={styles.modalTitle}>{title}</Text>
               {groupeNom && <Text style={styles.modalSub}>{t('projects.group_label', { group: groupeNom })}</Text>}
             </View>
             <TouchableOpacity onPress={onClose}>
@@ -363,20 +429,42 @@ function ProjectFormModal({
               keyboardType="numeric"
             />
 
+            {groupes.length > 0 && (
+              <>
+                <Text style={styles.label}>
+                  {requireGroup ? t('projects.group_required') : t('projects.group_optional')}
+                </Text>
+                <View style={styles.choiceOptions}>
+                  {allowNoGroup && (
+                    <ChoiceOption
+                      selected={!form.groupeId}
+                      label={t('projects.no_group')}
+                      onPress={() => setForm({ ...form, groupeId: '' })}
+                    />
+                  )}
+                  {groupes.map((groupe) => (
+                    <ChoiceOption
+                      key={groupe.id}
+                      selected={String(form.groupeId) === String(groupe.id)}
+                      label={groupe.nom}
+                      onPress={() => setForm({ ...form, groupeId: String(groupe.id) })}
+                    />
+                  ))}
+                </View>
+              </>
+            )}
+
             <Text style={styles.label}>{t('projects.visibility')}</Text>
-            <View style={styles.visibilityOptions}>
-              {['GROUPE', 'COMMUNAUTE'].map((visibility) => {
+            <View style={styles.choiceOptions}>
+              {visibilityOptions.map((visibility) => {
                 const selected = form.visibilite === visibility;
                 return (
-                  <TouchableOpacity
+                  <ChoiceOption
                     key={visibility}
-                    style={[styles.visibilityOption, selected && styles.visibilityOptionSelected]}
+                    selected={selected}
+                    label={t(`projectVisibility.${visibility}`)}
                     onPress={() => setForm({ ...form, visibilite: visibility })}
-                  >
-                    <Text style={[styles.visibilityOptionText, selected && styles.visibilityOptionTextSelected]}>
-                      {t(`projectVisibility.${visibility}`)}
-                    </Text>
-                  </TouchableOpacity>
+                  />
                 );
               })}
             </View>
@@ -388,13 +476,29 @@ function ProjectFormModal({
             >
               {creating
                 ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={styles.btnCreateText}>{t('projects.submit_project')}</Text>
+                : <Text style={styles.btnCreateText}>{submitLabel}</Text>
               }
             </TouchableOpacity>
           </ScrollView>
         </View>
       </View>
     </Modal>
+  );
+}
+
+function ChoiceOption({ selected, label, onPress }) {
+  return (
+    <TouchableOpacity
+      style={[styles.choiceOption, selected && styles.choiceOptionSelected]}
+      onPress={onPress}
+    >
+      <Text
+        style={[styles.choiceOptionText, selected && styles.choiceOptionTextSelected]}
+        numberOfLines={2}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
   );
 }
 
@@ -485,6 +589,14 @@ function visibilityColor(visibility) {
     case 'COMMUNAUTE': return '#2563EB';
     default: return '#64748b';
   }
+}
+
+function mergeProjects(...collections) {
+  const projectsById = new Map();
+  collections.flatMap((collection) => collection || []).forEach((project) => {
+    projectsById.set(project.id, project);
+  });
+  return Array.from(projectsById.values());
 }
 
 function formatDate(dateStr, language, t) {
@@ -719,9 +831,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   inputMultiline: { minHeight: 90, textAlignVertical: 'top' },
-  visibilityOptions: { flexDirection: 'row', gap: 8, marginBottom: 14 },
-  visibilityOption: {
-    flex: 1,
+  choiceOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 14,
+  },
+  choiceOption: {
+    minWidth: '47%',
+    flexGrow: 1,
+    flexBasis: 120,
     minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
@@ -731,9 +850,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
     paddingHorizontal: 8,
   },
-  visibilityOptionSelected: { backgroundColor: '#E0F2FE', borderColor: '#2563EB' },
-  visibilityOptionText: { color: '#64748b', fontSize: 12, fontWeight: '800' },
-  visibilityOptionTextSelected: { color: '#1E3A8A' },
+  choiceOptionSelected: { backgroundColor: '#E0F2FE', borderColor: '#2563EB' },
+  choiceOptionText: { color: '#64748b', fontSize: 12, fontWeight: '800', textAlign: 'center' },
+  choiceOptionTextSelected: { color: '#1E3A8A' },
   btnCreate: {
     backgroundColor: '#1E3A8A',
     paddingVertical: 14,

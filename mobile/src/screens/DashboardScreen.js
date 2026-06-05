@@ -244,7 +244,7 @@ export default function DashboardScreen({ navigation }) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <WelcomeCard user={user} t={t} />
+      <WelcomeCard user={user} role={user?.role || 'MEMBRE'} t={t} />
       <MemberStatusCard statut={adhesion} t={t} />
       <MemberGroupCard
         groupe={groupe}
@@ -277,16 +277,14 @@ function ReferentDashboard({ user, dashboard, navigation, t, language }) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <WelcomeCard user={user} t={t} />
+      <WelcomeCard user={user} role="REFERENT" t={t} />
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>{t('referentDashboard.mobileTitle', { defaultValue: 'Mon espace référent' })}</Text>
-        <Text style={styles.cardText}>
-          {t('referentDashboard.mobileDescription', {
-            defaultValue: 'Vue mobile légère pour suivre vos groupes, vos activités, les projets de vos groupes et accéder rapidement à la messagerie.',
-          })}
-        </Text>
-      </View>
+      <DashboardSectionTitle
+        title={t('referentDashboard.mobileTitle', { defaultValue: 'Mon espace référent' })}
+        subtitle={t('referentDashboard.mobileDescription', {
+          defaultValue: 'Suivez vos groupes, activités et projets en un coup d’œil.',
+        })}
+      />
 
       <View style={styles.metricGrid}>
         <MetricCard label={t('referentDashboard.assignedGroups', { defaultValue: 'Groupes assignés' })} value={groupes.length} color="#38BDF8" icon="group" />
@@ -432,14 +430,21 @@ function ReferentNotificationsCard({ notifications, navigation, t }) {
 
 function ReferentQuickActions({ navigation, t }) {
   return (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>{t('referentDashboard.quickActions', { defaultValue: 'Accès rapides' })}</Text>
+    <View style={styles.dashboardSection}>
+      <DashboardSectionTitle
+        title={t('referentDashboard.quickActions', { defaultValue: 'Accès rapides' })}
+        subtitle={t('referentDashboard.mobileDescription', {
+          defaultValue: 'Les outils essentiels de vos groupes.',
+        })}
+      />
+      <View style={styles.actionGrid}>
       <ActionCard
         label={t('referentMobile.requestsTitle', { defaultValue: 'Demandes d’adhésion' })}
         description={t('referentMobile.requestsAction', { defaultValue: 'Accepter ou refuser les demandes de vos groupes.' })}
         icon="warning"
         color="#d97706"
         onPress={() => navigation.navigate('ReferentRequestsAccess')}
+        compact
       />
       <ActionCard
         label={t('referentMobile.membersTitle', { defaultValue: 'Membres des groupes' })}
@@ -447,6 +452,7 @@ function ReferentQuickActions({ navigation, t }) {
         icon="group"
         color="#0f766e"
         onPress={() => navigation.navigate('ReferentMembersAccess')}
+        compact
       />
       <ActionCard
         label={t('referentDashboard.openMessaging', { defaultValue: 'Ouvrir la messagerie' })}
@@ -454,6 +460,7 @@ function ReferentQuickActions({ navigation, t }) {
         icon="message"
         color={COLORS.info}
         onPress={() => navigateAccess(navigation, 'TabMessagerie')}
+        compact
       />
       <ActionCard
         label={t('referentDashboard.viewProjects', { defaultValue: 'Consulter les projets' })}
@@ -461,7 +468,9 @@ function ReferentQuickActions({ navigation, t }) {
         icon="project"
         color={COLORS.impactOrange}
         onPress={() => navigateAccess(navigation, 'TabProjects', 'ProjectsAccess')}
+        compact
       />
+      </View>
     </View>
   );
 }
@@ -481,14 +490,28 @@ function RoleDashboard({ user, role, isAdmin, isSuperAdmin, isPartenaire, dashbo
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.roleHero}>
-        <Avatar prenom={user?.prenom} nom={user?.nom} size={56} color="rgba(255,255,255,0.18)" />
+        <View style={styles.roleBrandRow}>
+          <View style={styles.brandIcon}>
+            <AppIcon name="group" size={17} color="#fff" />
+          </View>
+          <Text style={styles.brandName}>BX-CONNECT</Text>
+          <Text style={styles.brandSlogan}>{t('brand.slogan')}</Text>
+        </View>
+        <View style={styles.roleHeroMain}>
+          <Avatar prenom={user?.prenom} nom={user?.nom} size={46} color="rgba(255,255,255,0.18)" />
         <View style={styles.roleHeroText}>
-          <Text style={styles.roleHeroTitle}>{config.title}</Text>
-          <Text style={styles.roleHeroSubtitle}>{config.subtitle}</Text>
+            <Text style={styles.roleHeroTitle}>
+              {t('memberDashboard.hello', {
+                name: user?.prenom || t('memberDashboard.userFallback'),
+              })}
+            </Text>
           <Text style={styles.roleHeroMeta}>{roleLabel}</Text>
         </View>
+        </View>
+        <Text style={styles.roleHeroSubtitle} numberOfLines={2}>{config.subtitle}</Text>
       </View>
 
+      <DashboardSectionTitle title={config.title} />
       <View style={styles.metricGrid}>
         {config.stats.map((stat) => (
           <MetricCard
@@ -501,21 +524,20 @@ function RoleDashboard({ user, role, isAdmin, isSuperAdmin, isPartenaire, dashbo
         ))}
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>{config.sectionTitle}</Text>
-        <Text style={styles.cardText}>{config.sectionText}</Text>
+      <DashboardSectionTitle title={config.sectionTitle} subtitle={config.sectionText} />
+      <View style={styles.actionGrid}>
+        {config.actions.map((action) => (
+          <ActionCard
+            key={action.label}
+            label={action.label}
+            description={action.description}
+            icon={action.icon}
+            color={action.color}
+            onPress={action.onPress}
+            compact
+          />
+        ))}
       </View>
-
-      {config.actions.map((action) => (
-        <ActionCard
-          key={action.label}
-          label={action.label}
-          description={action.description}
-          icon={action.icon}
-          color={action.color}
-          onPress={action.onPress}
-        />
-      ))}
     </ScrollView>
   );
 }
@@ -556,7 +578,6 @@ function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, d
         stat(t('navigation.users', { defaultValue: 'Utilisateurs' }), pickNumber(stats, ['utilisateurs', 'totalUtilisateurs', 'users', 'totalUsers']), 'group', COLORS.info),
         stat(t('navigation.activities', { defaultValue: 'Activités' }), pickNumber(stats, ['activites', 'totalActivites', 'activities', 'totalActivities']), 'activity', COLORS.success),
         stat(t('navigation.groups', { defaultValue: 'Groupes' }), pickNumber(stats, ['groupes', 'totalGroupes', 'groups', 'totalGroups'], groupes.length), 'group', COLORS.bxBlue),
-        stat(t('navigation.projects', { defaultValue: 'Projets' }), pickNumber(stats, ['projets', 'totalProjets', 'projects', 'totalProjects']), 'project', COLORS.impactOrange),
         stat(t('adminMobile.pendingGroups', { defaultValue: 'Groupes en attente' }), groupesEnAttente.length, 'warning', '#d97706'),
         stat(t('navigation.mentors', { defaultValue: 'Référents' }), referents.length, 'profile', '#0f766e'),
       ],
@@ -644,16 +665,37 @@ function navigateAccess(navigation, tabName, stackRoute) {
   }
 }
 
-function WelcomeCard({ user, t }) {
+function WelcomeCard({ user, role, t }) {
+  const roleLabel = t(`roles.${role}`, { defaultValue: role });
+
   return (
     <View style={styles.welcomeCard}>
-      <Avatar prenom={user?.prenom} nom={user?.nom} size={52} color="rgba(255,255,255,0.18)" />
-      <View style={styles.welcomeContent}>
-        <Text style={styles.welcomeTitle}>
-          {t('memberDashboard.hello', { name: user?.prenom || t('memberDashboard.memberFallback') })}
-        </Text>
-        <Text style={styles.welcomeSubtitle}>{t('memberDashboard.welcome')}</Text>
+      <View style={styles.roleBrandRow}>
+        <View style={styles.brandIcon}>
+          <AppIcon name="group" size={17} color="#fff" />
+        </View>
+        <Text style={styles.brandName}>BX-CONNECT</Text>
+        <Text style={styles.brandSlogan}>{t('brand.slogan')}</Text>
       </View>
+      <View style={styles.welcomeMain}>
+        <Avatar prenom={user?.prenom} nom={user?.nom} size={46} color="rgba(255,255,255,0.18)" />
+        <View style={styles.welcomeContent}>
+          <Text style={styles.welcomeTitle}>
+            {t('memberDashboard.hello', { name: user?.prenom || t('memberDashboard.memberFallback') })}
+          </Text>
+          <Text style={styles.welcomeRole}>{roleLabel}</Text>
+          <Text style={styles.welcomeSubtitle}>{t('memberDashboard.welcome')}</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function DashboardSectionTitle({ title, subtitle }) {
+  return (
+    <View style={styles.dashboardSectionTitle}>
+      <Text style={styles.dashboardSectionHeading}>{title}</Text>
+      {subtitle ? <Text style={styles.dashboardSectionSubtitle}>{subtitle}</Text> : null}
     </View>
   );
 }
@@ -1038,7 +1080,7 @@ function formatReferentDate(dateStr, lieu, language, t) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  content: { padding: 16, paddingBottom: 32 },
+  content: { padding: 12, paddingBottom: 24 },
   centered: {
     flex: 1,
     alignItems: 'center',
@@ -1050,66 +1092,67 @@ const styles = StyleSheet.create({
   errorTitle: { color: '#1E3A8A', fontSize: 18, fontWeight: '800', marginBottom: 8 },
   welcomeCard: {
     backgroundColor: '#1E3A8A',
-    borderRadius: 28,
-    padding: 20,
-    marginBottom: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
+    borderRadius: 22,
+    padding: 14,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: '#38BDF8',
     shadowColor: '#1E3A8A',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.18,
-    shadowRadius: 18,
-    elevation: 4,
+    shadowRadius: 14,
+    elevation: 3,
   },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-  },
-  avatarText: { color: '#fff', fontSize: 17, fontWeight: '800' },
-  welcomeContent: { flex: 1 },
-  welcomeTitle: { color: '#fff', fontSize: 21, fontWeight: '900', marginBottom: 4, lineHeight: 27 },
-  welcomeSubtitle: { color: '#BAE6FD', fontSize: 13, lineHeight: 19 },
+  welcomeMain: { flexDirection: 'row', alignItems: 'center' },
+  welcomeContent: { flex: 1, marginLeft: 11 },
+  welcomeTitle: { color: '#fff', fontSize: 18, fontWeight: '900', marginBottom: 1, lineHeight: 22 },
+  welcomeRole: { color: '#fff', fontSize: 11, fontWeight: '800', marginBottom: 2 },
+  welcomeSubtitle: { color: '#BAE6FD', fontSize: 11, lineHeight: 15 },
   roleHero: {
     backgroundColor: '#1E3A8A',
-    borderRadius: 28,
-    padding: 20,
-    marginBottom: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
+    borderRadius: 22,
+    padding: 14,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: '#38BDF8',
     shadowColor: '#1E3A8A',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.18,
-    shadowRadius: 18,
-    elevation: 4,
+    shadowRadius: 14,
+    elevation: 3,
   },
-  roleHeroText: { flex: 1, marginLeft: 14 },
-  roleHeroTitle: { color: '#fff', fontSize: 21, fontWeight: '900', lineHeight: 27, marginBottom: 4 },
-  roleHeroSubtitle: { color: '#DBEAFE', fontSize: 13, lineHeight: 19, marginBottom: 8 },
+  roleBrandRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  brandIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    backgroundColor: 'rgba(56,189,248,0.24)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 7,
+  },
+  brandName: { color: '#fff', fontSize: 11, fontWeight: '900', letterSpacing: 0 },
+  brandSlogan: { flex: 1, color: '#BAE6FD', fontSize: 9, textAlign: 'right' },
+  roleHeroMain: { flexDirection: 'row', alignItems: 'center' },
+  roleHeroText: { flex: 1, marginLeft: 11 },
+  roleHeroTitle: { color: '#fff', fontSize: 18, fontWeight: '900', lineHeight: 22, marginBottom: 4 },
+  roleHeroSubtitle: { color: '#DBEAFE', fontSize: 11, lineHeight: 16, marginTop: 9 },
   roleHeroMeta: {
     alignSelf: 'flex-start',
-    color: '#BAE6FD',
-    fontSize: 11,
+    color: '#fff',
+    fontSize: 10,
     fontWeight: '900',
     backgroundColor: 'rgba(255,255,255,0.12)',
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     overflow: 'hidden',
   },
   card: {
     backgroundColor: '#fff',
     borderRadius: 22,
-    padding: 16,
-    marginBottom: 14,
+    padding: 14,
+    marginBottom: 10,
     borderLeftWidth: 0,
     borderLeftColor: '#e2e8f0',
     shadowColor: '#0f172a',
@@ -1132,8 +1175,8 @@ const styles = StyleSheet.create({
   metricGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 14,
+    gap: 8,
+    marginBottom: 12,
   },
   metricCard: {
     width: '48%',
@@ -1240,4 +1283,15 @@ const styles = StyleSheet.create({
   actionTextWrap: { flex: 1 },
   actionLabel: { color: '#1E3A8A', fontSize: 14, fontWeight: '800', marginBottom: 2 },
   actionDescription: { color: '#64748b', fontSize: 12, lineHeight: 17 },
+  dashboardSection: { marginBottom: 8 },
+  dashboardSectionTitle: { marginTop: 2, marginBottom: 8, paddingHorizontal: 2 },
+  dashboardSectionHeading: { color: '#1E3A8A', fontSize: 15, lineHeight: 19, fontWeight: '900' },
+  dashboardSectionSubtitle: { color: '#64748b', fontSize: 11, lineHeight: 15, marginTop: 2 },
+  actionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 12,
+  },
 });

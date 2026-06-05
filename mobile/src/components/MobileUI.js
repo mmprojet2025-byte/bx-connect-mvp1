@@ -129,22 +129,55 @@ export function StatCard({ label, value, icon = 'activity', color = COLORS.info 
       <View style={[styles.statIcon, { backgroundColor: `${color}18` }]}>
         <AppIcon name={icon} size={20} color={color} />
       </View>
-      <Text style={[styles.statValue, { color }]}>{value ?? 0}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <View style={styles.statContent}>
+        <Text style={[styles.statValue, { color }]} numberOfLines={1} adjustsFontSizeToFit>
+          {value ?? 0}
+        </Text>
+        <Text style={styles.statLabel} numberOfLines={2}>{label}</Text>
+      </View>
     </Card>
   );
 }
 
-export function ActionCard({ label, description, icon = 'activity', color = COLORS.info, onPress }) {
+export function ActionCard({
+  label,
+  description,
+  icon = 'activity',
+  color = COLORS.info,
+  onPress,
+  compact = false,
+  style,
+}) {
   return (
-    <TouchableOpacity style={styles.actionCard} onPress={onPress} activeOpacity={0.82}>
-      <View style={[styles.actionIcon, { backgroundColor: `${color}18` }]}>
-        <AppIcon name={icon} size={20} color={color} />
+    <TouchableOpacity
+      style={[styles.actionCard, compact && styles.actionCardCompact, style]}
+      onPress={onPress}
+      activeOpacity={0.82}
+    >
+      <View style={[styles.actionIcon, compact && styles.actionIconCompact, { backgroundColor: `${color}18` }]}>
+        <AppIcon name={icon} size={compact ? 19 : 20} color={color} />
       </View>
-      <View style={styles.actionText}>
-        <Text style={styles.actionLabel}>{label}</Text>
-        {description ? <Text style={styles.actionDescription}>{description}</Text> : null}
+      <View style={[styles.actionText, compact && styles.actionTextCompact]}>
+        <Text style={[styles.actionLabel, compact && styles.actionLabelCompact]} numberOfLines={2}>
+          {label}
+        </Text>
+        {description ? (
+          <Text
+            style={[styles.actionDescription, compact && styles.actionDescriptionCompact]}
+            numberOfLines={compact ? 2 : undefined}
+          >
+            {description}
+          </Text>
+        ) : null}
       </View>
+      {compact ? (
+        <AppIcon
+          name="chevron-forward"
+          size={14}
+          color={COLORS.muted}
+          style={styles.actionChevron}
+        />
+      ) : null}
     </TouchableOpacity>
   );
 }
@@ -196,10 +229,25 @@ const styles = StyleSheet.create({
   emptyText: { color: COLORS.muted, ...TYPOGRAPHY.body, textAlign: 'center' },
   emptyAction: { marginTop: SPACING.lg, backgroundColor: COLORS.bxBlue, borderRadius: BORDER_RADIUS.lg, paddingHorizontal: 18, paddingVertical: 11, minHeight: 46, justifyContent: 'center' },
   emptyActionText: { color: '#fff', fontSize: 13, fontWeight: '900' },
-  statCard: { flex: 1, borderTopWidth: 0, minWidth: '47%', minHeight: 112 },
-  statIcon: { width: 38, height: 38, borderRadius: BORDER_RADIUS.md, alignItems: 'center', justifyContent: 'center', marginBottom: SPACING.sm },
-  statValue: { fontSize: 24, fontWeight: '900', marginBottom: 2 },
-  statLabel: { color: COLORS.muted, fontSize: 11, lineHeight: 15, fontWeight: '700' },
+  statCard: {
+    flex: 1,
+    minWidth: '47%',
+    minHeight: 78,
+    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: BORDER_RADIUS.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.sm,
+  },
+  statContent: { flex: 1, minWidth: 0 },
+  statValue: { fontSize: 20, lineHeight: 23, fontWeight: '900' },
+  statLabel: { color: COLORS.muted, fontSize: 10, lineHeight: 13, fontWeight: '700', flexShrink: 1 },
   actionCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -216,6 +264,26 @@ const styles = StyleSheet.create({
   actionText: { flex: 1 },
   actionLabel: { color: COLORS.bxBlue, fontSize: 14, fontWeight: '900' },
   actionDescription: { color: COLORS.muted, ...TYPOGRAPHY.caption, marginTop: 2 },
+  actionCardCompact: {
+    width: '48.5%',
+    minHeight: 102,
+    padding: 10,
+    marginBottom: 0,
+    alignItems: 'flex-start',
+    flexDirection: 'column',
+    position: 'relative',
+  },
+  actionIconCompact: {
+    width: 32,
+    height: 32,
+    borderRadius: BORDER_RADIUS.md,
+    marginRight: 0,
+    marginBottom: 6,
+  },
+  actionTextCompact: { flex: 1, width: '100%' },
+  actionLabelCompact: { fontSize: 13, lineHeight: 17 },
+  actionDescriptionCompact: { fontSize: 10, lineHeight: 14, marginTop: 3 },
+  actionChevron: { position: 'absolute', top: 12, right: 10 },
   avatar: { alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: '#fff', fontWeight: '900' },
 });
