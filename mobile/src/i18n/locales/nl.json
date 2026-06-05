@@ -148,7 +148,7 @@
     "error_load": "Kan projecten niet laden.",
     "error_submit": "Fout bij het voorstellen van het project.",
     "error_title_required": "De titel is verplicht.",
-    "project_submitted_mobile": "Project succesvol voorgesteld.",
+    "project_submitted_mobile": "Project aangemaakt en ter goedkeuring ingediend.",
     "mobile_admin_web": "Mobiel projectoverzicht: volg initiatieven en voortgang.",
     "mobile_super_admin_no_access": "Platformoverzicht van publieke projecten en initiatieven.",
     "login_to_propose": "Log in om een project voor te stellen.",
@@ -172,7 +172,14 @@
     "form_budget": "Gevraagd budget (€)",
     "submit_project": "Project indienen",
     "fallback_project": "Project",
-    "date_not_provided": "Datum niet ingevuld"
+    "date_not_provided": "Datum niet ingevuld",
+    "visibility": "Zichtbaarheid"
+  },
+  "projectVisibility": {
+    "GROUPE": "Groep",
+    "COMMUNAUTE": "Gemeenschap",
+    "PARTENAIRES": "Partners",
+    "PUBLIC": "Openbaar"
   },
   "messaging": {
     "title": "Berichten",

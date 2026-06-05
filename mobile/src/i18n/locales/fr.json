@@ -148,7 +148,7 @@
     "error_load": "Impossible de charger les projets.",
     "error_submit": "Erreur lors de la proposition du projet.",
     "error_title_required": "Le titre est obligatoire.",
-    "project_submitted_mobile": "Projet proposé avec succès.",
+    "project_submitted_mobile": "Projet créé et soumis à validation.",
     "mobile_admin_web": "Pilotage mobile des projets : suivez les initiatives et leur progression.",
     "mobile_super_admin_no_access": "Vue plateforme des projets et initiatives publiques.",
     "login_to_propose": "Connecte-toi pour proposer un projet.",
@@ -172,7 +172,14 @@
     "form_budget": "Budget demandé (€)",
     "submit_project": "Soumettre le projet",
     "fallback_project": "Projet",
-    "date_not_provided": "Date non renseignée"
+    "date_not_provided": "Date non renseignée",
+    "visibility": "Visibilité"
+  },
+  "projectVisibility": {
+    "GROUPE": "Groupe",
+    "COMMUNAUTE": "Communauté",
+    "PARTENAIRES": "Partenaires",
+    "PUBLIC": "Public"
   },
   "messaging": {
     "title": "Messagerie",

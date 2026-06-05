@@ -148,7 +148,7 @@
     "error_load": "Unable to load projects.",
     "error_submit": "Error proposing the project.",
     "error_title_required": "The title is required.",
-    "project_submitted_mobile": "Project proposed successfully.",
+    "project_submitted_mobile": "Project created and submitted for approval.",
     "mobile_admin_web": "Mobile project overview: follow initiatives and progress.",
     "mobile_super_admin_no_access": "Platform view of public projects and initiatives.",
     "login_to_propose": "Log in to propose a project.",
@@ -172,7 +172,14 @@
     "form_budget": "Requested budget (€)",
     "submit_project": "Submit project",
     "fallback_project": "Project",
-    "date_not_provided": "Date not provided"
+    "date_not_provided": "Date not provided",
+    "visibility": "Visibility"
+  },
+  "projectVisibility": {
+    "GROUPE": "Group",
+    "COMMUNAUTE": "Community",
+    "PARTENAIRES": "Partners",
+    "PUBLIC": "Public"
   },
   "messaging": {
     "title": "Messaging",

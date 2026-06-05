@@ -32,6 +32,7 @@ export default function ProjectsScreen() {
     description: '',
     objectifs: '',
     budgetDemande: '',
+    visibilite: 'GROUPE',
   });
 
   useEffect(() => {
@@ -114,15 +115,23 @@ export default function ProjectsScreen() {
     setError('');
     setMessage('');
     try {
-      await api.post('/projets', {
+      const response = await api.post('/projets', {
         titre: form.titre.trim(),
         description: form.description.trim(),
         objectifs: form.objectifs.trim(),
         budgetDemande: form.budgetDemande ? parseFloat(form.budgetDemande) : null,
+        visibilite: form.visibilite,
       });
+      await api.patch(`/projets/${response.data.id}/soumettre`);
       setMessage(t('projects.project_submitted_mobile'));
       setShowForm(false);
-      setForm({ titre: '', description: '', objectifs: '', budgetDemande: '' });
+      setForm({
+        titre: '',
+        description: '',
+        objectifs: '',
+        budgetDemande: '',
+        visibilite: 'GROUPE',
+      });
       await chargerProjets();
     } catch (err) {
       setError(getApiError(err, t, t('projects.error_submit')));
@@ -264,6 +273,8 @@ function ProjectCard({ projet, t, language, isPartenaire }) {
         <Text style={styles.cardDesc} numberOfLines={3}>{projet.description}</Text>
       )}
 
+      <VisibilityBadge visibility={projet.visibilite} t={t} />
+
       <View style={styles.metaBox}>
         {projet.groupeNom && <MetaRow label={t('groups.title')} value={projet.groupeNom} />}
         <MetaRow
@@ -352,6 +363,24 @@ function ProjectFormModal({
               keyboardType="numeric"
             />
 
+            <Text style={styles.label}>{t('projects.visibility')}</Text>
+            <View style={styles.visibilityOptions}>
+              {['GROUPE', 'COMMUNAUTE'].map((visibility) => {
+                const selected = form.visibilite === visibility;
+                return (
+                  <TouchableOpacity
+                    key={visibility}
+                    style={[styles.visibilityOption, selected && styles.visibilityOptionSelected]}
+                    onPress={() => setForm({ ...form, visibilite: visibility })}
+                  >
+                    <Text style={[styles.visibilityOptionText, selected && styles.visibilityOptionTextSelected]}>
+                      {t(`projectVisibility.${visibility}`)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
             <TouchableOpacity
               style={[styles.btnCreate, creating && styles.btnDisabled]}
               onPress={onSubmit}
@@ -413,6 +442,18 @@ function StatusBadge({ label, color }) {
   );
 }
 
+function VisibilityBadge({ visibility = 'GROUPE', t }) {
+  const color = visibilityColor(visibility);
+  return (
+    <View style={[styles.visibilityBadge, { backgroundColor: `${color}18` }]}>
+      <AppIcon name={visibility === 'PUBLIC' ? 'group' : 'project'} size={13} color={color} />
+      <Text style={[styles.visibilityBadgeText, { color }]}>
+        {t(`projectVisibility.${visibility || 'GROUPE'}`)}
+      </Text>
+    </View>
+  );
+}
+
 function MetaRow({ label, value }) {
   return (
     <View style={styles.metaRow}>
@@ -434,6 +475,15 @@ function statusColor(statut) {
     case 'REJETE': return '#EF4444';
     case 'SOUMIS': return '#0891b2';
     default: return '#d97706';
+  }
+}
+
+function visibilityColor(visibility) {
+  switch (visibility) {
+    case 'PUBLIC': return '#059669';
+    case 'PARTENAIRES': return '#F97316';
+    case 'COMMUNAUTE': return '#2563EB';
+    default: return '#64748b';
   }
 }
 
@@ -560,6 +610,17 @@ const styles = StyleSheet.create({
   cardDesc: { color: '#475569', fontSize: 12, lineHeight: 18, marginBottom: 10 },
   statusBadge: { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
   statusBadgeText: { color: '#fff', fontSize: 9, fontWeight: '900' },
+  visibilityBadge: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    marginBottom: 10,
+  },
+  visibilityBadgeText: { fontSize: 10, fontWeight: '900' },
 
   metaBox: {
     backgroundColor: '#f8fafc',
@@ -658,6 +719,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   inputMultiline: { minHeight: 90, textAlignVertical: 'top' },
+  visibilityOptions: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  visibilityOption: {
+    flex: 1,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    backgroundColor: '#f8fafc',
+    paddingHorizontal: 8,
+  },
+  visibilityOptionSelected: { backgroundColor: '#E0F2FE', borderColor: '#2563EB' },
+  visibilityOptionText: { color: '#64748b', fontSize: 12, fontWeight: '800' },
+  visibilityOptionTextSelected: { color: '#1E3A8A' },
   btnCreate: {
     backgroundColor: '#1E3A8A',
     paddingVertical: 14,
