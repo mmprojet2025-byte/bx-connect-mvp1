@@ -49,7 +49,6 @@ public class SecurityConfig {
         "/api/projets/**",
 
         // Partenaire — lecture publique (P03, P04)
-        "/api/partenaire/projets-ouverts",
         "/api/partenaire/activites-ouvertes",
 
         // Annonces globales (public)

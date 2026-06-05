@@ -171,7 +171,18 @@
     "fallback_image": "BX-Connect project",
     "group_label": "Group: {{group}}",
     "owner_label": "Owner: {{owner}}",
-    "participants_count": "{{count}} participant(s)"
+    "participants_count": "{{count}} participant(s)",
+    "visibility": "Visibility",
+    "group": "Linked group",
+    "noGroup": "Association project without a group",
+    "participationSoon": "Participation requests will be available in a later phase.",
+    "successSubmitted": "Project created and submitted for approval."
+  },
+  "projectVisibility": {
+    "GROUPE": "Group",
+    "COMMUNAUTE": "Community",
+    "PARTENAIRES": "Partners",
+    "PUBLIC": "Public"
   },
   "groups": {
     "title": "Groups",

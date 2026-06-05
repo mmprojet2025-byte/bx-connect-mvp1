@@ -2,6 +2,7 @@ package com.bxjeunes.bx_connect.dto;
 
 import com.bxjeunes.bx_connect.entity.Projet;
 import com.bxjeunes.bx_connect.entity.StatutProjet;
+import com.bxjeunes.bx_connect.entity.VisibiliteProjet;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -14,6 +15,7 @@ public class ProjetResponse {
     private String objectifs;
     private BigDecimal budgetDemande;
     private StatutProjet statut;
+    private VisibiliteProjet visibilite;
     private LocalDateTime dateCreation;
     private LocalDateTime dateSoumission;
     private LocalDateTime dateValidation;
@@ -36,6 +38,7 @@ public class ProjetResponse {
         r.objectifs = projet.getObjectifs();
         r.budgetDemande = projet.getBudgetDemande();
         r.statut = projet.getStatut();
+        r.visibilite = projet.getVisibilite();
         r.dateCreation = projet.getDateCreation();
         r.dateSoumission = projet.getDateSoumission();
         r.dateValidation = projet.getDateValidation();
@@ -62,6 +65,7 @@ public class ProjetResponse {
     public String getObjectifs() { return objectifs; }
     public BigDecimal getBudgetDemande() { return budgetDemande; }
     public StatutProjet getStatut() { return statut; }
+    public VisibiliteProjet getVisibilite() { return visibilite; }
     public LocalDateTime getDateCreation() { return dateCreation; }
     public LocalDateTime getDateSoumission() { return dateSoumission; }
     public LocalDateTime getDateValidation() { return dateValidation; }

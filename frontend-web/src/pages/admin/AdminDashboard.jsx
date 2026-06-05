@@ -49,7 +49,7 @@ export default function AdminDashboard() {
   const referentsActifs = referents.filter(referent => referent.actif).length
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
@@ -62,7 +62,7 @@ export default function AdminDashboard() {
         {error && <Alert type="error">{error}</Alert>}
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">{t('admin.loading')}</p>
+          <p className="text-slate-400 text-center py-10">{t('admin.loading')}</p>
         ) : (
           <>
             {stats && (
@@ -75,13 +75,13 @@ export default function AdminDashboard() {
             )}
 
             <section className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 mb-8">
-	              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+	              <div className="bg-white rounded-[1.75rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-lg font-bold text-blue-900">{t('ux.adminDashboard.priority')}</h2>
-                    <p className="text-sm text-gray-500">{t('ux.adminDashboard.priorityDesc')}</p>
+                    <h2 className="text-lg font-bold text-slate-950">{t('ux.adminDashboard.priority')}</h2>
+                    <p className="text-sm text-slate-500">{t('ux.adminDashboard.priorityDesc')}</p>
                   </div>
-                  <Link to="/admin/groupes" className="text-blue-700 text-sm font-semibold hover:underline">
+                  <Link to="/admin/groupes" className="text-blue-600 text-sm font-semibold hover:underline">
                     {t('admin.viewGroups')}
                   </Link>
                 </div>
@@ -110,8 +110,8 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-	              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-                <h2 className="text-lg font-bold text-blue-900 mb-4">{t('ux.adminDashboard.quickActions')}</h2>
+	              <div className="bg-white rounded-[1.75rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-6">
+                <h2 className="text-lg font-bold text-slate-950 mb-4">{t('ux.adminDashboard.quickActions')}</h2>
                 <div className="grid gap-3">
 	                  <QuickActionCard to="/admin/groupes" title={t('ux.adminDashboard.createGroup')} tone="blue" icon="Users" />
 	                  <QuickActionCard to="/admin/referents" title={t('ux.adminDashboard.createReferent')} tone="teal" icon="User" />
@@ -122,7 +122,7 @@ export default function AdminDashboard() {
             </section>
 
             <section>
-              <h2 className="text-lg font-bold text-blue-900 mb-4">{t('admin.manage')}</h2>
+              <h2 className="text-lg font-bold text-slate-950 mb-4">{t('admin.manage')}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 <NavCard to="/admin/utilisateurs" title={t('admin.users_title')} description={t('admin.users_desc')} color="#2E86AB" icon="Users" />
                 <NavCard to="/admin/referents" title={t('admin.referents_title')} description={t('admin.referents_desc')} color="#0d9488" icon="User" />
@@ -160,29 +160,29 @@ function StatCard({ label, value, color, icon }) {
           <AppIcon name={icon} className="h-5 w-5" />
         </span>
       </div>
-      <div className="text-xs text-gray-500 mt-1">{label}</div>
+      <div className="text-xs text-slate-500 mt-1">{label}</div>
     </div>
   )
 }
 
 function PriorityCard({ label, value, description, to, alert = false }) {
   return (
-    <Link to={to} className={`rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 ${alert ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-100'}`}>
-      <div className={`text-2xl font-bold ${alert ? 'text-amber-800' : 'text-blue-900'}`}>{value}</div>
-      <h3 className="text-sm font-semibold text-blue-900 mt-1">{label}</h3>
-      <p className="text-xs text-gray-500 mt-1">{description}</p>
+    <Link to={to} className={`rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 ${alert ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-gray-100'}`}>
+      <div className={`text-2xl font-bold ${alert ? 'text-amber-800' : 'text-slate-950'}`}>{value}</div>
+      <h3 className="text-sm font-semibold text-slate-950 mt-1">{label}</h3>
+      <p className="text-xs text-slate-500 mt-1">{description}</p>
     </Link>
   )
 }
 
 function NavCard({ to, title, description, color, icon }) {
   return (
-    <Link to={to} className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 transition hover:-translate-y-1 hover:shadow-md border-t-4" style={{ borderTopColor: color }}>
+    <Link to={to} className="bg-white rounded-[1.75rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-6 transition hover:-translate-y-1 hover:shadow-md border-t-4" style={{ borderTopColor: color }}>
       <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-50" style={{ color }}>
         <AppIcon name={icon} className="h-5 w-5" />
       </div>
-      <h3 className="font-semibold text-blue-900 mb-1">{title}</h3>
-      <p className="text-gray-500 text-sm">{description}</p>
+      <h3 className="font-semibold text-slate-950 mb-1">{title}</h3>
+      <p className="text-slate-500 text-sm">{description}</p>
     </Link>
   )
 }

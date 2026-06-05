@@ -10,6 +10,7 @@ import EmptyState from '../../components/ui/EmptyState'
 import StatusBadge from '../../components/StatusBadge'
 import GroupAvatar from '../../components/GroupAvatar'
 import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFriendlyError'
+import PageHeader from '../../components/ui/PageHeader'
 
 export default function Groupes() {
   const { isAuthenticated, isMembre } = useAuth()
@@ -104,15 +105,15 @@ export default function Groupes() {
     : t('ux.groups.visitorIntro')
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
-        <header className="mb-6">
-          <p className="text-sm font-semibold text-blue-700 uppercase tracking-wide">{t('ux.groups.community')}</p>
-          <h1 className="text-3xl font-bold text-blue-900 mt-1">{t('groups.title')}</h1>
-          <p className="text-gray-500 text-sm mt-2 max-w-2xl">{intro}</p>
-        </header>
+        <PageHeader
+          eyebrow={t('ux.groups.community')}
+          title={t('groups.title')}
+          description={intro}
+        />
 
         {isAuthenticated && isMembre && (
           <MemberGroupSummary adhesionActive={adhesionActive} adhesionEnAttente={adhesionEnAttente} />
@@ -121,7 +122,7 @@ export default function Groupes() {
         {message && <Alert type="success">{message}</Alert>}
         {error && <Alert type="error">{error}</Alert>}
 
-        <div className="bg-white rounded-2xl shadow p-4 mb-6">
+        <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-4 mb-6">
           <input
             type="text"
             placeholder={t('groups.search')}
@@ -132,7 +133,7 @@ export default function Groupes() {
         </div>
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">{t('groups.loading')}</p>
+          <p className="text-slate-400 text-center py-10">{t('groups.loading')}</p>
         ) : groupesFiltres.length === 0 ? (
           <EmptyState
             title={t('ux.groups.noAvailableTitle')}
@@ -190,8 +191,8 @@ function MemberGroupSummary({ adhesionActive, adhesionEnAttente }) {
 
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
-      <p className="text-blue-900 font-semibold text-sm">{t('groups.no_group_joined')}</p>
-      <p className="text-blue-700 text-sm mt-1">{t('groups.choose_group')}</p>
+      <p className="text-slate-950 font-semibold text-sm">{t('groups.no_group_joined')}</p>
+      <p className="text-blue-600 text-sm mt-1">{t('groups.choose_group')}</p>
     </div>
   )
 }
@@ -206,19 +207,19 @@ function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelle
     : t('groups.members_count', { count: groupe.nombreMembres ?? 0 })
 
   return (
-    <article className={`bg-white rounded-2xl shadow p-5 flex flex-col gap-4 border hover:-translate-y-0.5 hover:shadow-lg transition ${isAccepted ? 'border-green-300' : 'border-transparent'}`}>
+    <article className={`bg-white rounded-[1.5rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-5 flex flex-col gap-4 border hover:-translate-y-0.5 hover:shadow-lg transition ${isAccepted ? 'border-green-300' : 'border-transparent'}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
           <GroupAvatar name={groupe.nom} />
           <div className="min-w-0">
-            <h2 className="font-semibold text-blue-900 text-lg leading-tight">{groupe.nom}</h2>
-          {referent && <p className="text-xs text-gray-500 mt-1">{t('groups.referent_label', { referent })}</p>}
+            <h2 className="font-semibold text-slate-950 text-lg leading-tight">{groupe.nom}</h2>
+          {referent && <p className="text-xs text-slate-500 mt-1">{t('groups.referent_label', { referent })}</p>}
           </div>
         </div>
         {adhesion?.statut && <GroupStatusBadge statut={adhesion.statut} />}
       </div>
 
-      <p className="text-gray-500 text-sm leading-relaxed min-h-[44px]">
+      <p className="text-slate-500 text-sm leading-relaxed min-h-[44px]">
         {groupe.description || t('groups.description_soon')}
       </p>
 
@@ -226,7 +227,7 @@ function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelle
         <InfoPill value={placesLabel} />
         <div className="flex flex-wrap gap-2">
           {groupe.theme && <span className="bg-teal-50 text-teal-800 px-2.5 py-1 rounded-full font-semibold">{groupe.theme}</span>}
-          {groupe.categorie && <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full font-semibold">{groupe.categorie}</span>}
+          {groupe.categorie && <span className="bg-gray-100 text-slate-700 px-2.5 py-1 rounded-full font-semibold">{groupe.categorie}</span>}
         </div>
       </div>
 
@@ -234,7 +235,7 @@ function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelle
         {!isAuthenticated ? (
           <Link
             to="/login"
-            className="block w-full text-center bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold py-2 rounded-xl transition"
+            className="block w-full text-center bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-xl transition"
           >
             {t('ux.groups.joinLogin')}
           </Link>
@@ -268,7 +269,7 @@ function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelle
             type="button"
             onClick={onJoin}
             disabled={bloqueNouvelleDemande || actionLoading}
-            className="w-full bg-blue-700 hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-600 text-white text-sm font-semibold py-2 rounded-xl transition"
+            className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-300 disabled:text-slate-600 text-white text-sm font-semibold py-2 rounded-xl transition"
           >
             {bloqueNouvelleDemande ? t('ux.groups.oneGroupOnly') : actionLoading ? t('groups.sending') : t('ux.groups.joinGroup')}
           </button>

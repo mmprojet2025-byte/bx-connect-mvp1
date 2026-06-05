@@ -171,7 +171,18 @@
     "fallback_image": "BX-Connect-project",
     "group_label": "Groep: {{group}}",
     "owner_label": "Indiener: {{owner}}",
-    "participants_count": "{{count}} deelnemer(s)"
+    "participants_count": "{{count}} deelnemer(s)",
+    "visibility": "Zichtbaarheid",
+    "group": "Gekoppelde groep",
+    "noGroup": "Verenigingsproject zonder groep",
+    "participationSoon": "Deelname aanvragen wordt in een volgende fase beschikbaar.",
+    "successSubmitted": "Project aangemaakt en ter goedkeuring ingediend."
+  },
+  "projectVisibility": {
+    "GROUPE": "Groep",
+    "COMMUNAUTE": "Gemeenschap",
+    "PARTENAIRES": "Partners",
+    "PUBLIC": "Openbaar"
   },
   "groups": {
     "title": "Groepen",

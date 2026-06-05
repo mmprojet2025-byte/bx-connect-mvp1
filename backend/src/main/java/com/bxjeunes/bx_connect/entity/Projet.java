@@ -30,6 +30,10 @@ public class Projet {
     @Column(nullable = false)
     private StatutProjet statut = StatutProjet.BROUILLON;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20, columnDefinition = "varchar(20) default 'GROUPE'")
+    private VisibiliteProjet visibilite = VisibiliteProjet.GROUPE;
+
     @Column(nullable = false)
     private LocalDateTime dateCreation = LocalDateTime.now();
 
@@ -77,6 +81,13 @@ public class Projet {
 
     public StatutProjet getStatut() { return statut; }
     public void setStatut(StatutProjet statut) { this.statut = statut; }
+
+    public VisibiliteProjet getVisibilite() {
+        return visibilite == null ? VisibiliteProjet.GROUPE : visibilite;
+    }
+    public void setVisibilite(VisibiliteProjet visibilite) {
+        this.visibilite = visibilite == null ? VisibiliteProjet.GROUPE : visibilite;
+    }
 
     public LocalDateTime getDateCreation() { return dateCreation; }
     public void setDateCreation(LocalDateTime dateCreation) { this.dateCreation = dateCreation; }

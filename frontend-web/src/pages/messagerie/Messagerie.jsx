@@ -84,7 +84,7 @@ export default function Messagerie() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
         <PageHeader
@@ -96,7 +96,7 @@ export default function Messagerie() {
         {error && <Alert type="error">{error}</Alert>}
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">{t('messaging.loadingMessaging')}</p>
+          <p className="text-slate-400 text-center py-10">{t('messaging.loadingMessaging')}</p>
         ) : emptyState ? (
           <EmptyState
             title={emptyState}
@@ -120,16 +120,16 @@ export default function Messagerie() {
                 </div>
                 <div>
                   <h2 className="font-bold text-slate-950">{fil.titre}</h2>
-                  <p className="text-xs text-gray-500">{t('messaging.messagesCount', { count: messages.length })}</p>
+                  <p className="text-xs text-slate-500">{t('messaging.messagesCount', { count: messages.length })}</p>
                 </div>
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto bg-slate-50/40 p-4 flex flex-col gap-3">
               {loadingMessages ? (
-                <p className="text-gray-400 text-center text-sm">{t('messaging.loadingMessages')}</p>
+                <p className="text-slate-400 text-center text-sm">{t('messaging.loadingMessages')}</p>
               ) : messages.length === 0 ? (
-                <div className="mx-auto mt-8 max-w-sm rounded-3xl border border-dashed border-slate-200 bg-white px-6 py-8 text-center text-sm text-gray-400">
+                <div className="mx-auto mt-8 max-w-sm rounded-3xl border border-dashed border-slate-200 bg-white px-6 py-8 text-center text-sm text-slate-400">
                   <AppIcon name="MessageCircle" className="mx-auto mb-3 h-10 w-10 text-indigo-200" />
                   {t('messaging.noMessages')}
                 </div>
@@ -170,19 +170,19 @@ function MessageBubble({ message, currentUser, language }) {
   const estMoi = message.auteurPrenom === currentUser?.prenom && message.auteurNom === currentUser?.nom
   return (
     <div className={`flex items-end gap-2 ${estMoi ? 'flex-row-reverse' : 'flex-row'}`}>
-      <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl text-xs font-bold shadow-sm ${estMoi ? 'bg-indigo-100 text-indigo-900' : 'bg-white text-blue-900 ring-1 ring-slate-100'}`}>
+      <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl text-xs font-bold shadow-sm ${estMoi ? 'bg-indigo-100 text-indigo-900' : 'bg-white text-slate-950 ring-1 ring-slate-100'}`}>
         {getInitiales(message.auteurPrenom, message.auteurNom)}
       </div>
       <div className="max-w-xs md:max-w-md">
         {!estMoi && (
-          <div className="text-xs text-gray-400 mb-0.5 pl-1">
+          <div className="text-xs text-slate-400 mb-0.5 pl-1">
             {message.auteurPrenom} {message.auteurNom}
           </div>
         )}
         <div className={`px-4 py-3 text-sm leading-relaxed break-words shadow-sm ${estMoi ? 'bg-indigo-600 text-white' : 'bg-white text-slate-800 ring-1 ring-slate-100'}`} style={{ borderRadius: estMoi ? '18px 18px 4px 18px' : '18px 18px 18px 4px' }}>
           {message.contenu}
         </div>
-        <div className={`text-xs text-gray-400 mt-0.5 ${estMoi ? 'text-right pr-1' : 'pl-1'}`}>
+        <div className={`text-xs text-slate-400 mt-0.5 ${estMoi ? 'text-right pr-1' : 'pl-1'}`}>
           {formatDate(message.dateEnvoi, language)}
         </div>
       </div>

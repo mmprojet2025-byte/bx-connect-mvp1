@@ -8,20 +8,40 @@ import ProjectCover from '../../components/ProjectCover'
 import AppIcon from '../../components/ui/AppIcons'
 import PageHeader from '../../components/ui/PageHeader'
 import SectionCard from '../../components/ui/SectionCard'
+import ProjectVisibilityBadge from '../../components/ProjectVisibilityBadge'
+import { userFriendlyError } from '../../utils/userFriendlyError'
+
+const emptyForm = {
+  titre: '',
+  description: '',
+  objectifs: '',
+  budgetDemande: '',
+  groupeId: '',
+  visibilite: 'GROUPE',
+}
 
 export default function ReferentProjets() {
   const { t, i18n } = useTranslation()
   const [projets, setProjets] = useState([])
+  const [groupes, setGroupes] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [recherche, setRecherche] = useState('')
   const [filtreStatut, setFiltreStatut] = useState('')
+  const [showForm, setShowForm] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [message, setMessage] = useState('')
+  const [form, setForm] = useState(emptyForm)
 
   const fetchProjets = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await api.get('/projets/referent/mes-groupes')
-      setProjets(Array.isArray(res.data) ? res.data : [])
+      const [projetsRes, groupesRes] = await Promise.all([
+        api.get('/projets/referent/mes-groupes'),
+        api.get('/referent/groupes'),
+      ])
+      setProjets(Array.isArray(projetsRes.data) ? projetsRes.data : [])
+      setGroupes(Array.isArray(groupesRes.data) ? groupesRes.data : [])
       setError('')
     } catch {
       setError(t('referent.errorProjectsLoad'))
@@ -32,6 +52,29 @@ export default function ReferentProjets() {
 
   useEffect(() => { fetchProjets() }, [fetchProjets])
 
+  const creerProjet = async event => {
+    event.preventDefault()
+    setCreating(true)
+    setError('')
+    setMessage('')
+    try {
+      const response = await api.post('/projets', {
+        ...form,
+        groupeId: Number(form.groupeId),
+        budgetDemande: form.budgetDemande ? Number(form.budgetDemande) : null,
+      })
+      await api.patch(`/projets/${response.data.id}/soumettre`)
+      setMessage(t('projects.successSubmitted'))
+      setForm(emptyForm)
+      setShowForm(false)
+      await fetchProjets()
+    } catch (requestError) {
+      setError(userFriendlyError(requestError, t('projects.error_submit')))
+    } finally {
+      setCreating(false)
+    }
+  }
+
   const projetsFiltres = projets.filter(projet => {
     const texte = `${projet.titre || ''} ${projet.description || ''} ${projet.groupeNom || ''} ${projet.porteurPrenom || ''} ${projet.porteurNom || ''}`.toLowerCase()
     const matchRecherche = texte.includes(recherche.toLowerCase())
@@ -39,7 +82,7 @@ export default function ReferentProjets() {
     return matchRecherche && matchStatut
   })
   const statuts = [...new Set(projets.map(projet => projet.statut).filter(Boolean))]
-  const groupes = new Set(projets.map(projet => projet.groupeNom).filter(Boolean)).size
+  const nombreGroupes = new Set(projets.map(projet => projet.groupeNom).filter(Boolean)).size
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -49,15 +92,72 @@ export default function ReferentProjets() {
           eyebrow={t('nav.projects')}
           title={t('referent.projectsTitle')}
           description={t('referent.projectsSubtitle')}
+          action={(
+            <button
+              type="button"
+              onClick={() => setShowForm(value => !value)}
+              disabled={groupes.length === 0}
+              className="inline-flex items-center gap-2 rounded-2xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:bg-slate-300"
+            >
+              <AppIcon name={showForm ? 'XCircle' : 'PlusCircle'} className="h-4 w-4" />
+              {showForm ? t('common.cancel') : t('projects.new_project')}
+            </button>
+          )}
         />
 
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatCard icon="Rocket" label={t('common.total', { defaultValue: 'Total' })} value={projets.length} tone="blue" />
-          <StatCard icon="Folder" label={t('nav.myGroups')} value={groupes} tone="green" />
+          <StatCard icon="Folder" label={t('nav.myGroups')} value={nombreGroupes} tone="green" />
           <StatCard icon="Search" label={t('common.results', { defaultValue: 'Résultats' })} value={projetsFiltres.length} tone="amber" />
         </div>
 
         {error && <Alert type="error">{error}</Alert>}
+        {message && <Alert>{message}</Alert>}
+
+        {showForm && (
+          <SectionCard className="mb-6" title={t('projects.new_title')}>
+            <form onSubmit={creerProjet} className="grid gap-4 md:grid-cols-2">
+              <Input label={t('projects.form_title')} value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
+              <Input label={t('projects.form_budget')} value={form.budgetDemande} onChange={value => setForm({ ...form, budgetDemande: value })} type="number" min="0" />
+              <Select
+                label={t('projects.group')}
+                value={form.groupeId}
+                onChange={value => setForm({ ...form, groupeId: value })}
+                options={groupes.map(groupe => ({ value: groupe.id, label: groupe.nom }))}
+                required
+              />
+              <Select
+                label={t('projects.visibility')}
+                value={form.visibilite}
+                onChange={value => setForm({ ...form, visibilite: value })}
+                options={['GROUPE', 'COMMUNAUTE'].map(value => ({
+                  value,
+                  label: t(`projectVisibility.${value}`),
+                }))}
+                required
+              />
+              <label className="md:col-span-2">
+                <span className="block text-sm font-semibold text-gray-700 mb-1">{t('projects.form_description')}</span>
+                <textarea
+                  value={form.description}
+                  onChange={event => setForm({ ...form, description: event.target.value })}
+                  rows={4}
+                  className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                />
+              </label>
+              <div className="md:col-span-2 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={creating || !form.groupeId}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:bg-slate-300"
+                >
+                  <AppIcon name="PlusCircle" className="h-4 w-4" />
+                  {creating ? t('common.creating') : t('projects.submit_project')}
+                </button>
+              </div>
+            </form>
+          </SectionCard>
+        )}
 
         <SectionCard className="mb-6" title={t('common.filters', { defaultValue: 'Filtres' })}>
           <div className="grid gap-3 md:grid-cols-[1fr_220px]">
@@ -101,6 +201,7 @@ export default function ReferentProjets() {
                 </div>
                 <div className="p-5">
                   <div>
+                    <ProjectVisibilityBadge visibility={projet.visibilite} className="mb-2" />
                     <h2 className="font-bold text-blue-900 text-lg leading-tight">{projet.titre}</h2>
                     {projet.groupeNom && (
                       <p className="text-xs text-blue-700 font-semibold mt-1">{t('referent.projectGroup', { group: projet.groupeNom })}</p>
@@ -160,6 +261,39 @@ function Alert({ type, children }) {
     : 'bg-green-50 border-green-200 text-green-700'
 
   return <div className={`border px-4 py-3 rounded-xl mb-5 text-sm ${styles}`}>{children}</div>
+}
+
+function Input({ label, value, onChange, type = 'text', required = false, min }) {
+  return (
+    <label>
+      <span className="block text-sm font-semibold text-gray-700 mb-1">{label}</span>
+      <input
+        type={type}
+        min={min}
+        required={required}
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+      />
+    </label>
+  )
+}
+
+function Select({ label, value, onChange, options, required = false }) {
+  return (
+    <label>
+      <span className="block text-sm font-semibold text-gray-700 mb-1">{label}</span>
+      <select
+        value={value}
+        required={required}
+        onChange={event => onChange(event.target.value)}
+        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+      >
+        <option value="">{label}</option>
+        {options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </select>
+    </label>
+  )
 }
 
 function EmptyState({ children }) {

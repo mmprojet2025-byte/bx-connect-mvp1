@@ -15,23 +15,23 @@ export default function SuperAdminLayout({ children, title, subtitle }) {
   const { t } = useTranslation()
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
-          <aside className="bg-white rounded-2xl shadow p-4 h-fit">
-            <p className="text-xs font-semibold text-gray-400 uppercase mb-3">{t('nav.platform')}</p>
+          <aside className="h-fit rounded-[1.75rem] border border-slate-100 bg-white p-4 shadow-lg shadow-slate-900/5">
+            <p className="mb-3 rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-700">{t('nav.platform')}</p>
             <nav className="space-y-2">
               {links.map(link => (
                 <NavLink
                   key={link.to}
                   to={link.to}
                   className={({ isActive }) =>
-                    `flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition ${
+                    `flex items-center gap-2 px-3 py-2.5 rounded-2xl text-sm font-bold transition ${
                       isActive
-                        ? 'bg-blue-900 text-white'
-                        : 'text-gray-600 hover:bg-blue-50 hover:text-blue-900'
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                        : 'text-slate-600 hover:bg-blue-50 hover:text-blue-900'
                     }`
                   }
                 >
@@ -43,9 +43,10 @@ export default function SuperAdminLayout({ children, title, subtitle }) {
           </aside>
 
           <section>
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-blue-900">{title}</h1>
-              {subtitle && <p className="text-gray-500 text-sm mt-1">{subtitle}</p>}
+            <div className="mb-6 rounded-[2rem] border border-blue-100 bg-white p-6 shadow-lg shadow-blue-950/5">
+              <p className="mb-2 inline-flex rounded-full bg-orange-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-orange-600">BX-Connect</p>
+              <h1 className="text-3xl font-black tracking-tight text-slate-950">{title}</h1>
+              {subtitle && <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-500">{subtitle}</p>}
             </div>
             {children}
           </section>

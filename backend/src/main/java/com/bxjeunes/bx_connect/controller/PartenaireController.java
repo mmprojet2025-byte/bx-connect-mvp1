@@ -25,6 +25,7 @@ public class PartenaireController {
 
     // ─── P03 : Projets ouverts au soutien (public) ───────────────────────────
     @GetMapping("/projets-ouverts")
+    @PreAuthorize("hasRole('PARTENAIRE')")
     public ResponseEntity<List<Map<String, Object>>> projetsSoutienOuverts() {
         return ResponseEntity.ok(partenaireService.projetsSoutienOuverts());
     }

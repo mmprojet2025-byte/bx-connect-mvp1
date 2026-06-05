@@ -2,6 +2,7 @@ package com.bxjeunes.bx_connect.repository;
 
 import com.bxjeunes.bx_connect.entity.Projet;
 import com.bxjeunes.bx_connect.entity.StatutProjet;
+import com.bxjeunes.bx_connect.entity.VisibiliteProjet;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,6 +13,14 @@ public interface ProjetRepository extends JpaRepository<Projet, Long> {
 
     // Projets visibles publiquement (approuvés ou en cours)
     List<Projet> findByStatutIn(List<StatutProjet> statuts);
+
+    List<Projet> findByStatutInAndVisibilite(
+            List<StatutProjet> statuts,
+            VisibiliteProjet visibilite);
+
+    List<Projet> findByStatutInAndVisibiliteIn(
+            List<StatutProjet> statuts,
+            List<VisibiliteProjet> visibilites);
 
     // Projets d'un porteur
     List<Projet> findByPorteurId(Long porteurId);

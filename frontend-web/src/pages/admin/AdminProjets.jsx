@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../../api/axios';
 import Navbar from '../../components/Navbar';
@@ -9,13 +9,16 @@ import ProjectCover from '../../components/ProjectCover';
 import AppIcon from '../../components/ui/AppIcons';
 import PageHeader from '../../components/ui/PageHeader';
 import SectionCard from '../../components/ui/SectionCard';
+import ProjectVisibilityBadge from '../../components/ProjectVisibilityBadge';
 
 const STATUTS = ['BROUILLON', 'SOUMIS', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE'];
-const emptyForm = { titre: '', description: '', budgetDemande: '' };
+const VISIBILITES = ['GROUPE', 'COMMUNAUTE', 'PARTENAIRES', 'PUBLIC'];
+const emptyForm = { titre: '', description: '', budgetDemande: '', groupeId: '', visibilite: 'PUBLIC' };
 
 export default function AdminProjets() {
   const { t } = useTranslation();
   const [projets, setProjets] = useState([]);
+  const [groupes, setGroupes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -27,9 +30,7 @@ export default function AdminProjets() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
 
-  useEffect(() => { fetchProjets(); }, []);
-
-  const fetchProjets = async () => {
+  const fetchProjets = useCallback(async () => {
     try {
       const res = await api.get('/projets/admin/tous');
       setProjets(res.data);
@@ -38,7 +39,14 @@ export default function AdminProjets() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    fetchProjets();
+    api.get('/admin/groupes')
+      .then(res => setGroupes(Array.isArray(res.data) ? res.data : []))
+      .catch(() => setGroupes([]));
+  }, [fetchProjets]);
 
   const resetForm = () => {
     setForm(emptyForm);
@@ -62,6 +70,8 @@ export default function AdminProjets() {
       titre: projet.titre || '',
       description: projet.description || '',
       budgetDemande: projet.budgetDemande ?? '',
+      groupeId: projet.groupeId ?? '',
+      visibilite: projet.visibilite || 'GROUPE',
     });
     setShowForm(true);
   };
@@ -74,6 +84,7 @@ export default function AdminProjets() {
     const payload = {
       ...form,
       budgetDemande: parseFloat(form.budgetDemande) || 0,
+      groupeId: form.groupeId ? Number(form.groupeId) : null,
     };
     try {
       if (editingId) {
@@ -123,7 +134,7 @@ export default function AdminProjets() {
     const matchGroupe = filtreGroupe ? p.groupeNom === filtreGroupe : true;
     return matchRecherche && matchStatut && matchGroupe;
   });
-  const groupes = [...new Set(projets.map(p => p.groupeNom).filter(Boolean))];
+  const nomsGroupes = [...new Set(projets.map(p => p.groupeNom).filter(Boolean))];
   const stats = {
     total: projets.length,
     soumis: projets.filter(p => p.statut === 'SOUMIS').length,
@@ -184,6 +195,19 @@ export default function AdminProjets() {
             </div>
             <Input label={t('projects.form_title')} value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
             <Input label={t('projects.form_budget')} value={form.budgetDemande} onChange={value => setForm({ ...form, budgetDemande: value })} type="number" min="0" />
+            <Select
+              label={t('projects.group')}
+              value={form.groupeId}
+              onChange={value => setForm({ ...form, groupeId: value })}
+              options={groupes.map(groupe => ({ value: groupe.id, label: groupe.nom }))}
+              emptyLabel={t('projects.noGroup')}
+            />
+            <Select
+              label={t('projects.visibility')}
+              value={form.visibilite}
+              onChange={value => setForm({ ...form, visibilite: value })}
+              options={VISIBILITES.map(value => ({ value, label: t(`projectVisibility.${value}`) }))}
+            />
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-1">{t('projects.form_description')}</label>
               <textarea
@@ -243,7 +267,7 @@ export default function AdminProjets() {
               className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
               <option value="">{t('nav.groups')}</option>
-              {groupes.map(groupe => <option key={groupe} value={groupe}>{groupe}</option>)}
+              {nomsGroupes.map(groupe => <option key={groupe} value={groupe}>{groupe}</option>)}
             </select>
           </div>
         </SectionCard>
@@ -272,6 +296,7 @@ export default function AdminProjets() {
                 </div>
                 <div className="p-5">
                   <div className="mb-3">
+                    <ProjectVisibilityBadge visibility={p.visibilite} className="mb-2" />
                     <h3 className="font-bold text-blue-900 text-lg leading-tight">{p.titre}</h3>
                     {p.groupeNom && (
                       <p className="text-xs text-blue-700 font-semibold mt-1">{t('projects.group_label', { group: p.groupeNom })}</p>
@@ -336,6 +361,22 @@ function Input({ label, value, onChange, type = 'text', required = false, min })
         onChange={e => onChange(e.target.value)}
         className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
       />
+    </label>
+  );
+}
+
+function Select({ label, value, onChange, options, emptyLabel }) {
+  return (
+    <label className="block">
+      <span className="block text-sm font-semibold text-gray-700 mb-1">{label}</span>
+      <select
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+      >
+        {emptyLabel && <option value="">{emptyLabel}</option>}
+        {options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </select>
     </label>
   );
 }

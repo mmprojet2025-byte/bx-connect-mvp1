@@ -16,6 +16,9 @@ import java.util.stream.Collectors;
 @Transactional
 public class ProjetService {
 
+    private static final List<StatutProjet> STATUTS_DIFFUSABLES =
+            List.of(StatutProjet.APPROUVE, StatutProjet.EN_COURS, StatutProjet.TERMINE);
+
     private final ProjetRepository projetRepository;
     private final ParticipationProjetRepository participationRepository;
     private final CommentaireProjetRepository commentaireRepository;
@@ -39,12 +42,26 @@ public class ProjetService {
 
     // ─── Lister les projets publics (APPROUVE + EN_COURS) ────────────────────
 
-    public List<ProjetResponse> listerProjetsPublics() {
-        return projetRepository.findByStatutIn(
-                List.of(StatutProjet.APPROUVE, StatutProjet.EN_COURS, StatutProjet.TERMINE))
+    public List<ProjetResponse> listerProjetsVisibles(String emailUser) {
+        if (emailUser == null) {
+            return projetRepository.findByStatutInAndVisibilite(
+                            STATUTS_DIFFUSABLES, VisibiliteProjet.PUBLIC)
+                    .stream()
+                    .map(ProjetResponse::fromEntity)
+                    .collect(Collectors.toList());
+        }
+
+        User user = userRepository.findByEmail(emailUser)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        return projetRepository.findAll()
                 .stream()
+                .filter(projet -> peutConsulterProjet(projet, user))
                 .map(ProjetResponse::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    public List<ProjetResponse> listerProjetsPublics() {
+        return listerProjetsVisibles(null);
     }
 
     // ─── Lister tous les projets (ADMIN / REFERENT) ───────────────────────────
@@ -82,16 +99,26 @@ public class ProjetService {
         projet.setBudgetDemande(request.getBudgetDemande());
         projet.setPorteur(porteur);
         projet.setStatut(StatutProjet.BROUILLON);
+        projet.setVisibilite(request.getVisibilite());
 
         if (porteur.getRole() == Role.MEMBRE) {
             MembreGroupe adhesionActive = membreGroupeRepository
                     .findFirstByUserIdAndStatut(porteur.getId(), StatutMembre.ACCEPTE)
                     .orElseThrow(() -> new RuntimeException("Vous devez etre accepte dans un groupe pour proposer un projet."));
             projet.setGroupe(adhesionActive.getGroupe());
-        } else if (porteur.getRole() != Role.ADMIN) {
-            throw new RuntimeException("Seuls les membres acceptes dans un groupe et les ADMIN peuvent creer un projet.");
+            verifierVisibiliteCreateur(porteur, projet.getVisibilite());
+        } else if (porteur.getRole() == Role.REFERENT) {
+            Groupe groupe = chargerGroupeEncadre(request.getGroupeId(), porteur);
+            projet.setGroupe(groupe);
+            verifierVisibiliteCreateur(porteur, projet.getVisibilite());
+        } else if (porteur.getRole() == Role.ADMIN) {
+            projet.setGroupe(chargerGroupeOptionnel(request.getGroupeId()));
+        } else {
+            throw new AccessDeniedException(
+                    "Seuls les membres, les referents et les administrateurs peuvent creer un projet.");
         }
 
+        verifierCoherenceGroupeVisibilite(projet);
         return ProjetResponse.fromEntity(projetRepository.save(projet));
     }
 
@@ -103,7 +130,7 @@ public class ProjetService {
         User porteur = userRepository.findByEmail(emailPorteur)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
 
-        verifierAccesProjet(projet, porteur);
+        verifierAccesProjet(projet, porteur, ActionProjet.MODIFIER);
         if (!projet.getPorteur().getId().equals(porteur.getId())) {
             throw new RuntimeException("Seul le porteur peut soumettre ce projet");
         }
@@ -124,7 +151,7 @@ public class ProjetService {
         User user = userRepository.findByEmail(emailUser)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
 
-        verifierAccesProjet(projet, user);
+        verifierAccesProjet(projet, user, ActionProjet.MODIFIER);
         boolean isAdmin = user.getRole() == Role.ADMIN;
         boolean isPorteur = projet.getPorteur().getId().equals(user.getId());
         if (!isAdmin && !isPorteur) {
@@ -135,6 +162,17 @@ public class ProjetService {
         projet.setDescription(request.getDescription());
         projet.setObjectifs(request.getObjectifs());
         projet.setBudgetDemande(request.getBudgetDemande());
+        projet.setVisibilite(request.getVisibilite());
+
+        if (isAdmin) {
+            projet.setGroupe(chargerGroupeOptionnel(request.getGroupeId()));
+        } else if (user.getRole() == Role.REFERENT) {
+            projet.setGroupe(chargerGroupeEncadre(request.getGroupeId(), user));
+            verifierVisibiliteCreateur(user, projet.getVisibilite());
+        } else {
+            verifierVisibiliteCreateur(user, projet.getVisibilite());
+        }
+        verifierCoherenceGroupeVisibilite(projet);
 
         return ProjetResponse.fromEntity(projetRepository.save(projet));
     }
@@ -190,7 +228,7 @@ public class ProjetService {
         if (user.getRole() != Role.MEMBRE) {
             throw new AccessDeniedException("Seuls les membres peuvent rejoindre un projet.");
         }
-        verifierAccesProjet(projet, user);
+        verifierAccesProjet(projet, user, ActionProjet.PARTICIPER);
         if (projet.getGroupe() == null || !membreAppartientAuGroupeActif(user, projet.getGroupe())) {
             throw new AccessDeniedException("Vous ne pouvez rejoindre que les projets de votre groupe actif.");
         }
@@ -210,7 +248,7 @@ public class ProjetService {
         Projet projet = projetRepository.findById(projetId)
                 .orElseThrow(() -> new RuntimeException("Projet introuvable"));
 
-        verifierAccesProjet(projet, user);
+        verifierAccesProjet(projet, user, ActionProjet.LIRE);
         CommentaireProjet commentaire = new CommentaireProjet(request.getContenu(), user, projet);
         return CommentaireResponse.fromEntity(commentaireRepository.save(commentaire));
     }
@@ -275,44 +313,105 @@ public class ProjetService {
     }
 
     private void verifierAccesProjet(Projet projet, String emailUser) {
-        if (estProjetPublic(projet)) {
-            return;
-        }
         if (emailUser == null) {
+            if (estProjetPublic(projet)) {
+                return;
+            }
             throw new AccessDeniedException("Acces refuse au projet.");
         }
         User user = userRepository.findByEmail(emailUser)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
-        verifierAccesProjet(projet, user);
+        verifierAccesProjet(projet, user, ActionProjet.LIRE);
     }
 
-    private void verifierAccesProjet(Projet projet, User user) {
-        if (estProjetPublic(projet)) {
-            return;
-        }
-        if (user.getRole() == Role.ADMIN) {
-            return;
-        }
-        if (user.getRole() == Role.SUPER_ADMIN) {
-            throw new AccessDeniedException("Acces refuse au projet.");
-        }
-        if (user.getRole() == Role.MEMBRE) {
-            boolean isPorteur = projet.getPorteur() != null
-                    && projet.getPorteur().getId() != null
-                    && projet.getPorteur().getId().equals(user.getId());
-            if (isPorteur || (projet.getGroupe() != null && membreAppartientAuGroupeActif(user, projet.getGroupe()))) {
-                return;
-            }
-        }
-        if (user.getRole() == Role.REFERENT && referentEncadreProjet(user, projet)) {
+    private void verifierAccesProjet(Projet projet, User user, ActionProjet action) {
+        if (peutConsulterProjet(projet, user)
+                && (action == ActionProjet.LIRE
+                    || action == ActionProjet.PARTICIPER
+                    || estPorteur(user, projet)
+                    || user.getRole() == Role.ADMIN)) {
             return;
         }
         throw new AccessDeniedException("Acces refuse au projet.");
     }
 
     private boolean estProjetPublic(Projet projet) {
-        return List.of(StatutProjet.APPROUVE, StatutProjet.EN_COURS, StatutProjet.TERMINE)
-                .contains(projet.getStatut());
+        return projet.getVisibilite() == VisibiliteProjet.PUBLIC
+                && STATUTS_DIFFUSABLES.contains(projet.getStatut());
+    }
+
+    private boolean peutConsulterProjet(Projet projet, User user) {
+        if (user.getRole() == Role.ADMIN || user.getRole() == Role.SUPER_ADMIN) {
+            return true;
+        }
+        if (estPorteur(user, projet)) {
+            return true;
+        }
+
+        boolean membreDuGroupe = user.getRole() == Role.MEMBRE
+                && projet.getGroupe() != null
+                && membreAppartientAuGroupeActif(user, projet.getGroupe());
+        boolean referentDuGroupe = user.getRole() == Role.REFERENT
+                && referentEncadreProjet(user, projet);
+
+        if (projet.getVisibilite() == VisibiliteProjet.GROUPE) {
+            return membreDuGroupe || referentDuGroupe;
+        }
+        if (!STATUTS_DIFFUSABLES.contains(projet.getStatut())) {
+            return referentDuGroupe;
+        }
+
+        return switch (projet.getVisibilite()) {
+            case COMMUNAUTE -> user.getRole() == Role.MEMBRE || user.getRole() == Role.REFERENT;
+            case PARTENAIRES -> user.getRole() == Role.MEMBRE
+                    || user.getRole() == Role.REFERENT
+                    || user.getRole() == Role.PARTENAIRE;
+            case PUBLIC -> true;
+            case GROUPE -> membreDuGroupe || referentDuGroupe;
+        };
+    }
+
+    private boolean estPorteur(User user, Projet projet) {
+        return projet.getPorteur() != null
+                && projet.getPorteur().getId() != null
+                && projet.getPorteur().getId().equals(user.getId());
+    }
+
+    private Groupe chargerGroupeEncadre(Long groupeId, User referent) {
+        if (groupeId == null) {
+            throw new RuntimeException("Le groupe est obligatoire pour un projet referent.");
+        }
+        Groupe groupe = groupeRepository.findById(groupeId)
+                .orElseThrow(() -> new RuntimeException("Groupe introuvable"));
+        if (groupe.getReferent() == null
+                || groupe.getReferent().getId() == null
+                || !groupe.getReferent().getId().equals(referent.getId())) {
+            throw new AccessDeniedException("Vous ne pouvez creer un projet que pour un groupe que vous encadrez.");
+        }
+        return groupe;
+    }
+
+    private Groupe chargerGroupeOptionnel(Long groupeId) {
+        if (groupeId == null) {
+            return null;
+        }
+        return groupeRepository.findById(groupeId)
+                .orElseThrow(() -> new RuntimeException("Groupe introuvable"));
+    }
+
+    private void verifierVisibiliteCreateur(User user, VisibiliteProjet visibilite) {
+        if ((user.getRole() == Role.MEMBRE || user.getRole() == Role.REFERENT)
+                && visibilite != VisibiliteProjet.GROUPE
+                && visibilite != VisibiliteProjet.COMMUNAUTE) {
+            throw new AccessDeniedException(
+                    "Les membres et referents peuvent choisir uniquement GROUPE ou COMMUNAUTE.");
+        }
+    }
+
+    private void verifierCoherenceGroupeVisibilite(Projet projet) {
+        if (projet.getVisibilite() == VisibiliteProjet.GROUPE && projet.getGroupe() == null) {
+            throw new RuntimeException("Un projet de visibilite GROUPE doit etre rattache a un groupe.");
+        }
     }
 
     private boolean membreAppartientAuGroupeActif(User user, Groupe groupe) {
@@ -335,5 +434,11 @@ public class ProjetService {
             return false;
         }
         return projet.getGroupe().getReferent().getId().equals(referent.getId());
+    }
+
+    private enum ActionProjet {
+        LIRE,
+        MODIFIER,
+        PARTICIPER
     }
 }

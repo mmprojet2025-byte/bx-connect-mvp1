@@ -25,8 +25,8 @@ public class ProjetController {
     // ─── GET /api/projets — Liste publique (APPROUVE, EN_COURS, TERMINE) ─────
 
     @GetMapping
-    public ResponseEntity<List<ProjetResponse>> listerProjetsPublics() {
-        return ResponseEntity.ok(projetService.listerProjetsPublics());
+    public ResponseEntity<List<ProjetResponse>> listerProjetsVisibles(Authentication authentication) {
+        return ResponseEntity.ok(projetService.listerProjetsVisibles(emailAuthentifie(authentication)));
     }
 
     // ─── GET /api/projets/admin/tous — Tous les projets (ADMIN / REFERENT) ───
@@ -61,7 +61,7 @@ public class ProjetController {
     // ─── POST /api/projets — Proposer un projet (M24) ────────────────────────
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('MEMBRE', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT', 'ADMIN')")
     public ResponseEntity<ProjetResponse> proposerProjet(
             @Valid @RequestBody ProjetRequest request,
             Authentication authentication) {

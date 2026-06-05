@@ -2,6 +2,7 @@ package com.bxjeunes.bx_connect.security;
 
 import com.bxjeunes.bx_connect.dto.CommentaireRequest;
 import com.bxjeunes.bx_connect.dto.ProjetRequest;
+import com.bxjeunes.bx_connect.dto.ProjetResponse;
 import com.bxjeunes.bx_connect.entity.Groupe;
 import com.bxjeunes.bx_connect.entity.MembreGroupe;
 import com.bxjeunes.bx_connect.entity.ParticipationProjet;
@@ -10,6 +11,7 @@ import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.StatutMembre;
 import com.bxjeunes.bx_connect.entity.StatutProjet;
 import com.bxjeunes.bx_connect.entity.User;
+import com.bxjeunes.bx_connect.entity.VisibiliteProjet;
 import com.bxjeunes.bx_connect.repository.CommentaireProjetRepository;
 import com.bxjeunes.bx_connect.repository.GroupeRepository;
 import com.bxjeunes.bx_connect.repository.MembreGroupeRepository;
@@ -33,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ProjetSecurityTest {
@@ -77,10 +80,12 @@ class ProjetSecurityTest {
     @Test
     @DisplayName("ADMIN peut creer un projet institutionnel sans groupe actif")
     void admin_peut_creer_projet_institutionnel() {
+        ProjetRequest request = request();
+        request.setVisibilite(VisibiliteProjet.PUBLIC);
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
         when(projetRepository.save(any(Projet.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        assertThat(projetService.proposerProjet(request(), admin.getEmail()).getGroupeNom()).isNull();
+        assertThat(projetService.proposerProjet(request, admin.getEmail()).getGroupeNom()).isNull();
     }
 
     @Test
@@ -125,6 +130,54 @@ class ProjetSecurityTest {
         when(projetRepository.findByGroupeReferentEmail(referent.getEmail())).thenReturn(List.of(projet));
 
         assertThat(projetService.projetsGroupesReferent(referent.getEmail())).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("VISITEUR ne liste que les projets PUBLIC diffusables")
+    void visiteur_ne_liste_que_projets_publics() {
+        Projet projetPublic = projet(40L, StatutProjet.APPROUVE, null, admin);
+        projetPublic.setVisibilite(VisibiliteProjet.PUBLIC);
+        when(projetRepository.findByStatutInAndVisibilite(
+                List.of(StatutProjet.APPROUVE, StatutProjet.EN_COURS, StatutProjet.TERMINE),
+                VisibiliteProjet.PUBLIC)).thenReturn(List.of(projetPublic));
+
+        assertThat(projetService.listerProjetsVisibles(null)).extracting(ProjetResponse::getId)
+                .containsExactly(40L);
+    }
+
+    @Test
+    @DisplayName("REFERENT peut creer un projet uniquement pour son groupe")
+    void referent_cree_uniquement_pour_son_groupe() {
+        ProjetRequest request = request();
+        request.setGroupeId(groupe.getId());
+        request.setVisibilite(VisibiliteProjet.COMMUNAUTE);
+
+        when(userRepository.findByEmail(referent.getEmail())).thenReturn(Optional.of(referent));
+        when(groupeRepository.findById(groupe.getId())).thenReturn(Optional.of(groupe));
+        when(projetRepository.save(any(Projet.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        assertThat(projetService.proposerProjet(request, referent.getEmail()).getGroupeId())
+                .isEqualTo(groupe.getId());
+
+        request.setGroupeId(autreGroupe.getId());
+        when(groupeRepository.findById(autreGroupe.getId())).thenReturn(Optional.of(autreGroupe));
+        assertThatThrownBy(() -> projetService.proposerProjet(request, referent.getEmail()))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    @DisplayName("ADMIN peut rattacher un projet au groupe demande")
+    void admin_peut_rattacher_projet_au_groupe() {
+        ProjetRequest request = request();
+        request.setGroupeId(groupe.getId());
+        request.setVisibilite(VisibiliteProjet.GROUPE);
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(groupeRepository.findById(groupe.getId())).thenReturn(Optional.of(groupe));
+        when(projetRepository.save(any(Projet.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        assertThat(projetService.proposerProjet(request, admin.getEmail()).getGroupeId())
+                .isEqualTo(groupe.getId());
+        verify(groupeRepository).findById(groupe.getId());
     }
 
     @Test
@@ -183,9 +236,10 @@ class ProjetSecurityTest {
     }
 
     @Test
-    @DisplayName("SUPER_ADMIN limite aux projets publics")
-    void super_admin_limite_aux_projets_publics() {
+    @DisplayName("SUPER_ADMIN peut consulter les projets sans action metier")
+    void super_admin_peut_consulter_les_projets() {
         Projet projetPublic = projet(42L, StatutProjet.APPROUVE, null, membre);
+        projetPublic.setVisibilite(VisibiliteProjet.PUBLIC);
         Projet projetPrive = projet(43L, StatutProjet.SOUMIS, groupe, membre);
 
         when(projetRepository.findById(42L)).thenReturn(Optional.of(projetPublic));
@@ -193,8 +247,7 @@ class ProjetSecurityTest {
         when(userRepository.findByEmail(superAdmin.getEmail())).thenReturn(Optional.of(superAdmin));
 
         assertThat(projetService.getProjet(42L, superAdmin.getEmail()).getId()).isEqualTo(42L);
-        assertThatThrownBy(() -> projetService.getProjet(43L, superAdmin.getEmail()))
-                .isInstanceOf(AccessDeniedException.class);
+        assertThat(projetService.getProjet(43L, superAdmin.getEmail()).getId()).isEqualTo(43L);
     }
 
     @Test

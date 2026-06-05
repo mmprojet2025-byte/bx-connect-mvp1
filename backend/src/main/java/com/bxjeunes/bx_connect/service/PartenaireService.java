@@ -41,6 +41,14 @@ public class PartenaireService {
 
         Projet projet = projetRepository.findById(request.getProjetId())
                 .orElseThrow(() -> new RuntimeException("Projet introuvable : " + request.getProjetId()));
+        boolean statutOuvert = projet.getStatut() == StatutProjet.APPROUVE
+                || projet.getStatut() == StatutProjet.EN_COURS;
+        boolean visiblePartenaire = projet.getVisibilite() == VisibiliteProjet.PARTENAIRES
+                || projet.getVisibilite() == VisibiliteProjet.PUBLIC;
+        if (!statutOuvert || !visiblePartenaire) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Ce projet n'est pas ouvert au soutien partenaire.");
+        }
 
         SoutienFinancier soutien = new SoutienFinancier();
         soutien.setMontant(request.getMontant());
@@ -120,16 +128,22 @@ public class PartenaireService {
 
     // ─── P03 : Projets ouverts au soutien ────────────────────────────────────
     public List<Map<String, Object>> projetsSoutienOuverts() {
-        return projetRepository.findAll().stream()
-                .filter(p -> p.getStatut() == StatutProjet.APPROUVE
-                          || p.getStatut() == StatutProjet.EN_COURS)
+        return projetRepository.findByStatutInAndVisibiliteIn(
+                        List.of(StatutProjet.APPROUVE, StatutProjet.EN_COURS),
+                        List.of(VisibiliteProjet.PARTENAIRES, VisibiliteProjet.PUBLIC))
+                .stream()
                 .map(p -> {
                     Map<String, Object> m = new HashMap<>();
                     m.put("id",          p.getId());
                     m.put("titre",       p.getTitre());
                     m.put("description", p.getDescription());
                     m.put("statut",      p.getStatut());
+                    m.put("visibilite",  p.getVisibilite());
                     m.put("budgetDemande", p.getBudgetDemande());
+                    if (p.getGroupe() != null) {
+                        m.put("groupeId", p.getGroupe().getId());
+                        m.put("groupeNom", p.getGroupe().getNom());
+                    }
                     BigDecimal totalRecu = soutienRepository.totalSoutiensProjet(p.getId());
                     m.put("totalSoutiensRecus", totalRecu);
                     return m;

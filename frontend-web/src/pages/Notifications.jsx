@@ -73,7 +73,7 @@ export default function Notifications() {
   const nonLues = notifications.filter(n => !n.lue).length;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-10">
 
@@ -100,7 +100,7 @@ export default function Notifications() {
             actionTo="/login"
           />
         ) : loading ? (
-          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
+          <p className="text-slate-400 text-center py-10">{t('common.loading')}</p>
         ) : notifications.length === 0 ? (
           <EmptyState
             title={t('notifications.emptyTitle')}
@@ -122,21 +122,21 @@ export default function Notifications() {
                   <AppIcon name={typeIcon(n.type)} className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm ${!n.lue ? 'font-bold text-blue-900' : 'font-medium text-gray-700'}`}>
+                  <p className={`text-sm ${!n.lue ? 'font-bold text-slate-950' : 'font-medium text-slate-700'}`}>
                     {n.titre}
                   </p>
-                  <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{n.message}</p>
+                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{n.message}</p>
                   {n.lienAction && (
                     <Link
                       to={n.lienAction}
                       onClick={e => { e.stopPropagation(); if (!n.lue) handleMarquerLue(n.id); }}
-                      className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
                     >
                       <AppIcon name="Eye" className="h-3.5 w-3.5" />
                       {t('common.open')}
                     </Link>
                   )}
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-slate-400 mt-1">
                     {new Date(n.dateCreation).toLocaleDateString(i18n.language || 'fr-BE', {
                       day: '2-digit', month: '2-digit', year: 'numeric',
                       hour: '2-digit', minute: '2-digit'
@@ -144,7 +144,7 @@ export default function Notifications() {
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                  <span className={`text-[10px] font-semibold rounded-full px-2 py-0.5 ${n.lue ? 'bg-gray-100 text-gray-500' : 'bg-blue-100 text-blue-700'}`}>
+                  <span className={`text-[10px] font-semibold rounded-full px-2 py-0.5 ${n.lue ? 'bg-gray-100 text-slate-500' : 'bg-blue-100 text-blue-600'}`}>
                     {n.lue ? t('notifications.read') : t('notifications.unread')}
                   </span>
                   {!n.lue && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />}

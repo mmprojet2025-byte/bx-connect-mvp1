@@ -171,7 +171,18 @@
     "fallback_image": "Projet BX-Connect",
     "group_label": "Groupe : {{group}}",
     "owner_label": "Porteur : {{owner}}",
-    "participants_count": "{{count}} participant(s)"
+    "participants_count": "{{count}} participant(s)",
+    "visibility": "Visibilité",
+    "group": "Groupe associé",
+    "noGroup": "Projet institutionnel sans groupe",
+    "participationSoon": "La demande de participation sera disponible dans une prochaine étape.",
+    "successSubmitted": "Projet créé et soumis à validation."
+  },
+  "projectVisibility": {
+    "GROUPE": "Groupe",
+    "COMMUNAUTE": "Communauté",
+    "PARTENAIRES": "Partenaires",
+    "PUBLIC": "Public"
   },
   "groups": {
     "title": "Groupes",

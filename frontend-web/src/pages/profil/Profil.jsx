@@ -85,17 +85,17 @@ export default function Profil() {
   };
 
   if (loading) return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
       <main className="flex-1 flex items-center justify-center">
-        <p className="text-gray-400">{t('common.loading')}</p>
+        <p className="text-slate-400">{t('common.loading')}</p>
       </main>
       <Footer />
     </div>
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-10">
@@ -138,7 +138,7 @@ export default function Profil() {
               <div className="flex-1 min-w-0">
               {!editMode ? (
                 <>
-                  <h2 className="text-2xl font-bold text-blue-900 mb-2">
+                  <h2 className="text-2xl font-bold text-slate-950 mb-2">
                     {profil?.prenom} {profil?.nom}
                   </h2>
                   <span className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
@@ -160,7 +160,7 @@ export default function Profil() {
                   </div>
                   <button
                     onClick={() => setEditMode(true)}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-600"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500"
                   >
                     <AppIcon name="Edit" className="h-4 w-4" />
                     {t('profile.edit_btn')}
@@ -169,7 +169,7 @@ export default function Profil() {
               ) : (
                 <form onSubmit={handleSaveProfil} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('profile.firstname')}</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.firstname')}</label>
                     <input
                       value={form.prenom}
                       onChange={(e) => setForm({ ...form, prenom: e.target.value })}
@@ -177,7 +177,7 @@ export default function Profil() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('profile.lastname')}</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.lastname')}</label>
                     <input
                       value={form.nom}
                       onChange={(e) => setForm({ ...form, nom: e.target.value })}
@@ -185,7 +185,7 @@ export default function Profil() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('profile.language')}</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.language')}</label>
                     <select
                       value={form.languePreference}
                       onChange={(e) => setForm({ ...form, languePreference: e.target.value })}
@@ -201,7 +201,7 @@ export default function Profil() {
                       <AppIcon name="Save" className="h-4 w-4" />
                       {t('profile.save_btn')}
                     </button>
-                    <button type="button" onClick={() => setEditMode(false)} className="inline-flex items-center gap-2 rounded-2xl bg-gray-200 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-300">
+                    <button type="button" onClick={() => setEditMode(false)} className="inline-flex items-center gap-2 rounded-2xl bg-gray-200 px-4 py-2 text-sm text-slate-700 transition hover:bg-gray-300">
                       <AppIcon name="XCircle" className="h-4 w-4" />
                       {t('profile.cancel_btn')}
                     </button>
@@ -219,8 +219,8 @@ export default function Profil() {
               <AppIcon name="Lock" className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-blue-900">{t('profile.security')}</h3>
-              <p className="text-xs text-gray-500 mt-1">{profil?.email}</p>
+              <h3 className="text-lg font-bold text-slate-950">{t('profile.security')}</h3>
+              <p className="text-xs text-slate-500 mt-1">{profil?.email}</p>
             </div>
           </div>
           {!showPasswordForm ? (
@@ -234,7 +234,7 @@ export default function Profil() {
           ) : (
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('profile.old_password')}</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.old_password')}</label>
                 <input
                   type="password"
                   value={passwordForm.ancienMotDePasse}
@@ -243,7 +243,7 @@ export default function Profil() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('profile.new_password')}</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.new_password')}</label>
                 <input
                   type="password"
                   value={passwordForm.nouveauMotDePasse}
@@ -256,7 +256,7 @@ export default function Profil() {
                   <AppIcon name="Save" className="h-4 w-4" />
                   {t('profile.save_password')}
                 </button>
-                <button type="button" onClick={() => setShowPasswordForm(false)} className="inline-flex items-center gap-2 rounded-2xl bg-gray-200 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-300">
+                <button type="button" onClick={() => setShowPasswordForm(false)} className="inline-flex items-center gap-2 rounded-2xl bg-gray-200 px-4 py-2 text-sm text-slate-700 transition hover:bg-gray-300">
                   <AppIcon name="XCircle" className="h-4 w-4" />
                   {t('profile.cancel_btn')}
                 </button>
@@ -289,9 +289,9 @@ function getApiError(err, fallback, t) {
 
 function ProfileInfo({ label, value }) {
   return (
-    <div className="rounded-2xl bg-gray-50 px-4 py-3">
-      <p className="text-xs font-semibold uppercase text-gray-400">{label}</p>
-      <div className="mt-1 text-sm font-semibold text-gray-700 break-words">{value || '—'}</div>
+    <div className="rounded-2xl bg-slate-50 px-4 py-3">
+      <p className="text-xs font-semibold uppercase text-slate-400">{label}</p>
+      <div className="mt-1 text-sm font-semibold text-slate-700 break-words">{value || '—'}</div>
     </div>
   );
 }

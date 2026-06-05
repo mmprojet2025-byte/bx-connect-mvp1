@@ -45,7 +45,7 @@ export default function Dashboard() {
   const messagerieDisponible = dashboard?.messagerieDisponible || false
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
         <PageHeader
@@ -61,7 +61,7 @@ export default function Dashboard() {
         )}
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">{t('memberDashboard.loading')}</p>
+          <p className="text-slate-400 text-center py-10">{t('memberDashboard.loading')}</p>
         ) : dashboard ? (
           <div className="space-y-6">
             <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6">
@@ -104,9 +104,9 @@ export default function Dashboard() {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow p-10 text-center">
-            <p className="text-gray-500 text-sm mb-4">{t('memberDashboard.unavailable')}</p>
-            <Link to="/activites" className="text-blue-700 text-sm font-semibold hover:underline">
+          <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-10 text-center">
+            <p className="text-slate-500 text-sm mb-4">{t('memberDashboard.unavailable')}</p>
+            <Link to="/activites" className="text-blue-600 text-sm font-semibold hover:underline">
               {t('memberDashboard.buttons.viewActivities')}
             </Link>
           </div>

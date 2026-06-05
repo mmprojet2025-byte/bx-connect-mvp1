@@ -67,7 +67,7 @@ export default function ReferentDashboard() {
   const prochainesActivites = activites.slice(0, 4)
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
         <PageHeader
@@ -84,7 +84,7 @@ export default function ReferentDashboard() {
         {error && <Alert type="error">{error}</Alert>}
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
+          <p className="text-slate-400 text-center py-10">{t('common.loading')}</p>
         ) : (
           <>
             <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -123,11 +123,11 @@ export default function ReferentDashboard() {
               <SectionCard>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="inline-flex items-center gap-2 font-bold text-blue-900">
+                    <h2 className="inline-flex items-center gap-2 font-bold text-slate-950">
                       <AppIcon name="Clock" className="h-5 w-5 text-amber-600" />
                       {t('ux.referentDashboard.requestsToHandle')}
                     </h2>
-                    <p className="text-sm text-gray-500">{t('ux.referentDashboard.requestsDesc')}</p>
+                    <p className="text-sm text-slate-500">{t('ux.referentDashboard.requestsDesc')}</p>
                   </div>
                   <Link to="/referent/demandes" className="rounded-full bg-teal-50 px-3 py-1.5 text-sm font-semibold text-teal-700 transition hover:bg-teal-100">
                     {t('referent.viewRequests')}
@@ -145,8 +145,8 @@ export default function ReferentDashboard() {
                   <div className="grid gap-3">
                     {demandesRecentes.map(demande => (
                       <div key={`${demande.groupeNom}-${demande.id}`} className="border border-amber-100 bg-amber-50 rounded-xl p-4">
-                        <p className="font-semibold text-blue-900 text-sm">{demande.prenom} {demande.nom}</p>
-                        <p className="text-xs text-gray-500 mt-1">{demande.groupeNom} · {formatDate(demande.dateAdhesion, i18n.language)}</p>
+                        <p className="font-semibold text-slate-950 text-sm">{demande.prenom} {demande.nom}</p>
+                        <p className="text-xs text-slate-500 mt-1">{demande.groupeNom} · {formatDate(demande.dateAdhesion, i18n.language)}</p>
                       </div>
                     ))}
                   </div>
@@ -154,7 +154,7 @@ export default function ReferentDashboard() {
               </SectionCard>
 
               <SectionCard>
-                <h2 className="inline-flex items-center gap-2 font-bold text-blue-900 mb-4">
+                <h2 className="inline-flex items-center gap-2 font-bold text-slate-950 mb-4">
                   <AppIcon name="Rocket" className="h-5 w-5 text-teal-700" />
                   {t('ux.referentDashboard.quickActions')}
                 </h2>
@@ -174,11 +174,11 @@ export default function ReferentDashboard() {
                   <div className="grid gap-3">
                     {groupes.map(groupe => (
                       <div key={groupe.id} className="rounded-2xl border border-gray-100 p-4 transition hover:bg-teal-50/40">
-                        <h3 className="inline-flex items-center gap-2 font-semibold text-blue-900">
+                        <h3 className="inline-flex items-center gap-2 font-semibold text-slate-950">
                           <AppIcon name="Users" className="h-4 w-4 text-teal-700" />
                           {groupe.nom}
                         </h3>
-                        <p className="text-xs text-gray-400 mt-2">{t('groups.members_count', { count: groupe.nombreMembres ?? 0 })}</p>
+                        <p className="text-xs text-slate-400 mt-2">{t('groups.members_count', { count: groupe.nombreMembres ?? 0 })}</p>
                       </div>
                     ))}
                   </div>
@@ -192,8 +192,8 @@ export default function ReferentDashboard() {
                   <div className="grid gap-3">
                     {membresRecents.map(membre => (
                       <div key={`${membre.groupeNom}-${membre.id}`} className="rounded-2xl border border-gray-100 p-3 transition hover:bg-teal-50/40">
-                        <p className="font-semibold text-blue-900 text-sm">{membre.prenom} {membre.nom}</p>
-                        <p className="text-xs text-gray-400">{membre.groupeNom}</p>
+                        <p className="font-semibold text-slate-950 text-sm">{membre.prenom} {membre.nom}</p>
+                        <p className="text-xs text-slate-400">{membre.groupeNom}</p>
                       </div>
                     ))}
                   </div>
@@ -208,11 +208,11 @@ export default function ReferentDashboard() {
                 <div className="grid md:grid-cols-2 gap-3">
                   {prochainesActivites.map(activite => (
                     <div key={activite.id} className="rounded-2xl border border-gray-100 p-4 transition hover:bg-teal-50/40">
-                      <h3 className="inline-flex items-center gap-2 font-semibold text-blue-900">
+                      <h3 className="inline-flex items-center gap-2 font-semibold text-slate-950">
                         <AppIcon name="Calendar" className="h-4 w-4 text-teal-700" />
                         {activite.titre}
                       </h3>
-                      <p className="text-xs text-gray-400 mt-1">{activite.dateDebut ? formatDate(activite.dateDebut, i18n.language) : t('memberDashboard.activities.dateToConfirm')}</p>
+                      <p className="text-xs text-slate-400 mt-1">{activite.dateDebut ? formatDate(activite.dateDebut, i18n.language) : t('memberDashboard.activities.dateToConfirm')}</p>
                     </div>
                   ))}
                 </div>
@@ -238,7 +238,7 @@ function StatCard({ label, value, to, actionLabel, highlight = false, icon = 'Ba
           <AppIcon name={icon} className="h-5 w-5" />
         </span>
       </div>
-      <p className="text-sm text-gray-500 mt-1">{label}</p>
+      <p className="text-sm text-slate-500 mt-1">{label}</p>
       <span className={`inline-flex mt-4 text-xs font-semibold ${highlight ? 'text-amber-800' : 'text-teal-700'} group-hover:underline`}>
         {actionLabel}
       </span>
@@ -248,9 +248,9 @@ function StatCard({ label, value, to, actionLabel, highlight = false, icon = 'Ba
 
 function InfoPanel({ title, to, actionLabel, children }) {
   return (
-    <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+    <section className="bg-white rounded-[1.75rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-bold text-blue-900">{title}</h2>
+        <h2 className="font-bold text-slate-950">{title}</h2>
         <Link to={to} className="rounded-full bg-teal-50 px-3 py-1.5 text-sm font-semibold text-teal-700 transition hover:bg-teal-100">
           {actionLabel}
         </Link>
@@ -264,7 +264,7 @@ function MiniEmpty({ icon, text }) {
   return (
     <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center">
       <AppIcon name={icon} className="mx-auto mb-2 h-8 w-8 text-teal-200" />
-      <p className="text-sm text-gray-400">{text}</p>
+      <p className="text-sm text-slate-400">{text}</p>
     </div>
   )
 }

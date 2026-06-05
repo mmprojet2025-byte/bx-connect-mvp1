@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../api/axios'
@@ -10,6 +10,10 @@ import EmptyState from '../../components/ui/EmptyState'
 import StatusBadge from '../../components/StatusBadge'
 import ProjectCover from '../../components/ProjectCover'
 import { userFriendlyError } from '../../utils/userFriendlyError'
+import PageHeader from '../../components/ui/PageHeader'
+import ProjectVisibilityBadge from '../../components/ProjectVisibilityBadge'
+
+const MEMBER_VISIBILITIES = ['GROUPE', 'COMMUNAUTE']
 
 export default function Projets() {
   const { isAuthenticated, isMembre } = useAuth()
@@ -20,17 +24,15 @@ export default function Projets() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ titre: '', description: '', budgetDemande: '', imageUrl: '' })
+  const [form, setForm] = useState({
+    titre: '',
+    description: '',
+    budgetDemande: '',
+    imageUrl: '',
+    visibilite: 'GROUPE',
+  })
 
-  useEffect(() => {
-    fetchProjets()
-  }, [])
-
-  useEffect(() => {
-    if (isAuthenticated && isMembre) fetchAdhesions()
-  }, [isAuthenticated, isMembre])
-
-  const fetchProjets = async () => {
+  const fetchProjets = useCallback(async () => {
     setLoading(true)
     try {
       const res = await api.get('/projets')
@@ -41,16 +43,24 @@ export default function Projets() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [t])
 
-  const fetchAdhesions = async () => {
+  const fetchAdhesions = useCallback(async () => {
     try {
       const res = await api.get('/groupes/mes-adhesions')
       setAdhesions(res.data)
     } catch {
       setAdhesions([])
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    fetchProjets()
+  }, [fetchProjets])
+
+  useEffect(() => {
+    if (isAuthenticated && isMembre) fetchAdhesions()
+  }, [fetchAdhesions, isAuthenticated, isMembre])
 
   const groupeActif = useMemo(
     () => adhesions.find(adhesion => adhesion.statut === 'ACCEPTE'),
@@ -72,7 +82,7 @@ export default function Projets() {
       await api.patch(`/projets/${res.data.id}/soumettre`)
       setMessage(t('ux.projects.submitted'))
       setShowForm(false)
-      setForm({ titre: '', description: '', budgetDemande: '', imageUrl: '' })
+      setForm({ titre: '', description: '', budgetDemande: '', imageUrl: '', visibilite: 'GROUPE' })
       fetchProjets()
     } catch (err) {
       setError(userFriendlyError(err, t('projects.error_submit')))
@@ -80,24 +90,22 @@ export default function Projets() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
-        <header className="mb-6">
-          <p className="text-sm font-semibold text-blue-700 uppercase tracking-wide">{t('ux.projects.eyebrow')}</p>
-          <h1 className="text-3xl font-bold text-blue-900 mt-1">{t('ux.projects.title')}</h1>
-          <p className="text-gray-500 text-sm mt-2 max-w-2xl">
-            {t('ux.projects.intro')}
-          </p>
-        </header>
+        <PageHeader
+          eyebrow={t('ux.projects.eyebrow')}
+          title={t('ux.projects.title')}
+          description={t('ux.projects.intro')}
+        />
 
         {message && <Alert>{message}</Alert>}
         {error && <Alert type="error">{error}</Alert>}
 
-        <section className="bg-white rounded-2xl shadow p-5 mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <section className="bg-white rounded-[1.5rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-5 mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h2 className="font-semibold text-blue-900">{t('ux.projects.workflow')}</h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <h2 className="font-semibold text-slate-950">{t('ux.projects.workflow')}</h2>
+            <p className="text-sm text-slate-500 mt-1">
               {t('ux.projects.workflowDesc')}
             </p>
             {isMembre && !groupeActif && (
@@ -112,7 +120,7 @@ export default function Projets() {
               type="button"
               onClick={() => setShowForm(open => !open)}
               disabled={!peutProposer}
-              className="bg-blue-700 hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
+              className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-300 disabled:text-slate-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
             >
               {showForm ? t('common.cancel') : t('ux.projects.propose')}
             </button>
@@ -120,8 +128,8 @@ export default function Projets() {
         </section>
 
         {showForm && peutProposer && (
-          <section className="bg-white rounded-2xl shadow p-6 mb-6">
-            <h2 className="text-lg font-bold text-blue-900 mb-4">{t('ux.projects.new')}</h2>
+          <section className="bg-white rounded-[1.5rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-6 mb-6">
+            <h2 className="text-lg font-bold text-slate-950 mb-4">{t('ux.projects.new')}</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <ImageUpload
                 type="projet"
@@ -132,7 +140,7 @@ export default function Projets() {
               />
               <Input label={t('projects.form_title')} value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('projects.form_description')}</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('projects.form_description')}</label>
                 <textarea
                   required
                   value={form.description}
@@ -142,7 +150,13 @@ export default function Projets() {
                 />
               </div>
               <Input label={t('projects.form_budget')} value={form.budgetDemande} onChange={value => setForm({ ...form, budgetDemande: value })} type="number" min="0" />
-              <button type="submit" className="bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+              <VisibilitySelect
+                value={form.visibilite}
+                options={MEMBER_VISIBILITIES}
+                onChange={value => setForm({ ...form, visibilite: value })}
+                t={t}
+              />
+              <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
                 {t('projects.submit_project')}
               </button>
             </form>
@@ -150,7 +164,7 @@ export default function Projets() {
         )}
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">{t('projects.loading')}</p>
+          <p className="text-slate-400 text-center py-10">{t('projects.loading')}</p>
         ) : projets.length === 0 ? (
           <EmptyState
             title={t('ux.projects.emptyTitle')}
@@ -165,7 +179,7 @@ export default function Projets() {
                 key={projet.id}
                 projet={projet}
                 isAuthenticated={isAuthenticated}
-                supportLabel={t('ux.projects.support')}
+                supportLabel={t('projects.participationSoon')}
                 t={t}
               />
             ))}
@@ -179,7 +193,7 @@ export default function Projets() {
 
 function ProjectCard({ projet, isAuthenticated, supportLabel, t }) {
   return (
-    <article className="bg-white rounded-2xl shadow overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition flex flex-col">
+    <article className="bg-white rounded-[1.5rem] border border-slate-100 shadow-lg shadow-slate-900/5 overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition flex flex-col">
       <div className="relative">
         <ProjectCover imageUrl={projet.imageUrl} title={projet.titre} className="h-44" />
         <div className="absolute left-4 top-4">
@@ -190,12 +204,13 @@ function ProjectCard({ projet, isAuthenticated, supportLabel, t }) {
       </div>
       <div className="p-5 flex flex-col flex-1">
         <div className="mb-3">
-          <h2 className="font-bold text-blue-900 text-lg leading-tight">{projet.titre}</h2>
+          <ProjectVisibilityBadge visibility={projet.visibilite} className="mb-2" />
+          <h2 className="font-bold text-slate-950 text-lg leading-tight">{projet.titre}</h2>
           {projet.groupeNom && (
-            <p className="text-xs text-blue-700 font-semibold mt-1">{t('projects.group_label', { group: projet.groupeNom })}</p>
+            <p className="text-xs text-blue-600 font-semibold mt-1">{t('projects.group_label', { group: projet.groupeNom })}</p>
           )}
         </div>
-        <p className="text-sm text-gray-500 leading-relaxed line-clamp-3">
+        <p className="text-sm text-slate-500 leading-relaxed line-clamp-3">
           {projet.description || t('projects.description_soon')}
         </p>
         <div className="grid grid-cols-2 gap-2 text-xs mt-4">
@@ -217,20 +232,37 @@ function ProjectCard({ projet, isAuthenticated, supportLabel, t }) {
           />
         </div>
         {isAuthenticated && projet.statut === 'APPROUVE' && (
-          <button type="button" className="w-full mt-5 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold py-2.5 rounded-xl transition">
+          <p className="mt-5 rounded-xl bg-slate-50 px-3 py-2 text-center text-xs font-semibold text-slate-500">
             {supportLabel}
-          </button>
+          </p>
         )}
       </div>
     </article>
   )
 }
 
+function VisibilitySelect({ value, options, onChange, t }) {
+  return (
+    <label className="block">
+      <span className="block text-sm font-medium text-slate-700 mb-1">{t('projects.visibility')}</span>
+      <select
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+      >
+        {options.map(option => (
+          <option key={option} value={option}>{t(`projectVisibility.${option}`)}</option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
 function InfoPill({ label, value }) {
   return (
-    <div className="rounded-xl bg-gray-50 px-3 py-2">
-      <p className="text-[10px] font-semibold uppercase text-gray-400">{label}</p>
-      <p className="mt-0.5 font-semibold text-gray-700 truncate">{value}</p>
+    <div className="rounded-xl bg-slate-50 px-3 py-2">
+      <p className="text-[10px] font-semibold uppercase text-slate-400">{label}</p>
+      <p className="mt-0.5 font-semibold text-slate-700 truncate">{value}</p>
     </div>
   )
 }
@@ -242,7 +274,7 @@ function formatProjectDate(value) {
 function Input({ label, value, onChange, type = 'text', required = false, min }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
       <input
         required={required}
         type={type}

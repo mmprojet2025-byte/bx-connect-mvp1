@@ -5,6 +5,7 @@ import Footer from '../../components/Footer';
 import api from '../../api/axios';
 import { userFriendlyError } from '../../utils/userFriendlyError';
 import AppIcon from '../../components/ui/AppIcons';
+import ProjectVisibilityBadge from '../../components/ProjectVisibilityBadge';
 
 export default function PartenaireSpace() {
   const { user } = useAuth();
@@ -209,7 +210,10 @@ export default function PartenaireSpace() {
                 {projetsOuverts.map(p => (
                   <div key={p.id} className="bg-white rounded-2xl shadow p-5">
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-bold text-blue-900">{p.titre}</h3>
+                      <div>
+                        <ProjectVisibilityBadge visibility={p.visibilite} className="mb-2" />
+                        <h3 className="font-bold text-blue-900">{p.titre}</h3>
+                      </div>
                       <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">{p.statut}</span>
                     </div>
                     {p.description && <p className="text-gray-500 text-sm mb-3 line-clamp-2">{p.description}</p>}
