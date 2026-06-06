@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, TextInput, ActivityIndicator
+  TouchableOpacity, TextInput, ActivityIndicator, Switch
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,12 @@ import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { changeAppLanguage } from '../i18n';
 import AppIcon from '../components/AppIcon';
+import {
+  disablePushNotifications,
+  enablePushNotifications,
+  getPushPreferences,
+  unregisterCurrentPushDevice,
+} from '../services/pushNotifications';
 import {
   ActionCard,
   Avatar,
@@ -40,6 +46,8 @@ export default function ProfileScreen({ navigation }) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
 
   const [form, setForm] = useState({
     prenom: '',
@@ -68,11 +76,21 @@ export default function ProfileScreen({ navigation }) {
         nom: res.data.nom,
         languePreference: res.data.languePreference || 'FR',
       });
+      fetchPushPreference();
     } catch (err) {
       setProfil(null);
       setError(getApiError(err, t('profile.error_load'), t));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPushPreference = async () => {
+    try {
+      const preferences = await getPushPreferences();
+      setPushEnabled(Boolean(preferences.enabled));
+    } catch {
+      setPushEnabled(false);
     }
   };
 
@@ -132,7 +150,49 @@ export default function ProfileScreen({ navigation }) {
   };
 
   const handleLogout = async () => {
+    try {
+      await unregisterCurrentPushDevice();
+    } catch {
+      // La deconnexion locale reste prioritaire si le backend est indisponible.
+    }
     await logout();
+  };
+
+  const handlePushPreference = async (enabled) => {
+    setPushLoading(true);
+    setMessage('');
+    setError('');
+    try {
+      if (!enabled) {
+        const preferences = await disablePushNotifications();
+        setPushEnabled(Boolean(preferences.enabled));
+        setMessage(t('push.disabledSuccess'));
+        return;
+      }
+
+      const result = await enablePushNotifications();
+      if (result.status === 'enabled') {
+        setPushEnabled(true);
+        setMessage(t('push.enabledSuccess'));
+      } else if (result.status === 'denied') {
+        setPushEnabled(false);
+        setError(t('push.permissionDenied'));
+      } else if (result.status === 'physical-device-required') {
+        setPushEnabled(false);
+        setError(t('push.physicalDeviceRequired'));
+      } else if (result.status === 'missing-project-id') {
+        setPushEnabled(false);
+        setError(t('push.missingProjectId'));
+      } else {
+        setPushEnabled(false);
+        setError(t('push.unsupported'));
+      }
+    } catch (err) {
+      setPushEnabled(false);
+      setError(getApiError(err, t('push.error'), t));
+    } finally {
+      setPushLoading(false);
+    }
   };
 
   const handlePhotoSoon = () => {
@@ -363,6 +423,33 @@ export default function ProfileScreen({ navigation }) {
           </View>
         </Card>
       )}
+
+      <View style={styles.sectionHeading}>
+        <Text style={styles.sectionTitle}>{t('push.title')}</Text>
+        <Text style={styles.sectionSubtitle}>{t('push.description')}</Text>
+      </View>
+      <Card style={styles.pushCard}>
+        <View style={styles.pushIcon}>
+          <AppIcon name="bell" size={20} color={COLORS.bxBlueLight} />
+        </View>
+        <View style={styles.pushContent}>
+          <Text style={styles.pushLabel}>{t('push.enable')}</Text>
+          <Text style={styles.pushHint}>
+            {pushEnabled ? t('push.enabledHint') : t('push.disabledHint')}
+          </Text>
+        </View>
+        {pushLoading ? (
+          <ActivityIndicator color={COLORS.bxBlueLight} size="small" />
+        ) : (
+          <Switch
+            value={pushEnabled}
+            onValueChange={handlePushPreference}
+            trackColor={{ false: COLORS.border, true: COLORS.softBlue }}
+            thumbColor={pushEnabled ? COLORS.bxBlueLight : COLORS.muted}
+            accessibilityLabel={t('push.enable')}
+          />
+        )}
+      </Card>
 
       <View style={styles.sectionHeading}>
         <Text style={styles.sectionTitle}>{t('legal.profileTitle')}</Text>
@@ -649,4 +736,21 @@ const styles = StyleSheet.create({
   },
   legalActionText: { flex: 1, color: COLORS.text, ...TYPOGRAPHY.caption, fontWeight: '800' },
   legalVersion: { color: COLORS.muted, ...TYPOGRAPHY.tiny, marginTop: SPACING.sm },
+  pushCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  pushIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: BORDER_RADIUS.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.softBlue,
+    marginRight: SPACING.md,
+  },
+  pushContent: { flex: 1, paddingRight: SPACING.sm },
+  pushLabel: { color: COLORS.text, ...TYPOGRAPHY.body, fontWeight: '900' },
+  pushHint: { color: COLORS.muted, ...TYPOGRAPHY.caption, marginTop: 2 },
 });

@@ -359,6 +359,20 @@
     "soon": "Bientôt disponible",
     "since_short": "Depuis {{date}}"
   },
+  "push": {
+    "title": "Notifications push",
+    "description": "Choisissez si BX-Connect peut vous prévenir sur cet appareil.",
+    "enable": "Activer les notifications push",
+    "enabledHint": "Cet appareil peut recevoir les alertes importantes.",
+    "disabledHint": "Aucune autorisation ne sera demandée sans votre action.",
+    "enabledSuccess": "Les notifications push sont activées sur cet appareil.",
+    "disabledSuccess": "Les notifications push sont désactivées.",
+    "permissionDenied": "L’autorisation a été refusée. Vous pourrez la modifier dans les réglages de votre téléphone.",
+    "physicalDeviceRequired": "Les notifications push doivent être testées sur un téléphone physique.",
+    "missingProjectId": "La configuration Expo du projet doit être finalisée avant d’obtenir un token push.",
+    "unsupported": "Les notifications push ne sont pas disponibles sur cette plateforme.",
+    "error": "Impossible de modifier les notifications push pour le moment."
+  },
   "memberDashboard": {
     "welcome": "Votre espace BX-Connect",
     "hello": "Bonjour, {{name}}",

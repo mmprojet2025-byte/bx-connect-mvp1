@@ -359,6 +359,20 @@
     "soon": "Binnenkort",
     "since_short": "Sinds {{date}}"
   },
+  "push": {
+    "title": "Pushmeldingen",
+    "description": "Kies of BX-Connect je op dit toestel mag waarschuwen.",
+    "enable": "Pushmeldingen inschakelen",
+    "enabledHint": "Dit toestel kan belangrijke meldingen ontvangen.",
+    "disabledHint": "Zonder jouw actie wordt geen toestemming gevraagd.",
+    "enabledSuccess": "Pushmeldingen zijn op dit toestel ingeschakeld.",
+    "disabledSuccess": "Pushmeldingen zijn uitgeschakeld.",
+    "permissionDenied": "Toestemming werd geweigerd. Je kunt dit later wijzigen in de instellingen van je telefoon.",
+    "physicalDeviceRequired": "Pushmeldingen moeten op een fysiek toestel worden getest.",
+    "missingProjectId": "De Expo-projectconfiguratie moet worden voltooid voordat een pushtoken kan worden aangemaakt.",
+    "unsupported": "Pushmeldingen zijn niet beschikbaar op dit platform.",
+    "error": "De instellingen voor pushmeldingen kunnen momenteel niet worden gewijzigd."
+  },
   "memberDashboard": {
     "welcome": "Je BX-Connect-ruimte",
     "hello": "Hallo, {{name}}",

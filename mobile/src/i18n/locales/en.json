@@ -359,6 +359,20 @@
     "soon": "Coming soon",
     "since_short": "Since {{date}}"
   },
+  "push": {
+    "title": "Push notifications",
+    "description": "Choose whether BX-Connect may notify you on this device.",
+    "enable": "Enable push notifications",
+    "enabledHint": "This device can receive important alerts.",
+    "disabledHint": "No permission will be requested without your action.",
+    "enabledSuccess": "Push notifications are enabled on this device.",
+    "disabledSuccess": "Push notifications are disabled.",
+    "permissionDenied": "Permission was denied. You can change it later in your phone settings.",
+    "physicalDeviceRequired": "Push notifications must be tested on a physical device.",
+    "missingProjectId": "The Expo project configuration must be completed before a push token can be created.",
+    "unsupported": "Push notifications are not available on this platform.",
+    "error": "Push notification settings cannot be updated right now."
+  },
   "memberDashboard": {
     "welcome": "Your BX-Connect space",
     "hello": "Hello, {{name}}",
