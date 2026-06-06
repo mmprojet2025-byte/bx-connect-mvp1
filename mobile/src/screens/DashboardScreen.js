@@ -17,7 +17,7 @@ export default function DashboardScreen({ navigation }) {
   const [dashboard, setDashboard] = useState(null);
   const [referentDashboard, setReferentDashboard] = useState(null);
   const [roleDashboard, setRoleDashboard] = useState(null);
-  const [loading, setLoading] = useState(isMembre || isReferent || isAdmin || isPartenaire);
+  const [loading, setLoading] = useState(isMembre || isReferent || isAdmin || isSuperAdmin || isPartenaire);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -27,12 +27,14 @@ export default function DashboardScreen({ navigation }) {
       chargerReferentDashboard();
     } else if (isAdmin) {
       chargerAdminDashboard();
+    } else if (isSuperAdmin) {
+      chargerSuperAdminDashboard();
     } else if (isPartenaire) {
       chargerPartenaireDashboard();
     } else {
       setLoading(false);
     }
-  }, [isMembre, isReferent, isAdmin, isPartenaire]);
+  }, [isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire]);
 
   const chargerDashboard = async () => {
     setLoading(true);
@@ -114,20 +116,24 @@ export default function DashboardScreen({ navigation }) {
     setLoading(true);
     setError('');
     try {
-      const [statsRes, soutiensRes, projetsRes, activitesRes, profilRes] = await Promise.all([
+      const results = await Promise.allSettled([
         api.get('/partenaire/statistiques'),
         api.get('/partenaire/mes-soutiens'),
         api.get('/partenaire/projets-ouverts'),
         api.get('/partenaire/activites-ouvertes'),
         api.get('/partenaire/profil'),
       ]);
+      const [statsRes, soutiensRes, projetsRes, activitesRes, profilRes] = results;
+      if (results.every(result => result.status === 'rejected')) {
+        throw statsRes.reason;
+      }
       setRoleDashboard({
         type: 'PARTENAIRE',
-        stats: statsRes.data || {},
-        soutiens: soutiensRes.data || [],
-        projetsOuverts: projetsRes.data || [],
-        activitesOuvertes: activitesRes.data || [],
-        profil: profilRes.data || null,
+        stats: settledData(statsRes, {}),
+        soutiens: settledData(soutiensRes, []),
+        projetsOuverts: settledData(projetsRes, []),
+        activitesOuvertes: settledData(activitesRes, []),
+        profil: settledData(profilRes, null),
       });
     } catch (err) {
       if (err.response?.status === 401) {
@@ -136,6 +142,30 @@ export default function DashboardScreen({ navigation }) {
         setError(t('errors.forbidden'));
       } else {
         setError(t('partner.dashboardLoadError', { defaultValue: 'Impossible de charger le dashboard partenaire.' }));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const chargerSuperAdminDashboard = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await api.get('/super-admin/dashboard');
+      setRoleDashboard({
+        type: 'SUPER_ADMIN',
+        stats: response.data || {},
+      });
+    } catch (err) {
+      if (err.response?.status === 401) {
+        setError(t('errors.session_expired'));
+      } else if (err.response?.status === 403) {
+        setError(t('errors.forbidden'));
+      } else {
+        setError(t('superAdmin.mobile.dashboardLoadError', {
+          defaultValue: 'Impossible de charger la synthèse de la plateforme.',
+        }));
       }
     } finally {
       setLoading(false);
@@ -177,7 +207,7 @@ export default function DashboardScreen({ navigation }) {
       );
     }
 
-    if ((isAdmin || isPartenaire) && loading) {
+    if ((isAdmin || isSuperAdmin || isPartenaire) && loading) {
       return (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#1E3A8A" />
@@ -186,7 +216,7 @@ export default function DashboardScreen({ navigation }) {
       );
     }
 
-    if ((isAdmin || isPartenaire) && error) {
+    if ((isAdmin || isSuperAdmin || isPartenaire) && error) {
       return (
         <View style={styles.centered}>
           <AppIcon name="warning" size={42} color="#EF4444" style={styles.emptyIcon} />
@@ -194,7 +224,11 @@ export default function DashboardScreen({ navigation }) {
           <Text style={styles.emptyText}>{error}</Text>
           <TouchableOpacity
             style={styles.primaryButton}
-            onPress={isAdmin ? chargerAdminDashboard : chargerPartenaireDashboard}
+            onPress={isAdmin
+              ? chargerAdminDashboard
+              : isSuperAdmin
+                ? chargerSuperAdminDashboard
+                : chargerPartenaireDashboard}
           >
             <Text style={styles.primaryButtonText}>{t('memberDashboard.buttons.retry')}</Text>
           </TouchableOpacity>
@@ -552,16 +586,16 @@ function RoleDashboard({ user, role, isAdmin, isSuperAdmin, isPartenaire, dashbo
 
 function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, dashboard, navigation, t }) {
   if (isSuperAdmin) {
+    const stats = dashboard?.stats || {};
     return {
       title: t('superAdmin.mobile.title', { defaultValue: 'Pilotage plateforme' }),
       subtitle: t('superAdmin.mobile.subtitle', { defaultValue: 'Indicateurs essentiels et suivi de la sécurité BX-Connect.' }),
       sectionTitle: t('superAdmin.mobile.sectionTitle', { defaultValue: 'Vue synthétique' }),
       sectionText: t('superAdmin.mobile.sectionText', { defaultValue: 'Suivez les comptes clés, les administrateurs et les signaux importants de la plateforme.' }),
       stats: [
-        stat(t('users.title', { defaultValue: 'Utilisateurs' }), 'Suivi', 'group', COLORS.info),
-        stat(t('superAdmin.admins', { defaultValue: 'Administrateurs' }), 'Admin', 'shield', COLORS.bxBlue),
-        stat(t('navigation.notifications', { defaultValue: 'Notifications' }), 'Alertes', 'bell', COLORS.impactOrange),
-        stat(t('profile.security', { defaultValue: 'Sécurité' }), 'Actif', 'lock', COLORS.success),
+        stat(t('superAdmin.mobile.activeAdmins', { defaultValue: 'Administrateurs actifs' }), stats.adminsActifs ?? '—', 'shield', COLORS.success),
+        stat(t('superAdmin.mobile.inactiveAdmins', { defaultValue: 'Administrateurs inactifs' }), stats.adminsInactifs ?? '—', 'group', COLORS.info),
+        stat(t('superAdmin.mobile.criticalActions', { defaultValue: 'Actions auditées' }), stats.totalActionsCritiques ?? '—', 'lock', COLORS.impactOrange),
       ],
       actions: [
         action(t('navigation.users', { defaultValue: 'Utilisateurs' }), t('superAdmin.mobile.usersAction', { defaultValue: 'Consulter les administrateurs plateforme.' }), 'group', COLORS.info, () => navigateAccess(navigation, 'TabUsers')),
@@ -644,6 +678,10 @@ function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, d
       action(t('navigation.profile', { defaultValue: 'Profil' }), t('memberDashboard.openProfile', { defaultValue: 'Ouvrir mon profil' }), 'profile', COLORS.info, () => navigateAccess(navigation, 'TabProfile')),
     ],
   };
+}
+
+function settledData(result, fallback) {
+  return result.status === 'fulfilled' ? (result.value.data ?? fallback) : fallback;
 }
 
 function PartnerInstitutionCard({ profile, t }) {

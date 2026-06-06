@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
@@ -15,7 +15,7 @@ const PARTNER_TABS = new Set(['dashboard', 'projets', 'activites', 'soutiens']);
 
 export default function PartenaireSpace() {
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [stats, setStats] = useState(null);
@@ -29,6 +29,7 @@ export default function PartenaireSpace() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [sectionErrors, setSectionErrors] = useState({});
   const requestedTab = searchParams.get('tab');
   const onglet = PARTNER_TABS.has(requestedTab) ? requestedTab : 'dashboard';
 
@@ -38,31 +39,44 @@ export default function PartenaireSpace() {
     montant: '', message: '', projetId: null, activiteId: null, type: 'projet'
   });
 
-  useEffect(() => {
-    fetchAll();
-  }, []);
-
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    setSectionErrors({});
     try {
-      const [statsRes, soutiensRes, projetsRes, activitesRes, profilRes] = await Promise.all([
+      const results = await Promise.allSettled([
         api.get('/partenaire/statistiques'),
         api.get('/partenaire/mes-soutiens'),
         api.get('/partenaire/projets-ouverts'),
         api.get('/partenaire/activites-ouvertes'),
         api.get('/partenaire/profil'),
       ]);
-      setStats(statsRes.data);
-      setMesSoutiens(soutiensRes.data);
-      setProjetsOuverts(projetsRes.data);
-      setActivitesOuvertes(activitesRes.data);
-      setProfilInstitutionnel(profilRes.data);
-      setProfileForm(profileFromResponse(profilRes.data));
+      const [statsRes, soutiensRes, projetsRes, activitesRes, profilRes] = results;
+      const errors = {};
+
+      applySettled(statsRes, data => setStats(data), () => { errors.stats = t('partnerSpace.sectionLoadError'); });
+      applySettled(soutiensRes, data => setMesSoutiens(data || []), () => { errors.soutiens = t('partnerSpace.sectionLoadError'); });
+      applySettled(projetsRes, data => setProjetsOuverts(data || []), () => { errors.projets = t('partnerSpace.sectionLoadError'); });
+      applySettled(activitesRes, data => setActivitesOuvertes(data || []), () => { errors.activites = t('partnerSpace.sectionLoadError'); });
+      applySettled(profilRes, data => {
+        setProfilInstitutionnel(data);
+        setProfileForm(profileFromResponse(data));
+      }, () => { errors.profil = t('partnerSpace.profileLoadError'); });
+
+      setSectionErrors(errors);
+      if (results.every(result => result.status === 'rejected')) {
+        setError(t('partnerSpace.loadError'));
+      }
     } catch {
-      setError('Impossible de charger les données partenaire.');
+      setError(t('partnerSpace.loadError'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
 
   const handleSaveProfile = async (event) => {
     event.preventDefault();
@@ -97,21 +111,21 @@ export default function PartenaireSpace() {
         payload.activiteId = soutienForm.activiteId;
         await api.post('/partenaire/soutenir-activite', payload);
       }
-      setMessage('Proposition de soutien financier soumise avec succès.');
+      setMessage(t('partnerSpace.supportSubmitted'));
       setShowSoutienForm(false);
       setSoutienForm({ montant: '', message: '', projetId: null, activiteId: null, type: 'projet' });
       fetchAll();
       setTimeout(() => setMessage(''), 4000);
     } catch (err) {
-      setError(userFriendlyError(err, 'Action impossible.'));
+      setError(userFriendlyError(err, t('partnerSpace.actionError')));
     }
   };
 
   const ONGLETS = [
-    { id: 'dashboard',  label: 'Dashboard', icon: 'BarChart' },
-    { id: 'projets',    label: 'Projets', icon: 'Rocket' },
-    { id: 'activites',  label: 'Activités', icon: 'Folder' },
-    { id: 'soutiens',   label: 'Soutiens financiers', icon: 'Wallet' },
+    { id: 'dashboard',  label: t('partnerSpace.tabs.dashboard'), icon: 'BarChart' },
+    { id: 'projets',    label: t('partnerSpace.tabs.projects'), icon: 'Rocket' },
+    { id: 'activites',  label: t('partnerSpace.tabs.activities'), icon: 'Folder' },
+    { id: 'soutiens',   label: t('partnerSpace.tabs.supports'), icon: 'Wallet' },
   ];
 
   const setOnglet = (tab) => {
@@ -122,7 +136,7 @@ export default function PartenaireSpace() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       <main className="flex-1 flex items-center justify-center">
-        <p className="text-gray-400">Chargement de l'espace partenaire...</p>
+        <p className="text-gray-400">{t('partnerSpace.loading')}</p>
       </main>
       <Footer />
     </div>
@@ -144,7 +158,7 @@ export default function PartenaireSpace() {
             <div className="min-w-0">
             <h1 className="flex items-center gap-3 text-2xl font-bold">
               <AppIcon name="Handshake" className="h-7 w-7" />
-              {profilInstitutionnel?.nomOrganisation || 'Espace Partenaire'}
+              {profilInstitutionnel?.nomOrganisation || t('partnerSpace.title')}
             </h1>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-white/18 px-3 py-1 text-xs font-bold">
@@ -169,7 +183,7 @@ export default function PartenaireSpace() {
               className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-bold text-orange-600 transition hover:bg-orange-50"
             >
               <AppIcon name="PlusCircle" className="h-4 w-4" />
-              Soutien financier
+              {t('partnerSpace.financialSupport')}
             </button>
           </div>
         </div>
@@ -196,6 +210,7 @@ export default function PartenaireSpace() {
             </div>
           </div>
         )}
+        {sectionErrors.profil && <SectionLoadError message={sectionErrors.profil} />}
 
         {/* Messages */}
         {message && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>}
@@ -220,29 +235,31 @@ export default function PartenaireSpace() {
         </div>
 
         {/* ── Dashboard ── */}
-        {onglet === 'dashboard' && stats && (
+        {onglet === 'dashboard' && (
           <div>
+            {sectionErrors.stats && <SectionLoadError message={sectionErrors.stats} />}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <StatCard label={t('partnerInstitution.projectsSupported')} value={stats.projetsSoutenus || 0} color="#7c3aed" icon="Rocket" />
-              <StatCard label={t('partnerInstitution.activitiesSupported')} value={stats.activitesSoutenues || 0} color="#2563eb" icon="Calendar" />
-              <StatCard label="Montant total (€)" value={`${stats.totalMontant || 0} €`} color="#16a34a" icon="Wallet" />
-              <StatCard label="Soutiens financiers" value={stats.totalSoutiens} color="#ea580c" icon="BarChart" />
+              <StatCard label={t('partnerInstitution.projectsSupported')} value={stats?.projetsSoutenus ?? '—'} color="#7c3aed" icon="Rocket" />
+              <StatCard label={t('partnerInstitution.activitiesSupported')} value={stats?.activitesSoutenues ?? '—'} color="#2563eb" icon="Calendar" />
+              <StatCard label={t('partnerSpace.totalAmount')} value={stats ? `${stats.totalMontant || 0} €` : '—'} color="#16a34a" icon="Wallet" />
+              <StatCard label={t('partnerSpace.totalSupports')} value={stats?.totalSoutiens ?? '—'} color="#ea580c" icon="BarChart" />
             </div>
 
             <div className="bg-white rounded-2xl shadow p-6">
               <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900 mb-4">
                 <AppIcon name="Wallet" className="h-5 w-5 text-orange-600" />
-                Mes derniers soutiens financiers
+                {t('partnerSpace.latestSupports')}
               </h2>
+              {sectionErrors.soutiens && <SectionLoadError message={sectionErrors.soutiens} />}
               {mesSoutiens.length === 0 ? (
                 <div className="text-center py-8 text-gray-400">
                   <AppIcon name="Wallet" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
-                  <p className="text-sm">Aucun soutien financier soumis pour le moment.</p>
+                  <p className="text-sm">{t('partnerSpace.noSupports')}</p>
                   <button
                     onClick={() => setShowSoutienForm(true)}
                     className="mt-3 inline-flex items-center justify-center gap-1.5 text-orange-600 text-sm hover:underline"
                   >
-                    Proposer un premier soutien financier
+                    {t('partnerSpace.proposeFirstSupport')}
                     <AppIcon name="Wallet" className="h-4 w-4" />
                   </button>
                 </div>
@@ -252,10 +269,10 @@ export default function PartenaireSpace() {
                     <div key={s.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
                       <div>
                         <p className="text-sm font-semibold text-blue-900">
-                          {s.projetTitre || s.activiteTitre || 'Soutien'}
+                          {s.projetTitre || s.activiteTitre || t('partnerSpace.supportFallback')}
                         </p>
                         <p className="text-xs text-gray-400">
-                          {new Date(s.dateCreation).toLocaleDateString('fr-BE')}
+                          {new Date(s.dateCreation).toLocaleDateString(i18n.language)}
                         </p>
                       </div>
                       <div className="text-right">
@@ -277,12 +294,13 @@ export default function PartenaireSpace() {
           <div>
             <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900 mb-4">
               <AppIcon name="Rocket" className="h-5 w-5 text-orange-600" />
-              Projets ouverts au soutien
+              {t('partnerSpace.openProjects')}
             </h2>
+            {sectionErrors.projets && <SectionLoadError message={sectionErrors.projets} />}
             {projetsOuverts.length === 0 ? (
               <div className="text-center py-12 text-gray-400 bg-white rounded-2xl shadow">
                 <AppIcon name="Rocket" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
-                <p>Aucun projet ouvert au soutien pour le moment.</p>
+                <p>{t('partnerSpace.noOpenProjects')}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -293,12 +311,14 @@ export default function PartenaireSpace() {
                         <ProjectVisibilityBadge visibility={p.visibilite} className="mb-2" />
                         <h3 className="font-bold text-blue-900">{p.titre}</h3>
                       </div>
-                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">{p.statut}</span>
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                        {t(`statuses.${p.statut}`, { defaultValue: p.statut })}
+                      </span>
                     </div>
                     {p.description && <p className="text-gray-500 text-sm mb-3 line-clamp-2">{p.description}</p>}
                     <div className="flex justify-between items-center text-xs text-gray-400 mb-3">
-                      <InlineIconLabel icon="Wallet">Budget : {p.budgetDemande ? `${p.budgetDemande} €` : 'Non défini'}</InlineIconLabel>
-                      <InlineIconLabel icon="CheckCircle">Reçu : {p.totalSoutiensRecus || 0} €</InlineIconLabel>
+                      <InlineIconLabel icon="Wallet">{t('partnerSpace.budget')}: {p.budgetDemande ? `${p.budgetDemande} €` : t('partnerSpace.notDefined')}</InlineIconLabel>
+                      <InlineIconLabel icon="CheckCircle">{t('partnerSpace.received')}: {p.totalSoutiensRecus || 0} €</InlineIconLabel>
                     </div>
                     <button
                       onClick={() => {
@@ -308,7 +328,7 @@ export default function PartenaireSpace() {
                       className="inline-flex w-full items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white text-sm font-semibold py-2 rounded-xl transition"
                     >
                       <AppIcon name="Wallet" className="h-4 w-4" />
-                      Proposer un soutien financier
+                      {t('partnerSpace.proposeSupport')}
                     </button>
                   </div>
                 ))}
@@ -322,12 +342,13 @@ export default function PartenaireSpace() {
           <div>
             <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900 mb-4">
               <AppIcon name="Folder" className="h-5 w-5 text-orange-600" />
-              Activités ouvertes au soutien
+              {t('partnerSpace.openActivities')}
             </h2>
+            {sectionErrors.activites && <SectionLoadError message={sectionErrors.activites} />}
             {activitesOuvertes.length === 0 ? (
               <div className="text-center py-12 text-gray-400 bg-white rounded-2xl shadow">
                 <AppIcon name="Folder" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
-                <p>Aucune activité ouverte au soutien pour le moment.</p>
+                <p>{t('partnerSpace.noOpenActivities')}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -337,8 +358,8 @@ export default function PartenaireSpace() {
                     {a.description && <p className="text-gray-500 text-sm mb-2 line-clamp-2">{a.description}</p>}
                     <div className="text-xs text-gray-400 mb-3 space-y-1">
                       {a.lieu && <InlineIconLabel icon="Folder">{a.lieu}</InlineIconLabel>}
-                      {a.dateDebut && <InlineIconLabel icon="Calendar">{new Date(a.dateDebut).toLocaleDateString('fr-BE')}</InlineIconLabel>}
-                      <InlineIconLabel icon="CheckCircle">Soutiens reçus : {a.totalSoutiensRecus || 0} €</InlineIconLabel>
+                      {a.dateDebut && <InlineIconLabel icon="Calendar">{new Date(a.dateDebut).toLocaleDateString(i18n.language)}</InlineIconLabel>}
+                      <InlineIconLabel icon="CheckCircle">{t('partnerSpace.receivedSupports')}: {a.totalSoutiensRecus || 0} €</InlineIconLabel>
                     </div>
                     <button
                       onClick={() => {
@@ -348,7 +369,7 @@ export default function PartenaireSpace() {
                       className="inline-flex w-full items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white text-sm font-semibold py-2 rounded-xl transition"
                     >
                       <AppIcon name="Wallet" className="h-4 w-4" />
-                      Proposer un soutien financier
+                      {t('partnerSpace.proposeSupport')}
                     </button>
                   </div>
                 ))}
@@ -362,22 +383,23 @@ export default function PartenaireSpace() {
           <div>
             <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900 mb-4">
               <AppIcon name="Wallet" className="h-5 w-5 text-orange-600" />
-              Mes soutiens financiers
+              {t('partnerSpace.mySupports')}
             </h2>
+            {sectionErrors.soutiens && <SectionLoadError message={sectionErrors.soutiens} />}
             {mesSoutiens.length === 0 ? (
               <div className="text-center py-12 text-gray-400 bg-white rounded-2xl shadow">
                 <AppIcon name="Wallet" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
-                <p>Aucune déclaration soumise.</p>
+                <p>{t('partnerSpace.noDeclarations')}</p>
               </div>
             ) : (
               <div className="bg-white rounded-2xl shadow overflow-hidden">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-100">
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Cible</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Montant</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Statut</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Date</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('partnerSpace.target')}</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('partnerSupport.amount')}</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.status')}</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('partnerSupport.date')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -397,7 +419,7 @@ export default function PartenaireSpace() {
                           }`}>{supportStatusLabel(s.statutPaiement, t)}</span>
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-400">
-                          {new Date(s.dateCreation).toLocaleDateString('fr-BE')}
+                          {new Date(s.dateCreation).toLocaleDateString(i18n.language)}
                         </td>
                       </tr>
                     ))}
@@ -415,9 +437,9 @@ export default function PartenaireSpace() {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900">
                   <AppIcon name="Wallet" className="h-5 w-5 text-orange-600" />
-                  Déclarer un soutien financier
+                  {t('partnerSpace.declareSupport')}
                 </h2>
-                <button onClick={() => setShowSoutienForm(false)} className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600" aria-label="Fermer">
+                <button onClick={() => setShowSoutienForm(false)} className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600" aria-label={t('common.close')}>
                   <AppIcon name="XCircle" className="h-5 w-5" />
                 </button>
               </div>
@@ -425,7 +447,7 @@ export default function PartenaireSpace() {
               <form onSubmit={handleSoumettreSoutien} className="space-y-4">
                 {/* Type */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Cible du soutien financier</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('partnerSpace.supportTarget')}</label>
                   <div className="flex gap-3">
                     {['projet', 'activite'].map(type => (
                       <button
@@ -440,7 +462,7 @@ export default function PartenaireSpace() {
                       >
                         <span className="inline-flex items-center justify-center gap-2">
                           <AppIcon name={type === 'projet' ? 'Rocket' : 'Folder'} className="h-4 w-4" />
-                          {type === 'projet' ? 'Projet' : 'Activité'}
+                          {type === 'projet' ? t('partnerSupport.project') : t('partnerSupport.activity')}
                         </span>
                       </button>
                     ))}
@@ -450,27 +472,27 @@ export default function PartenaireSpace() {
                 {/* Sélection cible */}
                 {soutienForm.type === 'projet' ? (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Projet *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('partnerSupport.project')} *</label>
                     <select
                       required
                       value={soutienForm.projetId || ''}
                       onChange={e => setSoutienForm({ ...soutienForm, projetId: parseInt(e.target.value) })}
                       className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                     >
-                      <option value="">Sélectionner un projet</option>
+                      <option value="">{t('partnerSpace.selectProject')}</option>
                       {projetsOuverts.map(p => <option key={p.id} value={p.id}>{p.titre}</option>)}
                     </select>
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Activité *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('partnerSupport.activity')} *</label>
                     <select
                       required
                       value={soutienForm.activiteId || ''}
                       onChange={e => setSoutienForm({ ...soutienForm, activiteId: parseInt(e.target.value) })}
                       className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                     >
-                      <option value="">Sélectionner une activité</option>
+                      <option value="">{t('partnerSpace.selectActivity')}</option>
                       {activitesOuvertes.map(a => <option key={a.id} value={a.id}>{a.titre}</option>)}
                     </select>
                   </div>
@@ -478,24 +500,24 @@ export default function PartenaireSpace() {
 
                 {/* Montant */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Montant (€) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('partnerSpace.amountEuros')} *</label>
                   <input
                     required type="number" min="1" step="0.01"
                     value={soutienForm.montant}
                     onChange={e => setSoutienForm({ ...soutienForm, montant: e.target.value })}
-                    placeholder="Ex: 500"
+                    placeholder={t('partnerSpace.amountPlaceholder')}
                     className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                   />
                 </div>
 
                 {/* Message */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Message (optionnel)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('partnerSpace.optionalMessage')}</label>
                   <textarea
                     value={soutienForm.message}
                     onChange={e => setSoutienForm({ ...soutienForm, message: e.target.value })}
                     rows={3}
-                    placeholder="Décrivez votre intention de soutien financier..."
+                    placeholder={t('partnerSpace.messagePlaceholder')}
                     className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
                   />
                 </div>
@@ -505,14 +527,14 @@ export default function PartenaireSpace() {
                     type="submit"
                     className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-bold py-2.5 rounded-xl transition"
                   >
-                    Soumettre
+                    {t('partnerSpace.submit')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowSoutienForm(false)}
                     className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl transition"
                   >
-                    Annuler
+                    {t('common.cancel')}
                   </button>
                 </div>
               </form>
@@ -644,5 +666,22 @@ function ProfileInput({ label, value, onChange, type = 'text', required = false 
         className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
       />
     </label>
+  );
+}
+
+function applySettled(result, onSuccess, onError) {
+  if (result.status === 'fulfilled') {
+    onSuccess(result.value.data);
+  } else {
+    onError(result.reason);
+  }
+}
+
+function SectionLoadError({ message }) {
+  return (
+    <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      <AppIcon name="XCircle" className="h-4 w-4 shrink-0" />
+      <span>{message}</span>
+    </div>
   );
 }

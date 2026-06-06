@@ -12,11 +12,11 @@ import AppIcon from '../components/ui/AppIcons';
 import { confirmSensitiveAction, userFriendlyError } from '../utils/userFriendlyError';
 import LoadingState from '../components/ui/LoadingState';
 import ErrorState from '../components/ui/ErrorState';
-import { resolveNotificationRoute } from '../utils/notificationRoute';
+import { dashboardRouteForRole, resolveNotificationRoute } from '../utils/notificationRoute';
 
 export default function Notifications() {
   const { t, i18n } = useTranslation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -118,7 +118,7 @@ export default function Notifications() {
             title={t('notifications.emptyTitle')}
             description={t('notifications.emptyDescription')}
             actionLabel={t('nav.dashboard')}
-            actionTo="/dashboard"
+            actionTo={dashboardRouteForRole(user?.role)}
           />
         ) : (
           <div className="space-y-3">
@@ -140,7 +140,7 @@ export default function Notifications() {
                   <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{n.message}</p>
                   {n.lienAction && (
                     <Link
-                      to={resolveNotificationRoute(n)}
+                      to={resolveNotificationRoute(n, user?.role)}
                       onClick={e => { e.stopPropagation(); if (!n.lue) handleMarquerLue(n.id); }}
                       className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
                     >

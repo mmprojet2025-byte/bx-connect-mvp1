@@ -49,11 +49,11 @@ function LogoutButton({ onPress, label }) {
 }
 
 // ─── Stack public ─────────────────────────────────────────────────────────────
-function PublicStack() {
+function PublicStack({ initialRouteName = 'Home' }) {
   const { t } = useTranslation();
 
   return (
-    <Stack.Navigator screenOptions={headerStyle}>
+    <Stack.Navigator initialRouteName={initialRouteName} screenOptions={headerStyle}>
       <Stack.Screen name="Home"       component={HomeScreen}      options={{ title: 'BX-CONNECT', headerBackVisible: false }} />
       <Stack.Screen name="Login"      component={LoginScreen}     options={{ title: t('navigation.login') }} />
       <Stack.Screen name="Register"   component={RegisterScreen}  options={{ title: t('navigation.createAccount') }} />
@@ -318,7 +318,7 @@ function tab(name, label, icon, component) {
 
 // ─── Navigateur principal ─────────────────────────────────────────────────────
 export default function AppNavigator() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, sessionExpired } = useAuth();
 
   if (loading) {
     return (
@@ -330,7 +330,9 @@ export default function AppNavigator() {
 
   return (
     <NavigationContainer key={isAuthenticated ? 'private' : 'public'}>
-      {isAuthenticated ? <PrivateTabs /> : <PublicStack />}
+      {isAuthenticated
+        ? <PrivateTabs />
+        : <PublicStack initialRouteName={sessionExpired ? 'Login' : 'Home'} />}
     </NavigationContainer>
   );
 }

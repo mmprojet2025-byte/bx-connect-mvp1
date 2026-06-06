@@ -1,11 +1,13 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { onUnauthorized } from '../api/axios';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser]       = useState(null);
   const [token, setToken]     = useState(null);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [loading, setLoading] = useState(true); // ← vrai pendant le chargement initial
 
   // ─── Charger le token et le user depuis AsyncStorage au démarrage ──────────
@@ -30,8 +32,15 @@ export function AuthProvider({ children }) {
     loadStoredAuth();
   }, []);
 
+  useEffect(() => onUnauthorized(() => {
+    setToken(null);
+    setUser(null);
+    setSessionExpired(true);
+  }), []);
+
   // ─── Login : appelé après /api/auth/login ─────────────────────────────────
   const login = async (newToken, userData) => {
+    setSessionExpired(false);
     setToken(newToken);
     setUser(userData);
     await AsyncStorage.setItem('token', newToken);
@@ -40,10 +49,10 @@ export function AuthProvider({ children }) {
 
   // ─── Logout : vide tout ───────────────────────────────────────────────────
   const logout = async () => {
+    setSessionExpired(false);
     setToken(null);
     setUser(null);
-    await AsyncStorage.removeItem('token');
-    await AsyncStorage.removeItem('user');
+    await AsyncStorage.multiRemove(['token', 'user']);
   };
 
   // ─── Helpers de rôle ──────────────────────────────────────────────────────
@@ -60,6 +69,7 @@ export function AuthProvider({ children }) {
       user,
       token,
       loading,
+      sessionExpired,
       login,
       logout,
       isAuthenticated,

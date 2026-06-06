@@ -13,6 +13,16 @@ const api = axios.create({
 });
 
 const PUBLIC_ROUTES = ['/auth/login', '/auth/register'];
+const unauthorizedListeners = new Set();
+
+export function onUnauthorized(listener) {
+  unauthorizedListeners.add(listener);
+  return () => unauthorizedListeners.delete(listener);
+}
+
+async function clearStoredAuth() {
+  await AsyncStorage.multiRemove(['token', 'user']);
+}
 
 api.interceptors.request.use(
   async (config) => {
@@ -31,9 +41,10 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('user');
+    const isPublic = PUBLIC_ROUTES.some(route => error.config?.url?.includes(route));
+    if (error.response?.status === 401 && !isPublic) {
+      await clearStoredAuth();
+      unauthorizedListeners.forEach(listener => listener());
     }
     return Promise.reject(error);
   }

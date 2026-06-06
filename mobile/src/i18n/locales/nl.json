@@ -497,7 +497,13 @@
     "logs": "Logboeken",
     "security": "Beveiliging",
     "statistics": "Platformstatistieken",
-    "mobileLimited": "Platformoverzicht en essentiële signalen."
+    "mobileLimited": "Platformoverzicht en essentiële signalen.",
+    "mobile": {
+      "dashboardLoadError": "Kan het platformoverzicht niet laden.",
+      "activeAdmins": "Actieve beheerders",
+      "inactiveAdmins": "Inactieve beheerders",
+      "criticalActions": "Geaudite acties"
+    }
   },
   "audit": {
     "date": "Datum",

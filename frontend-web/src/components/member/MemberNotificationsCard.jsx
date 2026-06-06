@@ -32,7 +32,7 @@ export default function MemberNotificationsCard({ notifications = [] }) {
                   <p className="text-xs text-gray-500 mt-1 line-clamp-2">{notification.message}</p>
                   {notification.lienAction && (
                     <Link
-                      to={resolveNotificationRoute(notification)}
+                      to={resolveNotificationRoute(notification, 'MEMBRE')}
                       className="inline-flex mt-2 text-xs font-semibold text-blue-700 hover:underline"
                     >
                       {t('memberDashboard.buttons.open')}

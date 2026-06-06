@@ -497,7 +497,13 @@
     "logs": "Logs",
     "security": "Security",
     "statistics": "Platform statistics",
-    "mobileLimited": "Platform overview and essential signals."
+    "mobileLimited": "Platform overview and essential signals.",
+    "mobile": {
+      "dashboardLoadError": "Unable to load the platform overview.",
+      "activeAdmins": "Active administrators",
+      "inactiveAdmins": "Inactive administrators",
+      "criticalActions": "Audited actions"
+    }
   },
   "audit": {
     "date": "Date",

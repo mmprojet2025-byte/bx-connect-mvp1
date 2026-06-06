@@ -497,7 +497,13 @@
     "logs": "Logs",
     "security": "Sécurité",
     "statistics": "Statistiques plateforme",
-    "mobileLimited": "Vue synthétique de la plateforme et de ses signaux essentiels."
+    "mobileLimited": "Vue synthétique de la plateforme et de ses signaux essentiels.",
+    "mobile": {
+      "dashboardLoadError": "Impossible de charger la synthèse de la plateforme.",
+      "activeAdmins": "Administrateurs actifs",
+      "inactiveAdmins": "Administrateurs inactifs",
+      "criticalActions": "Actions auditées"
+    }
   },
   "audit": {
     "date": "Date",

@@ -49,8 +49,9 @@ public class ReferentService {
                 .sum();
 
         List<ProjetResponse> projetsSoumis = projetRepository
-                .findByStatut(StatutProjet.SOUMIS)
+                .findByGroupeReferentEmail(email)
                 .stream()
+                .filter(projet -> projet.getStatut() == StatutProjet.SOUMIS)
                 .map(ProjetResponse::fromEntity)
                 .collect(Collectors.toList());
 

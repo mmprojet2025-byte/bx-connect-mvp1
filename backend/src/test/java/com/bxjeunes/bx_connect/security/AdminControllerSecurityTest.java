@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,6 +71,22 @@ class AdminControllerSecurityTest {
                 .extracting("role")
                 .containsExactlyInAnyOrder(Role.MEMBRE, Role.REFERENT, Role.PARTENAIRE)
                 .doesNotContain(Role.ADMIN, Role.SUPER_ADMIN);
+    }
+
+    @Test
+    @DisplayName("Le KPI utilisateurs ADMIN compte uniquement les comptes metier")
+    void statistiques_utilisateurs_excluent_comptes_plateforme() {
+        when(userRepository.countByRoleIn(List.of(Role.MEMBRE, Role.REFERENT, Role.PARTENAIRE)))
+                .thenReturn(12L);
+        when(prestationService.statistiques()).thenReturn(Map.of(
+                "enAttente", 0L,
+                "validees", 0L));
+        when(groupeRepository.findByStatut(any())).thenReturn(List.of());
+
+        var response = adminController.getStats();
+
+        assertThat(response.getBody()).containsEntry("totalUtilisateurs", 12L);
+        verify(userRepository, never()).count();
     }
 
     @Test

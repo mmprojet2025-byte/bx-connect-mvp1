@@ -59,7 +59,8 @@ public class AdminController {
         Map<String, Object> stats = new HashMap<>();
 
         // Utilisateurs
-        stats.put("totalUtilisateurs",  userRepository.count());
+        stats.put("totalUtilisateurs",  userRepository.countByRoleIn(
+                List.of(Role.MEMBRE, Role.REFERENT, Role.PARTENAIRE)));
         stats.put("membresActifs",       userRepository.countByActifTrue());
         stats.put("totalAdmins",         userRepository.countByRole(Role.ADMIN));
         stats.put("totalReferents",      userRepository.countByRole(Role.REFERENT));
