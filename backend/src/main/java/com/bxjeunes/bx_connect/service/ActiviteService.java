@@ -24,13 +24,16 @@ public class ActiviteService {
     private final ActiviteRepository activiteRepository;
     private final UserRepository userRepository;
     private final InscriptionRepository inscriptionRepository;
+    private final NotificationService notificationService;
 
     public ActiviteService(ActiviteRepository activiteRepository,
                            UserRepository userRepository,
-                           InscriptionRepository inscriptionRepository) {
+                           InscriptionRepository inscriptionRepository,
+                           NotificationService notificationService) {
         this.activiteRepository = activiteRepository;
         this.userRepository = userRepository;
         this.inscriptionRepository = inscriptionRepository;
+        this.notificationService = notificationService;
     }
 
     // ─── Créer une activité ───────────────────────────────────────────────────
@@ -217,8 +220,15 @@ public class ActiviteService {
         Activite activite = activiteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
         verifierDroitGestion(activite, emailUser);
+        StatutActivite ancienStatut = activite.getStatut();
         activite.setStatut(nouveauStatut);
-        return toResponse(activiteRepository.save(activite));
+        Activite activiteSauvee = activiteRepository.save(activite);
+
+        if (ancienStatut != StatutActivite.PUBLIEE && nouveauStatut == StatutActivite.PUBLIEE) {
+            notifierPublication(activiteSauvee);
+        }
+
+        return toResponse(activiteSauvee);
     }
 
     // ─── Supprimer une activité ───────────────────────────────────────────────
@@ -241,6 +251,18 @@ public class ActiviteService {
             return;
         }
         throw new AccessDeniedException("Vous ne pouvez gerer que vos propres activites.");
+    }
+
+    private void notifierPublication(Activite activite) {
+        for (User membre : userRepository.findByRoleAndActifTrue(Role.MEMBRE)) {
+            notificationService.creer(
+                    membre,
+                    "Nouvelle activité publiée",
+                    activite.getTitre() + " est maintenant disponible.",
+                    "ACTIVITE_PUBLIEE",
+                    "/activites/" + activite.getId()
+            );
+        }
     }
 
     private ActiviteResponse toResponse(Activite activite) {

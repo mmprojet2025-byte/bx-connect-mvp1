@@ -26,3 +26,7 @@ stripe.publishable-key=${STRIPE_PUBLISHABLE_KEY:CHANGE_ME}
 stripe.webhook-secret=${STRIPE_WEBHOOK_SECRET:CHANGE_ME}
 stripe.success-url=http://localhost:5173/paiement/succes
 stripe.cancel-url=http://localhost:5173/paiement/annule
+
+# Expo Push Service (token d'acces facultatif si la securite renforcee Expo est desactivee)
+bx.push.expo-url=${EXPO_PUSH_URL:https://exp.host/--/api/v2/push/send}
+bx.push.access-token=${EXPO_PUSH_ACCESS_TOKEN:}

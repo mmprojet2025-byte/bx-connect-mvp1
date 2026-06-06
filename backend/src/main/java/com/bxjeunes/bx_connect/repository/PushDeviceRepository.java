@@ -14,6 +14,8 @@ public interface PushDeviceRepository extends JpaRepository<PushDevice, Long> {
 
     List<PushDevice> findByUserId(Long userId);
 
+    List<PushDevice> findByUserIdAndEnabledTrue(Long userId);
+
     long countByUserId(Long userId);
 
     long countByUserIdAndEnabledTrue(Long userId);

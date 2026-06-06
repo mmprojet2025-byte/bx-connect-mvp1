@@ -12,6 +12,7 @@ import com.bxjeunes.bx_connect.repository.SoutienFinancierRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
 import com.bxjeunes.bx_connect.service.ActiviteService;
 import com.bxjeunes.bx_connect.service.InscriptionService;
+import com.bxjeunes.bx_connect.service.NotificationService;
 import com.bxjeunes.bx_connect.service.ReferentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -41,6 +42,7 @@ class ActiviteSecurityTest {
     @Mock private InscriptionRepository inscriptionRepository;
     @Mock private ProjetRepository projetRepository;
     @Mock private SoutienFinancierRepository soutienRepository;
+    @Mock private NotificationService notificationService;
 
     @InjectMocks private ActiviteService activiteService;
     @InjectMocks private InscriptionService inscriptionService;

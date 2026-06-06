@@ -2,8 +2,10 @@ package com.bxjeunes.bx_connect.service;
 
 import com.bxjeunes.bx_connect.entity.Notification;
 import com.bxjeunes.bx_connect.entity.User;
+import com.bxjeunes.bx_connect.event.PushNotificationEvent;
 import com.bxjeunes.bx_connect.repository.NotificationRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -16,23 +18,32 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public NotificationService(NotificationRepository notificationRepository,
-                                UserRepository userRepository) {
+                                UserRepository userRepository,
+                                ApplicationEventPublisher eventPublisher) {
         this.notificationRepository = notificationRepository;
-        this.userRepository         = userRepository;
+        this.userRepository = userRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     // ─── Créer une notification ───────────────────────────────────────────────
     public void creer(User destinataire, String titre, String message, String type) {
-        Notification notif = new Notification(destinataire, titre, message, type);
-        notificationRepository.save(notif);
+        creer(destinataire, titre, message, type, null);
     }
 
     public void creer(User destinataire, String titre, String message, String type, String lienAction) {
         Notification notif = new Notification(destinataire, titre, message, type);
         notif.setLienAction(lienAction);
         notificationRepository.save(notif);
+        eventPublisher.publishEvent(new PushNotificationEvent(
+                destinataire.getId(),
+                titre,
+                message,
+                type,
+                lienAction
+        ));
     }
 
     // ─── Mes notifications ────────────────────────────────────────────────────

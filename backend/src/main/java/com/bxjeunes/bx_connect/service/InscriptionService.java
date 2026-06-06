@@ -19,13 +19,16 @@ public class InscriptionService {
     private final InscriptionRepository inscriptionRepository;
     private final ActiviteRepository activiteRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public InscriptionService(InscriptionRepository inscriptionRepository,
                                ActiviteRepository activiteRepository,
-                               UserRepository userRepository) {
+                               UserRepository userRepository,
+                               NotificationService notificationService) {
         this.inscriptionRepository = inscriptionRepository;
         this.activiteRepository = activiteRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     // ─── S'inscrire à une activité (M06 CDC) ────────────────────────────────
@@ -77,7 +80,18 @@ public class InscriptionService {
             inscription.setStatut(StatutInscription.EN_ATTENTE_PAIEMENT);
         }
 
-        return InscriptionResponse.fromEntity(inscriptionRepository.save(inscription));
+        Inscription inscriptionSauvee = inscriptionRepository.save(inscription);
+        if (inscriptionSauvee.getStatut() == StatutInscription.CONFIRMEE) {
+            notificationService.creer(
+                    membre,
+                    "Inscription confirmée",
+                    "Votre inscription à " + activite.getTitre() + " est confirmée.",
+                    "INSCRIPTION_CONFIRMEE",
+                    "/activites/" + activite.getId()
+            );
+        }
+
+        return InscriptionResponse.fromEntity(inscriptionSauvee);
     }
 
     // ─── Annuler son inscription (M12 CDC) ──────────────────────────────────

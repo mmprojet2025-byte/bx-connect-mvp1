@@ -22,7 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,17 +36,20 @@ public class MessagerieService {
     private final UserRepository userRepository;
     private final GroupeRepository groupeRepository;
     private final MembreGroupeRepository membreGroupeRepository;
+    private final NotificationService notificationService;
 
     public MessagerieService(FilDiscussionRepository filRepository,
                              MessageRepository messageRepository,
                              UserRepository userRepository,
                              GroupeRepository groupeRepository,
-                             MembreGroupeRepository membreGroupeRepository) {
+                             MembreGroupeRepository membreGroupeRepository,
+                             NotificationService notificationService) {
         this.filRepository = filRepository;
         this.messageRepository = messageRepository;
         this.userRepository = userRepository;
         this.groupeRepository = groupeRepository;
         this.membreGroupeRepository = membreGroupeRepository;
+        this.notificationService = notificationService;
     }
 
     // ─── Fils de discussion ──────────────────────────────────────────────────
@@ -174,7 +179,9 @@ public class MessagerieService {
         message.setAuteur(auteur);
         message.setFil(fil);
 
-        return MessageResponse.fromEntity(messageRepository.save(message));
+        Message messageSauve = messageRepository.save(message);
+        notifierNouveauMessage(fil, auteur);
+        return MessageResponse.fromEntity(messageSauve);
     }
 
     public void marquerCommeLu(Long messageId, String emailUtilisateur) {
@@ -231,6 +238,37 @@ public class MessagerieService {
     private User getUtilisateur(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+    }
+
+    private void notifierNouveauMessage(FilDiscussion fil, User auteur) {
+        Groupe groupe = fil.getGroupe();
+        Map<Long, User> destinataires = new LinkedHashMap<>();
+
+        for (MembreGroupe adhesion : membreGroupeRepository.findByGroupeIdAndStatut(
+                groupe.getId(),
+                StatutMembre.ACCEPTE
+        )) {
+            User membre = adhesion.getUser();
+            if (membre != null && membre.isActif()) {
+                destinataires.put(membre.getId(), membre);
+            }
+        }
+
+        User referent = groupe.getReferent();
+        if (referent != null && referent.isActif()) {
+            destinataires.put(referent.getId(), referent);
+        }
+        destinataires.remove(auteur.getId());
+
+        for (User destinataire : destinataires.values()) {
+            notificationService.creer(
+                    destinataire,
+                    "Nouveau message",
+                    auteur.getPrenom() + " a envoyé un message dans " + groupe.getNom() + ".",
+                    "MESSAGE",
+                    "/messagerie"
+            );
+        }
     }
 
     private void refuserRolesHorsMessagerieGroupe(User utilisateur) {

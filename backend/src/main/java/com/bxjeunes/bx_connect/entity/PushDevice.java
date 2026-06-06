@@ -41,6 +41,15 @@ public class PushDevice {
     @Builder.Default
     private boolean enabled = true;
 
+    @Column(name = "last_sent_at")
+    private LocalDateTime lastSentAt;
+
+    @Column(name = "last_error", length = 500)
+    private String lastError;
+
+    @Column(name = "last_error_at")
+    private LocalDateTime lastErrorAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

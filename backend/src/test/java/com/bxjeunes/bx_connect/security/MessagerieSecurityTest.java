@@ -15,6 +15,7 @@ import com.bxjeunes.bx_connect.repository.MembreGroupeRepository;
 import com.bxjeunes.bx_connect.repository.MessageRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
 import com.bxjeunes.bx_connect.service.MessagerieService;
+import com.bxjeunes.bx_connect.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,7 @@ class MessagerieSecurityTest {
     @Mock private UserRepository userRepository;
     @Mock private GroupeRepository groupeRepository;
     @Mock private MembreGroupeRepository membreGroupeRepository;
+    @Mock private NotificationService notificationService;
 
     @InjectMocks
     private MessagerieService messagerieService;
