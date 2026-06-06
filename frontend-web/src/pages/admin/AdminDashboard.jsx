@@ -129,6 +129,7 @@ export default function AdminDashboard() {
                 <NavCard to="/admin/groupes" title={t('admin.groups_title')} description={t('admin.groups_desc')} color="#7c3aed" icon="Folder" />
                 <NavCard to="/admin/activites" title={t('admin.activities_title')} description={t('admin.activities_desc')} color="#F4A261" icon="Calendar" />
                 <NavCard to="/admin/projets" title={t('admin.projects_title')} description={t('admin.projects_desc')} color="#28a745" icon="Rocket" />
+                <NavCard to="/admin/soutiens" title={t('partnerSupport.admin.title')} description={t('partnerSupport.admin.dashboardDescription')} color="#ea580c" icon="Handshake" />
               </div>
             </section>
 

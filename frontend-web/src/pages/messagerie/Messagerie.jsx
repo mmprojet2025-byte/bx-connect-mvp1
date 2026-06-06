@@ -8,6 +8,7 @@ import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
 import AppIcon from '../../components/ui/AppIcons'
 import PageHeader from '../../components/ui/PageHeader'
+import LoadingState from '../../components/ui/LoadingState'
 
 export default function Messagerie() {
   const { t, i18n } = useTranslation()
@@ -96,9 +97,10 @@ export default function Messagerie() {
         {error && <Alert type="error">{error}</Alert>}
 
         {loading ? (
-          <p className="text-slate-400 text-center py-10">{t('messaging.loadingMessaging')}</p>
+          <LoadingState label={t('common.loading')} />
         ) : emptyState ? (
           <EmptyState
+            icon="Users"
             title={emptyState}
             description={t('messaging.joinGroupDescription')}
             actionLabel={t('groups.discover')}
@@ -106,6 +108,7 @@ export default function Messagerie() {
           />
         ) : !fil ? (
           <EmptyState
+            icon="MessageCircle"
             title={t('messaging.threadUnavailable')}
             description={t('messaging.threadNotOpen')}
             actionLabel={t('nav.dashboard')}

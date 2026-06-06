@@ -1,21 +1,36 @@
 import { Link } from 'react-router-dom'
+import AppIcon from './AppIcons'
 
 export default function ErrorState({
-  title = "Vous n'avez pas accès à cet espace.",
-  description = 'Retournez à votre tableau de bord pour continuer.',
-  actionLabel = 'Retour au dashboard',
-  actionTo = '/dashboard',
+  title = 'Impossible de charger les données.',
+  description,
+  actionLabel = 'Réessayer',
+  actionTo,
+  action,
 }) {
   return (
-    <div className="bg-white rounded-2xl shadow p-10 text-center">
-      <h2 className="font-semibold text-red-700 mb-2">{title}</h2>
-      <p className="text-gray-500 text-sm max-w-md mx-auto">{description}</p>
-      <Link
-        to={actionTo}
-        className="inline-flex mt-5 bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
-      >
-        {actionLabel}
-      </Link>
+    <div className="rounded-3xl border border-red-100 bg-white p-10 text-center shadow-sm">
+      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+        <AppIcon name="AlertTriangle" className="h-7 w-7" />
+      </div>
+      <h2 className="mb-2 font-semibold text-slate-950">{title}</h2>
+      {description && <p className="mx-auto max-w-md text-sm text-slate-500">{description}</p>}
+      {actionTo ? (
+        <Link
+          to={actionTo}
+          className="mt-5 inline-flex rounded-xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600"
+        >
+          {actionLabel}
+        </Link>
+      ) : action ? (
+        <button
+          type="button"
+          onClick={action}
+          className="mt-5 inline-flex rounded-xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600"
+        >
+          {actionLabel}
+        </button>
+      ) : null}
     </div>
   )
 }

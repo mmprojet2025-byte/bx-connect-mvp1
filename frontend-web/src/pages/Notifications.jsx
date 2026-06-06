@@ -10,6 +10,9 @@ import EmptyState from '../components/ui/EmptyState';
 import PageHeader from '../components/ui/PageHeader';
 import AppIcon from '../components/ui/AppIcons';
 import { confirmSensitiveAction, userFriendlyError } from '../utils/userFriendlyError';
+import LoadingState from '../components/ui/LoadingState';
+import ErrorState from '../components/ui/ErrorState';
+import { resolveNotificationRoute } from '../utils/notificationRoute';
 
 export default function Notifications() {
   const { t, i18n } = useTranslation();
@@ -46,7 +49,7 @@ export default function Notifications() {
   };
 
   const handleSupprimer = async (id) => {
-    if (!confirmSensitiveAction('Supprimer cette notification ?')) return;
+    if (!confirmSensitiveAction(t('notifications.confirmDelete'))) return;
     try {
       await api.delete(`/notifications/${id}`);
       setNotifications(prev => prev.filter(n => n.id !== id));
@@ -90,19 +93,28 @@ export default function Notifications() {
           )}
         />
 
-        {error && <Alert type="error">{error}</Alert>}
+        {error && notifications.length > 0 && <Alert type="error">{error}</Alert>}
 
         {!isAuthenticated ? (
           <EmptyState
+            icon="Lock"
             title={t('notifications.loginRequiredTitle')}
             description={t('notifications.loginRequiredDescription')}
             actionLabel={t('nav.login')}
             actionTo="/login"
           />
         ) : loading ? (
-          <p className="text-slate-400 text-center py-10">{t('common.loading')}</p>
+          <LoadingState label={t('common.loading')} />
+        ) : error && notifications.length === 0 ? (
+          <ErrorState
+            title={t('common.loadErrorTitle')}
+            description={error || t('common.loadErrorDescription')}
+            actionLabel={t('common.retry')}
+            action={fetchNotifications}
+          />
         ) : notifications.length === 0 ? (
           <EmptyState
+            icon="Bell"
             title={t('notifications.emptyTitle')}
             description={t('notifications.emptyDescription')}
             actionLabel={t('nav.dashboard')}
@@ -128,7 +140,7 @@ export default function Notifications() {
                   <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{n.message}</p>
                   {n.lienAction && (
                     <Link
-                      to={n.lienAction}
+                      to={resolveNotificationRoute(n)}
                       onClick={e => { e.stopPropagation(); if (!n.lue) handleMarquerLue(n.id); }}
                       className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
                     >

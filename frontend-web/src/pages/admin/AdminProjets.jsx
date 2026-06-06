@@ -10,6 +10,9 @@ import AppIcon from '../../components/ui/AppIcons';
 import PageHeader from '../../components/ui/PageHeader';
 import SectionCard from '../../components/ui/SectionCard';
 import ProjectVisibilityBadge from '../../components/ProjectVisibilityBadge';
+import ProjectTypeBadge from '../../components/ProjectTypeBadge';
+import LoadingState from '../../components/ui/LoadingState';
+import ErrorState from '../../components/ui/ErrorState';
 
 const STATUTS = ['BROUILLON', 'SOUMIS', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE'];
 const VISIBILITES = ['GROUPE', 'COMMUNAUTE', 'PARTENAIRES', 'PUBLIC'];
@@ -173,7 +176,7 @@ export default function AdminProjets() {
         {message && (
           <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>
         )}
-        {error && (
+        {error && projets.length > 0 && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>
         )}
 
@@ -273,7 +276,14 @@ export default function AdminProjets() {
         </SectionCard>
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
+          <LoadingState label={t('common.loading')} />
+        ) : error && projets.length === 0 ? (
+          <ErrorState
+            title={t('common.loadErrorTitle')}
+            description={error || t('common.loadErrorDescription')}
+            actionLabel={t('common.retry')}
+            action={fetchProjets}
+          />
         ) : projetsFiltres.length === 0 ? (
           <div className="bg-white rounded-2xl shadow p-10 text-center text-gray-400 text-sm">
             {t('admin.noProjectFound')}
@@ -296,7 +306,10 @@ export default function AdminProjets() {
                 </div>
                 <div className="p-5">
                   <div className="mb-3">
-                    <ProjectVisibilityBadge visibility={p.visibilite} className="mb-2" />
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      <ProjectTypeBadge groupName={p.groupeNom} />
+                      <ProjectVisibilityBadge visibility={p.visibilite} />
+                    </div>
                     <h3 className="font-bold text-blue-900 text-lg leading-tight">{p.titre}</h3>
                     {p.groupeNom && (
                       <p className="text-xs text-blue-700 font-semibold mt-1">{t('projects.group_label', { group: p.groupeNom })}</p>
@@ -311,7 +324,8 @@ export default function AdminProjets() {
 
                   <div className="grid grid-cols-2 gap-2 text-xs mb-4">
                     <InfoPill label={t('admin.budgetLabel')} value={p.budgetDemande ? `${p.budgetDemande} €` : t('admin.notSpecified')} />
-                    <InfoPill label={t('admin.ownerLabel')} value={p.porteurPrenom ? `${p.porteurPrenom} ${p.porteurNom}` : t('admin.notSpecified')} />
+                    <InfoPill label={t('projects.owner')} value={projectOwner(p, t)} />
+                    <InfoPill label={t('projects.createdAt')} value={formatProjectDate(p.dateSoumission || p.dateCreation)} />
                   </div>
 
                   <div className="flex gap-2">
@@ -388,6 +402,18 @@ function InfoPill({ label, value }) {
       <p className="mt-0.5 font-semibold text-gray-700 truncate">{value}</p>
     </div>
   );
+}
+
+function projectOwner(projet, t) {
+  if (projet.groupeNom) return projet.groupeNom;
+  if (projet.porteurPrenom || projet.porteurNom) {
+    return `${projet.porteurPrenom || ''} ${projet.porteurNom || ''}`.trim();
+  }
+  return t('projects.typeInstitutional');
+}
+
+function formatProjectDate(value) {
+  return value ? new Date(value).toLocaleDateString() : '—';
 }
 
 function AdminStatCard({ icon, label, value, tone = 'blue' }) {

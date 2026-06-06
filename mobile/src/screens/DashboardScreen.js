@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, ActivityIndicator, Image
+  TouchableOpacity, ActivityIndicator, Image, Linking
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import AppIcon from '../components/AppIcon';
 import { ActionCard, Avatar, COLORS, StatCard } from '../components/MobileUI';
+
+const PARTNER_CONTACT_EMAIL = 'contact@bxconnect.be';
 
 export default function DashboardScreen({ navigation }) {
   const { t, i18n } = useTranslation();
@@ -614,7 +616,13 @@ function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, d
         action(t('partner.mobile.discoverProjects', { defaultValue: 'Découvrir les projets' }), t('partner.mobile.discoverProjectsText', { defaultValue: 'Explorer les initiatives portées par les jeunes.' }), 'project', COLORS.impactOrange, () => navigateAccess(navigation, 'TabProjects', 'ProjectsAccess')),
         action(t('partner.mobile.followInitiatives', { defaultValue: 'Suivre les initiatives' }), t('partner.mobile.followInitiativesText', { defaultValue: 'Voir les activités et temps forts de la communauté.' }), 'activity', COLORS.success, () => navigateAccess(navigation, 'TabActivities')),
         action(t('partner.supports', { defaultValue: 'Mes soutiens' }), t('partner.supportsAction', { defaultValue: 'Consulter les soutiens déclarés.' }), 'wallet', COLORS.info, () => navigateAccess(navigation, 'TabSupports', 'SupportsAccess')),
-        action(t('partner.mobile.contactTeam', { defaultValue: 'Contacter l’équipe' }), t('partner.mobile.contactTeamText', { defaultValue: 'Retrouver vos informations de contact et préférences.' }), 'profile', COLORS.info, () => navigateAccess(navigation, 'TabProfile')),
+        action(
+          t('partner.mobile.contactTeam', { defaultValue: 'Contacter l’équipe' }),
+          t('partner.mobile.contactTeamText', { defaultValue: `Écrire à ${PARTNER_CONTACT_EMAIL}.` }),
+          'message',
+          COLORS.info,
+          () => Linking.openURL(`mailto:${PARTNER_CONTACT_EMAIL}?subject=Contact%20partenaire%20BX-Connect`).catch(() => {}),
+        ),
       ],
     };
   }

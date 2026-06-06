@@ -11,6 +11,8 @@ import StatusBadge from '../../components/StatusBadge';
 import ActivityCover from '../../components/ActivityCover';
 import { userFriendlyError } from '../../utils/userFriendlyError';
 import PageHeader from '../../components/ui/PageHeader';
+import LoadingState from '../../components/ui/LoadingState';
+import ErrorState from '../../components/ui/ErrorState';
 
 export default function Activites() {
   const { isAuthenticated, isAdmin, isReferent } = useAuth();
@@ -152,7 +154,7 @@ export default function Activites() {
 
         {/* Messages */}
         {message && <Alert>{message}</Alert>}
-        {error && <Alert type="error">{error}</Alert>}
+        {error && activites.length > 0 && <Alert type="error">{error}</Alert>}
 
         {/* ── Filtres (V03) ── */}
         <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-5 mb-6">
@@ -282,9 +284,17 @@ export default function Activites() {
 
         {/* ── Liste des activités ── */}
         {loading ? (
-          <p className="text-slate-400 text-center py-10">{t('common.loading')}</p>
+          <LoadingState label={t('common.loading')} />
+        ) : error && activites.length === 0 ? (
+          <ErrorState
+            title={t('common.loadErrorTitle')}
+            description={error || t('common.loadErrorDescription')}
+            actionLabel={t('common.retry')}
+            action={fetchActivites}
+          />
         ) : activites.length === 0 ? (
           <EmptyState
+            icon="Calendar"
             title={t('activities.no_activities')}
             description={t('activities.empty_description')}
             actionLabel={t('groups.discover')}

@@ -46,6 +46,7 @@ import AdminActivites    from './pages/admin/AdminActivites'
 import AdminProjets      from './pages/admin/AdminProjets'
 import AdminGroupes      from './pages/admin/AdminGroupes'
 import AdminReferents    from './pages/admin/AdminReferents'
+import AdminSoutiens     from './pages/admin/AdminSoutiens'
 import SuperAdminRoute      from './routes/SuperAdminRoute'
 import SuperAdminDashboard  from './pages/super-admin/SuperAdminDashboard'
 import SuperAdminAdmins     from './pages/super-admin/SuperAdminAdmins'
@@ -141,6 +142,7 @@ export default function App() {
       <Route path="/admin/activites"     element={<AdminRoute><AdminActivites /></AdminRoute>} />
       <Route path="/admin/projets"       element={<AdminRoute><AdminProjets /></AdminRoute>} />
       <Route path="/admin/groupes"       element={<AdminRoute><AdminGroupes /></AdminRoute>} />
+      <Route path="/admin/soutiens"      element={<AdminRoute><AdminSoutiens /></AdminRoute>} />
       <Route path="/admin/prestations"   element={<AdminRoute><GestionPrestations /></AdminRoute>} />
 
       {/* ── Pages SUPER_ADMIN ── */}

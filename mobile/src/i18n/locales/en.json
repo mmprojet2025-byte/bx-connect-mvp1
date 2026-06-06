@@ -4,7 +4,10 @@
   },
   "common": {
     "loading": "Loading...",
+    "loadErrorTitle": "Unable to load the data",
+    "loadErrorDescription": "Check your connection, then try again.",
     "retry": "Retry",
+    "cancel": "Cancel",
     "send": "Send",
     "delete": "Delete",
     "close": "Close",
@@ -99,7 +102,8 @@
     "pending_for_group": "Request pending for this group.",
     "previous_refused": "Your previous request was refused.",
     "request_to_join": "Request to join",
-    "already_in_group": "Already in a group"
+    "already_in_group": "Already in a group",
+    "confirm_leave": "Are you sure you want to leave this group? You will lose access to its messages."
   },
   "activities": {
     "title": "Activities",
@@ -227,7 +231,11 @@
     "submit_project": "Submit project",
     "fallback_project": "Project",
     "date_not_provided": "Date not provided",
-    "visibility": "Visibility"
+    "visibility": "Visibility",
+    "type": "Project type",
+    "type_group": "Group project",
+    "type_institutional": "Association project",
+    "created_at": "Created on"
   },
   "projectVisibility": {
     "GROUPE": "Group",
@@ -283,7 +291,8 @@
     "emptyShort": "No notifications",
     "emptyDescriptionMobile": "Your notifications will appear here whenever an important action concerns your account.",
     "loading": "Loading notifications...",
-    "dateNotProvided": "Date not provided"
+    "dateNotProvided": "Date not provided",
+    "confirmDelete": "Are you sure you want to delete this notification?"
   },
   "auth": {
     "login_subtitle": "Log in to your space",
@@ -579,25 +588,36 @@
     "projectsAction": "View projects linked to your groups."
   },
   "partner": {
-    "supports": "Supports",
-    "support": "Support",
-    "supportsSubtitle": "Mobile tracking of your support declarations.",
-    "supportsLoading": "Loading supports...",
-    "supportsLoadError": "Unable to load supports.",
-    "totalSupports": "Supports",
+    "supports": "Financial support",
+    "support": "Financial support",
+    "supportsSubtitle": "Mobile tracking of your financial support proposals.",
+    "supportsLoading": "Loading financial support...",
+    "supportsLoadError": "Unable to load financial support.",
+    "totalSupports": "Financial support",
     "totalAmount": "Total amount",
     "amount": "Amount",
     "date": "Date",
-    "noSupports": "No supports",
-    "noSupportsText": "Your support declarations will appear here.",
-    "supportFallback": "Support",
+    "noSupports": "No financial support",
+    "noSupportsText": "Your financial support proposals will appear here.",
+    "supportFallback": "Financial support",
     "secureFinalization": "Secure finalization from the partner space.",
-    "supportAction": "View declared supports.",
+    "supportAction": "View your financial support.",
     "openProjects": "Open projects",
     "openActivities": "Open activities",
     "dashboardLoadError": "Unable to load the partner dashboard.",
-    "activitiesReadOnly": "Activities open for support and initiatives to follow.",
-    "projectsReadOnly": "Projects open for support and initiatives to discover."
+    "activitiesReadOnly": "Activities open for financial support and initiatives to follow.",
+    "projectsReadOnly": "Projects open for financial support and initiatives to discover.",
+    "supportStatuses": {
+      "EN_ATTENTE": "Under review",
+      "PAYE": "Accepted",
+      "REMBOURSE": "Rejected",
+      "ECHOUE": "Failed",
+      "ANNULE": "Cancelled"
+    },
+    "mobile": {
+      "contactTeam": "Contact the team",
+      "contactTeamText": "Email contact@bxconnect.be."
+    }
   },
   "roles": {
     "SUPER_ADMIN": "Super administrator",

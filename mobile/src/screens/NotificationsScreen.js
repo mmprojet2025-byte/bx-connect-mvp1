@@ -7,6 +7,11 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import AppIcon from '../components/AppIcon';
+import {
+  EmptyState as SharedEmptyState,
+  ErrorState as SharedErrorState,
+  LoadingState,
+} from '../components/MobileUI';
 
 export default function NotificationsScreen({ navigation }) {
   const { t, i18n } = useTranslation();
@@ -66,9 +71,9 @@ export default function NotificationsScreen({ navigation }) {
   const handleSupprimer = async (id) => {
     Alert.alert(
       t('common.delete'),
-      t('notifications.confirmDelete', { defaultValue: 'Supprimer cette notification ?' }),
+      t('notifications.confirmDelete'),
       [
-        { text: t('common.cancel', { defaultValue: 'Annuler' }), style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
           text: t('common.delete'),
           style: 'destructive',
@@ -200,30 +205,29 @@ export default function NotificationsScreen({ navigation }) {
         </View>
       )}
 
-      {error !== '' && (
+      {error !== '' && notifications.length > 0 && (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
 
       {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#1E3A8A" />
-          <Text style={styles.loadingText}>{t('notifications.loading')}</Text>
-        </View>
+        <LoadingState label={t('common.loading')} />
+      ) : error !== '' && notifications.length === 0 ? (
+        <SharedErrorState
+          title={t('common.loadErrorTitle')}
+          text={error || t('common.loadErrorDescription')}
+          retryLabel={t('common.retry')}
+          onRetry={fetchNotifications}
+        />
       ) : notifications.length === 0 ? (
-        <View style={styles.centered}>
-          <View style={styles.emptyIconCircle}>
-            <AppIcon name="bell" size={34} color="#38BDF8" />
-          </View>
-          <Text style={styles.emptyTitle}>{t('notifications.emptyShort')}</Text>
-          <Text style={styles.emptyText}>
-            {t('notifications.emptyDescriptionMobile')}
-          </Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchNotifications}>
-            <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
-          </TouchableOpacity>
-        </View>
+        <SharedEmptyState
+          icon="bell"
+          title={t('notifications.emptyShort')}
+          text={t('notifications.emptyDescriptionMobile')}
+          actionLabel={t('common.retry')}
+          onAction={fetchNotifications}
+        />
       ) : (
         <FlatList
           data={notifications}

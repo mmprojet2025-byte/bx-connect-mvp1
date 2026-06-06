@@ -104,7 +104,7 @@ function SupportCard({ support, t, language }) {
           <Text style={styles.title} numberOfLines={2}>{title}</Text>
           <Text style={styles.subtitle}>{isProject ? t('navigation.projects') : t('navigation.activities')}</Text>
         </View>
-        <Badge label={status} color={statusColor(status)} soft />
+        <Badge label={t(`partner.supportStatuses.${status}`, { defaultValue: status })} color={statusColor(status)} soft />
       </View>
       <View style={styles.metaBox}>
         <Meta label={t('partner.amount')} value={`${support.montant || 0} €`} />

@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import AppIcon from '../components/AppIcon';
+import { EmptyState as SharedEmptyState, LoadingState } from '../components/MobileUI';
 
 export default function MessagerieScreen() {
   const { t, i18n } = useTranslation();
@@ -157,12 +158,7 @@ export default function MessagerieScreen() {
   }
 
   if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#1E3A8A" />
-        <Text style={styles.loadingText}>{t('messaging.loadingMessaging')}</Text>
-      </View>
-    );
+    return <LoadingState label={t('common.loading')} />;
   }
 
   return (
@@ -199,16 +195,20 @@ export default function MessagerieScreen() {
       )}
 
       {emptyMessage ? (
-        <EmptyState
+        <SharedEmptyState
+          icon="message"
           title={t('messaging.threadUnavailable')}
           text={emptyMessage}
-          onRetry={initialiserMessagerie}
+          actionLabel={t('common.retry')}
+          onAction={initialiserMessagerie}
         />
       ) : !filActif ? (
-        <EmptyState
+        <SharedEmptyState
+          icon="message"
           title={t('messaging.noThread')}
           text={t('messaging.threadNotCreated')}
-          onRetry={initialiserMessagerie}
+          actionLabel={t('common.retry')}
+          onAction={initialiserMessagerie}
         />
       ) : (
         <>
@@ -372,22 +372,6 @@ function ForbiddenState({ title, text }) {
       </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyText}>{text}</Text>
-    </View>
-  );
-}
-
-function EmptyState({ title, text, onRetry }) {
-  const { t } = useTranslation();
-  return (
-    <View style={styles.centered}>
-      <View style={styles.emptyIconCircle}>
-        <AppIcon name="message" size={34} color="#38BDF8" />
-      </View>
-      <Text style={styles.emptyTitle}>{title}</Text>
-      <Text style={styles.emptyText}>{text}</Text>
-      <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-        <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
-      </TouchableOpacity>
     </View>
   );
 }

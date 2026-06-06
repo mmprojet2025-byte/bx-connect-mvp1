@@ -176,7 +176,12 @@
     "group": "Groupe associé",
     "noGroup": "Projet institutionnel sans groupe",
     "participationSoon": "La demande de participation sera disponible dans une prochaine étape.",
-    "successSubmitted": "Projet créé et soumis à validation."
+    "successSubmitted": "Projet créé et soumis à validation.",
+    "type": "Type de projet",
+    "typeGroup": "Projet de groupe",
+    "typeInstitutional": "Projet institutionnel",
+    "owner": "Porteur",
+    "createdAt": "Date de création"
   },
   "projectVisibility": {
     "GROUPE": "Groupe",
@@ -207,7 +212,8 @@
     "members_capacity": "{{count}}/{{capacity}} membres",
     "members_count": "{{count}} membre(s)",
     "description_soon": "Ce groupe accueillera bientôt une description complète.",
-    "sending": "Envoi..."
+    "sending": "Envoi...",
+    "confirm_leave": "Voulez-vous vraiment quitter ce groupe ? Vous perdrez l’accès à sa messagerie."
   },
   "messaging": {
     "title": "Messagerie",
@@ -276,7 +282,8 @@
     "emptyDescription": "Tu es à jour. Les nouvelles informations importantes apparaîtront ici.",
     "emptyDescriptionMobile": "Vos notifications apparaîtront ici dès qu’une action importante concerne votre compte.",
     "loading": "Chargement des notifications...",
-    "dateNotProvided": "Date non renseignée"
+    "dateNotProvided": "Date non renseignée",
+    "confirmDelete": "Voulez-vous vraiment supprimer cette notification ?"
   },
   "profile": {
     "title": "Mon profil",
@@ -342,7 +349,9 @@
     "activities_desc": "Valider, modifier, supprimer les activités",
     "projects_title": "Projets",
     "projects_desc": "Approuver et suivre les projets",
-    "loading": "Chargement...",
+    "loading": "Chargement en cours...",
+    "loadErrorTitle": "Impossible de charger les données",
+    "loadErrorDescription": "Vérifiez votre connexion, puis réessayez.",
     "error_load": "Impossible de charger les statistiques.",
     "activeReferents": "Référents actifs",
     "groups": "Groupes",
@@ -758,6 +767,45 @@
     "projectDate": "Date",
     "linkedActivities": "Activités liées",
     "noLinkedActivities": "Aucune activité liée à ce groupe."
+  },
+  "partnerSupport": {
+    "financial": "Soutien financier",
+    "project": "Projet",
+    "activity": "Activité",
+    "amount": "Montant",
+    "date": "Date",
+    "comment": "Commentaire du partenaire",
+    "statuses": {
+      "EN_ATTENTE": "En examen",
+      "PAYE": "Accepté",
+      "REMBOURSE": "Refusé",
+      "ECHOUE": "Échec",
+      "ANNULE": "Annulé"
+    },
+    "admin": {
+      "nav": "Soutiens",
+      "eyebrow": "Partenariats",
+      "title": "Soutiens partenaires",
+      "description": "Examinez les propositions de soutien financier reçues pour les projets et les activités.",
+      "dashboardDescription": "Examiner et traiter les propositions de soutien financier.",
+      "total": "Total",
+      "listTitle": "Propositions reçues",
+      "listDescription": "Chaque proposition reste en examen jusqu’à votre décision.",
+      "allStatuses": "Tous les statuts",
+      "loading": "Chargement des soutiens partenaires...",
+      "loadError": "Impossible de charger les soutiens partenaires.",
+      "actionError": "Impossible de traiter ce soutien.",
+      "empty": "Aucun soutien partenaire",
+      "emptyDescription": "Les nouvelles propositions de soutien financier apparaîtront ici.",
+      "unknownTarget": "Cible non renseignée",
+      "unknownPartner": "Partenaire non renseigné",
+      "approve": "Valider",
+      "reject": "Refuser",
+      "confirmApprove": "Valider le soutien proposé par {{name}} ?",
+      "confirmReject": "Refuser le soutien proposé par {{name}} ?",
+      "approved": "Soutien accepté.",
+      "rejected": "Soutien refusé."
+    }
   },
   "superAdmin": {
     "dashboardTitle": "Dashboard SUPER_ADMIN",

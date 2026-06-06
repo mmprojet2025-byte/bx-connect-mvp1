@@ -116,7 +116,7 @@
     "error_register": "Error during registration.",
     "error_publish": "Error publishing the activity.",
     "loading": "Loading activities...",
-    "manage_mode": "Management mode — {{count}} activity/activities",
+    "manage_mode": "Management mode — {{count}} activities",
     "filters_title": "Search and filters",
     "search_placeholder": "Search by keyword...",
     "all_categories": "All categories",
@@ -176,7 +176,12 @@
     "group": "Linked group",
     "noGroup": "Association project without a group",
     "participationSoon": "Participation requests will be available in a later phase.",
-    "successSubmitted": "Project created and submitted for approval."
+    "successSubmitted": "Project created and submitted for approval.",
+    "type": "Project type",
+    "typeGroup": "Group project",
+    "typeInstitutional": "Association project",
+    "owner": "Owner",
+    "createdAt": "Created on"
   },
   "projectVisibility": {
     "GROUPE": "Group",
@@ -207,7 +212,8 @@
     "members_capacity": "{{count}}/{{capacity}} members",
     "members_count": "{{count}} member(s)",
     "description_soon": "This group will soon have a full description.",
-    "sending": "Sending..."
+    "sending": "Sending...",
+    "confirm_leave": "Are you sure you want to leave this group? You will lose access to its messages."
   },
   "messaging": {
     "title": "Messaging",
@@ -276,7 +282,8 @@
     "emptyDescription": "You are up to date. New important information will appear here.",
     "emptyDescriptionMobile": "Your notifications will appear here whenever an important action concerns your account.",
     "loading": "Loading notifications...",
-    "dateNotProvided": "Date not provided"
+    "dateNotProvided": "Date not provided",
+    "confirmDelete": "Are you sure you want to delete this notification?"
   },
   "profile": {
     "title": "My profile",
@@ -343,6 +350,8 @@
     "projects_title": "Projects",
     "projects_desc": "Approve and track projects",
     "loading": "Loading...",
+    "loadErrorTitle": "Unable to load the data",
+    "loadErrorDescription": "Check your connection, then try again.",
     "error_load": "Unable to load statistics.",
     "activeReferents": "Active mentors",
     "groups": "Groups",
@@ -758,6 +767,45 @@
     "projectDate": "Date",
     "linkedActivities": "Linked activities",
     "noLinkedActivities": "No activity linked to this group."
+  },
+  "partnerSupport": {
+    "financial": "Financial support",
+    "project": "Project",
+    "activity": "Activity",
+    "amount": "Amount",
+    "date": "Date",
+    "comment": "Partner comment",
+    "statuses": {
+      "EN_ATTENTE": "Under review",
+      "PAYE": "Accepted",
+      "REMBOURSE": "Rejected",
+      "ECHOUE": "Failed",
+      "ANNULE": "Cancelled"
+    },
+    "admin": {
+      "nav": "Support",
+      "eyebrow": "Partnerships",
+      "title": "Partner support",
+      "description": "Review financial support proposals received for projects and activities.",
+      "dashboardDescription": "Review and process financial support proposals.",
+      "total": "Total",
+      "listTitle": "Received proposals",
+      "listDescription": "Each proposal remains under review until you make a decision.",
+      "allStatuses": "All statuses",
+      "loading": "Loading partner support...",
+      "loadError": "Unable to load partner support.",
+      "actionError": "Unable to process this support.",
+      "empty": "No partner support",
+      "emptyDescription": "New financial support proposals will appear here.",
+      "unknownTarget": "Target not provided",
+      "unknownPartner": "Partner not provided",
+      "approve": "Approve",
+      "reject": "Reject",
+      "confirmApprove": "Approve the support proposed by {{name}}?",
+      "confirmReject": "Reject the support proposed by {{name}}?",
+      "approved": "Support accepted.",
+      "rejected": "Support rejected."
+    }
   },
   "superAdmin": {
     "dashboardTitle": "SUPER_ADMIN Dashboard",

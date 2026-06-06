@@ -7,6 +7,11 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import AppIcon from '../components/AppIcon';
+import {
+  EmptyState as SharedEmptyState,
+  ErrorState as SharedErrorState,
+  LoadingState,
+} from '../components/MobileUI';
 
 export default function ProjectsScreen() {
   const { t, i18n } = useTranslation();
@@ -264,24 +269,30 @@ export default function ProjectsScreen() {
         </View>
       )}
 
-      {error !== '' && (
+      {error !== '' && projets.length > 0 && (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
 
       {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#1E3A8A" />
-          <Text style={styles.loadingText}>{t('projects.loading')}</Text>
-        </View>
+        <LoadingState label={t('common.loading')} />
+      ) : error !== '' && projets.length === 0 ? (
+        <SharedErrorState
+          title={t('common.loadErrorTitle')}
+          text={error || t('common.loadErrorDescription')}
+          retryLabel={t('common.retry')}
+          onRetry={chargerProjets}
+        />
       ) : projetsFiltres.length === 0 ? (
-        <EmptyState
+        <SharedEmptyState
+          icon="project"
           title={recherche ? t('projects.no_search_results') : t('projects.no_projects')}
           text={isReferent
             ? t('projects.no_referent_projects')
             : t('projects.public_will_appear')}
-          onRetry={chargerProjets}
+          actionLabel={t('common.retry')}
+          onAction={chargerProjets}
         />
       ) : (
         <FlatList
@@ -333,16 +344,17 @@ function ProjectCard({ projet, t, language, isPartenaire }) {
         <Text style={styles.cardDesc} numberOfLines={3}>{projet.description}</Text>
       )}
 
-      <VisibilityBadge visibility={projet.visibilite} t={t} />
+      <View style={styles.projectBadges}>
+        <ProjectTypeBadge hasGroup={Boolean(projet.groupeNom)} t={t} />
+        <VisibilityBadge visibility={projet.visibilite} t={t} />
+      </View>
 
       <View style={styles.metaBox}>
-        {projet.groupeNom && <MetaRow label={t('groups.title')} value={projet.groupeNom} />}
         <MetaRow
           label={t('projects.owner')}
-          value={projet.porteurPrenom || projet.porteurNom
-            ? `${projet.porteurPrenom || ''} ${projet.porteurNom || ''}`.trim()
-            : t('projects.association')}
+          value={projectOwner(projet, t)}
         />
+        <MetaRow label={t('projects.created_at')} value={formatDate(projet.dateCreation, language, t)} />
         <MetaRow label={t('projects.budget')} value={projet.budgetDemande ? `${projet.budgetDemande} €` : t('projects.not_provided')} />
         <MetaRow label={t('projects.participants')} value={`${projet.nombreParticipants ?? 0}`} />
         <MetaRow label={t('projects.comments')} value={`${projet.nombreCommentaires ?? 0}`} />
@@ -355,6 +367,25 @@ function ProjectCard({ projet, t, language, isPartenaire }) {
       </View>
     </View>
   );
+}
+
+function ProjectTypeBadge({ hasGroup, t }) {
+  return (
+    <View style={styles.typeBadge}>
+      <AppIcon name={hasGroup ? 'group' : 'shield'} size={13} color="#475569" />
+      <Text style={styles.typeBadgeText}>
+        {t(hasGroup ? 'projects.type_group' : 'projects.type_institutional')}
+      </Text>
+    </View>
+  );
+}
+
+function projectOwner(projet, t) {
+  if (projet.groupeNom) return projet.groupeNom;
+  if (projet.porteurPrenom || projet.porteurNom) {
+    return `${projet.porteurPrenom || ''} ${projet.porteurNom || ''}`.trim();
+  }
+  return t('projects.type_institutional');
 }
 
 function ProjectFormModal({
@@ -510,22 +541,6 @@ function RoleBlockedState({ title, text }) {
       </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyText}>{text}</Text>
-    </View>
-  );
-}
-
-function EmptyState({ title, text, onRetry }) {
-  const { t } = useTranslation();
-  return (
-    <View style={styles.centered}>
-      <View style={styles.emptyIconCircle}>
-        <AppIcon name="project" size={34} color="#38BDF8" />
-      </View>
-      <Text style={styles.emptyTitle}>{title}</Text>
-      <Text style={styles.emptyText}>{text}</Text>
-      <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-        <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -730,9 +745,25 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 9,
     paddingVertical: 5,
-    marginBottom: 10,
   },
   visibilityBadgeText: { fontSize: 10, fontWeight: '900' },
+  projectBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 7,
+    marginBottom: 10,
+  },
+  typeBadge: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    backgroundColor: '#f1f5f9',
+  },
+  typeBadgeText: { color: '#475569', fontSize: 10, fontWeight: '900' },
 
   metaBox: {
     backgroundColor: '#f8fafc',

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import AppIcon from './AppIcon';
 
 export const COLORS = {
@@ -123,6 +123,34 @@ export function EmptyState({ icon = 'alert', title, text, actionLabel, onAction 
   );
 }
 
+export function LoadingState({ label }) {
+  return (
+    <View style={styles.feedbackState} accessibilityRole="progressbar">
+      <View style={styles.feedbackIcon}>
+        <ActivityIndicator size="small" color={COLORS.bxBlueLight} />
+      </View>
+      <Text style={styles.feedbackTitle}>{label}</Text>
+    </View>
+  );
+}
+
+export function ErrorState({ title, text, retryLabel, onRetry }) {
+  return (
+    <View style={styles.feedbackState}>
+      <View style={[styles.feedbackIcon, styles.errorIcon]}>
+        <AppIcon name="alert" size={30} color={COLORS.danger} />
+      </View>
+      <Text style={styles.feedbackTitle}>{title}</Text>
+      {text ? <Text style={styles.feedbackText}>{text}</Text> : null}
+      {retryLabel && onRetry ? (
+        <TouchableOpacity style={styles.feedbackAction} onPress={onRetry}>
+          <Text style={styles.feedbackActionText}>{retryLabel}</Text>
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  );
+}
+
 export function StatCard({ label, value, icon = 'activity', color = COLORS.info }) {
   return (
     <Card style={[styles.statCard, { borderTopColor: color }]}>
@@ -229,6 +257,45 @@ const styles = StyleSheet.create({
   emptyText: { color: COLORS.muted, ...TYPOGRAPHY.body, textAlign: 'center' },
   emptyAction: { marginTop: SPACING.lg, backgroundColor: COLORS.bxBlue, borderRadius: BORDER_RADIUS.lg, paddingHorizontal: 18, paddingVertical: 11, minHeight: 46, justifyContent: 'center' },
   emptyActionText: { color: '#fff', fontSize: 13, fontWeight: '900' },
+  feedbackState: {
+    flex: 1,
+    minHeight: 220,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.xxl,
+    backgroundColor: COLORS.page,
+  },
+  feedbackIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: BORDER_RADIUS.xl,
+    backgroundColor: COLORS.softBlue,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.lg,
+  },
+  errorIcon: { backgroundColor: COLORS.softRed },
+  feedbackTitle: {
+    color: COLORS.bxBlue,
+    ...TYPOGRAPHY.section,
+    textAlign: 'center',
+  },
+  feedbackText: {
+    color: COLORS.muted,
+    ...TYPOGRAPHY.body,
+    textAlign: 'center',
+    marginTop: SPACING.sm,
+    maxWidth: 320,
+  },
+  feedbackAction: {
+    minHeight: 44,
+    marginTop: SPACING.lg,
+    justifyContent: 'center',
+    borderRadius: BORDER_RADIUS.lg,
+    backgroundColor: COLORS.bxBlue,
+    paddingHorizontal: SPACING.xl,
+  },
+  feedbackActionText: { color: '#fff', fontSize: 13, fontWeight: '900' },
   statCard: {
     flex: 1,
     minWidth: '47%',

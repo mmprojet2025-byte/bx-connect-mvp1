@@ -9,7 +9,11 @@ import AppIcon from '../../components/ui/AppIcons'
 import PageHeader from '../../components/ui/PageHeader'
 import SectionCard from '../../components/ui/SectionCard'
 import ProjectVisibilityBadge from '../../components/ProjectVisibilityBadge'
+import ProjectTypeBadge from '../../components/ProjectTypeBadge'
 import { userFriendlyError } from '../../utils/userFriendlyError'
+import LoadingState from '../../components/ui/LoadingState'
+import ErrorState from '../../components/ui/ErrorState'
+import EmptyState from '../../components/ui/EmptyState'
 
 const emptyForm = {
   titre: '',
@@ -111,7 +115,7 @@ export default function ReferentProjets() {
           <StatCard icon="Search" label={t('common.results', { defaultValue: 'Résultats' })} value={projetsFiltres.length} tone="amber" />
         </div>
 
-        {error && <Alert type="error">{error}</Alert>}
+        {error && projets.length > 0 && <Alert type="error">{error}</Alert>}
         {message && <Alert>{message}</Alert>}
 
         {showForm && (
@@ -182,11 +186,25 @@ export default function ReferentProjets() {
         </SectionCard>
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
+          <LoadingState label={t('common.loading')} />
+        ) : error && projets.length === 0 ? (
+          <ErrorState
+            title={t('common.loadErrorTitle')}
+            description={error || t('common.loadErrorDescription')}
+            actionLabel={t('common.retry')}
+            action={fetchProjets}
+          />
         ) : projets.length === 0 ? (
-          <EmptyState>{t('referent.noProjects')}</EmptyState>
+          <EmptyState
+            icon="Rocket"
+            title={t('referent.noProjects')}
+            description={t('projects.no_projects')}
+          />
         ) : projetsFiltres.length === 0 ? (
-          <EmptyState>{t('common.noResults', { defaultValue: 'Aucun résultat trouvé.' })}</EmptyState>
+          <EmptyState
+            icon="Search"
+            title={t('common.noResults', { defaultValue: 'Aucun résultat trouvé.' })}
+          />
         ) : (
           <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
             {projetsFiltres.map(projet => (
@@ -201,7 +219,10 @@ export default function ReferentProjets() {
                 </div>
                 <div className="p-5">
                   <div>
-                    <ProjectVisibilityBadge visibility={projet.visibilite} className="mb-2" />
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      <ProjectTypeBadge groupName={projet.groupeNom} />
+                      <ProjectVisibilityBadge visibility={projet.visibilite} />
+                    </div>
                     <h2 className="font-bold text-blue-900 text-lg leading-tight">{projet.titre}</h2>
                     {projet.groupeNom && (
                       <p className="text-xs text-blue-700 font-semibold mt-1">{t('referent.projectGroup', { group: projet.groupeNom })}</p>
@@ -293,15 +314,6 @@ function Select({ label, value, onChange, options, required = false }) {
         {options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
       </select>
     </label>
-  )
-}
-
-function EmptyState({ children }) {
-  return (
-    <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center text-gray-400 shadow-sm">
-      <AppIcon name="Rocket" className="mx-auto mb-3 h-10 w-10 text-teal-200" />
-      <p className="text-sm">{children}</p>
-    </div>
   )
 }
 

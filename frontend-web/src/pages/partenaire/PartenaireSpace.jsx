@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
@@ -6,9 +8,14 @@ import api from '../../api/axios';
 import { userFriendlyError } from '../../utils/userFriendlyError';
 import AppIcon from '../../components/ui/AppIcons';
 import ProjectVisibilityBadge from '../../components/ProjectVisibilityBadge';
+import { SUPPORT_STATUS_STYLES, supportStatusLabel } from '../../utils/supportStatus';
+
+const PARTNER_TABS = new Set(['dashboard', 'projets', 'activites', 'soutiens']);
 
 export default function PartenaireSpace() {
   const { user } = useAuth();
+  const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [stats, setStats] = useState(null);
   const [mesSoutiens, setMesSoutiens] = useState([]);
@@ -17,7 +24,8 @@ export default function PartenaireSpace() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [onglet, setOnglet] = useState('dashboard');
+  const requestedTab = searchParams.get('tab');
+  const onglet = PARTNER_TABS.has(requestedTab) ? requestedTab : 'dashboard';
 
   // Formulaire soutien
   const [showSoutienForm, setShowSoutienForm] = useState(false);
@@ -63,7 +71,7 @@ export default function PartenaireSpace() {
         payload.activiteId = soutienForm.activiteId;
         await api.post('/partenaire/soutenir-activite', payload);
       }
-      setMessage('Déclaration de soutien soumise avec succès !');
+      setMessage('Proposition de soutien financier soumise avec succès.');
       setShowSoutienForm(false);
       setSoutienForm({ montant: '', message: '', projetId: null, activiteId: null, type: 'projet' });
       fetchAll();
@@ -77,8 +85,12 @@ export default function PartenaireSpace() {
     { id: 'dashboard',  label: 'Dashboard', icon: 'BarChart' },
     { id: 'projets',    label: 'Projets', icon: 'Rocket' },
     { id: 'activites',  label: 'Activités', icon: 'Folder' },
-    { id: 'soutiens',   label: 'Mes soutiens', icon: 'Wallet' },
+    { id: 'soutiens',   label: 'Soutiens financiers', icon: 'Wallet' },
   ];
+
+  const setOnglet = (tab) => {
+    setSearchParams(tab === 'dashboard' ? {} : { tab });
+  };
 
   if (loading) return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -112,7 +124,7 @@ export default function PartenaireSpace() {
             className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-bold text-orange-600 transition hover:bg-orange-50"
           >
             <AppIcon name="PlusCircle" className="h-4 w-4" />
-            Nouveau soutien
+            Soutien financier
           </button>
         </div>
 
@@ -142,26 +154,26 @@ export default function PartenaireSpace() {
         {onglet === 'dashboard' && stats && (
           <div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <StatCard label="Total soutiens"    value={stats.totalSoutiens}    color="#ea580c" icon="BarChart" />
+              <StatCard label="Soutiens financiers" value={stats.totalSoutiens} color="#ea580c" icon="BarChart" />
               <StatCard label="Montant total (€)" value={`${stats.totalMontant || 0} €`} color="#16a34a" icon="Wallet" />
-              <StatCard label="En attente"        value={stats.soutiensEnAttente} color="#d97706" icon="Clock" />
-              <StatCard label="Validés"           value={stats.soutiensValides}   color="#2563eb" icon="CheckCircle" />
+              <StatCard label="En examen" value={stats.soutiensEnAttente} color="#d97706" icon="Clock" />
+              <StatCard label="Acceptés" value={stats.soutiensValides} color="#2563eb" icon="CheckCircle" />
             </div>
 
             <div className="bg-white rounded-2xl shadow p-6">
               <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900 mb-4">
                 <AppIcon name="Wallet" className="h-5 w-5 text-orange-600" />
-                Mes derniers soutiens
+                Mes derniers soutiens financiers
               </h2>
               {mesSoutiens.length === 0 ? (
                 <div className="text-center py-8 text-gray-400">
                   <AppIcon name="Wallet" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
-                  <p className="text-sm">Aucun soutien soumis pour le moment.</p>
+                  <p className="text-sm">Aucun soutien financier soumis pour le moment.</p>
                   <button
                     onClick={() => setShowSoutienForm(true)}
                     className="mt-3 inline-flex items-center justify-center gap-1.5 text-orange-600 text-sm hover:underline"
                   >
-                    Soumettre un premier soutien
+                    Proposer un premier soutien financier
                     <AppIcon name="Wallet" className="h-4 w-4" />
                   </button>
                 </div>
@@ -180,10 +192,8 @@ export default function PartenaireSpace() {
                       <div className="text-right">
                         <p className="text-sm font-bold text-orange-600">{s.montant} €</p>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          s.statutPaiement === 'PAYE' ? 'bg-green-100 text-green-700' :
-                          s.statutPaiement === 'REMBOURSE' ? 'bg-red-100 text-red-700' :
-                          'bg-yellow-100 text-yellow-700'
-                        }`}>{s.statutPaiement}</span>
+                          SUPPORT_STATUS_STYLES[s.statutPaiement] || 'bg-slate-100 text-slate-700'
+                        }`}>{supportStatusLabel(s.statutPaiement, t)}</span>
                       </div>
                     </div>
                   ))}
@@ -229,7 +239,7 @@ export default function PartenaireSpace() {
                       className="inline-flex w-full items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white text-sm font-semibold py-2 rounded-xl transition"
                     >
                       <AppIcon name="Wallet" className="h-4 w-4" />
-                      Soutenir ce projet
+                      Proposer un soutien financier
                     </button>
                   </div>
                 ))}
@@ -269,7 +279,7 @@ export default function PartenaireSpace() {
                       className="inline-flex w-full items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white text-sm font-semibold py-2 rounded-xl transition"
                     >
                       <AppIcon name="Wallet" className="h-4 w-4" />
-                      Soutenir cette activité
+                      Proposer un soutien financier
                     </button>
                   </div>
                 ))}
@@ -283,7 +293,7 @@ export default function PartenaireSpace() {
           <div>
             <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900 mb-4">
               <AppIcon name="Wallet" className="h-5 w-5 text-orange-600" />
-              Mes déclarations de soutien
+              Mes soutiens financiers
             </h2>
             {mesSoutiens.length === 0 ? (
               <div className="text-center py-12 text-gray-400 bg-white rounded-2xl shadow">
@@ -314,10 +324,8 @@ export default function PartenaireSpace() {
                         <td className="px-4 py-3 text-sm font-bold text-orange-600">{s.montant} €</td>
                         <td className="px-4 py-3">
                           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                            s.statutPaiement === 'PAYE' ? 'bg-green-100 text-green-700' :
-                            s.statutPaiement === 'REMBOURSE' ? 'bg-red-100 text-red-700' :
-                            'bg-yellow-100 text-yellow-700'
-                          }`}>{s.statutPaiement}</span>
+                            SUPPORT_STATUS_STYLES[s.statutPaiement] || 'bg-slate-100 text-slate-700'
+                          }`}>{supportStatusLabel(s.statutPaiement, t)}</span>
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-400">
                           {new Date(s.dateCreation).toLocaleDateString('fr-BE')}
@@ -338,7 +346,7 @@ export default function PartenaireSpace() {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900">
                   <AppIcon name="Wallet" className="h-5 w-5 text-orange-600" />
-                  Déclarer un soutien
+                  Déclarer un soutien financier
                 </h2>
                 <button onClick={() => setShowSoutienForm(false)} className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600" aria-label="Fermer">
                   <AppIcon name="XCircle" className="h-5 w-5" />
@@ -348,7 +356,7 @@ export default function PartenaireSpace() {
               <form onSubmit={handleSoumettreSoutien} className="space-y-4">
                 {/* Type */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Type de soutien</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Cible du soutien financier</label>
                   <div className="flex gap-3">
                     {['projet', 'activite'].map(type => (
                       <button
@@ -418,7 +426,7 @@ export default function PartenaireSpace() {
                     value={soutienForm.message}
                     onChange={e => setSoutienForm({ ...soutienForm, message: e.target.value })}
                     rows={3}
-                    placeholder="Décrivez votre intention de soutien..."
+                    placeholder="Décrivez votre intention de soutien financier..."
                     className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
                   />
                 </div>

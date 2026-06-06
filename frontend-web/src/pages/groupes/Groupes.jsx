@@ -11,6 +11,8 @@ import StatusBadge from '../../components/StatusBadge'
 import GroupAvatar from '../../components/GroupAvatar'
 import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFriendlyError'
 import PageHeader from '../../components/ui/PageHeader'
+import LoadingState from '../../components/ui/LoadingState'
+import ErrorState from '../../components/ui/ErrorState'
 
 export default function Groupes() {
   const { isAuthenticated, isMembre } = useAuth()
@@ -70,7 +72,7 @@ export default function Groupes() {
   }
 
   const handleQuitter = async (groupeId) => {
-    if (!confirmSensitiveAction('Quitter ce groupe ? Vous perdrez l’accès à sa messagerie.')) return
+    if (!confirmSensitiveAction(t('groups.confirm_leave'))) return
     setMessage('')
     setError('')
     setActionLoading(groupeId)
@@ -120,7 +122,7 @@ export default function Groupes() {
         )}
 
         {message && <Alert type="success">{message}</Alert>}
-        {error && <Alert type="error">{error}</Alert>}
+        {error && groupes.length > 0 && <Alert type="error">{error}</Alert>}
 
         <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-4 mb-6">
           <input
@@ -133,9 +135,17 @@ export default function Groupes() {
         </div>
 
         {loading ? (
-          <p className="text-slate-400 text-center py-10">{t('groups.loading')}</p>
+          <LoadingState label={t('common.loading')} />
+        ) : error && groupes.length === 0 ? (
+          <ErrorState
+            title={t('common.loadErrorTitle')}
+            description={error || t('common.loadErrorDescription')}
+            actionLabel={t('common.retry')}
+            action={fetchGroupes}
+          />
         ) : groupesFiltres.length === 0 ? (
           <EmptyState
+            icon="Users"
             title={t('ux.groups.noAvailableTitle')}
             description={t('ux.groups.noAvailableDescription')}
             actionLabel={t('activities.viewActivities')}

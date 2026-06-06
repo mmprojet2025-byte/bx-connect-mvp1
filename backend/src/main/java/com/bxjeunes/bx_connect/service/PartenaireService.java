@@ -74,6 +74,11 @@ public class PartenaireService {
         Activite activite = activiteRepository.findById(request.getActiviteId())
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + request.getActiviteId()));
 
+        if (activite.getStatut() != StatutActivite.PUBLIEE) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Cette activité n'est pas ouverte au soutien partenaire.");
+        }
+
         SoutienFinancier soutien = new SoutienFinancier();
         soutien.setMontant(request.getMontant());
         soutien.setDonateur(partenaire);   // ✅ donateur (pas partenaire)

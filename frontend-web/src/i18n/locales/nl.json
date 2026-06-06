@@ -176,7 +176,12 @@
     "group": "Gekoppelde groep",
     "noGroup": "Verenigingsproject zonder groep",
     "participationSoon": "Deelname aanvragen wordt in een volgende fase beschikbaar.",
-    "successSubmitted": "Project aangemaakt en ter goedkeuring ingediend."
+    "successSubmitted": "Project aangemaakt en ter goedkeuring ingediend.",
+    "type": "Projecttype",
+    "typeGroup": "Groepsproject",
+    "typeInstitutional": "Verenigingsproject",
+    "owner": "Indiener",
+    "createdAt": "Aangemaakt op"
   },
   "projectVisibility": {
     "GROUPE": "Groep",
@@ -207,7 +212,8 @@
     "members_capacity": "{{count}}/{{capacity}} leden",
     "members_count": "{{count}} lid/leden",
     "description_soon": "Deze groep krijgt binnenkort een volledige beschrijving.",
-    "sending": "Verzenden..."
+    "sending": "Verzenden...",
+    "confirm_leave": "Wil je deze groep echt verlaten? Je verliest de toegang tot de groepsberichten."
   },
   "messaging": {
     "title": "Berichten",
@@ -276,7 +282,8 @@
     "emptyDescription": "Je bent helemaal bij. Nieuwe belangrijke informatie verschijnt hier.",
     "emptyDescriptionMobile": "Je meldingen verschijnen hier zodra een belangrijke actie je account betreft.",
     "loading": "Meldingen laden...",
-    "dateNotProvided": "Datum niet ingevuld"
+    "dateNotProvided": "Datum niet ingevuld",
+    "confirmDelete": "Wil je deze melding echt verwijderen?"
   },
   "profile": {
     "title": "Mijn profiel",
@@ -342,7 +349,9 @@
     "activities_desc": "Activiteiten valideren, wijzigen, verwijderen",
     "projects_title": "Projecten",
     "projects_desc": "Projecten goedkeuren en opvolgen",
-    "loading": "Laden...",
+    "loading": "Bezig met laden...",
+    "loadErrorTitle": "Kan de gegevens niet laden",
+    "loadErrorDescription": "Controleer je verbinding en probeer opnieuw.",
     "error_load": "Kan statistieken niet laden.",
     "activeReferents": "Actieve begeleiders",
     "groups": "Groepen",
@@ -758,6 +767,45 @@
     "projectDate": "Datum",
     "linkedActivities": "Gekoppelde activiteiten",
     "noLinkedActivities": "Geen activiteit gekoppeld aan deze groep."
+  },
+  "partnerSupport": {
+    "financial": "Financiële steun",
+    "project": "Project",
+    "activity": "Activiteit",
+    "amount": "Bedrag",
+    "date": "Datum",
+    "comment": "Opmerking van de partner",
+    "statuses": {
+      "EN_ATTENTE": "In behandeling",
+      "PAYE": "Goedgekeurd",
+      "REMBOURSE": "Geweigerd",
+      "ECHOUE": "Mislukt",
+      "ANNULE": "Geannuleerd"
+    },
+    "admin": {
+      "nav": "Steun",
+      "eyebrow": "Partnerschappen",
+      "title": "Partnersteun",
+      "description": "Beoordeel voorstellen voor financiële steun aan projecten en activiteiten.",
+      "dashboardDescription": "Voorstellen voor financiële steun beoordelen en behandelen.",
+      "total": "Totaal",
+      "listTitle": "Ontvangen voorstellen",
+      "listDescription": "Elk voorstel blijft in behandeling tot je beslissing.",
+      "allStatuses": "Alle statussen",
+      "loading": "Partnersteun laden...",
+      "loadError": "Kan de partnersteun niet laden.",
+      "actionError": "Kan deze steun niet behandelen.",
+      "empty": "Geen partnersteun",
+      "emptyDescription": "Nieuwe voorstellen voor financiële steun verschijnen hier.",
+      "unknownTarget": "Doel niet ingevuld",
+      "unknownPartner": "Partner niet ingevuld",
+      "approve": "Goedkeuren",
+      "reject": "Weigeren",
+      "confirmApprove": "De steun van {{name}} goedkeuren?",
+      "confirmReject": "De steun van {{name}} weigeren?",
+      "approved": "Steun goedgekeurd.",
+      "rejected": "Steun geweigerd."
+    }
   },
   "superAdmin": {
     "dashboardTitle": "SUPER_ADMIN-dashboard",

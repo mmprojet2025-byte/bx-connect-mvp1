@@ -3,8 +3,11 @@
     "slogan": "Verbinden • Inspireren • Impact maken"
   },
   "common": {
-    "loading": "Laden...",
+    "loading": "Bezig met laden...",
+    "loadErrorTitle": "Kan de gegevens niet laden",
+    "loadErrorDescription": "Controleer je verbinding en probeer opnieuw.",
     "retry": "Opnieuw proberen",
+    "cancel": "Annuleren",
     "send": "Verzenden",
     "delete": "Verwijderen",
     "close": "Sluiten",
@@ -99,7 +102,8 @@
     "pending_for_group": "Aanvraag in behandeling voor deze groep.",
     "previous_refused": "Je vorige aanvraag werd geweigerd.",
     "request_to_join": "Aanvragen om lid te worden",
-    "already_in_group": "Al lid van een groep"
+    "already_in_group": "Al lid van een groep",
+    "confirm_leave": "Wil je deze groep echt verlaten? Je verliest de toegang tot de groepsberichten."
   },
   "activities": {
     "title": "Activiteiten",
@@ -227,7 +231,11 @@
     "submit_project": "Project indienen",
     "fallback_project": "Project",
     "date_not_provided": "Datum niet ingevuld",
-    "visibility": "Zichtbaarheid"
+    "visibility": "Zichtbaarheid",
+    "type": "Projecttype",
+    "type_group": "Groepsproject",
+    "type_institutional": "Verenigingsproject",
+    "created_at": "Aangemaakt op"
   },
   "projectVisibility": {
     "GROUPE": "Groep",
@@ -283,7 +291,8 @@
     "emptyShort": "Geen meldingen",
     "emptyDescriptionMobile": "Je meldingen verschijnen hier zodra een belangrijke actie je account betreft.",
     "loading": "Meldingen laden...",
-    "dateNotProvided": "Datum niet ingevuld"
+    "dateNotProvided": "Datum niet ingevuld",
+    "confirmDelete": "Wil je deze melding echt verwijderen?"
   },
   "auth": {
     "login_subtitle": "Meld je aan bij je ruimte",
@@ -579,25 +588,36 @@
     "projectsAction": "Projecten bekijken die aan je groepen gekoppeld zijn."
   },
   "partner": {
-    "supports": "Steun",
-    "support": "Steun",
-    "supportsSubtitle": "Mobiele opvolging van je steunverklaringen.",
-    "supportsLoading": "Steun laden...",
-    "supportsLoadError": "Kan de steun niet laden.",
-    "totalSupports": "Steun",
+    "supports": "Financiële steun",
+    "support": "Financiële steun",
+    "supportsSubtitle": "Mobiele opvolging van je voorstellen voor financiële steun.",
+    "supportsLoading": "Financiële steun laden...",
+    "supportsLoadError": "Kan de financiële steun niet laden.",
+    "totalSupports": "Financiële steun",
     "totalAmount": "Totaalbedrag",
     "amount": "Bedrag",
     "date": "Datum",
-    "noSupports": "Geen steun",
-    "noSupportsText": "Je steunverklaringen verschijnen hier.",
-    "supportFallback": "Steun",
+    "noSupports": "Geen financiële steun",
+    "noSupportsText": "Je voorstellen voor financiële steun verschijnen hier.",
+    "supportFallback": "Financiële steun",
     "secureFinalization": "Veilige afronding vanuit de partneromgeving.",
-    "supportAction": "Steunverklaringen bekijken.",
+    "supportAction": "Je financiële steun bekijken.",
     "openProjects": "Open projecten",
     "openActivities": "Open activiteiten",
     "dashboardLoadError": "Kan het partnerdashboard niet laden.",
-    "activitiesReadOnly": "Activiteiten die openstaan voor steun en initiatieven om te volgen.",
-    "projectsReadOnly": "Projecten die openstaan voor steun en initiatieven om te ontdekken."
+    "activitiesReadOnly": "Activiteiten die openstaan voor financiële steun en initiatieven om te volgen.",
+    "projectsReadOnly": "Projecten die openstaan voor financiële steun en initiatieven om te ontdekken.",
+    "supportStatuses": {
+      "EN_ATTENTE": "In behandeling",
+      "PAYE": "Goedgekeurd",
+      "REMBOURSE": "Geweigerd",
+      "ECHOUE": "Mislukt",
+      "ANNULE": "Geannuleerd"
+    },
+    "mobile": {
+      "contactTeam": "Contact opnemen",
+      "contactTeamText": "Mail naar contact@bxconnect.be."
+    }
   },
   "roles": {
     "SUPER_ADMIN": "Superbeheerder",

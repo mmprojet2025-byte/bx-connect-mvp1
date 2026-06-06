@@ -3,8 +3,11 @@
     "slogan": "Connecter • Inspirer • Impacter"
   },
   "common": {
-    "loading": "Chargement...",
+    "loading": "Chargement en cours...",
+    "loadErrorTitle": "Impossible de charger les données",
+    "loadErrorDescription": "Vérifiez votre connexion, puis réessayez.",
     "retry": "Réessayer",
+    "cancel": "Annuler",
     "send": "Envoyer",
     "delete": "Supprimer",
     "close": "Fermer",
@@ -99,7 +102,8 @@
     "pending_for_group": "Demande en attente pour ce groupe.",
     "previous_refused": "Votre précédente demande a été refusée.",
     "request_to_join": "Demander à rejoindre",
-    "already_in_group": "Déjà inscrit dans un groupe"
+    "already_in_group": "Déjà inscrit dans un groupe",
+    "confirm_leave": "Voulez-vous vraiment quitter ce groupe ? Vous perdrez l’accès à sa messagerie."
   },
   "activities": {
     "title": "Activités",
@@ -227,7 +231,11 @@
     "submit_project": "Soumettre le projet",
     "fallback_project": "Projet",
     "date_not_provided": "Date non renseignée",
-    "visibility": "Visibilité"
+    "visibility": "Visibilité",
+    "type": "Type de projet",
+    "type_group": "Projet de groupe",
+    "type_institutional": "Projet institutionnel",
+    "created_at": "Date de création"
   },
   "projectVisibility": {
     "GROUPE": "Groupe",
@@ -283,7 +291,8 @@
     "emptyShort": "Aucune notification",
     "emptyDescriptionMobile": "Vos notifications apparaîtront ici dès qu’une action importante concerne votre compte.",
     "loading": "Chargement des notifications...",
-    "dateNotProvided": "Date non renseignée"
+    "dateNotProvided": "Date non renseignée",
+    "confirmDelete": "Voulez-vous vraiment supprimer cette notification ?"
   },
   "auth": {
     "login_subtitle": "Connecte-toi à ton espace",
@@ -579,25 +588,36 @@
     "projectsAction": "Voir les projets liés à vos groupes."
   },
   "partner": {
-    "supports": "Soutiens",
-    "support": "Soutien",
-    "supportsSubtitle": "Suivi mobile de vos déclarations de soutien.",
-    "supportsLoading": "Chargement des soutiens...",
-    "supportsLoadError": "Impossible de charger les soutiens.",
-    "totalSupports": "Soutiens",
+    "supports": "Soutiens financiers",
+    "support": "Soutien financier",
+    "supportsSubtitle": "Suivi mobile de vos propositions de soutien financier.",
+    "supportsLoading": "Chargement des soutiens financiers...",
+    "supportsLoadError": "Impossible de charger les soutiens financiers.",
+    "totalSupports": "Soutiens financiers",
     "totalAmount": "Montant total",
     "amount": "Montant",
     "date": "Date",
-    "noSupports": "Aucun soutien",
-    "noSupportsText": "Vos soutiens déclarés apparaîtront ici.",
-    "supportFallback": "Soutien",
+    "noSupports": "Aucun soutien financier",
+    "noSupportsText": "Vos propositions de soutien financier apparaîtront ici.",
+    "supportFallback": "Soutien financier",
     "secureFinalization": "Finalisation sécurisée depuis l’espace partenaire.",
-    "supportAction": "Consulter les soutiens déclarés.",
+    "supportAction": "Consulter vos soutiens financiers.",
     "openProjects": "Projets ouverts",
     "openActivities": "Activités ouvertes",
     "dashboardLoadError": "Impossible de charger le dashboard partenaire.",
-    "activitiesReadOnly": "Activités ouvertes au soutien et initiatives à suivre.",
-    "projectsReadOnly": "Projets ouverts au soutien et initiatives à découvrir."
+    "activitiesReadOnly": "Activités ouvertes au soutien financier et initiatives à suivre.",
+    "projectsReadOnly": "Projets ouverts au soutien financier et initiatives à découvrir.",
+    "supportStatuses": {
+      "EN_ATTENTE": "En examen",
+      "PAYE": "Accepté",
+      "REMBOURSE": "Refusé",
+      "ECHOUE": "Échec",
+      "ANNULE": "Annulé"
+    },
+    "mobile": {
+      "contactTeam": "Contacter l’équipe",
+      "contactTeamText": "Écrire à contact@bxconnect.be."
+    }
   },
   "roles": {
     "SUPER_ADMIN": "Super administrateur",

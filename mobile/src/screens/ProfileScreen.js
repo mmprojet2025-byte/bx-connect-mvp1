@@ -19,6 +19,8 @@ import {
   SHADOWS,
   SPACING,
   TYPOGRAPHY,
+  ErrorState,
+  LoadingState,
 } from '../components/MobileUI';
 
 const LANGUES = [
@@ -140,26 +142,17 @@ export default function ProfileScreen() {
   };
 
   if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#1E3A8A" />
-        <Text style={styles.loadingText}>{t('profile.loading')}</Text>
-      </View>
-    );
+    return <LoadingState label={t('common.loading')} />;
   }
 
   if (!profil) {
     return (
-      <View style={styles.centered}>
-        <View style={styles.emptyIconCircle}>
-          <AppIcon name="profile" size={34} color="#38BDF8" />
-        </View>
-        <Text style={styles.emptyTitle}>{t('profile.unavailable')}</Text>
-        {error !== '' && <Text style={styles.emptyText}>{error}</Text>}
-        <TouchableOpacity style={styles.retryButton} onPress={fetchProfil}>
-          <Text style={styles.retryButtonText}>{t('profile.retry')}</Text>
-        </TouchableOpacity>
-      </View>
+      <ErrorState
+        title={t('profile.unavailable')}
+        text={error || t('common.loadErrorDescription')}
+        retryLabel={t('common.retry')}
+        onRetry={fetchProfil}
+      />
     );
   }
 

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { resolveNotificationRoute } from '../../utils/notificationRoute'
 
 export default function MemberNotificationsCard({ notifications = [] }) {
   const { t } = useTranslation()
@@ -30,7 +31,10 @@ export default function MemberNotificationsCard({ notifications = [] }) {
                   <p className="text-sm font-semibold text-blue-900">{notification.titre}</p>
                   <p className="text-xs text-gray-500 mt-1 line-clamp-2">{notification.message}</p>
                   {notification.lienAction && (
-                    <Link to={notification.lienAction} className="inline-flex mt-2 text-xs font-semibold text-blue-700 hover:underline">
+                    <Link
+                      to={resolveNotificationRoute(notification)}
+                      className="inline-flex mt-2 text-xs font-semibold text-blue-700 hover:underline"
+                    >
                       {t('memberDashboard.buttons.open')}
                     </Link>
                   )}

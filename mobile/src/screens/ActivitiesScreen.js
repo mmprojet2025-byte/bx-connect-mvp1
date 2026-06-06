@@ -7,6 +7,11 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import AppIcon from '../components/AppIcon';
+import {
+  EmptyState as SharedEmptyState,
+  ErrorState as SharedErrorState,
+  LoadingState,
+} from '../components/MobileUI';
 
 const ACTIVITY_STATUSES = ['BROUILLON', 'PUBLIEE', 'ANNULEE', 'TERMINEE'];
 const EMPTY_FORM = {
@@ -299,24 +304,30 @@ export default function ActivitiesScreen() {
         </View>
       )}
 
-      {error !== '' && (
+      {error !== '' && activites.length > 0 && (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
 
       {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#1E3A8A" />
-          <Text style={styles.loadingText}>{t('activities.loading')}</Text>
-        </View>
+        <LoadingState label={t('common.loading')} />
+      ) : error !== '' && activites.length === 0 ? (
+        <SharedErrorState
+          title={t('common.loadErrorTitle')}
+          text={error || t('common.loadErrorDescription')}
+          retryLabel={t('common.retry')}
+          onRetry={chargerActivites}
+        />
       ) : activitesFiltrees.length === 0 ? (
-        <EmptyState
+        <SharedEmptyState
+          icon="activity"
           title={recherche ? t('activities.no_search_results') : t('activities.no_activities')}
           text={isReferent
             ? t('activities.no_referent_activities')
             : t('activities.empty_description')}
-          onRetry={chargerActivites}
+          actionLabel={t('common.retry')}
+          onAction={chargerActivites}
         />
       ) : (
         <FlatList
@@ -686,22 +697,6 @@ function RoleBlockedState({ title, text }) {
       </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyText}>{text}</Text>
-    </View>
-  );
-}
-
-function EmptyState({ title, text, onRetry }) {
-  const { t } = useTranslation();
-  return (
-    <View style={styles.centered}>
-      <View style={styles.emptyIconCircle}>
-        <AppIcon name="activity" size={34} color="#38BDF8" />
-      </View>
-      <Text style={styles.emptyTitle}>{title}</Text>
-      <Text style={styles.emptyText}>{text}</Text>
-      <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-        <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
-      </TouchableOpacity>
     </View>
   );
 }

@@ -12,6 +12,9 @@ import ProjectCover from '../../components/ProjectCover'
 import { userFriendlyError } from '../../utils/userFriendlyError'
 import PageHeader from '../../components/ui/PageHeader'
 import ProjectVisibilityBadge from '../../components/ProjectVisibilityBadge'
+import ProjectTypeBadge from '../../components/ProjectTypeBadge'
+import LoadingState from '../../components/ui/LoadingState'
+import ErrorState from '../../components/ui/ErrorState'
 
 const MEMBER_VISIBILITIES = ['GROUPE', 'COMMUNAUTE']
 
@@ -100,7 +103,7 @@ export default function Projets() {
         />
 
         {message && <Alert>{message}</Alert>}
-        {error && <Alert type="error">{error}</Alert>}
+        {error && projets.length > 0 && <Alert type="error">{error}</Alert>}
 
         <section className="bg-white rounded-[1.5rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-5 mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
@@ -164,9 +167,17 @@ export default function Projets() {
         )}
 
         {loading ? (
-          <p className="text-slate-400 text-center py-10">{t('projects.loading')}</p>
+          <LoadingState label={t('common.loading')} />
+        ) : error && projets.length === 0 ? (
+          <ErrorState
+            title={t('common.loadErrorTitle')}
+            description={error || t('common.loadErrorDescription')}
+            actionLabel={t('common.retry')}
+            action={fetchProjets}
+          />
         ) : projets.length === 0 ? (
           <EmptyState
+            icon="Rocket"
             title={t('ux.projects.emptyTitle')}
             description={t('ux.projects.emptyDesc')}
             actionLabel={isAuthenticated ? t('groups.view_groups') : t('auth.register_btn')}
@@ -204,7 +215,10 @@ function ProjectCard({ projet, isAuthenticated, supportLabel, t }) {
       </div>
       <div className="p-5 flex flex-col flex-1">
         <div className="mb-3">
-          <ProjectVisibilityBadge visibility={projet.visibilite} className="mb-2" />
+          <div className="mb-2 flex flex-wrap gap-2">
+            <ProjectTypeBadge groupName={projet.groupeNom} />
+            <ProjectVisibilityBadge visibility={projet.visibilite} />
+          </div>
           <h2 className="font-bold text-slate-950 text-lg leading-tight">{projet.titre}</h2>
           {projet.groupeNom && (
             <p className="text-xs text-blue-600 font-semibold mt-1">{t('projects.group_label', { group: projet.groupeNom })}</p>
@@ -215,8 +229,8 @@ function ProjectCard({ projet, isAuthenticated, supportLabel, t }) {
         </p>
         <div className="grid grid-cols-2 gap-2 text-xs mt-4">
           <InfoPill
-            label={t('referent.projectOwner')}
-            value={projet.porteurPrenom ? `${projet.porteurPrenom} ${projet.porteurNom}` : '—'}
+            label={t('projects.owner')}
+            value={formatProjectOwner(projet, t)}
           />
           <InfoPill
             label={t('projects.form_budget')}
@@ -227,7 +241,7 @@ function ProjectCard({ projet, isAuthenticated, supportLabel, t }) {
             value={t('projects.participants_count', { count: projet.nombreParticipants ?? 0 })}
           />
           <InfoPill
-            label={t('referent.projectDate')}
+            label={t('projects.createdAt')}
             value={formatProjectDate(projet.dateSoumission || projet.dateCreation)}
           />
         </div>
@@ -269,6 +283,14 @@ function InfoPill({ label, value }) {
 
 function formatProjectDate(value) {
   return value ? new Date(value).toLocaleDateString() : '—'
+}
+
+function formatProjectOwner(projet, t) {
+  if (projet.groupeNom) return projet.groupeNom
+  if (projet.porteurPrenom || projet.porteurNom) {
+    return `${projet.porteurPrenom || ''} ${projet.porteurNom || ''}`.trim()
+  }
+  return t('projects.typeInstitutional')
 }
 
 function Input({ label, value, onChange, type = 'text', required = false, min }) {

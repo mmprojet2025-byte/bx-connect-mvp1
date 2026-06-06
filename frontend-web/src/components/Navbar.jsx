@@ -157,6 +157,7 @@ function getNavLinks({ isSuperAdmin, isAdmin, isReferent, isMembre, isPartenaire
       { to: '/admin/groupes', label: t('nav.requests', { defaultValue: 'Demandes' }) },
       { to: '/admin/activites', label: t('nav.activities', { defaultValue: 'Activités' }) },
       { to: '/admin/projets', label: t('nav.projects', { defaultValue: 'Projets' }) },
+      { to: '/admin/soutiens', label: t('partnerSupport.admin.nav', { defaultValue: 'Soutiens' }) },
     ]
   }
 
@@ -183,10 +184,10 @@ function getNavLinks({ isSuperAdmin, isAdmin, isReferent, isMembre, isPartenaire
 
   if (isPartenaire) {
     return [
-      { to: '/partenaire', label: t('nav.dashboard', { defaultValue: 'Accueil' }) },
-      { to: '/partenaire', label: t('nav.projects', { defaultValue: 'Projets' }) },
-      { to: '/partenaire', label: t('nav.activities', { defaultValue: 'Activités' }) },
-      { to: '/partenaire', label: t('partner.supports', { defaultValue: 'Soutiens' }) },
+      { to: '/partenaire?tab=dashboard', label: t('nav.dashboard', { defaultValue: 'Accueil' }) },
+      { to: '/partenaire?tab=projets', label: t('nav.projects', { defaultValue: 'Projets' }) },
+      { to: '/partenaire?tab=activites', label: t('nav.activities', { defaultValue: 'Activités' }) },
+      { to: '/partenaire?tab=soutiens', label: t('partner.supports', { defaultValue: 'Soutiens' }) },
       { to: '/notifications', label: t('nav.notifications', { defaultValue: 'Notifications' }) },
     ]
   }
