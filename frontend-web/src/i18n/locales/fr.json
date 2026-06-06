@@ -768,6 +768,38 @@
     "linkedActivities": "Activités liées",
     "noLinkedActivities": "Aucune activité liée à ce groupe."
   },
+  "partnerInstitution": {
+    "about": "À propos de l’organisation",
+    "contact": "Informations de contact",
+    "noDescription": "Ajoutez une courte présentation pour mieux identifier votre organisation.",
+    "editProfile": "Modifier la fiche",
+    "editTitle": "Fiche partenaire institutionnelle",
+    "editDescription": "Présentez clairement votre organisation et son point de contact.",
+    "organization": "Nom de l’organisation",
+    "type": "Type de partenaire",
+    "contactPerson": "Personne de contact",
+    "contactEmail": "Email de contact",
+    "phone": "Téléphone",
+    "website": "Site web",
+    "logoUrl": "URL du logo",
+    "description": "Description courte",
+    "profileSaved": "Fiche partenaire mise à jour.",
+    "profileError": "Impossible de mettre à jour la fiche partenaire.",
+    "projectsSupported": "Projets soutenus",
+    "activitiesSupported": "Activités soutenues",
+    "types": {
+      "COMMUNE": "Commune",
+      "BIJ": "BIJ",
+      "ECOLE": "École",
+      "HAUTE_ECOLE": "Haute école",
+      "ENTREPRISE": "Entreprise",
+      "SPONSOR": "Sponsor",
+      "ASSOCIATION": "Association",
+      "ONG": "ONG",
+      "FONDATION": "Fondation",
+      "AUTRE": "Autre"
+    }
+  },
   "partnerSupport": {
     "financial": "Soutien financier",
     "project": "Projet",

@@ -768,6 +768,38 @@
     "linkedActivities": "Gekoppelde activiteiten",
     "noLinkedActivities": "Geen activiteit gekoppeld aan deze groep."
   },
+  "partnerInstitution": {
+    "about": "Over de organisatie",
+    "contact": "Contactgegevens",
+    "noDescription": "Voeg een korte voorstelling toe om je organisatie duidelijk te identificeren.",
+    "editProfile": "Fiche bewerken",
+    "editTitle": "Institutionele partnerfiche",
+    "editDescription": "Stel je organisatie en contactpersoon duidelijk voor.",
+    "organization": "Naam van de organisatie",
+    "type": "Type partner",
+    "contactPerson": "Contactpersoon",
+    "contactEmail": "Contact-e-mail",
+    "phone": "Telefoon",
+    "website": "Website",
+    "logoUrl": "URL van het logo",
+    "description": "Korte beschrijving",
+    "profileSaved": "Partnerfiche bijgewerkt.",
+    "profileError": "Kan de partnerfiche niet bijwerken.",
+    "projectsSupported": "Gesteunde projecten",
+    "activitiesSupported": "Gesteunde activiteiten",
+    "types": {
+      "COMMUNE": "Gemeente",
+      "BIJ": "BIJ",
+      "ECOLE": "School",
+      "HAUTE_ECOLE": "Hogeschool",
+      "ENTREPRISE": "Onderneming",
+      "SPONSOR": "Sponsor",
+      "ASSOCIATION": "Vereniging",
+      "ONG": "Ngo",
+      "FONDATION": "Stichting",
+      "AUTRE": "Andere"
+    }
+  },
   "partnerSupport": {
     "financial": "Financiële steun",
     "project": "Project",

@@ -4,6 +4,7 @@ const ICONS = {
   activity: 'calendar-outline',
   alert: 'notifications-outline',
   bell: 'notifications-outline',
+  building: 'business-outline',
   check: 'checkmark-circle-outline',
   close: 'close-outline',
   edit: 'create-outline',
@@ -23,6 +24,8 @@ const ICONS = {
   trash: 'trash-outline',
   user: 'person-outline',
   wallet: 'wallet-outline',
+  globe: 'globe-outline',
+  phone: 'call-outline',
   warning: 'alert-circle-outline',
 };
 

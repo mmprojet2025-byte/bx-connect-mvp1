@@ -595,6 +595,9 @@
     "supportsLoadError": "Kan de financiële steun niet laden.",
     "totalSupports": "Financiële steun",
     "totalAmount": "Totaalbedrag",
+    "projectsSupported": "Gesteunde projecten",
+    "activitiesSupported": "Gesteunde activiteiten",
+    "contactPerson": "Contact",
     "amount": "Bedrag",
     "date": "Datum",
     "noSupports": "Geen financiële steun",
@@ -617,6 +620,18 @@
     "mobile": {
       "contactTeam": "Contact opnemen",
       "contactTeamText": "Mail naar contact@bxconnect.be."
+    },
+    "types": {
+      "COMMUNE": "Gemeente",
+      "BIJ": "BIJ",
+      "ECOLE": "School",
+      "HAUTE_ECOLE": "Hogeschool",
+      "ENTREPRISE": "Onderneming",
+      "SPONSOR": "Sponsor",
+      "ASSOCIATION": "Vereniging",
+      "ONG": "Ngo",
+      "FONDATION": "Stichting",
+      "AUTRE": "Andere"
     }
   },
   "roles": {

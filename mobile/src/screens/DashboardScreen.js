@@ -114,11 +114,12 @@ export default function DashboardScreen({ navigation }) {
     setLoading(true);
     setError('');
     try {
-      const [statsRes, soutiensRes, projetsRes, activitesRes] = await Promise.all([
+      const [statsRes, soutiensRes, projetsRes, activitesRes, profilRes] = await Promise.all([
         api.get('/partenaire/statistiques'),
         api.get('/partenaire/mes-soutiens'),
         api.get('/partenaire/projets-ouverts'),
         api.get('/partenaire/activites-ouvertes'),
+        api.get('/partenaire/profil'),
       ]);
       setRoleDashboard({
         type: 'PARTENAIRE',
@@ -126,6 +127,7 @@ export default function DashboardScreen({ navigation }) {
         soutiens: soutiensRes.data || [],
         projetsOuverts: projetsRes.data || [],
         activitesOuvertes: activitesRes.data || [],
+        profil: profilRes.data || null,
       });
     } catch (err) {
       if (err.response?.status === 401) {
@@ -513,6 +515,10 @@ function RoleDashboard({ user, role, isAdmin, isSuperAdmin, isPartenaire, dashbo
         <Text style={styles.roleHeroSubtitle} numberOfLines={2}>{config.subtitle}</Text>
       </View>
 
+      {isPartenaire && dashboard?.profil ? (
+        <PartnerInstitutionCard profile={dashboard.profil} t={t} />
+      ) : null}
+
       <DashboardSectionTitle title={config.title} />
       <View style={styles.metricGrid}>
         {config.stats.map((stat) => (
@@ -598,8 +604,6 @@ function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, d
   if (isPartenaire) {
     const stats = dashboard?.stats || {};
     const soutiens = dashboard?.soutiens || [];
-    const projetsOuverts = dashboard?.projetsOuverts || [];
-    const activitesOuvertes = dashboard?.activitesOuvertes || [];
 
     return {
       title: t('partner.mobile.title', { defaultValue: 'Espace partenaire' }),
@@ -607,8 +611,8 @@ function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, d
       sectionTitle: t('partner.mobile.sectionTitle', { defaultValue: 'Initiatives à suivre' }),
       sectionText: t('partner.mobile.sectionText', { defaultValue: 'Une vue claire pour soutenir les projets, suivre les activités et collaborer avec BX-Jeunes Impact.' }),
       stats: [
-        stat(t('partner.openProjects', { defaultValue: 'Projets ouverts' }), pickNumber(stats, ['projetsOuverts', 'totalProjetsOuverts'], projetsOuverts.length), 'project', COLORS.impactOrange),
-        stat(t('partner.openActivities', { defaultValue: 'Activités ouvertes' }), pickNumber(stats, ['activitesOuvertes', 'totalActivitesOuvertes'], activitesOuvertes.length), 'activity', COLORS.success),
+        stat(t('partner.projectsSupported', { defaultValue: 'Projets soutenus' }), pickNumber(stats, ['projetsSoutenus'], 0), 'project', COLORS.impactOrange),
+        stat(t('partner.activitiesSupported', { defaultValue: 'Activités soutenues' }), pickNumber(stats, ['activitesSoutenues'], 0), 'activity', COLORS.success),
         stat(t('partner.totalSupports', { defaultValue: 'Soutiens' }), pickNumber(stats, ['totalSoutiens', 'soutiens'], soutiens.length), 'wallet', COLORS.info),
         stat(t('partner.totalAmount', { defaultValue: 'Montant total' }), `${pickNumber(stats, ['totalMontant', 'montantTotal'], 0)} €`, 'payment', COLORS.bxBlue),
       ],
@@ -640,6 +644,33 @@ function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, d
       action(t('navigation.profile', { defaultValue: 'Profil' }), t('memberDashboard.openProfile', { defaultValue: 'Ouvrir mon profil' }), 'profile', COLORS.info, () => navigateAccess(navigation, 'TabProfile')),
     ],
   };
+}
+
+function PartnerInstitutionCard({ profile, t }) {
+  return (
+    <View style={styles.partnerInstitutionCard}>
+      {profile.logoUrl ? (
+        <Image source={{ uri: profile.logoUrl }} style={styles.partnerLogo} resizeMode="contain" />
+      ) : (
+        <View style={styles.partnerLogoFallback}>
+          <AppIcon name="building" size={25} color={COLORS.impactOrange} />
+        </View>
+      )}
+      <View style={styles.partnerInstitutionText}>
+        <Text style={styles.partnerInstitutionName} numberOfLines={2}>
+          {profile.nomOrganisation}
+        </Text>
+        <Text style={styles.partnerInstitutionType}>
+          {t(`partner.types.${profile.typePartenaire || 'AUTRE'}`, { defaultValue: profile.typePartenaire || 'Partenaire' })}
+        </Text>
+        {profile.personneContact ? (
+          <Text style={styles.partnerInstitutionContact} numberOfLines={1}>
+            {t('partner.contactPerson', { defaultValue: 'Contact' })} : {profile.personneContact}
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  );
 }
 
 function pickNumber(source, keys, fallback = 0) {
@@ -1156,6 +1187,42 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     overflow: 'hidden',
   },
+  partnerInstitutionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+    backgroundColor: '#fff',
+    padding: 13,
+    marginBottom: 10,
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  partnerLogo: {
+    width: 54,
+    height: 54,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#ffedd5',
+    backgroundColor: '#fff',
+  },
+  partnerLogoFallback: {
+    width: 54,
+    height: 54,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff7ed',
+  },
+  partnerInstitutionText: { flex: 1 },
+  partnerInstitutionName: { color: '#1E3A8A', fontSize: 16, lineHeight: 20, fontWeight: '900' },
+  partnerInstitutionType: { color: COLORS.impactOrange, fontSize: 11, fontWeight: '900', marginTop: 3 },
+  partnerInstitutionContact: { color: '#64748b', fontSize: 11, marginTop: 4 },
   card: {
     backgroundColor: '#fff',
     borderRadius: 22,

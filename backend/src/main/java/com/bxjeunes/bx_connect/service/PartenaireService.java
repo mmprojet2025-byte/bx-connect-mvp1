@@ -1,7 +1,6 @@
 package com.bxjeunes.bx_connect.service;
 
-import com.bxjeunes.bx_connect.dto.SoutienRequest;
-import com.bxjeunes.bx_connect.dto.SoutienResponse;
+import com.bxjeunes.bx_connect.dto.*;
 import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.*;
 import org.springframework.stereotype.Service;
@@ -19,15 +18,47 @@ public class PartenaireService {
     private final UserRepository userRepository;
     private final ProjetRepository projetRepository;
     private final ActiviteRepository activiteRepository;
+    private final PartenaireProfilRepository partenaireProfilRepository;
 
     public PartenaireService(SoutienFinancierRepository soutienRepository,
                              UserRepository userRepository,
                              ProjetRepository projetRepository,
-                             ActiviteRepository activiteRepository) {
+                             ActiviteRepository activiteRepository,
+                             PartenaireProfilRepository partenaireProfilRepository) {
         this.soutienRepository  = soutienRepository;
         this.userRepository     = userRepository;
         this.projetRepository   = projetRepository;
         this.activiteRepository = activiteRepository;
+        this.partenaireProfilRepository = partenaireProfilRepository;
+    }
+
+    public PartenaireProfilResponse getProfilInstitutionnel(String emailPartenaire) {
+        User partenaire = getPartenaire(emailPartenaire);
+        return partenaireProfilRepository.findByUtilisateurId(partenaire.getId())
+                .map(PartenaireProfilResponse::fromEntity)
+                .orElseGet(() -> profilParDefaut(partenaire));
+    }
+
+    public PartenaireProfilResponse enregistrerProfilInstitutionnel(
+            PartenaireProfilRequest request,
+            String emailPartenaire) {
+        User partenaire = getPartenaire(emailPartenaire);
+        PartenaireProfil profil = partenaireProfilRepository.findByUtilisateurId(partenaire.getId())
+                .orElseGet(() -> {
+                    PartenaireProfil nouveau = new PartenaireProfil();
+                    nouveau.setUtilisateur(partenaire);
+                    return nouveau;
+                });
+
+        profil.setNomOrganisation(request.getNomOrganisation().trim());
+        profil.setTypePartenaire(request.getTypePartenaire());
+        profil.setLogoUrl(normaliser(request.getLogoUrl()));
+        profil.setPersonneContact(normaliser(request.getPersonneContact()));
+        profil.setEmailContact(normaliser(request.getEmailContact()));
+        profil.setTelephone(normaliser(request.getTelephone()));
+        profil.setSiteWeb(normaliser(request.getSiteWeb()));
+        profil.setDescription(normaliser(request.getDescription()));
+        return PartenaireProfilResponse.fromEntity(partenaireProfilRepository.save(profil));
     }
 
     // ─── P05 : Soumettre un soutien à un projet ───────────────────────────────
@@ -125,6 +156,8 @@ public class PartenaireService {
         stats.put("totalMontant",      totalMontant);
         stats.put("soutiensEnAttente", soutiensEnAttente);
         stats.put("soutiensValides",   soutiensValides);
+        stats.put("projetsSoutenus", soutienRepository.countProjetsSoutenusParDonateur(id));
+        stats.put("activitesSoutenues", soutienRepository.countActivitesSoutenuesParDonateur(id));
         stats.put("partenairePrenom",  partenaire.getPrenom());
         stats.put("partenaireNom",     partenaire.getNom());
         stats.put("partenaireEmail",   partenaire.getEmail());
@@ -196,5 +229,25 @@ public class PartenaireService {
         return soutienRepository.findAll().stream()
                 .map(SoutienResponse::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    private User getPartenaire(String email) {
+        return userRepository.findByEmail(email)
+                .filter(user -> user.getRole() == Role.PARTENAIRE)
+                .orElseThrow(() -> new RuntimeException("Partenaire introuvable"));
+    }
+
+    private PartenaireProfilResponse profilParDefaut(User partenaire) {
+        PartenaireProfil profil = new PartenaireProfil();
+        profil.setUtilisateur(partenaire);
+        profil.setNomOrganisation(partenaire.getPrenom() + " " + partenaire.getNom());
+        profil.setTypePartenaire(TypePartenaire.AUTRE);
+        profil.setPersonneContact(partenaire.getPrenom() + " " + partenaire.getNom());
+        profil.setEmailContact(partenaire.getEmail());
+        return PartenaireProfilResponse.fromEntity(profil);
+    }
+
+    private String normaliser(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

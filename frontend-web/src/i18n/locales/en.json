@@ -768,6 +768,38 @@
     "linkedActivities": "Linked activities",
     "noLinkedActivities": "No activity linked to this group."
   },
+  "partnerInstitution": {
+    "about": "About the organisation",
+    "contact": "Contact information",
+    "noDescription": "Add a short introduction to clearly identify your organisation.",
+    "editProfile": "Edit profile",
+    "editTitle": "Institutional partner profile",
+    "editDescription": "Clearly present your organisation and its main contact.",
+    "organization": "Organisation name",
+    "type": "Partner type",
+    "contactPerson": "Contact person",
+    "contactEmail": "Contact email",
+    "phone": "Phone",
+    "website": "Website",
+    "logoUrl": "Logo URL",
+    "description": "Short description",
+    "profileSaved": "Partner profile updated.",
+    "profileError": "Unable to update the partner profile.",
+    "projectsSupported": "Projects supported",
+    "activitiesSupported": "Activities supported",
+    "types": {
+      "COMMUNE": "Municipality",
+      "BIJ": "Youth information office",
+      "ECOLE": "School",
+      "HAUTE_ECOLE": "University college",
+      "ENTREPRISE": "Company",
+      "SPONSOR": "Sponsor",
+      "ASSOCIATION": "Association",
+      "ONG": "NGO",
+      "FONDATION": "Foundation",
+      "AUTRE": "Other"
+    }
+  },
   "partnerSupport": {
     "financial": "Financial support",
     "project": "Project",

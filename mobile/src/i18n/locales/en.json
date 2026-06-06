@@ -595,6 +595,9 @@
     "supportsLoadError": "Unable to load financial support.",
     "totalSupports": "Financial support",
     "totalAmount": "Total amount",
+    "projectsSupported": "Projects supported",
+    "activitiesSupported": "Activities supported",
+    "contactPerson": "Contact",
     "amount": "Amount",
     "date": "Date",
     "noSupports": "No financial support",
@@ -617,6 +620,18 @@
     "mobile": {
       "contactTeam": "Contact the team",
       "contactTeamText": "Email contact@bxconnect.be."
+    },
+    "types": {
+      "COMMUNE": "Municipality",
+      "BIJ": "Youth information office",
+      "ECOLE": "School",
+      "HAUTE_ECOLE": "University college",
+      "ENTREPRISE": "Company",
+      "SPONSOR": "Sponsor",
+      "ASSOCIATION": "Association",
+      "ONG": "NGO",
+      "FONDATION": "Foundation",
+      "AUTRE": "Other"
     }
   },
   "roles": {

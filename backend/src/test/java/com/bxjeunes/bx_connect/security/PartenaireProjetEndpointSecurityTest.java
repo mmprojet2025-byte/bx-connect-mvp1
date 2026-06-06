@@ -50,4 +50,20 @@ class PartenaireProjetEndpointSecurityTest {
         mockMvc.perform(get("/api/partenaire/projets-ouverts"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    @WithMockUser(roles = "MEMBRE")
+    @DisplayName("MEMBRE ne peut pas consulter une fiche partenaire")
+    void membre_ne_peut_pas_consulter_fiche_partenaire() throws Exception {
+        mockMvc.perform(get("/api/partenaire/profil"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "PARTENAIRE")
+    @DisplayName("PARTENAIRE peut consulter sa fiche institutionnelle")
+    void partenaire_peut_consulter_sa_fiche() throws Exception {
+        mockMvc.perform(get("/api/partenaire/profil"))
+                .andExpect(status().isOk());
+    }
 }

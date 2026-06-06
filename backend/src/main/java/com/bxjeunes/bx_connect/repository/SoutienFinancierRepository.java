@@ -71,4 +71,12 @@ public interface SoutienFinancierRepository extends JpaRepository<SoutienFinanci
     @Query("SELECT COALESCE(SUM(s.montant), 0) FROM SoutienFinancier s " +
            "WHERE s.donateur.id = :donateurId AND s.statutPaiement = 'PAYE'")
     BigDecimal totalMontantDonateur(@Param("donateurId") Long donateurId);
+
+    @Query("SELECT COUNT(DISTINCT s.projet.id) FROM SoutienFinancier s " +
+           "WHERE s.donateur.id = :donateurId AND s.projet IS NOT NULL AND s.statutPaiement = 'PAYE'")
+    long countProjetsSoutenusParDonateur(@Param("donateurId") Long donateurId);
+
+    @Query("SELECT COUNT(DISTINCT s.activite.id) FROM SoutienFinancier s " +
+           "WHERE s.donateur.id = :donateurId AND s.activite IS NOT NULL AND s.statutPaiement = 'PAYE'")
+    long countActivitesSoutenuesParDonateur(@Param("donateurId") Long donateurId);
 }

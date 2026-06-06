@@ -9,6 +9,7 @@ import com.bxjeunes.bx_connect.entity.StatutProjet;
 import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.entity.VisibiliteProjet;
 import com.bxjeunes.bx_connect.repository.ActiviteRepository;
+import com.bxjeunes.bx_connect.repository.PartenaireProfilRepository;
 import com.bxjeunes.bx_connect.repository.ProjetRepository;
 import com.bxjeunes.bx_connect.repository.SoutienFinancierRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
@@ -38,6 +39,7 @@ class PartenaireProjetSecurityTest {
     @Mock private UserRepository userRepository;
     @Mock private ProjetRepository projetRepository;
     @Mock private ActiviteRepository activiteRepository;
+    @Mock private PartenaireProfilRepository partenaireProfilRepository;
 
     @InjectMocks
     private PartenaireService partenaireService;

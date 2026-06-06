@@ -2,6 +2,8 @@ package com.bxjeunes.bx_connect.controller;
 
 import com.bxjeunes.bx_connect.dto.SoutienRequest;
 import com.bxjeunes.bx_connect.dto.SoutienResponse;
+import com.bxjeunes.bx_connect.dto.PartenaireProfilRequest;
+import com.bxjeunes.bx_connect.dto.PartenaireProfilResponse;
 import com.bxjeunes.bx_connect.service.PartenaireService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -21,6 +23,21 @@ public class PartenaireController {
 
     public PartenaireController(PartenaireService partenaireService) {
         this.partenaireService = partenaireService;
+    }
+
+    @GetMapping("/profil")
+    @PreAuthorize("hasRole('PARTENAIRE')")
+    public ResponseEntity<PartenaireProfilResponse> profil(Authentication auth) {
+        return ResponseEntity.ok(partenaireService.getProfilInstitutionnel(auth.getName()));
+    }
+
+    @PutMapping("/profil")
+    @PreAuthorize("hasRole('PARTENAIRE')")
+    public ResponseEntity<PartenaireProfilResponse> modifierProfil(
+            @Valid @RequestBody PartenaireProfilRequest request,
+            Authentication auth) {
+        return ResponseEntity.ok(
+                partenaireService.enregistrerProfilInstitutionnel(request, auth.getName()));
     }
 
     // ─── P03 : Projets ouverts au soutien (public) ───────────────────────────

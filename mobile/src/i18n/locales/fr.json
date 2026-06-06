@@ -595,6 +595,9 @@
     "supportsLoadError": "Impossible de charger les soutiens financiers.",
     "totalSupports": "Soutiens financiers",
     "totalAmount": "Montant total",
+    "projectsSupported": "Projets soutenus",
+    "activitiesSupported": "Activités soutenues",
+    "contactPerson": "Contact",
     "amount": "Montant",
     "date": "Date",
     "noSupports": "Aucun soutien financier",
@@ -617,6 +620,18 @@
     "mobile": {
       "contactTeam": "Contacter l’équipe",
       "contactTeamText": "Écrire à contact@bxconnect.be."
+    },
+    "types": {
+      "COMMUNE": "Commune",
+      "BIJ": "BIJ",
+      "ECOLE": "École",
+      "HAUTE_ECOLE": "Haute école",
+      "ENTREPRISE": "Entreprise",
+      "SPONSOR": "Sponsor",
+      "ASSOCIATION": "Association",
+      "ONG": "ONG",
+      "FONDATION": "Fondation",
+      "AUTRE": "Autre"
     }
   },
   "roles": {
