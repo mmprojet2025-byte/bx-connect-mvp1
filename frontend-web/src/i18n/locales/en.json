@@ -768,6 +768,125 @@
     "linkedActivities": "Linked activities",
     "noLinkedActivities": "No activity linked to this group."
   },
+  "legal": {
+    "eyebrow": "BX-Connect legal framework",
+    "links": {
+      "terms": "Terms of use",
+      "privacy": "Privacy policy",
+      "notices": "Legal notice"
+    },
+    "acceptancePrefix": "I accept the",
+    "acceptanceAnd": "and the",
+    "acceptanceRequired": "You must accept the Terms of use and Privacy policy.",
+    "profileTitle": "Legal documents",
+    "profileDescription": "Review the platform rules and how your personal data is handled.",
+    "acceptedVersion": "Accepted version: {{version}}",
+    "validationNotice": "These documents provide a practical basis for BX-Connect. They should be reviewed by the association’s legal representative before public production use.",
+    "documents": {
+      "terms": {
+        "title": "Terms of use",
+        "intro": "These terms explain the rules that apply when using the BX-Connect community platform.",
+        "sections": [
+          {
+            "title": "1. Purpose of the platform",
+            "body": "BX-Connect is a Bx-Jeunes Impact ASBL platform designed to support young members, mentors, administrators and partners. It manages accounts, groups, activities, registrations, projects, messages, notifications and partner support."
+          },
+          {
+            "title": "2. Account creation and security",
+            "body": "Users must provide accurate information and keep their credentials confidential. Activity performed through an account is presumed to come from its owner. Suspected unauthorised access must be reported promptly."
+          },
+          {
+            "title": "3. Roles and access",
+            "body": "Features depend on the assigned role: member, mentor, administrator, super administrator or partner. Attempting to access another role’s, group’s or user’s restricted data is prohibited."
+          },
+          {
+            "title": "4. Expected conduct",
+            "body": "Content and exchanges must remain respectful, lawful and relevant to the community. Harassment, discrimination, impersonation, illegal content, privacy violations, abusive advertising and attacks against the platform are prohibited."
+          },
+          {
+            "title": "5. Published content",
+            "body": "Users remain responsible for the texts, comments, projects and messages they publish and confirm they hold the necessary rights. BX-Connect may hide or remove clearly unlawful, dangerous or non-compliant content."
+          },
+          {
+            "title": "6. Suspension and deletion",
+            "body": "An account may be limited, suspended or disabled following a breach, security risk or legitimate request. Users may request deletion, subject to information that must be retained for legal obligations or the defence of rights."
+          },
+          {
+            "title": "7. Availability and liability",
+            "body": "BX-Connect aims to provide a reliable service but cannot guarantee permanent availability. Within the limits of Belgian law, the association is not liable for reasonable interruptions, third-party services or indirect damage."
+          },
+          {
+            "title": "8. Applicable law and contact",
+            "body": "These terms are governed by Belgian law. Questions may be sent to contact@bxconnect.be. An amicable solution will be sought before legal proceedings."
+          }
+        ]
+      },
+      "privacy": {
+        "title": "Privacy policy",
+        "intro": "This policy explains how BX-Connect processes personal data in line with GDPR principles.",
+        "sections": [
+          {
+            "title": "1. Data controller",
+            "body": "Bx-Jeunes Impact ASBL, Brussels, Belgium, is the controller for processing performed through BX-Connect. Data protection contact: contact@bxconnect.be."
+          },
+          {
+            "title": "2. Data processed",
+            "body": "We may process identity and contact details, role, language, registration date, group information, activities and registrations, projects and participation, messages, notifications, financial support, technical logs and evidence of legal acceptance."
+          },
+          {
+            "title": "3. Purposes",
+            "body": "Data is used to create and secure accounts, manage roles, groups, activities, registrations, projects, messages and notifications, process partner support, provide assistance, prevent abuse and produce internal statistics."
+          },
+          {
+            "title": "4. Legal bases",
+            "body": "Depending on the processing, the legal basis is performance of the requested service, consent, legal obligations or the association’s legitimate interest in securing and improving the platform."
+          },
+          {
+            "title": "5. Recipients and processors",
+            "body": "Only authorised people can access data according to their role. Technical providers may support hosting, communications or payments under appropriate contractual safeguards."
+          },
+          {
+            "title": "6. Retention and security",
+            "body": "Data is retained for as long as needed for the account and relevant activities, then deleted or anonymised unless a legal duty applies. Access controls, authentication, logging and backups reduce risks."
+          },
+          {
+            "title": "7. Your rights",
+            "body": "You have rights of access, rectification, erasure, restriction and objection, and a right to portability where applicable. Consent may be withdrawn without affecting earlier lawful processing."
+          },
+          {
+            "title": "8. Exercising your rights",
+            "body": "Send requests to contact@bxconnect.be with your identity and request. You may also complain to the Belgian Data Protection Authority: www.dataprotectionauthority.be."
+          }
+        ]
+      },
+      "notices": {
+        "title": "Legal notice",
+        "intro": "Information about the publisher and operation of the BX-Connect service.",
+        "sections": [
+          {
+            "title": "Publisher",
+            "body": "BX-Connect is published by Bx-Jeunes Impact ASBL, an association established in Brussels, Belgium. General contact: contact@bxconnect.be."
+          },
+          {
+            "title": "Publication responsibility",
+            "body": "Editorial responsibility is held by the administration of Bx-Jeunes Impact ASBL."
+          },
+          {
+            "title": "Hosting and technical services",
+            "body": "Final production hosting details, including the provider’s address and contact information, must be published before the service opens publicly."
+          },
+          {
+            "title": "Intellectual property",
+            "body": "The BX-Connect brand, interface, original texts and graphics are protected. Reuse beyond personal use requires permission. Users retain rights to the content they publish."
+          },
+          {
+            "title": "Reporting",
+            "body": "Illegal content, security concerns and personal-data requests may be reported to contact@bxconnect.be."
+          }
+        ]
+      }
+    }
+  },
   "partnerInstitution": {
     "about": "About the organisation",
     "contact": "Contact information",

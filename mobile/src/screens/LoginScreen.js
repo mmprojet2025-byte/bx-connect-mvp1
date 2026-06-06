@@ -196,6 +196,11 @@ export default function LoginScreen({ navigation }) {
           <Text style={styles.backText}>{t('auth.back_home')}</Text>
         </TouchableOpacity>
       </View>
+      <View style={styles.legalLinks}>
+        <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalTerms')}>{t('legal.links.terms')}</Text>
+        <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalPrivacy')}>{t('legal.links.privacy')}</Text>
+        <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalNotices')}>{t('legal.links.notices')}</Text>
+      </View>
     </ScrollView>
   );
 }
@@ -384,4 +389,13 @@ const styles = StyleSheet.create({
   linkText: { color: COLORS.info, fontSize: 13, fontWeight: '800' },
   backBtn: { paddingVertical: 8 },
   backText: { color: COLORS.muted, fontSize: 13, fontWeight: '700' },
+  legalLinks: {
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 4,
+  },
+  legalLink: { color: COLORS.muted, fontSize: 11, fontWeight: '700' },
 });

@@ -13,6 +13,7 @@ import HomeScreen          from '../screens/HomeScreen';
 import LoginScreen         from '../screens/LoginScreen';
 import RegisterScreen      from '../screens/RegisterScreen';
 import ActivitiesScreen    from '../screens/ActivitiesScreen';
+import LegalScreen         from '../screens/LegalScreen';
 
 // ─── Écrans privés ────────────────────────────────────────────────────────────
 import DashboardScreen     from '../screens/DashboardScreen';
@@ -59,6 +60,9 @@ function PublicStack({ initialRouteName = 'Home' }) {
       <Stack.Screen name="Register"   component={RegisterScreen}  options={{ title: t('navigation.createAccount') }} />
       <Stack.Screen name="Activities" component={ActivitiesScreen} options={{ title: t('navigation.activities') }} />
       <Stack.Screen name="Groupes"    component={GroupesScreen}    options={{ title: t('navigation.groups') }} />
+      <Stack.Screen name="LegalTerms" component={LegalScreen} initialParams={{ document: 'terms' }} options={{ title: t('legal.links.terms') }} />
+      <Stack.Screen name="LegalPrivacy" component={LegalScreen} initialParams={{ document: 'privacy' }} options={{ title: t('legal.links.privacy') }} />
+      <Stack.Screen name="LegalNotices" component={LegalScreen} initialParams={{ document: 'notices' }} options={{ title: t('legal.links.notices') }} />
     </Stack.Navigator>
   );
 }
@@ -66,6 +70,7 @@ function PublicStack({ initialRouteName = 'Home' }) {
 // ─── Stacks privés (un par onglet) ───────────────────────────────────────────
 function makeStack(ScreenComponent, title, logout, logoutLabel) {
   return function StackWrapper() {
+    const { t } = useTranslation();
     return (
       <Stack.Navigator screenOptions={{
         ...headerStyle,
@@ -76,6 +81,9 @@ function makeStack(ScreenComponent, title, logout, logoutLabel) {
           component={ScreenComponent}
           options={{ title, headerBackVisible: false }}
         />
+        <Stack.Screen name="LegalTerms" component={LegalScreen} initialParams={{ document: 'terms' }} options={{ title: t('legal.links.terms') }} />
+        <Stack.Screen name="LegalPrivacy" component={LegalScreen} initialParams={{ document: 'privacy' }} options={{ title: t('legal.links.privacy') }} />
+        <Stack.Screen name="LegalNotices" component={LegalScreen} initialParams={{ document: 'notices' }} options={{ title: t('legal.links.notices') }} />
       </Stack.Navigator>
     );
   };
@@ -93,6 +101,9 @@ function makeDashboardStack(logout, logoutLabel, t) {
           component={DashboardScreen}
           options={{ title: t('navigation.home'), headerBackVisible: false }}
         />
+        <Stack.Screen name="LegalTerms" component={LegalScreen} initialParams={{ document: 'terms' }} options={{ title: t('legal.links.terms') }} />
+        <Stack.Screen name="LegalPrivacy" component={LegalScreen} initialParams={{ document: 'privacy' }} options={{ title: t('legal.links.privacy') }} />
+        <Stack.Screen name="LegalNotices" component={LegalScreen} initialParams={{ document: 'notices' }} options={{ title: t('legal.links.notices') }} />
         <Stack.Screen
           name="GroupesAccess"
           component={GroupesScreen}

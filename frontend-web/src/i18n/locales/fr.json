@@ -768,6 +768,125 @@
     "linkedActivities": "Activités liées",
     "noLinkedActivities": "Aucune activité liée à ce groupe."
   },
+  "legal": {
+    "eyebrow": "Cadre légal BX-Connect",
+    "links": {
+      "terms": "Conditions d’utilisation",
+      "privacy": "Politique de confidentialité",
+      "notices": "Mentions légales"
+    },
+    "acceptancePrefix": "J’accepte les",
+    "acceptanceAnd": "et la",
+    "acceptanceRequired": "Vous devez accepter les Conditions d’utilisation et la Politique de confidentialité.",
+    "profileTitle": "Documents légaux",
+    "profileDescription": "Consultez les règles d’utilisation et la gestion de vos données personnelles.",
+    "acceptedVersion": "Version acceptée : {{version}}",
+    "validationNotice": "Ces documents constituent une base adaptée à BX-Connect. Ils doivent être validés par le responsable de l’ASBL avant une mise en production publique.",
+    "documents": {
+      "terms": {
+        "title": "Conditions d’utilisation",
+        "intro": "Ces conditions expliquent les règles applicables à l’utilisation de la plateforme communautaire BX-Connect.",
+        "sections": [
+          {
+            "title": "1. Objet de la plateforme",
+            "body": "BX-Connect est une plateforme de Bx-Jeunes Impact ASBL destinée à faciliter la participation des jeunes, référents, administrateurs et partenaires. Elle permet notamment de gérer des comptes, groupes, activités, inscriptions, projets, messages, notifications et soutiens partenaires."
+          },
+          {
+            "title": "2. Création et sécurité du compte",
+            "body": "L’utilisateur fournit des informations exactes et conserve ses identifiants confidentiels. Toute utilisation réalisée depuis son compte est présumée faite par lui. En cas de suspicion d’accès non autorisé, il doit contacter rapidement l’équipe BX-Connect."
+          },
+          {
+            "title": "3. Rôles et accès",
+            "body": "Les fonctionnalités dépendent du rôle attribué : membre, référent, administrateur, super administrateur ou partenaire. Il est interdit de tenter d’accéder aux données ou espaces d’un autre rôle, groupe ou utilisateur."
+          },
+          {
+            "title": "4. Comportement attendu",
+            "body": "Les contenus et échanges doivent rester respectueux, licites et liés aux objectifs de la communauté. Sont interdits : harcèlement, discrimination, usurpation d’identité, contenu illégal, atteinte à la vie privée, publicité abusive et tentative de compromettre la plateforme."
+          },
+          {
+            "title": "5. Contenus publiés",
+            "body": "L’utilisateur reste responsable des textes, commentaires, projets et messages qu’il publie. Il confirme disposer des droits nécessaires. BX-Connect peut masquer ou supprimer un contenu manifestement illicite, dangereux ou contraire à ces conditions."
+          },
+          {
+            "title": "6. Suspension et suppression",
+            "body": "Un compte peut être limité, suspendu ou désactivé en cas de violation, risque de sécurité ou demande légitime. L’utilisateur peut demander la suppression de son compte, sous réserve des données devant être conservées pour une obligation légale ou la défense de droits."
+          },
+          {
+            "title": "7. Disponibilité et responsabilité",
+            "body": "BX-Connect vise un service fiable mais ne garantit pas une disponibilité permanente. L’ASBL n’est pas responsable des interruptions raisonnables, des services tiers ou des dommages indirects, dans les limites autorisées par le droit belge."
+          },
+          {
+            "title": "8. Droit applicable et contact",
+            "body": "Ces conditions sont régies par le droit belge. Pour toute question : contact@bxconnect.be. Une solution amiable sera recherchée avant toute procédure."
+          }
+        ]
+      },
+      "privacy": {
+        "title": "Politique de confidentialité",
+        "intro": "Cette politique présente comment BX-Connect traite les données personnelles conformément aux principes du RGPD.",
+        "sections": [
+          {
+            "title": "1. Responsable du traitement",
+            "body": "Bx-Jeunes Impact ASBL, Bruxelles, Belgique, est responsable des traitements réalisés dans BX-Connect. Contact relatif aux données personnelles : contact@bxconnect.be."
+          },
+          {
+            "title": "2. Données traitées",
+            "body": "Nous pouvons traiter : identité, coordonnées, rôle, langue, date d’inscription, données de groupe, activités et inscriptions, projets et participations, messages, notifications, soutiens financiers, journaux techniques et preuve d’acceptation des documents légaux."
+          },
+          {
+            "title": "3. Finalités",
+            "body": "Les données sont utilisées pour créer et sécuriser les comptes, gérer les rôles, groupes, activités, inscriptions, projets, messages et notifications, traiter les soutiens partenaires, assurer le support, prévenir les abus et produire des statistiques internes."
+          },
+          {
+            "title": "4. Bases juridiques",
+            "body": "Les traitements reposent selon le cas sur l’exécution du service demandé, le consentement, les obligations légales et l’intérêt légitime de l’ASBL à sécuriser et améliorer sa plateforme."
+          },
+          {
+            "title": "5. Destinataires et sous-traitants",
+            "body": "Les données sont accessibles uniquement aux personnes autorisées selon leur rôle. Des prestataires techniques peuvent intervenir pour l’hébergement, l’envoi de communications ou le paiement, avec des garanties contractuelles appropriées."
+          },
+          {
+            "title": "6. Conservation et sécurité",
+            "body": "Les données sont conservées pendant la durée utile au compte et aux activités concernées, puis supprimées ou anonymisées, sauf obligation légale. Des mesures de contrôle d’accès, authentification, journalisation et sauvegarde limitent les risques."
+          },
+          {
+            "title": "7. Vos droits",
+            "body": "Vous disposez des droits d’accès, de rectification, de suppression, de limitation et d’opposition, ainsi que du droit à la portabilité lorsque celui-ci s’applique. Vous pouvez retirer un consentement sans affecter les traitements antérieurs."
+          },
+          {
+            "title": "8. Exercer vos droits",
+            "body": "Adressez votre demande à contact@bxconnect.be en précisant votre identité et votre demande. Vous pouvez également introduire une réclamation auprès de l’Autorité de protection des données belge : www.autoriteprotectiondonnees.be."
+          }
+        ]
+      },
+      "notices": {
+        "title": "Mentions légales",
+        "intro": "Informations relatives à l’éditeur et au fonctionnement du service BX-Connect.",
+        "sections": [
+          {
+            "title": "Éditeur",
+            "body": "BX-Connect est édité par Bx-Jeunes Impact ASBL, association établie à Bruxelles, Belgique. Contact général : contact@bxconnect.be."
+          },
+          {
+            "title": "Responsable de publication",
+            "body": "La responsabilité éditoriale est assurée par l’administration de Bx-Jeunes Impact ASBL."
+          },
+          {
+            "title": "Hébergement et services techniques",
+            "body": "Les informations définitives concernant l’hébergeur de production, son adresse et ses coordonnées doivent être publiées avant l’ouverture publique du service."
+          },
+          {
+            "title": "Propriété intellectuelle",
+            "body": "La marque, l’interface, les textes et les éléments graphiques propres à BX-Connect sont protégés. Leur reproduction hors usage personnel nécessite une autorisation. Les utilisateurs conservent leurs droits sur les contenus qu’ils publient."
+          },
+          {
+            "title": "Signalement",
+            "body": "Tout contenu illicite, problème de sécurité ou demande concernant les données personnelles peut être signalé à contact@bxconnect.be."
+          }
+        ]
+      }
+    }
+  },
   "partnerInstitution": {
     "about": "À propos de l’organisation",
     "contact": "Informations de contact",

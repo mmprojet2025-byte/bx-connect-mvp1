@@ -640,6 +640,97 @@
       "AUTRE": "Andere"
     }
   },
+  "legal": {
+    "eyebrow": "Juridisch kader BX-Connect",
+    "links": {
+      "terms": "Gebruiksvoorwaarden",
+      "privacy": "Privacybeleid",
+      "notices": "Wettelijke vermeldingen"
+    },
+    "acceptancePrefix": "Ik aanvaard de",
+    "acceptanceAnd": "en het",
+    "acceptanceRequired": "Je moet de Gebruiksvoorwaarden en het Privacybeleid aanvaarden.",
+    "profileTitle": "Juridische documenten",
+    "profileDescription": "Lees de gebruiksregels en hoe je gegevens worden verwerkt.",
+    "acceptedVersion": "Aanvaarde versie: {{version}}",
+    "validationNotice": "Een praktische basis voor BX-Connect die vóór publieke ingebruikname door de verantwoordelijke van de vzw moet worden nagekeken.",
+    "documents": {
+      "terms": {
+        "title": "Gebruiksvoorwaarden",
+        "intro": "Regels voor het gebruik van het communityplatform BX-Connect.",
+        "sections": [
+          {
+            "title": "Doel",
+            "body": "BX-Connect, een platform van Bx-Jeunes Impact ASBL, ondersteunt het beheer van accounts, groepen, activiteiten, inschrijvingen, projecten, berichten, meldingen en partnersteun."
+          },
+          {
+            "title": "Account en toegang",
+            "body": "Je verstrekt correcte informatie, beschermt je toegangsgegevens en gebruikt alleen functies die bij je rol horen. Toegang proberen te krijgen tot afgeschermde gegevens van anderen is verboden."
+          },
+          {
+            "title": "Gedrag en inhoud",
+            "body": "Gesprekken moeten respectvol en wettig blijven. Intimidatie, discriminatie, identiteitsfraude, illegale inhoud, privacyschendingen en aanvallen op het platform zijn verboden. Je blijft verantwoordelijk voor gepubliceerde inhoud."
+          },
+          {
+            "title": "Schorsing en beschikbaarheid",
+            "body": "Een account kan worden beperkt of gedeactiveerd bij een inbreuk of veiligheidsrisico. BX-Connect streeft naar betrouwbaarheid maar garandeert geen permanente beschikbaarheid."
+          },
+          {
+            "title": "Recht en contact",
+            "body": "Het Belgische recht is van toepassing. Vragen kunnen naar contact@bxconnect.be."
+          }
+        ]
+      },
+      "privacy": {
+        "title": "Privacybeleid",
+        "intro": "Hoe BX-Connect je persoonsgegevens verwerkt volgens de beginselen van de AVG.",
+        "sections": [
+          {
+            "title": "Verantwoordelijke en gegevens",
+            "body": "Bx-Jeunes Impact ASBL, Brussel, verwerkt identiteit, contactgegevens, rollen, groepen, activiteiten, inschrijvingen, projecten, berichten, meldingen, steun en bewijs van juridische aanvaarding."
+          },
+          {
+            "title": "Gebruik van gegevens",
+            "body": "Gegevens dienen om accounts, rollen, groepen, activiteiten, inschrijvingen, projecten, berichten en meldingen te beheren en beveiligen, steun te behandelen, hulp te bieden en misbruik te voorkomen."
+          },
+          {
+            "title": "Rechtsgronden en ontvangers",
+            "body": "De verwerking steunt op de gevraagde dienst, toestemming, wettelijke plichten of het gerechtvaardigde belang van de vzw. Alleen bevoegde personen en noodzakelijke leveranciers krijgen toegang."
+          },
+          {
+            "title": "Bewaring en beveiliging",
+            "body": "Gegevens worden bewaard zolang nodig en daarna verwijderd of geanonimiseerd, tenzij een wettelijke plicht geldt. Toegangscontrole, logs en back-ups beperken risico’s."
+          },
+          {
+            "title": "Jouw rechten",
+            "body": "Je kunt inzage, rectificatie, verwijdering, beperking, bezwaar en waar toepasselijk overdraagbaarheid vragen. Contact: contact@bxconnect.be. Je kunt een klacht indienen bij de Belgische Gegevensbeschermingsautoriteit."
+          }
+        ]
+      },
+      "notices": {
+        "title": "Wettelijke vermeldingen",
+        "intro": "Informatie over de uitgever van BX-Connect.",
+        "sections": [
+          {
+            "title": "Uitgever",
+            "body": "BX-Connect wordt uitgegeven door Bx-Jeunes Impact ASBL, Brussel, België. Contact: contact@bxconnect.be."
+          },
+          {
+            "title": "Verantwoordelijke uitgever",
+            "body": "De redactionele verantwoordelijkheid berust bij het bestuur van Bx-Jeunes Impact ASBL."
+          },
+          {
+            "title": "Hosting",
+            "body": "De definitieve gegevens van de productiehost moeten vóór de publieke opening worden gepubliceerd."
+          },
+          {
+            "title": "Intellectuele eigendom en meldingen",
+            "body": "De eigen elementen van BX-Connect zijn beschermd. Gebruikers behouden rechten op hun inhoud. Juridische, beveiligings- of dataproblemen kunnen worden gemeld via contact@bxconnect.be."
+          }
+        ]
+      }
+    }
+  },
   "roles": {
     "SUPER_ADMIN": "Superbeheerder",
     "ADMIN": "Beheerder",

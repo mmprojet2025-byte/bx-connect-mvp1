@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import AppIcon from '../components/AppIcon';
 import { COLORS } from '../components/MobileUI';
+import { LEGAL_VERSION } from '../constants/legal';
 
 const benefits = [
   { label: 'Activités', icon: 'activity' },
@@ -39,6 +40,7 @@ export default function RegisterScreen({ navigation }) {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [legalAccepted, setLegalAccepted] = useState(false);
 
   const handleRegister = async () => {
     setError('');
@@ -54,6 +56,10 @@ export default function RegisterScreen({ navigation }) {
       setError(t('auth.error_password_min'));
       return;
     }
+    if (!legalAccepted) {
+      setError(t('legal.acceptanceRequired'));
+      return;
+    }
     setLoading(true);
     try {
       const res = await api.post('/auth/register', {
@@ -61,6 +67,9 @@ export default function RegisterScreen({ navigation }) {
         nom: form.nom.trim(),
         email: form.email.trim(),
         motDePasse: form.motDePasse,
+        termsAccepted: true,
+        privacyAccepted: true,
+        legalVersion: LEGAL_VERSION,
       });
       const { token, prenom, nom, email, role } = res.data;
       await login(token, { prenom, nom, email, role });
@@ -160,6 +169,27 @@ export default function RegisterScreen({ navigation }) {
           </View>
         </View>
 
+        <View style={styles.legalRow}>
+          <TouchableOpacity
+            style={[styles.checkbox, legalAccepted && styles.checkboxChecked]}
+            onPress={() => setLegalAccepted(value => !value)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: legalAccepted }}
+          >
+            {legalAccepted && <AppIcon name="check" size={15} color="#fff" />}
+          </TouchableOpacity>
+          <Text style={styles.legalText}>
+            {t('legal.acceptancePrefix')}{' '}
+            <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalTerms')}>
+              {t('legal.links.terms')}
+            </Text>{' '}
+            {t('legal.acceptanceAnd')}{' '}
+            <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalPrivacy')}>
+              {t('legal.links.privacy')}
+            </Text>.
+          </Text>
+        </View>
+
         <View style={styles.field}>
           <Text style={styles.label}>{t('auth.password_min_label')}</Text>
           <View style={[styles.inputShell, focusedField === 'password' && styles.inputShellFocused]}>
@@ -254,7 +284,18 @@ export default function RegisterScreen({ navigation }) {
       <TouchableOpacity style={styles.back} onPress={() => navigation.navigate('Home')}>
         <Text style={styles.backText}>{t('auth.back_home_short')}</Text>
       </TouchableOpacity>
+      <LegalLinks navigation={navigation} t={t} />
     </ScrollView>
+  );
+}
+
+function LegalLinks({ navigation, t }) {
+  return (
+    <View style={styles.legalLinks}>
+      <Text style={styles.legalFooterLink} onPress={() => navigation.navigate('LegalTerms')}>{t('legal.links.terms')}</Text>
+      <Text style={styles.legalFooterLink} onPress={() => navigation.navigate('LegalPrivacy')}>{t('legal.links.privacy')}</Text>
+      <Text style={styles.legalFooterLink} onPress={() => navigation.navigate('LegalNotices')}>{t('legal.links.notices')}</Text>
+    </View>
   );
 }
 
@@ -398,6 +439,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  legalRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 16,
+    backgroundColor: COLORS.page,
+    padding: 12,
+    marginBottom: 15,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: COLORS.info,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: { backgroundColor: COLORS.bxBlue, borderColor: COLORS.bxBlue },
+  legalText: { flex: 1, color: COLORS.muted, fontSize: 12, lineHeight: 18 },
+  legalLink: { color: COLORS.bxBlueLight, fontWeight: '900' },
   btn: {
     backgroundColor: COLORS.bxBlue,
     minHeight: 56,
@@ -434,4 +498,13 @@ const styles = StyleSheet.create({
   benefitText: { color: COLORS.bxBlue, fontSize: 12, fontWeight: '900' },
   back: { marginTop: 12, alignItems: 'center', paddingVertical: 8, paddingHorizontal: 18 },
   backText: { color: COLORS.muted, fontSize: 13, fontWeight: '700' },
+  legalLinks: {
+    marginTop: 4,
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  legalFooterLink: { color: COLORS.muted, fontSize: 11, fontWeight: '700' },
 });

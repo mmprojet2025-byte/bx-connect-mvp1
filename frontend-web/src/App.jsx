@@ -12,6 +12,7 @@ import Projets          from './pages/projets/Projets'
 import NotFound         from './pages/NotFound'
 import Notifications    from './pages/Notifications'
 import Annonces         from './pages/annonces/Annonces'
+import LegalPage        from './pages/legal/LegalPage'
 
 // Pages membres connectés
 import Dashboard        from './pages/dashboard/Dashboard'
@@ -106,6 +107,9 @@ export default function App() {
       <Route path="/groupes"       element={<PublicOrMembreRoute><Groupes /></PublicOrMembreRoute>} />
       <Route path="/projets"       element={<PublicOrMembreRoute><Projets /></PublicOrMembreRoute>} />
       <Route path="/annonces"      element={<Annonces />} />
+      <Route path="/conditions-utilisation" element={<LegalPage document="terms" />} />
+      <Route path="/politique-confidentialite" element={<LegalPage document="privacy" />} />
+      <Route path="/mentions-legales" element={<LegalPage document="notices" />} />
 
       {/* ── Pages membres connectés ── */}
       <Route path="/messagerie"    element={<MembreRoute><Messagerie /></MembreRoute>} />

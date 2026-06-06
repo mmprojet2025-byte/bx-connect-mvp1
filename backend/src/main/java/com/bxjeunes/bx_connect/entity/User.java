@@ -50,11 +50,36 @@ public class User implements UserDetails {
     @Builder.Default
     private boolean actif = true;
 
+    @Column(name = "terms_accepted", nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean termsAccepted = false;
+
+    @Column(name = "privacy_accepted", nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean privacyAccepted = false;
+
+    @Column(name = "terms_accepted_at")
+    private LocalDateTime termsAcceptedAt;
+
+    @Column(name = "privacy_accepted_at")
+    private LocalDateTime privacyAcceptedAt;
+
+    @Column(name = "legal_version", length = 40)
+    private String legalVersion;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider", length = 20)
+    @Builder.Default
+    private AuthProvider authProvider = AuthProvider.LOCAL;
+
     @PrePersist
     protected void onCreate() {
         this.dateInscription = LocalDateTime.now();
         if (this.languePreference == null) {
             this.languePreference = Langue.FR;
+        }
+        if (this.authProvider == null) {
+            this.authProvider = AuthProvider.LOCAL;
         }
     }
 

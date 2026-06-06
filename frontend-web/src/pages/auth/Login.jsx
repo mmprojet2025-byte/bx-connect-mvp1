@@ -95,6 +95,11 @@ export default function Login() {
             {t('auth.register_link')}
           </Link>
         </p>
+        <div className="mt-4 flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs text-slate-400">
+          <Link to="/conditions-utilisation" className="hover:text-blue-700">{t('legal.links.terms')}</Link>
+          <Link to="/politique-confidentialite" className="hover:text-blue-700">{t('legal.links.privacy')}</Link>
+          <Link to="/mentions-legales" className="hover:text-blue-700">{t('legal.links.notices')}</Link>
+        </div>
       </div>
     </div>
   )

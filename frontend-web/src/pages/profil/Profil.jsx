@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
@@ -274,6 +275,30 @@ export default function Profil() {
           <AppIcon name="LogOut" className="h-4 w-4" />
           {t('nav.logout')}
         </button>
+
+        <section className="mt-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+          <h2 className="flex items-center gap-2 font-black text-slate-950">
+            <AppIcon name="Shield" className="h-5 w-5 text-blue-700" />
+            {t('legal.profileTitle')}
+          </h2>
+          <p className="mt-1 text-sm text-slate-500">{t('legal.profileDescription')}</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link to="/conditions-utilisation" className="rounded-full bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">
+              {t('legal.links.terms')}
+            </Link>
+            <Link to="/politique-confidentialite" className="rounded-full bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">
+              {t('legal.links.privacy')}
+            </Link>
+            <Link to="/mentions-legales" className="rounded-full bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">
+              {t('legal.links.notices')}
+            </Link>
+          </div>
+          {profil?.legalVersion && (
+            <p className="mt-3 text-xs text-slate-400">
+              {t('legal.acceptedVersion', { version: profil.legalVersion })}
+            </p>
+          )}
+        </section>
       </main>
 
       <Footer />

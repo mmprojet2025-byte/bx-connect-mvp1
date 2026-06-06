@@ -768,6 +768,125 @@
     "linkedActivities": "Gekoppelde activiteiten",
     "noLinkedActivities": "Geen activiteit gekoppeld aan deze groep."
   },
+  "legal": {
+    "eyebrow": "Juridisch kader BX-Connect",
+    "links": {
+      "terms": "Gebruiksvoorwaarden",
+      "privacy": "Privacybeleid",
+      "notices": "Wettelijke vermeldingen"
+    },
+    "acceptancePrefix": "Ik aanvaard de",
+    "acceptanceAnd": "en het",
+    "acceptanceRequired": "Je moet de Gebruiksvoorwaarden en het Privacybeleid aanvaarden.",
+    "profileTitle": "Juridische documenten",
+    "profileDescription": "Lees de gebruiksregels en hoe je persoonsgegevens worden verwerkt.",
+    "acceptedVersion": "Aanvaarde versie: {{version}}",
+    "validationNotice": "Deze documenten vormen een praktische basis voor BX-Connect. Laat ze vóór publieke ingebruikname valideren door de verantwoordelijke van de vzw.",
+    "documents": {
+      "terms": {
+        "title": "Gebruiksvoorwaarden",
+        "intro": "Deze voorwaarden beschrijven de regels voor het gebruik van het communityplatform BX-Connect.",
+        "sections": [
+          {
+            "title": "1. Doel van het platform",
+            "body": "BX-Connect is een platform van Bx-Jeunes Impact ASBL voor jongeren, begeleiders, beheerders en partners. Het beheert accounts, groepen, activiteiten, inschrijvingen, projecten, berichten, meldingen en partnersteun."
+          },
+          {
+            "title": "2. Account en beveiliging",
+            "body": "Gebruikers verstrekken correcte informatie en houden hun toegangsgegevens vertrouwelijk. Activiteiten via een account worden geacht door de eigenaar te zijn uitgevoerd. Vermoed ongeoorloofd gebruik moet snel worden gemeld."
+          },
+          {
+            "title": "3. Rollen en toegang",
+            "body": "Functies hangen af van de rol: lid, begeleider, beheerder, superbeheerder of partner. Pogingen om afgeschermde gegevens van een andere rol, groep of gebruiker te openen zijn verboden."
+          },
+          {
+            "title": "4. Verwacht gedrag",
+            "body": "Inhoud en gesprekken moeten respectvol, wettig en relevant blijven. Intimidatie, discriminatie, identiteitsfraude, illegale inhoud, privacyschendingen, misleidende reclame en aanvallen op het platform zijn verboden."
+          },
+          {
+            "title": "5. Gepubliceerde inhoud",
+            "body": "Gebruikers blijven verantwoordelijk voor hun teksten, opmerkingen, projecten en berichten en bevestigen dat zij over de nodige rechten beschikken. BX-Connect kan duidelijk illegale, gevaarlijke of strijdige inhoud verbergen of verwijderen."
+          },
+          {
+            "title": "6. Schorsing en verwijdering",
+            "body": "Een account kan worden beperkt, geschorst of gedeactiveerd bij een inbreuk, veiligheidsrisico of legitiem verzoek. Gebruikers kunnen verwijdering vragen, behalve voor gegevens die wettelijk of voor de verdediging van rechten bewaard moeten blijven."
+          },
+          {
+            "title": "7. Beschikbaarheid en aansprakelijkheid",
+            "body": "BX-Connect streeft naar een betrouwbare dienst maar garandeert geen permanente beschikbaarheid. Binnen de grenzen van het Belgische recht is de vzw niet aansprakelijk voor redelijke onderbrekingen, externe diensten of indirecte schade."
+          },
+          {
+            "title": "8. Recht en contact",
+            "body": "Deze voorwaarden vallen onder het Belgische recht. Vragen kunnen naar contact@bxconnect.be. Voor een procedure wordt eerst naar een minnelijke oplossing gezocht."
+          }
+        ]
+      },
+      "privacy": {
+        "title": "Privacybeleid",
+        "intro": "Dit beleid legt uit hoe BX-Connect persoonsgegevens verwerkt volgens de beginselen van de AVG.",
+        "sections": [
+          {
+            "title": "1. Verwerkingsverantwoordelijke",
+            "body": "Bx-Jeunes Impact ASBL, Brussel, België, is verantwoordelijk voor de verwerkingen via BX-Connect. Contact voor persoonsgegevens: contact@bxconnect.be."
+          },
+          {
+            "title": "2. Verwerkte gegevens",
+            "body": "Wij kunnen identiteit, contactgegevens, rol, taal, registratiedatum, groepsgegevens, activiteiten en inschrijvingen, projecten en deelnames, berichten, meldingen, financiële steun, technische logs en bewijs van juridische aanvaarding verwerken."
+          },
+          {
+            "title": "3. Doeleinden",
+            "body": "Gegevens worden gebruikt om accounts aan te maken en te beveiligen, rollen, groepen, activiteiten, inschrijvingen, projecten, berichten en meldingen te beheren, partnersteun te behandelen, ondersteuning te bieden en misbruik te voorkomen."
+          },
+          {
+            "title": "4. Rechtsgronden",
+            "body": "Naargelang de verwerking steunen wij op de uitvoering van de gevraagde dienst, toestemming, wettelijke verplichtingen of het gerechtvaardigde belang van de vzw om het platform te beveiligen en verbeteren."
+          },
+          {
+            "title": "5. Ontvangers en verwerkers",
+            "body": "Alleen bevoegde personen krijgen toegang volgens hun rol. Technische leveranciers kunnen hosting, communicatie of betalingen ondersteunen onder passende contractuele waarborgen."
+          },
+          {
+            "title": "6. Bewaring en beveiliging",
+            "body": "Gegevens worden bewaard zolang dat nodig is voor het account en de betrokken activiteiten, en daarna verwijderd of geanonimiseerd tenzij een wettelijke plicht geldt. Toegangscontrole, authenticatie, logging en back-ups beperken risico’s."
+          },
+          {
+            "title": "7. Jouw rechten",
+            "body": "Je hebt recht op inzage, rectificatie, verwijdering, beperking en bezwaar, en waar van toepassing op overdraagbaarheid. Toestemming kan worden ingetrokken zonder eerdere rechtmatige verwerkingen aan te tasten."
+          },
+          {
+            "title": "8. Je rechten uitoefenen",
+            "body": "Stuur je verzoek met je identiteit en vraag naar contact@bxconnect.be. Je kunt ook een klacht indienen bij de Belgische Gegevensbeschermingsautoriteit: www.gegevensbeschermingsautoriteit.be."
+          }
+        ]
+      },
+      "notices": {
+        "title": "Wettelijke vermeldingen",
+        "intro": "Informatie over de uitgever en de werking van BX-Connect.",
+        "sections": [
+          {
+            "title": "Uitgever",
+            "body": "BX-Connect wordt uitgegeven door Bx-Jeunes Impact ASBL, een vereniging gevestigd in Brussel, België. Algemeen contact: contact@bxconnect.be."
+          },
+          {
+            "title": "Verantwoordelijke uitgever",
+            "body": "De redactionele verantwoordelijkheid berust bij het bestuur van Bx-Jeunes Impact ASBL."
+          },
+          {
+            "title": "Hosting en technische diensten",
+            "body": "De definitieve gegevens van de productiehost, met adres en contactgegevens, moeten vóór de publieke opening van de dienst worden gepubliceerd."
+          },
+          {
+            "title": "Intellectuele eigendom",
+            "body": "Het merk, de interface, originele teksten en grafische elementen van BX-Connect zijn beschermd. Hergebruik buiten persoonlijk gebruik vereist toestemming. Gebruikers behouden hun rechten op gepubliceerde inhoud."
+          },
+          {
+            "title": "Meldingen",
+            "body": "Illegale inhoud, beveiligingsproblemen en verzoeken over persoonsgegevens kunnen worden gemeld via contact@bxconnect.be."
+          }
+        ]
+      }
+    }
+  },
   "partnerInstitution": {
     "about": "Over de organisatie",
     "contact": "Contactgegevens",

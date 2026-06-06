@@ -29,7 +29,7 @@ const LANGUES = [
   { value: 'EN', labelKey: 'common.language_en' },
 ];
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }) {
   const { logout, login } = useAuth();
   const { t, i18n } = useTranslation();
 
@@ -364,6 +364,19 @@ export default function ProfileScreen() {
         </Card>
       )}
 
+      <View style={styles.sectionHeading}>
+        <Text style={styles.sectionTitle}>{t('legal.profileTitle')}</Text>
+        <Text style={styles.sectionSubtitle}>{t('legal.profileDescription')}</Text>
+      </View>
+      <Card style={styles.legalCard}>
+        <LegalAction icon="shield" label={t('legal.links.terms')} onPress={() => navigation.navigate('LegalTerms')} />
+        <LegalAction icon="lock" label={t('legal.links.privacy')} onPress={() => navigation.navigate('LegalPrivacy')} />
+        <LegalAction icon="information-circle-outline" label={t('legal.links.notices')} onPress={() => navigation.navigate('LegalNotices')} />
+        {profil?.legalVersion ? (
+          <Text style={styles.legalVersion}>{t('legal.acceptedVersion', { version: profil.legalVersion })}</Text>
+        ) : null}
+      </Card>
+
       <TouchableOpacity
         style={styles.btnLogout}
         onPress={handleLogout}
@@ -373,6 +386,18 @@ export default function ProfileScreen() {
         <Text style={styles.btnLogoutText}>{t('profile.logout')}</Text>
       </TouchableOpacity>
     </ScrollView>
+  );
+}
+
+function LegalAction({ icon, label, onPress }) {
+  return (
+    <TouchableOpacity style={styles.legalAction} onPress={onPress}>
+      <View style={styles.legalActionIcon}>
+        <AppIcon name={icon} size={16} color={COLORS.bxBlueLight} />
+      </View>
+      <Text style={styles.legalActionText}>{label}</Text>
+      <AppIcon name="chevron-forward-outline" size={17} color={COLORS.muted} />
+    </TouchableOpacity>
   );
 }
 
@@ -604,4 +629,24 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
   btnLogoutText: { color: COLORS.muted, fontWeight: '700', fontSize: 13 },
+  legalCard: { marginBottom: SPACING.md, paddingVertical: SPACING.xs },
+  legalAction: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderSoft,
+  },
+  legalActionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: BORDER_RADIUS.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.softBlue,
+    marginRight: SPACING.sm,
+  },
+  legalActionText: { flex: 1, color: COLORS.text, ...TYPOGRAPHY.caption, fontWeight: '800' },
+  legalVersion: { color: COLORS.muted, ...TYPOGRAPHY.tiny, marginTop: SPACING.sm },
 });

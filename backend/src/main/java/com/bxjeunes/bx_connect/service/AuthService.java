@@ -1,10 +1,12 @@
 package com.bxjeunes.bx_connect.service;
 
 import com.bxjeunes.bx_connect.config.JwtService;
+import com.bxjeunes.bx_connect.config.LegalConstants;
 import com.bxjeunes.bx_connect.dto.AuthResponse;
 import com.bxjeunes.bx_connect.dto.LoginRequest;
 import com.bxjeunes.bx_connect.dto.RegisterRequest;
 import com.bxjeunes.bx_connect.entity.Langue;
+import com.bxjeunes.bx_connect.entity.AuthProvider;
 import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.repository.UserRepository;
@@ -15,6 +17,8 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -30,10 +34,13 @@ public class AuthService {
      * SECURITE : role force a MEMBRE — jamais depuis le client.
      */
     public AuthResponse register(RegisterRequest request) {
+        verifierConsentementLegal(request);
+
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Un compte existe deja avec cet email.");
         }
 
+        LocalDateTime acceptedAt = LocalDateTime.now();
         User user = User.builder()
                 .prenom(request.getPrenom())
                 .nom(request.getNom())
@@ -42,6 +49,12 @@ public class AuthService {
                 .role(Role.MEMBRE)  // SECURITE : toujours MEMBRE, jamais depuis le client
                 .languePreference(Langue.FR)
                 .actif(true)
+                .termsAccepted(true)
+                .privacyAccepted(true)
+                .termsAcceptedAt(acceptedAt)
+                .privacyAcceptedAt(acceptedAt)
+                .legalVersion(LegalConstants.CURRENT_VERSION)
+                .authProvider(AuthProvider.LOCAL)
                 .build();
 
         userRepository.save(user);
@@ -54,6 +67,17 @@ public class AuthService {
                 .email(user.getEmail())
                 .role(user.getRole())
                 .build();
+    }
+
+    private void verifierConsentementLegal(RegisterRequest request) {
+        if (!request.isTermsAccepted() || !request.isPrivacyAccepted()) {
+            throw new IllegalArgumentException(
+                    "Les conditions d'utilisation et la politique de confidentialite doivent etre acceptees.");
+        }
+        if (!LegalConstants.CURRENT_VERSION.equals(request.getLegalVersion())) {
+            throw new IllegalArgumentException(
+                    "La version des documents legaux a change. Veuillez les consulter et les accepter a nouveau.");
+        }
     }
 
     public AuthResponse login(LoginRequest request) {

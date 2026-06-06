@@ -1,6 +1,8 @@
 package com.bxjeunes.bx_connect.security;
 
 import com.bxjeunes.bx_connect.dto.RegisterRequest;
+import com.bxjeunes.bx_connect.config.LegalConstants;
+import com.bxjeunes.bx_connect.entity.AuthProvider;
 import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.repository.UserRepository;
@@ -19,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 /**
  * Tests de securite sur l'inscription.
@@ -63,6 +66,46 @@ class AuthSecurityTest {
     }
 
     @Test
+    @DisplayName("L'inscription enregistre la preuve du consentement legal")
+    void inscription_enregistre_consentement_legal() {
+        mockSuccessfulRegistration();
+
+        authService.register(buildRequest("legal@test.be"));
+
+        verify(userRepository).save(
+                org.mockito.ArgumentMatchers.argThat(user ->
+                        user.isTermsAccepted()
+                                && user.isPrivacyAccepted()
+                                && user.getTermsAcceptedAt() != null
+                                && user.getPrivacyAcceptedAt() != null
+                                && LegalConstants.CURRENT_VERSION.equals(user.getLegalVersion())
+                                && user.getAuthProvider() == AuthProvider.LOCAL)
+        );
+    }
+
+    @Test
+    @DisplayName("L'inscription refuse un consentement legal incomplet")
+    void inscription_refuse_consentement_incomplet() {
+        RegisterRequest request = buildRequest("sans-accord@test.be");
+        request.setTermsAccepted(false);
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("doivent etre acceptees");
+    }
+
+    @Test
+    @DisplayName("L'inscription refuse une version legale obsolete")
+    void inscription_refuse_version_legale_obsolete() {
+        RegisterRequest request = buildRequest("ancienne-version@test.be");
+        request.setLegalVersion("v0.9");
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("version");
+    }
+
+    @Test
     @DisplayName("Aucun role ADMIN ne peut etre cree via l'inscription publique")
     void inscription_ne_cree_jamais_admin() {
         mockSuccessfulRegistration();
@@ -101,6 +144,9 @@ class AuthSecurityTest {
         req.setNom("User");
         req.setEmail(email);
         req.setMotDePasse("Password123!");
+        req.setTermsAccepted(true);
+        req.setPrivacyAccepted(true);
+        req.setLegalVersion(LegalConstants.CURRENT_VERSION);
         return req;
     }
 }
