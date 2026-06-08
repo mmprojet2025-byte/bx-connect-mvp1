@@ -139,6 +139,7 @@
     "manage_mode": "Management mode — {{count}} activities",
     "filters_title": "Search and filters",
     "search_placeholder": "Search by keyword...",
+    "no_search_results": "No activities match your search.",
     "all_categories": "All categories",
     "all_themes": "All themes",
     "all_places": "All places",

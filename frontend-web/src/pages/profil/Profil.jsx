@@ -156,7 +156,7 @@ export default function Profil() {
                     />
                     <ProfileInfo label={t('users.status')} value={(
                       <StatusBadge status={profil?.actif === false ? 'ANNULEE' : 'VALIDE'}>
-                        {profil?.actif === false ? t('users.inactive') : t('common.active')}
+                        {profil?.actif === false ? t('common.inactive') : t('common.active')}
                       </StatusBadge>
                     )} />
                   </div>

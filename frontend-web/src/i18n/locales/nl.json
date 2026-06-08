@@ -139,6 +139,7 @@
     "manage_mode": "Beheermodus — {{count}} activiteit(en)",
     "filters_title": "Zoeken en filters",
     "search_placeholder": "Zoeken op trefwoord...",
+    "no_search_results": "Geen activiteiten gevonden voor je zoekopdracht.",
     "all_categories": "Alle categorieën",
     "all_themes": "Alle thema's",
     "all_places": "Alle locaties",
