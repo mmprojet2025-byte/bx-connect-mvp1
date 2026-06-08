@@ -85,6 +85,14 @@ export default function Login() {
               className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
               placeholder={t('auth.password_placeholder')}
             />
+            <div className="mt-2 text-right">
+              <Link
+                to="/mot-de-passe-oublie"
+                className="text-sm font-medium text-blue-700 hover:underline"
+              >
+                {t('auth.forgot_password')}
+              </Link>
+            </div>
           </div>
 
           <button

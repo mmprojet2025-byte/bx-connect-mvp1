@@ -13,6 +13,7 @@ import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFrien
 import PageHeader from '../../components/ui/PageHeader'
 import LoadingState from '../../components/ui/LoadingState'
 import ErrorState from '../../components/ui/ErrorState'
+import groupsIllustration from '../../assets/illustrations/groups.png'
 
 export default function Groupes() {
   const { isAuthenticated, isMembre } = useAuth()
@@ -115,6 +116,13 @@ export default function Groupes() {
           eyebrow={t('ux.groups.community')}
           title={t('groups.title')}
           description={intro}
+          action={(
+            <img
+              src={groupsIllustration}
+              alt=""
+              className="mx-auto w-[200px] object-contain md:w-[300px]"
+            />
+          )}
         />
 
         {isAuthenticated && isMembre && (

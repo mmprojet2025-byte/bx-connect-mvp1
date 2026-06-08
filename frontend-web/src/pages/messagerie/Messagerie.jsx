@@ -115,7 +115,7 @@ export default function Messagerie() {
             actionTo="/dashboard"
           />
         ) : (
-          <section className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm flex flex-col" style={{ height: '70vh' }}>
+          <section className="flex h-[55vh] min-h-[360px] flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
             <div className="border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-white px-5 py-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-700">
@@ -128,7 +128,7 @@ export default function Messagerie() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto bg-slate-50/40 p-4 flex flex-col gap-3">
+            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto bg-slate-50/40 p-4">
               {loadingMessages ? (
                 <p className="text-slate-400 text-center text-sm">{t('messaging.loadingMessages')}</p>
               ) : messages.length === 0 ? (

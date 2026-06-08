@@ -132,7 +132,7 @@ export default function ReferentMessagerie() {
         ) : groupes.length === 0 ? (
           <EmptyState>{t('messaging.noAssignedGroups')}</EmptyState>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 min-h-[70vh]">
+          <div className="grid min-h-[360px] grid-cols-1 gap-4 lg:h-[55vh] lg:grid-cols-[320px_1fr]">
             <aside className="bg-white rounded-3xl border border-slate-100 shadow-sm flex flex-col overflow-hidden">
               <div className="px-4 py-4 border-b border-gray-100 bg-gradient-to-r from-teal-50 to-white">
                 <span className="inline-flex items-center gap-2 font-semibold text-blue-900 text-sm">
@@ -163,7 +163,7 @@ export default function ReferentMessagerie() {
               </div>
             </aside>
 
-            <section className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+            <section className="flex min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
               {!groupeActif ? (
                 <EmptyConversation>{t('messaging.selectGroup')}</EmptyConversation>
               ) : !filActif ? (
@@ -194,7 +194,7 @@ export default function ReferentMessagerie() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex-1 overflow-y-auto bg-slate-50/40 p-4 flex flex-col gap-3">
+                  <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto bg-slate-50/40 p-4">
                     {loadingMessages ? (
                       <p className="text-gray-400 text-center text-sm">{t('messaging.loadingMessages')}</p>
                     ) : messages.length === 0 ? (

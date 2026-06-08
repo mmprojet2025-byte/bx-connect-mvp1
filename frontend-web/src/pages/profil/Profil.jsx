@@ -10,6 +10,7 @@ import ImageUpload from '../../components/ImageUpload';
 import AppIcon from '../../components/ui/AppIcons';
 import PageHeader from '../../components/ui/PageHeader';
 import StatusBadge from '../../components/StatusBadge';
+import defaultAvatar from '../../assets/images/avatars/default-avatar.png';
 
 export default function Profil() {
   const navigate = useNavigate();
@@ -127,7 +128,7 @@ export default function Profil() {
                 <div className="rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-50 p-3 ring-1 ring-blue-100">
                   <ImageUpload
                     type="avatar"
-                    currentUrl={avatarUrl}
+                    currentUrl={avatarUrl || defaultAvatar}
                     onUploadSuccess={(url) => setAvatarUrl(url)}
                     shape="circle"
                     label={t('profile.photo')}
@@ -155,7 +156,7 @@ export default function Profil() {
                     />
                     <ProfileInfo label={t('users.status')} value={(
                       <StatusBadge status={profil?.actif === false ? 'ANNULEE' : 'VALIDE'}>
-                        {profil?.actif === false ? t('users.inactive') : t('users.active')}
+                        {profil?.actif === false ? t('users.inactive') : t('common.active')}
                       </StatusBadge>
                     )} />
                   </div>

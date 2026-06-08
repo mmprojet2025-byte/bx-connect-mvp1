@@ -15,6 +15,7 @@ import ProjectVisibilityBadge from '../../components/ProjectVisibilityBadge'
 import ProjectTypeBadge from '../../components/ProjectTypeBadge'
 import LoadingState from '../../components/ui/LoadingState'
 import ErrorState from '../../components/ui/ErrorState'
+import projectsIllustration from '../../assets/illustrations/projects.png'
 
 const MEMBER_VISIBILITIES = ['GROUPE', 'COMMUNAUTE']
 
@@ -100,6 +101,13 @@ export default function Projets() {
           eyebrow={t('ux.projects.eyebrow')}
           title={t('ux.projects.title')}
           description={t('ux.projects.intro')}
+          action={(
+            <img
+              src={projectsIllustration}
+              alt=""
+              className="mx-auto w-[200px] object-contain md:w-[300px]"
+            />
+          )}
         />
 
         {message && <Alert>{message}</Alert>}

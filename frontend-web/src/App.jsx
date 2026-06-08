@@ -6,6 +6,7 @@ import Accueil          from './pages/Accueil'
 import APropos          from './pages/APropos'
 import Login            from './pages/auth/Login'
 import Register         from './pages/auth/Register'
+import ForgotPassword   from './pages/auth/ForgotPassword'
 import Activites        from './pages/activites/Activites'
 import ActiviteDetail   from './pages/activites/ActiviteDetail'
 import Projets          from './pages/projets/Projets'
@@ -102,6 +103,7 @@ export default function App() {
       <Route path="/a-propos"      element={<APropos />} />
       <Route path="/login"         element={<Login />} />
       <Route path="/register"      element={<Register />} />
+      <Route path="/mot-de-passe-oublie" element={<ForgotPassword />} />
       <Route path="/activites"     element={<PublicOrMembreRoute><Activites /></PublicOrMembreRoute>} />
       <Route path="/activites/:id" element={<PublicOrMembreRoute><ActiviteDetail /></PublicOrMembreRoute>} />
       <Route path="/groupes"       element={<PublicOrMembreRoute><Groupes /></PublicOrMembreRoute>} />

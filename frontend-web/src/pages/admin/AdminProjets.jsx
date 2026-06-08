@@ -13,6 +13,7 @@ import ProjectVisibilityBadge from '../../components/ProjectVisibilityBadge';
 import ProjectTypeBadge from '../../components/ProjectTypeBadge';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
+import projectsIllustration from '../../assets/illustrations/projects.png';
 
 const STATUTS = ['BROUILLON', 'SOUMIS', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE'];
 const VISIBILITES = ['GROUPE', 'COMMUNAUTE', 'PARTENAIRES', 'PUBLIC'];
@@ -155,14 +156,21 @@ export default function AdminProjets() {
           title={t('admin.projects_title')}
           description={t('statistics.projectsTotal', { count: projets.length })}
           action={(
-            <button
-              type="button"
-              onClick={showForm ? resetForm : openCreateForm}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-600"
-            >
-              <AppIcon name={showForm ? 'XCircle' : 'PlusCircle'} className="h-4 w-4" />
-              {showForm ? t('common.cancel') : t('admin.createProject')}
-            </button>
+            <div className="flex flex-col items-center gap-3">
+              <img
+                src={projectsIllustration}
+                alt=""
+                className="w-[200px] object-contain md:w-[300px]"
+              />
+              <button
+                type="button"
+                onClick={showForm ? resetForm : openCreateForm}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-600"
+              >
+                <AppIcon name={showForm ? 'XCircle' : 'PlusCircle'} className="h-4 w-4" />
+                {showForm ? t('common.cancel') : t('admin.createProject')}
+              </button>
+            </div>
           )}
         />
 

@@ -14,6 +14,7 @@ import { userFriendlyError } from '../../utils/userFriendlyError'
 import LoadingState from '../../components/ui/LoadingState'
 import ErrorState from '../../components/ui/ErrorState'
 import EmptyState from '../../components/ui/EmptyState'
+import projectsIllustration from '../../assets/illustrations/projects.png'
 
 const emptyForm = {
   titre: '',
@@ -97,15 +98,22 @@ export default function ReferentProjets() {
           title={t('referent.projectsTitle')}
           description={t('referent.projectsSubtitle')}
           action={(
-            <button
-              type="button"
-              onClick={() => setShowForm(value => !value)}
-              disabled={groupes.length === 0}
-              className="inline-flex items-center gap-2 rounded-2xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:bg-slate-300"
-            >
-              <AppIcon name={showForm ? 'XCircle' : 'PlusCircle'} className="h-4 w-4" />
-              {showForm ? t('common.cancel') : t('projects.new_project')}
-            </button>
+            <div className="flex flex-col items-center gap-3">
+              <img
+                src={projectsIllustration}
+                alt=""
+                className="w-[200px] object-contain md:w-[300px]"
+              />
+              <button
+                type="button"
+                onClick={() => setShowForm(value => !value)}
+                disabled={groupes.length === 0}
+                className="inline-flex items-center gap-2 rounded-2xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:bg-slate-300"
+              >
+                <AppIcon name={showForm ? 'XCircle' : 'PlusCircle'} className="h-4 w-4" />
+                {showForm ? t('common.cancel') : t('projects.new_project')}
+              </button>
+            </div>
           )}
         />
 
