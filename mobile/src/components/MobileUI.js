@@ -1,4 +1,4 @@
-import { ActivityIndicator, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, Image, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import AppIcon from './AppIcon';
 
 export const COLORS = {
@@ -106,12 +106,23 @@ export function SectionHeader({ title, subtitle, icon = 'activity' }) {
   );
 }
 
-export function EmptyState({ icon = 'alert', title, text, actionLabel, onAction }) {
+export function EmptyState({
+  icon = 'alert',
+  illustrationSource,
+  title,
+  text,
+  actionLabel,
+  onAction,
+}) {
   return (
     <Card style={styles.emptyState}>
-      <View style={styles.emptyIcon}>
-        <AppIcon name={icon} size={34} color={COLORS.info} />
-      </View>
+      {illustrationSource ? (
+        <Image source={illustrationSource} style={styles.emptyIllustration} resizeMode="contain" />
+      ) : (
+        <View style={styles.emptyIcon}>
+          <AppIcon name={icon} size={34} color={COLORS.info} />
+        </View>
+      )}
       <Text style={styles.emptyTitle}>{title}</Text>
       {text ? <Text style={styles.emptyText}>{text}</Text> : null}
       {actionLabel && onAction ? (
@@ -244,6 +255,7 @@ const styles = StyleSheet.create({
   sectionTitle: { color: COLORS.bxBlue, ...TYPOGRAPHY.section },
   sectionSubtitle: { color: COLORS.muted, ...TYPOGRAPHY.caption, marginTop: 2 },
   emptyState: { alignItems: 'center', justifyContent: 'center', padding: SPACING.xxl },
+  emptyIllustration: { width: 154, height: 122, marginBottom: SPACING.md },
   emptyIcon: {
     width: 64,
     height: 64,

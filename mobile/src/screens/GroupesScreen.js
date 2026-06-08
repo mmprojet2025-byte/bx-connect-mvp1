@@ -202,6 +202,7 @@ export default function GroupesScreen() {
       ) : groupesFiltres.length === 0 ? (
         <SharedEmptyState
           icon="group"
+          illustrationSource={require('../../assets/illustrations/groups.png')}
           title={recherche ? t('groups.no_search_results') : t('groups.no_groups')}
           text={isReferent
             ? t('groups.no_referent_groups')

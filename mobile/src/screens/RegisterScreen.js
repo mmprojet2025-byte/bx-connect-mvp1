@@ -41,19 +41,23 @@ export default function RegisterScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [legalAccepted, setLegalAccepted] = useState(false);
+  const passwordChecks = getPasswordChecks(form.motDePasse);
+  const passwordStrength = getPasswordStrength(passwordChecks);
 
   const handleRegister = async () => {
     setError('');
-    if (!form.prenom.trim() || !form.nom.trim() || !form.email.trim() || !form.motDePasse.trim()) {
-      setError(t('auth.error_required'));
-      return;
-    }
+    if (!form.prenom.trim()) return setError(t('auth.error_firstname_required'));
+    if (!form.nom.trim()) return setError(t('auth.error_lastname_required'));
+    if (!form.email.trim()) return setError(t('auth.error_email_required'));
+    if (!isValidEmail(form.email)) return setError(t('auth.error_email_invalid'));
+    if (!form.motDePasse) return setError(t('auth.error_password_required'));
+    if (!form.confirmation) return setError(t('auth.error_confirmation_required'));
     if (form.motDePasse !== form.confirmation) {
       setError(t('auth.error_passwords'));
       return;
     }
-    if (form.motDePasse.length < 8) {
-      setError(t('auth.error_password_min'));
+    if (!passwordChecks.every(Boolean)) {
+      setError(t('auth.error_password_requirements'));
       return;
     }
     if (!legalAccepted) {
@@ -164,29 +168,8 @@ export default function RegisterScreen({ navigation }) {
           </View>
         </View>
 
-        <View style={styles.legalRow}>
-          <TouchableOpacity
-            style={[styles.checkbox, legalAccepted && styles.checkboxChecked]}
-            onPress={() => setLegalAccepted(value => !value)}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: legalAccepted }}
-          >
-            {legalAccepted && <AppIcon name="check" size={15} color="#fff" />}
-          </TouchableOpacity>
-          <Text style={styles.legalText}>
-            {t('legal.acceptancePrefix')}{' '}
-            <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalTerms')}>
-              {t('legal.links.terms')}
-            </Text>{' '}
-            {t('legal.acceptanceAnd')}{' '}
-            <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalPrivacy')}>
-              {t('legal.links.privacy')}
-            </Text>.
-          </Text>
-        </View>
-
         <View style={styles.field}>
-          <Text style={styles.label}>{t('auth.password_min_label')}</Text>
+          <Text style={styles.label}>{t('auth.password')} *</Text>
           <View style={[styles.inputShell, focusedField === 'password' && styles.inputShellFocused]}>
             <AppIcon name="lock" size={20} color={focusedField === 'password' ? COLORS.bxBlue : '#64748b'} />
             <TextInput
@@ -212,6 +195,7 @@ export default function RegisterScreen({ navigation }) {
               />
             </TouchableOpacity>
           </View>
+          <PasswordHelp checks={passwordChecks} strength={passwordStrength} t={t} />
         </View>
 
         <View style={styles.field}>
@@ -241,6 +225,27 @@ export default function RegisterScreen({ navigation }) {
               />
             </TouchableOpacity>
           </View>
+        </View>
+
+        <View style={styles.legalRow}>
+          <TouchableOpacity
+            style={[styles.checkbox, legalAccepted && styles.checkboxChecked]}
+            onPress={() => setLegalAccepted(value => !value)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: legalAccepted }}
+          >
+            {legalAccepted && <AppIcon name="check" size={15} color="#fff" />}
+          </TouchableOpacity>
+          <Text style={styles.legalText}>
+            {t('legal.acceptancePrefix')}{' '}
+            <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalTerms')}>
+              {t('legal.links.terms')}
+            </Text>{' '}
+            {t('legal.acceptanceAnd')}{' '}
+            <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalPrivacy')}>
+              {t('legal.links.privacy')}
+            </Text>.
+          </Text>
         </View>
 
         <TouchableOpacity
@@ -282,6 +287,60 @@ export default function RegisterScreen({ navigation }) {
       <LegalLinks navigation={navigation} t={t} />
     </ScrollView>
   );
+}
+
+function PasswordHelp({ checks, strength, t }) {
+  const color = {
+    weak: COLORS.danger,
+    medium: COLORS.warning,
+    strong: COLORS.success,
+  }[strength] || COLORS.muted;
+
+  return (
+    <View style={styles.passwordHelp}>
+      {strength ? (
+        <Text style={[styles.passwordStrength, { color }]}>
+          {t(`auth.password_strength_${strength}`)}
+        </Text>
+      ) : null}
+      <PasswordRule valid={checks[0]} text={t('auth.password_rule_length')} />
+      <PasswordRule valid={checks[1]} text={t('auth.password_rule_uppercase')} />
+      <PasswordRule valid={checks[2]} text={t('auth.password_rule_digit')} />
+    </View>
+  );
+}
+
+function PasswordRule({ valid, text }) {
+  return (
+    <View style={styles.passwordRule}>
+      <AppIcon
+        name={valid ? 'checkmark-circle' : 'ellipse-outline'}
+        size={13}
+        color={valid ? COLORS.success : '#94a3b8'}
+      />
+      <Text style={[styles.passwordRuleText, valid && styles.passwordRuleValid]}>{text}</Text>
+    </View>
+  );
+}
+
+function getPasswordChecks(password) {
+  return [
+    password.length >= 8,
+    /[A-Z]/.test(password),
+    /\d/.test(password),
+  ];
+}
+
+function getPasswordStrength(checks) {
+  const score = checks.filter(Boolean).length;
+  if (score === 0) return '';
+  if (score === 1) return 'weak';
+  if (score === 2) return 'medium';
+  return 'strong';
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
 function LegalLinks({ navigation, t }) {
@@ -394,6 +453,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  passwordHelp: {
+    borderRadius: 14,
+    backgroundColor: COLORS.page,
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+    marginTop: 8,
+    gap: 4,
+  },
+  passwordStrength: { fontSize: 12, fontWeight: '900', marginBottom: 2 },
+  passwordRule: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  passwordRuleText: { color: COLORS.muted, fontSize: 11, lineHeight: 16 },
+  passwordRuleValid: { color: '#15803d' },
   legalRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',

@@ -142,6 +142,13 @@ export default function LoginScreen({ navigation }) {
               />
             </TouchableOpacity>
           </View>
+          <TouchableOpacity
+            style={styles.forgotPassword}
+            onPress={() => navigation.navigate('ForgotPassword')}
+            activeOpacity={0.75}
+          >
+            <Text style={styles.forgotPasswordText}>{t('auth.forgot_password')}</Text>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity
@@ -296,6 +303,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  forgotPassword: { alignSelf: 'flex-end', paddingTop: 9, paddingBottom: 2 },
+  forgotPasswordText: { color: COLORS.bxBlueLight, fontSize: 13, fontWeight: '800' },
   btnLogin: {
     backgroundColor: COLORS.bxBlue,
     minHeight: 56,

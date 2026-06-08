@@ -287,6 +287,7 @@ export default function ProjectsScreen() {
       ) : projetsFiltres.length === 0 ? (
         <SharedEmptyState
           icon="project"
+          illustrationSource={require('../../assets/illustrations/projects.png')}
           title={recherche ? t('projects.no_search_results') : t('projects.no_projects')}
           text={isReferent
             ? t('projects.no_referent_projects')

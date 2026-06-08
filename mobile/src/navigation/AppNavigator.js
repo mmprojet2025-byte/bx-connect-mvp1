@@ -12,6 +12,7 @@ import api from '../api/axios';
 import HomeScreen          from '../screens/HomeScreen';
 import LoginScreen         from '../screens/LoginScreen';
 import RegisterScreen      from '../screens/RegisterScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import ActivitiesScreen    from '../screens/ActivitiesScreen';
 import LegalScreen         from '../screens/LegalScreen';
 
@@ -58,6 +59,7 @@ function PublicStack({ initialRouteName = 'Home' }) {
       <Stack.Screen name="Home"       component={HomeScreen}      options={{ title: 'BX-CONNECT', headerBackVisible: false }} />
       <Stack.Screen name="Login"      component={LoginScreen}     options={{ title: t('navigation.login') }} />
       <Stack.Screen name="Register"   component={RegisterScreen}  options={{ title: t('navigation.createAccount') }} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: t('auth.forgot_password_title') }} />
       <Stack.Screen name="Activities" component={ActivitiesScreen} options={{ title: t('navigation.activities') }} />
       <Stack.Screen name="Groupes"    component={GroupesScreen}    options={{ title: t('navigation.groups') }} />
       <Stack.Screen name="LegalTerms" component={LegalScreen} initialParams={{ document: 'terms' }} options={{ title: t('legal.links.terms') }} />

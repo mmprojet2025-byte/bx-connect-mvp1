@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView,
+  View, Text, StyleSheet, ScrollView, Image,
   TouchableOpacity, TextInput, ActivityIndicator, Switch
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,7 +17,6 @@ import {
 } from '../services/pushNotifications';
 import {
   ActionCard,
-  Avatar,
   Badge,
   BORDER_RADIUS,
   Card,
@@ -238,7 +237,12 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.heroBrandText}>BX-CONNECT</Text>
         </View>
         <View style={styles.avatarFrame}>
-          <Avatar prenom={profil?.prenom} nom={profil?.nom} size={72} color={COLORS.bxBlueLight} />
+          <Image
+            source={require('../../assets/images/avatars/default-avatar.png')}
+            style={styles.avatarImage}
+            resizeMode="cover"
+            accessibilityLabel={t('profile.default_avatar')}
+          />
           <TouchableOpacity
             style={styles.photoButton}
             onPress={handlePhotoSoon}
@@ -271,6 +275,10 @@ export default function ProfileScreen({ navigation }) {
           text={t('profile.since_short', {
             date: formatMonthYear(profil?.dateInscription, i18n.language, t),
           })}
+        />
+        <InfoChip
+          icon="checkmark-circle-outline"
+          text={profil?.actif === false ? t('common.inactive') : t('common.active')}
         />
       </View>
 
@@ -605,6 +613,11 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.pill,
     backgroundColor: '#fff',
     marginBottom: SPACING.sm,
+  },
+  avatarImage: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
   },
   photoButton: {
     position: 'absolute',

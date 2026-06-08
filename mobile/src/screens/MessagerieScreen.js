@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, ActivityIndicator, Platform, KeyboardAvoidingView
+  TextInput, ActivityIndicator, Image, Platform, KeyboardAvoidingView
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
@@ -197,6 +197,7 @@ export default function MessagerieScreen() {
       {emptyMessage ? (
         <SharedEmptyState
           icon="message"
+          illustrationSource={require('../../assets/illustrations/messages.png')}
           title={t('messaging.threadUnavailable')}
           text={emptyMessage}
           actionLabel={t('common.retry')}
@@ -205,6 +206,7 @@ export default function MessagerieScreen() {
       ) : !filActif ? (
         <SharedEmptyState
           icon="message"
+          illustrationSource={require('../../assets/illustrations/messages.png')}
           title={t('messaging.noThread')}
           text={t('messaging.threadNotCreated')}
           actionLabel={t('common.retry')}
@@ -227,9 +229,11 @@ export default function MessagerieScreen() {
               showsVerticalScrollIndicator={false}
               ListEmptyComponent={
                 <View style={styles.emptyMessages}>
-                  <View style={styles.emptyIconCircle}>
-                    <AppIcon name="message" size={34} color="#38BDF8" />
-                  </View>
+                  <Image
+                    source={require('../../assets/illustrations/messages.png')}
+                    style={styles.emptyMessagesIllustration}
+                    resizeMode="contain"
+                  />
                   <Text style={styles.emptyText}>{t('messaging.noMessages')}</Text>
                 </View>
               }
@@ -506,7 +510,8 @@ const styles = StyleSheet.create({
     padding: 28,
   },
   loadingText: { marginTop: 10, color: '#64748b', fontSize: 14 },
-  emptyMessages: { alignItems: 'center', justifyContent: 'center', paddingTop: 54, paddingHorizontal: 20 },
+  emptyMessages: { alignItems: 'center', justifyContent: 'center', paddingTop: 18, paddingHorizontal: 20 },
+  emptyMessagesIllustration: { width: 150, height: 118, marginBottom: 8 },
   emptyIconCircle: {
     width: 64,
     height: 64,
@@ -539,7 +544,7 @@ const styles = StyleSheet.create({
   },
   retryButtonText: { color: '#fff', fontWeight: '800', fontSize: 13 },
 
-  messagesContent: { padding: 14, paddingBottom: 16 },
+  messagesContent: { flexGrow: 1, padding: 14, paddingBottom: 12 },
   messageRow: { flexDirection: 'row', marginBottom: 12, alignItems: 'flex-end' },
   messageRowLeft: { justifyContent: 'flex-start' },
   messageRowRight: { justifyContent: 'flex-end' },

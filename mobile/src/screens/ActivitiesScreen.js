@@ -322,6 +322,7 @@ export default function ActivitiesScreen() {
       ) : activitesFiltrees.length === 0 ? (
         <SharedEmptyState
           icon="activity"
+          illustrationSource={require('../../assets/illustrations/activities.png')}
           title={recherche ? t('activities.no_search_results') : t('activities.no_activities')}
           text={isReferent
             ? t('activities.no_referent_activities')
