@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import api from '../api/axios'
 import AppIcon from '../components/ui/AppIcons'
+import homeImage from '../assets/images/home.png'
 
 export default function Accueil() {
   const [activites, setActivites] = useState([])
@@ -23,24 +24,30 @@ export default function Accueil() {
       <Navbar />
 
       {/* Hero */}
-      <section className="bg-blue-800 text-white py-20 px-4 text-center">
-        <h1 className="text-4xl font-bold mb-4">{t('home.welcome')}</h1>
-        <p className="text-lg text-blue-200 max-w-xl mx-auto mb-8">
-          {t('home.subtitle')}
-        </p>
-        <div className="flex justify-center gap-4">
-          <Link
-            to="/register"
-            className="bg-white text-blue-800 font-semibold px-6 py-2 rounded-full hover:bg-blue-100 transition"
-          >
-            {t('home.cta_join')}
-          </Link>
-          <Link
-            to="/activites"
-            className="border border-white text-white px-6 py-2 rounded-full hover:bg-blue-700 transition"
-          >
-            {t('home.cta_activities')}
-          </Link>
+      <section
+        className="relative isolate overflow-hidden bg-blue-800 bg-cover bg-center px-4 py-16 text-center text-white sm:py-20"
+        style={{ backgroundImage: `url(${homeImage})` }}
+      >
+        <div className="absolute inset-0 -z-10 bg-blue-950/70" aria-hidden="true" />
+        <div className="mx-auto max-w-3xl">
+          <h1 className="mb-4 text-3xl font-bold sm:text-4xl">{t('home.welcome')}</h1>
+          <p className="mx-auto mb-8 max-w-xl text-base text-blue-100 sm:text-lg">
+            {t('home.subtitle')}
+          </p>
+          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Link
+              to="/register"
+              className="w-full max-w-xs rounded-full bg-white px-6 py-2 font-semibold text-blue-800 transition hover:bg-blue-100 sm:w-auto"
+            >
+              {t('home.cta_join')}
+            </Link>
+            <Link
+              to="/activites"
+              className="w-full max-w-xs rounded-full border border-white px-6 py-2 text-white transition hover:bg-blue-700 sm:w-auto"
+            >
+              {t('home.cta_activities')}
+            </Link>
+          </div>
         </div>
       </section>
 

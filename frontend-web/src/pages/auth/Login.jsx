@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import api from '../../api/axios'
 import { getDefaultRouteForRole } from '../../routes/roleRoutes'
 import AppIcon from '../../components/ui/AppIcons'
+import logoBxConnect from '../../assets/images/logo-bx-connect.png'
 
 export default function Login() {
   const { login } = useAuth()
@@ -37,7 +38,13 @@ export default function Login() {
 
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link to="/" className="text-2xl font-bold text-blue-800">BX-CONNECT</Link>
+          <Link to="/" className="inline-flex">
+            <img
+              src={logoBxConnect}
+              alt="BX-CONNECT"
+              className="h-16 w-[200px] object-contain"
+            />
+          </Link>
           <p className="text-gray-500 text-sm mt-1">{t('auth.login_subtitle')}</p>
         </div>
 

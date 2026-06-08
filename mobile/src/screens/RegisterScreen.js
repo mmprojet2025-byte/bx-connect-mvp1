@@ -84,18 +84,13 @@ export default function RegisterScreen({ navigation }) {
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={[styles.hero, { minHeight: Math.max(260, height * 0.36) }]}>
         <View style={styles.visualBlock}>
-          <View style={styles.logoShell}>
-            <Image source={require('../../assets/icon.png')} style={styles.logoImage} />
-          </View>
-          <View style={styles.communityOrbit}>
-            <AppIcon name="group" size={18} color="#fff" />
-          </View>
-          <View style={styles.activityOrbit}>
-            <AppIcon name="project" size={17} color="#fff" />
-          </View>
+          <Image
+            source={require('../../assets/images/logo-bx-connect.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
         </View>
 
-        <Text style={styles.logo}>BX-CONNECT</Text>
         <Text style={styles.slogan}>Connecter • Inspirer • Impacter</Text>
         <Text style={styles.heroTitle}>Rejoins la communauté BX-Connect</Text>
         <Text style={styles.heroText}>
@@ -323,48 +318,8 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 4,
   },
-  visualBlock: { height: 82, marginBottom: 12 },
-  logoShell: {
-    width: 70,
-    height: 70,
-    borderRadius: 24,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.15,
-    shadowRadius: 14,
-    elevation: 4,
-  },
-  logoImage: { width: 49, height: 49, borderRadius: 14 },
-  communityOrbit: {
-    position: 'absolute',
-    left: 60,
-    top: 8,
-    width: 42,
-    height: 42,
-    borderRadius: 15,
-    backgroundColor: COLORS.info,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: COLORS.bxBlue,
-  },
-  activityOrbit: {
-    position: 'absolute',
-    left: 32,
-    top: 52,
-    width: 38,
-    height: 38,
-    borderRadius: 14,
-    backgroundColor: COLORS.impactOrange,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: COLORS.bxBlue,
-  },
-  logo: { color: '#BAE6FD', fontSize: 12, fontWeight: '900', letterSpacing: 1.1, marginBottom: 5 },
+  visualBlock: { height: 64, marginBottom: 12, justifyContent: 'center' },
+  logoImage: { width: 195, height: 64 },
   slogan: { color: COLORS.info, fontSize: 13, fontWeight: '900', marginBottom: 8 },
   heroTitle: { color: '#fff', fontSize: 26, lineHeight: 32, fontWeight: '900' },
   heroText: { color: '#DBEAFE', fontSize: 14, lineHeight: 21, marginTop: 9 },

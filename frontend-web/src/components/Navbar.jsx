@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTranslation } from 'react-i18next'
 import api from '../api/axios'
 import AppIcon from './ui/AppIcons'
+import logoBxConnect from '../assets/images/logo-bx-connect.png'
 
 const LANGUAGES = [
   { code: 'fr', label: 'FR' },
@@ -57,14 +58,12 @@ export default function Navbar() {
     <nav className="sticky top-0 z-40 border-b border-blue-100/80 bg-white/90 px-4 py-3 text-slate-700 shadow-sm backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
         <Link to="/" onClick={closeMenu} className="group flex min-w-0 items-center gap-3">
-          <span className="relative grid h-12 w-12 shrink-0 place-items-center rounded-3xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 ring-4 ring-blue-50">
-            <AppIcon name="Users" className="h-6 w-6" />
-            <span className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-orange-500 ring-2 ring-white" />
-          </span>
-          <span className="min-w-0">
-            <span className="block text-xl font-black leading-tight tracking-tight text-slate-950 group-hover:text-blue-700">
-              BX-Connect
-            </span>
+          <img
+            src={logoBxConnect}
+            alt="BX-CONNECT"
+            className="h-[52px] w-[180px] shrink-0 object-contain"
+          />
+          <span className="hidden min-w-0 sm:block">
             <span className="hidden text-xs font-bold text-orange-600 sm:block">
               Connecter • Inspirer • Impacter
             </span>

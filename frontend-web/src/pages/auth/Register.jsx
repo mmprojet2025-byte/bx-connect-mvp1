@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useTranslation } from 'react-i18next'
 import api from '../../api/axios'
 import { LEGAL_VERSION } from '../../constants/legal'
+import logoBxConnect from '../../assets/images/logo-bx-connect.png'
 
 export default function Register() {
   const { login } = useAuth()
@@ -41,7 +42,13 @@ export default function Register() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
       <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-8">
         <div className="text-center mb-8">
-          <Link to="/" className="text-2xl font-bold text-blue-800">BX-CONNECT</Link>
+          <Link to="/" className="inline-flex">
+            <img
+              src={logoBxConnect}
+              alt="BX-CONNECT"
+              className="h-16 w-[200px] object-contain"
+            />
+          </Link>
           <p className="text-gray-500 text-sm mt-1">{t('auth.register_subtitle')}</p>
         </div>
         {erreur && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-5">{erreur}</div>}

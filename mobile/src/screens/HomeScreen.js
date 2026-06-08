@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import AppIcon from '../components/AppIcon';
 import { COLORS, Card, SectionHeader } from '../components/MobileUI';
@@ -54,15 +54,11 @@ export default function HomeScreen({ navigation }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.hero}>
-        <View style={styles.heroTop}>
-          <View style={styles.brandMark}>
-            <AppIcon name="group" size={26} color="#fff" />
-          </View>
-          <View style={styles.brandTextWrap}>
-            <Text style={styles.kicker}>BX-Jeunes Impact</Text>
-            <Text style={styles.logo}>BX-CONNECT</Text>
-          </View>
-        </View>
+        <Image
+          source={require('../../assets/images/logo-bx-connect.png')}
+          style={styles.brandLogo}
+          resizeMode="contain"
+        />
 
         <Text style={styles.slogan}>Connecter. Inspirer. Impacter.</Text>
         <Text style={styles.heroText}>
@@ -151,6 +147,11 @@ export default function HomeScreen({ navigation }) {
 
       {!isAuthenticated ? (
         <Card style={styles.joinCard}>
+          <Image
+            source={require('../../assets/illustrations/community.png')}
+            style={styles.joinIllustration}
+            resizeMode="contain"
+          />
           <View style={styles.joinContent}>
             <Text style={styles.joinTitle}>Prêt à rejoindre la communauté ?</Text>
             <Text style={styles.joinText}>
@@ -185,19 +186,7 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     elevation: 4,
   },
-  heroTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  brandMark: {
-    width: 54,
-    height: 54,
-    borderRadius: 19,
-    backgroundColor: '#38BDF8',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  brandTextWrap: { flex: 1 },
-  kicker: { color: '#BAE6FD', fontSize: 12, fontWeight: '800', marginBottom: 3 },
-  logo: { color: '#fff', fontSize: 24, fontWeight: '900', letterSpacing: 0.6 },
+  brandLogo: { width: 210, height: 68, marginBottom: 20 },
   slogan: { color: '#fff', fontSize: 24, lineHeight: 30, fontWeight: '900', marginBottom: 10 },
   heroText: { color: '#DBEAFE', fontSize: 14, lineHeight: 21, marginBottom: 18 },
   heroActions: { flexDirection: 'row', gap: 10 },
@@ -287,6 +276,7 @@ const styles = StyleSheet.create({
   },
   audienceText: { color: COLORS.bxBlue, fontSize: 12, fontWeight: '900', textAlign: 'center' },
   joinCard: { padding: 16 },
+  joinIllustration: { width: 150, height: 150, alignSelf: 'center', marginBottom: 12 },
   joinContent: { marginBottom: 13 },
   joinTitle: { color: COLORS.bxBlue, fontSize: 17, fontWeight: '900', marginBottom: 5 },
   joinText: { color: COLORS.muted, fontSize: 13, lineHeight: 19 },
