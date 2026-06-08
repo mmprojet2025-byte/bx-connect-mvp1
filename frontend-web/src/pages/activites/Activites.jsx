@@ -305,7 +305,13 @@ export default function Activites() {
             {activites.map(a => (
               <article key={a.id} className="bg-white rounded-[1.5rem] border border-slate-100 shadow-lg shadow-slate-900/5 overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition flex flex-col">
                 <div className="relative">
-                  <ActivityCover imageUrl={a.imageUrl} title={a.titre} className="h-44" />
+                  <ActivityCover
+                    imageUrl={a.imageUrl}
+                    title={a.titre}
+                    categorie={a.categorie}
+                    theme={a.theme}
+                    className="h-44"
+                  />
                   <div className="absolute left-4 top-4">
                     <StatusBadge status={a.statut}>
                       {t(`statuses.${a.statut}`, { defaultValue: a.statut })}

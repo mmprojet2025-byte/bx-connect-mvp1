@@ -282,7 +282,13 @@ export default function AdminActivites() {
               ) : (
                 activitesFiltrees.map(a => (
                   <article key={a.id} className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
-                    <ActivityCover imageUrl={a.imageUrl} title={a.titre} className="h-32" />
+                    <ActivityCover
+                      imageUrl={a.imageUrl}
+                      title={a.titre}
+                      categorie={a.categorie}
+                      theme={a.theme}
+                      className="h-32"
+                    />
                     <div className="p-5">
                     <div className="flex items-start justify-between gap-3 mb-4">
                       <div className="min-w-0">
@@ -362,7 +368,13 @@ export default function AdminActivites() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className="h-12 w-16 shrink-0 overflow-hidden rounded-xl">
-                              <ActivityCover imageUrl={a.imageUrl} title={a.titre} className="h-12" />
+                              <ActivityCover
+                                imageUrl={a.imageUrl}
+                                title={a.titre}
+                                categorie={a.categorie}
+                                theme={a.theme}
+                                className="h-12"
+                              />
                             </div>
                             <div>
                               <span className="font-medium text-blue-900 text-sm">{a.titre}</span>

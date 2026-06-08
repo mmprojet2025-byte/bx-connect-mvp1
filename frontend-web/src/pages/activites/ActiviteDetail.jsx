@@ -97,7 +97,13 @@ export default function ActiviteDetail() {
 
         <div className="bg-white rounded-2xl shadow overflow-hidden">
           <div className="relative">
-            <ActivityCover imageUrl={activite.imageUrl} title={activite.titre} className="h-72" />
+            <ActivityCover
+              imageUrl={activite.imageUrl}
+              title={activite.titre}
+              categorie={activite.categorie}
+              theme={activite.theme}
+              className="h-72"
+            />
             <div className="absolute left-5 top-5">
               <StatusBadge status={activite.statut}>
                 {t(`statuses.${activite.statut}`, { defaultValue: activite.statut })}

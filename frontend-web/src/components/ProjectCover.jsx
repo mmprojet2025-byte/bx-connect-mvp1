@@ -1,3 +1,5 @@
+import projectsIllustration from '../assets/illustrations/projects.png'
+
 const PROJECT_GRADIENTS = [
   'from-indigo-900 via-blue-800 to-cyan-400',
   'from-slate-900 via-violet-800 to-amber-400',
@@ -5,13 +7,20 @@ const PROJECT_GRADIENTS = [
   'from-rose-900 via-fuchsia-800 to-orange-300',
 ]
 
-export default function ProjectCover({ imageUrl, title = '', className = 'h-44' }) {
+export default function ProjectCover({
+  imageUrl,
+  title = '',
+  className = 'h-44',
+  useLocalIllustration = false,
+}) {
   const gradient = PROJECT_GRADIENTS[Math.abs(hashText(title)) % PROJECT_GRADIENTS.length]
 
-  if (imageUrl) {
+  const resolvedImage = imageUrl || (useLocalIllustration ? projectsIllustration : null)
+
+  if (resolvedImage) {
     return (
       <img
-        src={imageUrl}
+        src={resolvedImage}
         alt={title}
         className={`w-full ${className} object-cover`}
       />

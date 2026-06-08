@@ -246,7 +246,13 @@ export default function ReferentActivites() {
             {activitesFiltrees.map(activite => (
               <article key={activite.id} className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
                 <div className="relative">
-                  <ActivityCover imageUrl={activite.imageUrl} title={activite.titre} className="h-36" />
+                  <ActivityCover
+                    imageUrl={activite.imageUrl}
+                    title={activite.titre}
+                    categorie={activite.categorie}
+                    theme={activite.theme}
+                    className="h-36"
+                  />
                   <div className="absolute left-4 top-4">
                     <StatusBadge status={activite.statut}>{t(`statuses.${activite.statut}`, activite.statut)}</StatusBadge>
                   </div>
