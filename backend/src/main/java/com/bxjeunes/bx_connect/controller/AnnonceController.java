@@ -36,8 +36,10 @@ public class AnnonceController {
     // GET /api/annonces/groupe/{id} — Annonces d'un groupe
     @GetMapping("/groupe/{groupeId}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<Map<String, Object>>> annoncesGroupe(@PathVariable Long groupeId) {
-        return ResponseEntity.ok(annonceService.annoncesGroupe(groupeId));
+    public ResponseEntity<List<Map<String, Object>>> annoncesGroupe(
+            @PathVariable Long groupeId,
+            Authentication auth) {
+        return ResponseEntity.ok(annonceService.annoncesGroupe(groupeId, auth.getName()));
     }
 
     // GET /api/annonces/admin/toutes — Toutes les annonces (admin)
@@ -67,8 +69,8 @@ public class AnnonceController {
     // DELETE /api/annonces/{id} — Supprimer
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
-    public ResponseEntity<Void> supprimer(@PathVariable Long id) {
-        annonceService.supprimer(id);
+    public ResponseEntity<Void> supprimer(@PathVariable Long id, Authentication auth) {
+        annonceService.supprimer(id, auth.getName());
         return ResponseEntity.noContent().build();
     }
 }

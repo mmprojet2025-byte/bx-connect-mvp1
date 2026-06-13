@@ -14,14 +14,11 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-
 @Component
 @RequiredArgsConstructor
 public class SuperAdminBootstrap implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(SuperAdminBootstrap.class);
-    private static final String DEFAULT_BOOTSTRAP_PASSWORD = "ChangeMe123!";
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -30,7 +27,7 @@ public class SuperAdminBootstrap implements ApplicationRunner {
     @Value("${bx.super-admin.email:superadmin@bx-connect.local}")
     private String email;
 
-    @Value("${bx.super-admin.password:ChangeMe123!}")
+    @Value("${bx.super-admin.password:}")
     private String password;
 
     @Value("${bx.super-admin.prenom:System}")
@@ -39,14 +36,14 @@ public class SuperAdminBootstrap implements ApplicationRunner {
     @Value("${bx.super-admin.nom:SuperAdmin}")
     private String nom;
 
-    @Value("${spring.profiles.active:}")
-    private String activeProfiles;
-
     @Override
     public void run(ApplicationArguments args) {
-        verifierMotDePasseBootstrap();
-
         if (userRepository.existsByRole(Role.SUPER_ADMIN)) {
+            return;
+        }
+
+        if (password == null || password.isBlank()) {
+            log.warn("BX_SUPER_ADMIN_PASSWORD absent : aucun SUPER_ADMIN n'est cree automatiquement.");
             return;
         }
 
@@ -70,28 +67,5 @@ public class SuperAdminBootstrap implements ApplicationRunner {
                 "BOOTSTRAP_SUPER_ADMIN_CREATED",
                 saved,
                 "Creation automatique du premier SUPER_ADMIN au demarrage.");
-    }
-
-    private void verifierMotDePasseBootstrap() {
-        if (!DEFAULT_BOOTSTRAP_PASSWORD.equals(password)) {
-            return;
-        }
-
-        if (isProdProfileActive()) {
-            throw new IllegalStateException(
-                    "SECURITE CRITIQUE : le mot de passe bootstrap SUPER_ADMIN par defaut est interdit en profil prod. "
-                            + "Definissez BX_SUPER_ADMIN_PASSWORD avec une valeur forte.");
-        }
-
-        log.warn("========================================================================");
-        log.warn("SECURITE : le mot de passe bootstrap SUPER_ADMIN par defaut est utilise.");
-        log.warn("Changez BX_SUPER_ADMIN_PASSWORD avant toute demonstration ou mise en ligne.");
-        log.warn("========================================================================");
-    }
-
-    private boolean isProdProfileActive() {
-        return Arrays.stream(activeProfiles.split(","))
-                .map(String::trim)
-                .anyMatch("prod"::equalsIgnoreCase);
     }
 }

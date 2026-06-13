@@ -40,15 +40,19 @@ public class PrestationController {
     // GET /api/prestations/groupe/{id} — Prestations d'un groupe (référent)
     @GetMapping("/groupe/{groupeId}")
     @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN')")
-    public ResponseEntity<List<Map<String, Object>>> prestationsGroupe(@PathVariable Long groupeId) {
-        return ResponseEntity.ok(prestationService.prestationsGroupe(groupeId));
+    public ResponseEntity<List<Map<String, Object>>> prestationsGroupe(
+            @PathVariable Long groupeId,
+            Authentication auth) {
+        return ResponseEntity.ok(prestationService.prestationsGroupe(groupeId, auth.getName()));
     }
 
     // GET /api/prestations/groupe/{id}/en-attente — En attente de validation
     @GetMapping("/groupe/{groupeId}/en-attente")
     @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN')")
-    public ResponseEntity<List<Map<String, Object>>> enAttente(@PathVariable Long groupeId) {
-        return ResponseEntity.ok(prestationService.prestationsEnAttente(groupeId));
+    public ResponseEntity<List<Map<String, Object>>> enAttente(
+            @PathVariable Long groupeId,
+            Authentication auth) {
+        return ResponseEntity.ok(prestationService.prestationsEnAttente(groupeId, auth.getName()));
     }
 
     // PATCH /api/prestations/{id}/valider — Référent valide

@@ -6,7 +6,7 @@ import api from '../../api/axios';
 import AppIcon from '../../components/ui/AppIcons';
 
 export default function Annonces() {
-  const { isAuthenticated, isAdmin, isReferent } = useAuth();
+  const { user, isAuthenticated, isAdmin, isReferent } = useAuth();
   const [annonces, setAnnonces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -14,7 +14,7 @@ export default function Annonces() {
   const [showForm, setShowForm] = useState(false);
   const [mesGroupes, setMesGroupes] = useState([]);
   const [form, setForm] = useState({
-    titre: '', contenu: '', type: 'GLOBALE', groupeId: null, epinglee: false
+    titre: '', contenu: '', type: isReferent ? 'GROUPE' : 'GLOBALE', groupeId: null, epinglee: false
   });
 
   const peutPublier = isAdmin || isReferent;
@@ -22,7 +22,7 @@ export default function Annonces() {
   useEffect(() => {
     fetchAnnonces();
     if (isReferent) fetchMesGroupes();
-  }, []);
+  }, [isAuthenticated, isReferent]);
 
   const fetchAnnonces = async () => {
     try {
@@ -37,19 +37,34 @@ export default function Annonces() {
     try {
       const res = await api.get('/groupes/referent/mes-groupes');
       setMesGroupes(res.data);
+      if (res.data.length > 0) {
+        setForm(prev => ({ ...prev, type: 'GROUPE', groupeId: prev.groupeId || res.data[0].id }));
+      }
     } catch {}
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage(''); setError('');
+    if (isReferent && !form.groupeId) {
+      setError('Aucun groupe référent disponible pour publier cette annonce.');
+      return;
+    }
     try {
-      const payload = { ...form };
-      if (form.type === 'GLOBALE') payload.groupeId = null;
+      const payload = isReferent
+        ? { ...form, type: 'GROUPE', epinglee: false }
+        : { ...form };
+      if (!isReferent && form.type === 'GLOBALE') payload.groupeId = null;
       await api.post('/annonces', payload);
       setMessage('Annonce publiée !');
       setShowForm(false);
-      setForm({ titre: '', contenu: '', type: 'GLOBALE', groupeId: null, epinglee: false });
+      setForm({
+        titre: '',
+        contenu: '',
+        type: isReferent ? 'GROUPE' : 'GLOBALE',
+        groupeId: isReferent && mesGroupes.length > 0 ? mesGroupes[0].id : null,
+        epinglee: false
+      });
       fetchAnnonces();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
@@ -176,7 +191,7 @@ export default function Annonces() {
                       {a.type === 'GLOBALE' ? 'Global' : a.type === 'GROUPE' ? a.groupeNom : 'Système'}
                     </span>
                   </div>
-                  {peutPublier && (
+                  {(isAdmin || (isReferent && a.auteurEmail === user?.email)) && (
                     <div className="flex gap-2">
                       {isAdmin && (
                         <button onClick={() => handleEpingler(a.id)}

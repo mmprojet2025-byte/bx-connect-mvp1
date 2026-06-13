@@ -8,6 +8,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -53,10 +55,14 @@ public class StripeController {
     // GET /api/stripe/session/{sessionId}
     @GetMapping("/session/{sessionId}")
     @PreAuthorize("hasAnyRole('MEMBRE', 'PARTENAIRE', 'REFERENT', 'ADMIN')")
-    public ResponseEntity<?> verifierSession(@PathVariable String sessionId) {
+    public ResponseEntity<?> verifierSession(
+            @PathVariable String sessionId,
+            Authentication auth) {
         try {
-            PaiementResponse response = stripeService.verifierSession(sessionId);
+            PaiementResponse response = stripeService.verifierSession(sessionId, auth.getName());
             return ResponseEntity.ok(response);
+        } catch (AccessDeniedException e) {
+            throw e;
         } catch (StripeException e) {
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                     .body(Map.of("error", "Erreur Stripe", "message", e.getMessage()));

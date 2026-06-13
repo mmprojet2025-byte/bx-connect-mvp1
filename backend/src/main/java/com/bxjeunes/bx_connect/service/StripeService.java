@@ -11,6 +11,7 @@ import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
 import com.stripe.param.checkout.SessionCreateParams;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -120,22 +121,17 @@ public class StripeService {
     }
 
     // ─── Vérifier le statut d'une session Stripe ─────────────────────────────
-    public PaiementResponse verifierSession(String sessionId) throws StripeException {
-        Session session = Session.retrieve(sessionId);
-
+    public PaiementResponse verifierSession(String sessionId, String emailUtilisateur) throws StripeException {
         SoutienFinancier soutien = soutienRepo.findByStripeSessionId(sessionId)
                 .orElseThrow(() -> new RuntimeException("Soutien introuvable pour cette session"));
 
-        if ("complete".equals(session.getStatus()) ||
-            "paid".equals(session.getPaymentStatus())) {
-            soutien.setStatutPaiement(StatutPaiement.PAYE);
-            soutien.setStripePaymentIntentId(session.getPaymentIntent());
-            soutien.setDatePaiement(LocalDateTime.now());
-        } else if ("expired".equals(session.getStatus())) {
-            soutien.setStatutPaiement(StatutPaiement.ANNULE);
+        if (soutien.getDonateur() == null
+                || !emailUtilisateur.equals(soutien.getDonateur().getEmail())) {
+            throw new AccessDeniedException("Cette session Stripe ne vous appartient pas.");
         }
 
-        return PaiementResponse.fromEntity(soutienRepo.save(soutien));
+        // Seul le webhook Stripe signé est autorisé à modifier le statut du paiement.
+        return PaiementResponse.fromEntity(soutien);
     }
 
     // ─── Webhook Stripe (mise à jour automatique du statut) ──────────────────

@@ -76,6 +76,20 @@ class SuperAdminBootstrapTest {
     }
 
     @Test
+    @DisplayName("Le bootstrap ne cree rien sans BX_SUPER_ADMIN_PASSWORD")
+    void bootstrap_ne_cree_rien_sans_mot_de_passe() {
+        ReflectionTestUtils.setField(bootstrap, "password", "");
+        when(userRepository.existsByRole(Role.SUPER_ADMIN)).thenReturn(false);
+
+        bootstrap.run(null);
+
+        verify(userRepository, never()).existsByEmail(any());
+        verify(passwordEncoder, never()).encode(any());
+        verify(userRepository, never()).save(any(User.class));
+        verify(auditLogService, never()).logSystem(any(), any(), any());
+    }
+
+    @Test
     @DisplayName("Le bootstrap refuse de promouvoir un email deja utilise")
     void bootstrap_refuse_email_deja_utilise() {
         when(userRepository.existsByRole(Role.SUPER_ADMIN)).thenReturn(false);

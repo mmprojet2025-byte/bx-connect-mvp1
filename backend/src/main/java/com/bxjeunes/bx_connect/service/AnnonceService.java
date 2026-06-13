@@ -2,8 +2,11 @@ package com.bxjeunes.bx_connect.service;
 
 import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.*;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,20 +42,28 @@ public class AnnonceService {
         annonce.setContenu(request.get("contenu").toString());
         annonce.setAuteur(auteur);
 
-        String type = request.getOrDefault("type", "GLOBALE").toString();
-        annonce.setType(type);
-
-        // Si annonce de groupe
-        if (request.containsKey("groupeId") && request.get("groupeId") != null) {
+        if (auteur.getRole() == Role.REFERENT) {
+            if (!request.containsKey("groupeId") || request.get("groupeId") == null) {
+                throw new AccessDeniedException("Un référent ne peut pas créer d'annonce globale.");
+            }
             Long groupeId = Long.valueOf(request.get("groupeId").toString());
-            Groupe groupe = groupeRepository.findById(groupeId)
-                    .orElseThrow(() -> new RuntimeException("Groupe introuvable"));
+            Groupe groupe = chargerGroupe(groupeId);
+            verifierReferentDuGroupe(auteur, groupe);
             annonce.setGroupe(groupe);
             annonce.setType("GROUPE");
-        }
-
-        if (request.containsKey("epinglee")) {
-            annonce.setEpinglee(Boolean.parseBoolean(request.get("epinglee").toString()));
+            annonce.setEpinglee(false);
+        } else if (auteur.getRole() == Role.ADMIN) {
+            if (request.containsKey("groupeId") && request.get("groupeId") != null) {
+                annonce.setGroupe(chargerGroupe(Long.valueOf(request.get("groupeId").toString())));
+                annonce.setType("GROUPE");
+            } else {
+                annonce.setType("GLOBALE");
+            }
+            if (request.containsKey("epinglee")) {
+                annonce.setEpinglee(Boolean.parseBoolean(request.get("epinglee").toString()));
+            }
+        } else {
+            throw new AccessDeniedException("Seuls les administrateurs et référents peuvent créer une annonce.");
         }
 
         return toMap(annonceRepository.save(annonce));
@@ -63,19 +74,32 @@ public class AnnonceService {
         User user = userRepository.findByEmail(emailUser)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
 
-        // Trouver le groupe du membre
-        List<MembreGroupe> memberships = membreGroupeRepository.findByUserId(user.getId());
-
-        if (memberships.isEmpty()) {
-            // Pas de groupe → seulement les annonces globales
-            return annonceRepository.findByTypeOrderByEpingleeDescDateCreationDesc("GLOBALE")
+        if (user.getRole() == Role.ADMIN) {
+            return annonceRepository.findAll()
                     .stream().map(this::toMap).collect(Collectors.toList());
         }
 
-        // Annonces globales + annonces de son groupe
-        Long groupeId = memberships.get(0).getGroupe().getId();
-        return annonceRepository.findAnnoncesVisibles(groupeId)
-                .stream().map(this::toMap).collect(Collectors.toList());
+        if (user.getRole() == Role.REFERENT) {
+            List<Annonce> annonces = new ArrayList<>(
+                    annonceRepository.findByTypeOrderByEpingleeDescDateCreationDesc("GLOBALE"));
+            for (Groupe groupe : groupeRepository.findByReferentId(user.getId())) {
+                annonces.addAll(annonceRepository
+                        .findByGroupeIdOrderByEpingleeDescDateCreationDesc(groupe.getId()));
+            }
+            annonces.sort(Comparator.comparing(Annonce::isEpinglee).reversed()
+                    .thenComparing(Annonce::getDateCreation, Comparator.reverseOrder()));
+            return annonces.stream().map(this::toMap).collect(Collectors.toList());
+        }
+
+        // Trouver le groupe du membre
+        return membreGroupeRepository.findFirstByUserIdAndStatut(user.getId(), StatutMembre.ACCEPTE)
+                .map(membership -> annonceRepository.findAnnoncesVisibles(membership.getGroupe().getId())
+                        .stream().map(this::toMap).collect(Collectors.toList()))
+                .orElseGet(() -> {
+            // Pas de groupe → seulement les annonces globales
+                    return annonceRepository.findByTypeOrderByEpingleeDescDateCreationDesc("GLOBALE")
+                            .stream().map(this::toMap).collect(Collectors.toList());
+                });
     }
 
     // ─── Annonces globales (public) ───────────────────────────────────────────
@@ -85,7 +109,19 @@ public class AnnonceService {
     }
 
     // ─── Annonces d'un groupe ─────────────────────────────────────────────────
-    public List<Map<String, Object>> annoncesGroupe(Long groupeId) {
+    public List<Map<String, Object>> annoncesGroupe(Long groupeId, String emailUtilisateur) {
+        User utilisateur = chargerUtilisateur(emailUtilisateur);
+        Groupe groupe = chargerGroupe(groupeId);
+
+        if (utilisateur.getRole() == Role.REFERENT) {
+            verifierReferentDuGroupe(utilisateur, groupe);
+        } else if (utilisateur.getRole() != Role.ADMIN) {
+            membreGroupeRepository.findByUserIdAndGroupeId(utilisateur.getId(), groupeId)
+                    .filter(m -> m.getStatut() == StatutMembre.ACCEPTE)
+                    .orElseThrow(() -> new AccessDeniedException(
+                            "Vous ne pouvez pas consulter les annonces de ce groupe."));
+        }
+
         return annonceRepository.findByGroupeIdOrderByEpingleeDescDateCreationDesc(groupeId)
                 .stream().map(this::toMap).collect(Collectors.toList());
     }
@@ -105,8 +141,39 @@ public class AnnonceService {
     }
 
     // ─── Supprimer une annonce ────────────────────────────────────────────────
-    public void supprimer(Long annonceId) {
-        annonceRepository.deleteById(annonceId);
+    public void supprimer(Long annonceId, String emailUtilisateur) {
+        User utilisateur = chargerUtilisateur(emailUtilisateur);
+        Annonce annonce = annonceRepository.findById(annonceId)
+                .orElseThrow(() -> new RuntimeException("Annonce introuvable"));
+
+        if (utilisateur.getRole() != Role.ADMIN) {
+            if (utilisateur.getRole() != Role.REFERENT
+                    || annonce.getAuteur() == null
+                    || !utilisateur.getEmail().equals(annonce.getAuteur().getEmail())
+                    || annonce.getGroupe() == null) {
+                throw new AccessDeniedException("Vous ne pouvez supprimer que vos annonces de groupe.");
+            }
+            verifierReferentDuGroupe(utilisateur, annonce.getGroupe());
+        }
+
+        annonceRepository.delete(annonce);
+    }
+
+    private User chargerUtilisateur(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+    }
+
+    private Groupe chargerGroupe(Long groupeId) {
+        return groupeRepository.findById(groupeId)
+                .orElseThrow(() -> new RuntimeException("Groupe introuvable"));
+    }
+
+    private void verifierReferentDuGroupe(User utilisateur, Groupe groupe) {
+        User referent = groupe.getReferent();
+        if (referent == null || !utilisateur.getEmail().equals(referent.getEmail())) {
+            throw new AccessDeniedException("Un référent ne peut gérer que les annonces de ses groupes.");
+        }
     }
 
     // ─── Convertir en Map ─────────────────────────────────────────────────────
@@ -123,6 +190,7 @@ public class AnnonceService {
             m.put("auteurPrenom", a.getAuteur().getPrenom());
             m.put("auteurNom",    a.getAuteur().getNom());
             m.put("auteurRole",   a.getAuteur().getRole());
+            m.put("auteurEmail",  a.getAuteur().getEmail());
         }
         if (a.getGroupe() != null) {
             m.put("groupeId",  a.getGroupe().getId());

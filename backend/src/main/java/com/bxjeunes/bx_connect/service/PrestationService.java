@@ -2,6 +2,7 @@ package com.bxjeunes.bx_connect.service;
 
 import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.*;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -79,13 +80,21 @@ public class PrestationService {
     }
 
     // ─── Prestations d'un groupe (RÉFÉRENT) ───────────────────────────────────
-    public List<Map<String, Object>> prestationsGroupe(Long groupeId) {
+    public List<Map<String, Object>> prestationsGroupe(Long groupeId, String emailUtilisateur) {
+        User utilisateur = chargerUtilisateur(emailUtilisateur);
+        Groupe groupe = chargerGroupe(groupeId);
+        verifierAccesGroupe(utilisateur, groupe);
+
         return prestationRepository.findByGroupeId(groupeId)
                 .stream().map(this::toMap).collect(Collectors.toList());
     }
 
     // ─── Prestations en attente d'un groupe (RÉFÉRENT) ────────────────────────
-    public List<Map<String, Object>> prestationsEnAttente(Long groupeId) {
+    public List<Map<String, Object>> prestationsEnAttente(Long groupeId, String emailUtilisateur) {
+        User utilisateur = chargerUtilisateur(emailUtilisateur);
+        Groupe groupe = chargerGroupe(groupeId);
+        verifierAccesGroupe(utilisateur, groupe);
+
         return prestationRepository.findByGroupeIdAndStatut(groupeId, StatutPrestation.EN_ATTENTE)
                 .stream().map(this::toMap).collect(Collectors.toList());
     }
@@ -97,6 +106,7 @@ public class PrestationService {
 
         PrestationBenevole prestation = prestationRepository.findById(prestationId)
                 .orElseThrow(() -> new RuntimeException("Prestation introuvable"));
+        verifierAccesGroupe(referent, prestation.getGroupe());
 
         prestation.setStatut(StatutPrestation.VALIDEE);
         prestation.setReferent(referent);
@@ -122,6 +132,7 @@ public class PrestationService {
 
         PrestationBenevole prestation = prestationRepository.findById(prestationId)
                 .orElseThrow(() -> new RuntimeException("Prestation introuvable"));
+        verifierAccesGroupe(referent, prestation.getGroupe());
 
         prestation.setStatut(StatutPrestation.REFUSEE);
         prestation.setReferent(referent);
@@ -168,6 +179,29 @@ public class PrestationService {
     public List<Map<String, Object>> toutesLesPrestations() {
         return prestationRepository.findAll()
                 .stream().map(this::toMap).collect(Collectors.toList());
+    }
+
+    private User chargerUtilisateur(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+    }
+
+    private Groupe chargerGroupe(Long groupeId) {
+        return groupeRepository.findById(groupeId)
+                .orElseThrow(() -> new RuntimeException("Groupe introuvable"));
+    }
+
+    private void verifierAccesGroupe(User utilisateur, Groupe groupe) {
+        if (utilisateur.getRole() == Role.ADMIN) {
+            return;
+        }
+
+        User referent = groupe != null ? groupe.getReferent() : null;
+        if (utilisateur.getRole() != Role.REFERENT
+                || referent == null
+                || !utilisateur.getEmail().equals(referent.getEmail())) {
+            throw new AccessDeniedException("Vous ne pouvez gérer que les prestations de vos groupes.");
+        }
     }
 
     // ─── Convertir en Map ─────────────────────────────────────────────────────
