@@ -169,9 +169,6 @@ function getContextItems(role, module) {
   if (module === 'messages') {
     return [
       link('Conversations', role === 'REFERENT' ? '/referent/messagerie' : '/messagerie', 'MessageCircle'),
-      disabled('Canaux', 'Hash'),
-      disabled('Favoris', 'Star'),
-      disabled('Archives', 'Archive'),
     ]
   }
 
@@ -183,8 +180,6 @@ function getContextItems(role, module) {
         link('Membres', '/referent/membres', 'User'),
         link('Activités', '/referent/activites', 'Calendar'),
         link('Projets', '/referent/projets', 'Rocket'),
-        disabled('Réunions', 'Calendar'),
-        disabled('Documents', 'FileText'),
       ]
     }
     if (role === 'ADMIN') {
@@ -201,8 +196,6 @@ function getContextItems(role, module) {
       link('Demandes', '/groupes', 'ClipboardList'),
       link('Activités', '/activites', 'Calendar'),
       link('Projets', '/projets', 'Rocket'),
-      disabled('Réunions', 'Calendar'),
-      disabled('Documents', 'FileText'),
     ]
   }
 
@@ -211,7 +204,6 @@ function getContextItems(role, module) {
       link('Toutes les activités', routeForRole(role, 'activities'), 'Calendar'),
       role === 'ADMIN' && link('Créer / publier', '/admin/activites', 'PlusCircle'),
       role === 'REFERENT' && link('Activités de mes groupes', '/referent/activites', 'Users'),
-      disabled('Inscriptions', 'CheckCircle'),
     ].filter(Boolean)
   }
 
@@ -220,23 +212,20 @@ function getContextItems(role, module) {
       link(role === 'PARTENAIRE' ? 'Projets ouverts' : 'Tous les projets', routeForRole(role, 'projects'), 'Rocket'),
       role === 'PARTENAIRE' && link('Mes soutiens', '/partenaire?tab=soutiens', 'Handshake'),
       role === 'ADMIN' && link('Soutiens partenaires', '/admin/soutiens', 'Handshake'),
-      disabled('Documents', 'FileText'),
     ].filter(Boolean)
   }
 
   if (module === 'notifications') {
     return [
       link('Notifications', '/notifications', 'Bell'),
-      disabled('Non lues', 'TriangleAlert'),
-      disabled('Archivées', 'Archive'),
     ]
   }
 
   if (module === 'profile') {
     return [
-      link('Informations', '/profil', 'User'),
-      link('Paramètres', '/profil', 'Settings'),
-      link('Sécurité', '/profil', 'Shield'),
+      link('Informations', '/profil#infos', 'User'),
+      link('Paramètres', '/profil#parametres', 'Settings'),
+      link('Sécurité', '/profil#securite', 'Shield'),
     ]
   }
 
@@ -295,10 +284,6 @@ function link(label, to, icon) {
   return { label, to, icon }
 }
 
-function disabled(label, icon) {
-  return { label, icon, disabledLabel: 'Bientôt disponible' }
-}
-
 function ModuleLink({ item, active }) {
   return (
     <Link
@@ -349,6 +334,10 @@ function ContextLink({ item, location }) {
 
 function isActive(to, location) {
   const [path, query] = to.split('?')
+  if (path.includes('#')) {
+    const [hashPath, hash] = path.split('#')
+    return location.pathname === hashPath && location.hash === `#${hash}`
+  }
   if (query) return location.pathname === path && location.search === `?${query}`
   return location.pathname === path || location.pathname.startsWith(`${path}/`)
 }

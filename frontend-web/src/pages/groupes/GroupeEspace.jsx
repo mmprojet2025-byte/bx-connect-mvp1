@@ -17,7 +17,6 @@ const TABS = [
   { id: 'membres', label: 'Membres', icon: 'Users' },
   { id: 'activites', label: 'Activités', icon: 'Calendar' },
   { id: 'projets', label: 'Projets', icon: 'Rocket' },
-  { id: 'ressources', label: 'Ressources', icon: 'FileText' },
   { id: 'infos', label: 'Informations', icon: 'BookOpen' },
 ]
 
@@ -127,7 +126,6 @@ export default function GroupeEspace() {
               {activeTab === 'membres' && <MembersPanel groupe={groupe} referent={referent} t={t} />}
               {activeTab === 'activites' && <LinkedItemsPanel type="activites" items={activites} language={i18n.language} t={t} />}
               {activeTab === 'projets' && <LinkedItemsPanel type="projets" items={projets} language={i18n.language} t={t} />}
-              {activeTab === 'ressources' && <QuietUnavailable icon="FileText" title="Ressources" description="Les documents du groupe apparaîtront ici dès qu’ils seront disponibles." />}
               {activeTab === 'infos' && <InfoPanel groupe={groupe} referent={referent} t={t} />}
             </section>
           </>
@@ -207,16 +205,6 @@ function InfoPanel({ groupe, referent, t }) {
       <InfoTile icon="User" title="Référent" value={referent || 'Non assigné'} />
       <InfoTile icon="Users" title="Membres" value={t('groups.members_count', { count: groupe.nombreMembres ?? 0 })} />
       <InfoTile icon="Folder" title="Catégorie" value={groupe.categorie || groupe.theme || 'Non renseignée'} />
-    </div>
-  )
-}
-
-function QuietUnavailable({ icon, title, description }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
-      <AppIcon name={icon} className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-      <h2 className="font-black text-slate-700">{title}</h2>
-      <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">{description}</p>
     </div>
   )
 }

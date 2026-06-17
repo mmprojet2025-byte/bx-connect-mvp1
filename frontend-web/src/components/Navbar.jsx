@@ -78,7 +78,9 @@ export default function Navbar() {
     isPartenaire,
     t,
   })
-  const notificationItem = navigation.communication.find(item => item.to === '/notifications')
+  const notificationItem = isAuthenticated
+    ? { to: '/notifications', label: t('nav.notifications'), icon: 'Bell' }
+    : navigation.communication.find(item => item.to === '/notifications')
   const communicationItems = navigation.communication.filter(item => item.to !== '/notifications')
   const homeRoute = isAuthenticated ? getDefaultRouteForRole(user?.role) : '/'
 
@@ -116,42 +118,46 @@ export default function Navbar() {
         </Link>
 
         <div className="hidden items-center justify-center gap-1 lg:flex">
-          {navigation.space && (
-            <NavItem
-              item={navigation.space}
-              active={isLinkActive(navigation.space.to, location)}
-            />
-          )}
+          {!isAuthenticated && (
+            <>
+              {navigation.space && (
+                <NavItem
+                  item={navigation.space}
+                  active={isLinkActive(navigation.space.to, location)}
+                />
+              )}
 
-          {navigation.management.length > 0 && (
-            <Dropdown
-              name="management"
-              label={t('nav.management')}
-              icon="Folder"
-              items={navigation.management}
-              open={openDropdown === 'management'}
-              active={navigation.management.some(item => isLinkActive(item.to, location))}
-              onToggle={toggleDropdown}
-              location={location}
-            />
-          )}
+              {navigation.management.length > 0 && (
+                <Dropdown
+                  name="management"
+                  label={t('nav.management')}
+                  icon="Folder"
+                  items={navigation.management}
+                  open={openDropdown === 'management'}
+                  active={navigation.management.some(item => isLinkActive(item.to, location))}
+                  onToggle={toggleDropdown}
+                  location={location}
+                />
+              )}
 
-          {communicationItems.length > 0 && (
-            <Dropdown
-              name="communication"
-              label={t('nav.communication')}
-              icon="MessageCircle"
-              items={communicationItems}
-              open={openDropdown === 'communication'}
-              active={communicationItems.some(item => isLinkActive(item.to, location))}
-              onToggle={toggleDropdown}
-              location={location}
-            />
+              {communicationItems.length > 0 && (
+                <Dropdown
+                  name="communication"
+                  label={t('nav.communication')}
+                  icon="MessageCircle"
+                  items={communicationItems}
+                  open={openDropdown === 'communication'}
+                  active={communicationItems.some(item => isLinkActive(item.to, location))}
+                  onToggle={toggleDropdown}
+                  location={location}
+                />
+              )}
+            </>
           )}
         </div>
 
         <div className="flex items-center justify-end gap-1">
-          <div className="hidden items-center gap-1 lg:flex">
+          <div className={`${isAuthenticated ? 'flex' : 'hidden lg:flex'} items-center gap-1`}>
             {notificationItem && (
               <NotificationLink
                 item={notificationItem}
@@ -178,20 +184,22 @@ export default function Navbar() {
             />
           </div>
 
-          <button
-            type="button"
-            onClick={() => setMobileOpen(open => !open)}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 lg:hidden"
-            aria-expanded={mobileOpen}
-            aria-controls="mobile-navigation"
-            aria-label={t('nav.openMenu')}
-          >
-            {mobileOpen ? t('nav.close') : t('nav.menu')}
-          </button>
+          {!isAuthenticated && (
+            <button
+              type="button"
+              onClick={() => setMobileOpen(open => !open)}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 lg:hidden"
+              aria-expanded={mobileOpen}
+              aria-controls="mobile-navigation"
+              aria-label={t('nav.openMenu')}
+            >
+              {mobileOpen ? t('nav.close') : t('nav.menu')}
+            </button>
+          )}
         </div>
       </div>
 
-      {mobileOpen && (
+      {mobileOpen && !isAuthenticated && (
         <div id="mobile-navigation" className="mx-auto max-w-7xl border-t border-slate-100 py-3 lg:hidden">
           <div className="grid gap-2">
             {navigation.space && (

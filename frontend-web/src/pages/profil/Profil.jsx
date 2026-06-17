@@ -1,20 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import ImageUpload from '../../components/ImageUpload';
 import AppIcon from '../../components/ui/AppIcons';
-import PageHeader from '../../components/ui/PageHeader';
 import StatusBadge from '../../components/StatusBadge';
 import defaultAvatar from '../../assets/images/avatars/default-avatar.png';
 
 export default function Profil() {
-  const navigate = useNavigate();
-  const { logout } = useAuth();
   const { t, i18n } = useTranslation();
 
   const [profil, setProfil] = useState(null);
@@ -81,11 +76,6 @@ export default function Profil() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
-
   if (loading) return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
@@ -100,12 +90,20 @@ export default function Profil() {
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-10">
-        <PageHeader
-          eyebrow={t('profile.title')}
-          title={`${profil?.prenom || ''} ${profil?.nom || ''}`.trim() || t('profile.title')}
-          description={profil?.email}
-        />
+      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
+        <header className="mb-5 rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-wide text-blue-700">{t('profile.title')}</p>
+              <h1 className="mt-1 text-2xl font-black text-slate-950">{t('profile.accountSettings', { defaultValue: 'Paramètres du compte' })}</h1>
+              <p className="mt-1 text-sm text-slate-500">{t('profile.accountSettingsDesc', { defaultValue: 'Gérez vos informations, votre sécurité et vos préférences.' })}</p>
+            </div>
+            <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-800">
+              <AppIcon name={profil?.role === 'SUPER_ADMIN' ? 'Shield' : 'User'} className="h-3.5 w-3.5" />
+              {t(`roles.${profil?.role}`, profil?.role)}
+            </span>
+          </div>
+        </header>
 
         {message && (
           <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">
@@ -118,10 +116,10 @@ export default function Profil() {
           </div>
         )}
 
-        <div className="grid lg:grid-cols-[1fr_340px] gap-6">
+        <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
           {/* Carte profil */}
-          <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm mb-6">
-            <div className="flex gap-6 items-start flex-wrap">
+          <div id="infos" className="rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-sm">
+            <div className="flex gap-5 items-start flex-wrap">
 
               {/* Avatar */}
               <div className="flex flex-col items-center gap-2">
@@ -140,13 +138,9 @@ export default function Profil() {
               <div className="flex-1 min-w-0">
               {!editMode ? (
                 <>
-                  <h2 className="text-2xl font-bold text-slate-950 mb-2">
+                  <h2 className="text-xl font-black text-slate-950 mb-1">
                     {profil?.prenom} {profil?.nom}
                   </h2>
-                  <span className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
-                    <AppIcon name={profil?.role === 'SUPER_ADMIN' ? 'Shield' : 'User'} className="h-3.5 w-3.5" />
-                    {t(`roles.${profil?.role}`, profil?.role)}
-                  </span>
                   <div className="grid sm:grid-cols-2 gap-3 mb-5">
                     <ProfileInfo label={t('users.email')} value={profil?.email} />
                     <ProfileInfo label={t('profile.language')} value={languageLabel(profil?.languePreference, t)} />
@@ -215,14 +209,14 @@ export default function Profil() {
           </div>
 
           {/* Sécurité — Changer mot de passe */}
-          <aside className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm mb-6 h-fit">
+          <aside id="securite" className="rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-sm h-fit">
           <div className="flex items-start gap-3 mb-4">
             <div className="h-11 w-11 rounded-2xl bg-orange-100 text-orange-700 flex items-center justify-center">
               <AppIcon name="Lock" className="h-5 w-5" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-950">{t('profile.security')}</h3>
-              <p className="text-xs text-slate-500 mt-1">{profil?.email}</p>
+              <p className="text-xs text-slate-500 mt-1">{t('profile.securityDesc', { defaultValue: 'Mot de passe et accès au compte.' })}</p>
             </div>
           </div>
           {!showPasswordForm ? (
@@ -268,16 +262,18 @@ export default function Profil() {
           </aside>
         </div>
 
-        {/* Déconnexion */}
-        <button
-          onClick={handleLogout}
-          className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-red-500"
-        >
-          <AppIcon name="LogOut" className="h-4 w-4" />
-          {t('nav.logout')}
-        </button>
+        <section id="parametres" className="mt-5 rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-sm">
+          <h2 className="flex items-center gap-2 font-black text-slate-950">
+            <AppIcon name="Settings" className="h-5 w-5 text-blue-700" />
+            {t('profile.preferences', { defaultValue: 'Préférences' })}
+          </h2>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <PreferenceItem icon="Globe" title={t('profile.language')} value={languageLabel(profil?.languePreference, t)} action={() => setEditMode(true)} actionLabel={t('profile.edit_btn')} />
+            <PreferenceItem icon="Bell" title={t('nav.notifications')} value={t('profile.notificationPreferencesDesc', { defaultValue: 'Les préférences détaillées seront disponibles prochainement.' })} />
+          </div>
+        </section>
 
-        <section className="mt-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+        <section className="mt-5 rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-sm">
           <h2 className="flex items-center gap-2 font-black text-slate-950">
             <AppIcon name="Shield" className="h-5 w-5 text-blue-700" />
             {t('legal.profileTitle')}
@@ -320,6 +316,27 @@ function ProfileInfo({ label, value }) {
       <div className="mt-1 text-sm font-semibold text-slate-700 break-words">{value || '—'}</div>
     </div>
   );
+}
+
+function PreferenceItem({ icon, title, value, action, actionLabel }) {
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+      <div className="flex items-start gap-3">
+        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+          <AppIcon name={icon} className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-black text-slate-950">{title}</span>
+          <span className="mt-0.5 block text-sm text-slate-500">{value}</span>
+          {action && (
+            <button type="button" onClick={action} className="mt-3 text-xs font-black text-blue-700 hover:underline">
+              {actionLabel}
+            </button>
+          )}
+        </span>
+      </div>
+    </div>
+  )
 }
 
 function languageLabel(value, t) {
