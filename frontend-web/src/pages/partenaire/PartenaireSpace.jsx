@@ -10,6 +10,7 @@ import ProjectVisibilityBadge from '../../components/ProjectVisibilityBadge';
 import { SUPPORT_STATUS_STYLES, supportStatusLabel } from '../../utils/supportStatus';
 import PartnerLogo from '../../components/PartnerLogo';
 import { CollaborativeDashboardLayout } from '../../components/dashboard/CollaborativeDashboard';
+import ActivityFeed from '../../components/dashboard/ActivityFeed';
 
 const PARTNER_TABS = new Set(['dashboard', 'projets', 'activites', 'soutiens']);
 
@@ -255,39 +256,16 @@ export default function PartenaireSpace() {
               t={t}
             />
 
-            <div className="rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-lg shadow-slate-900/5">
-              <h2 className="flex items-center gap-2 text-lg font-black text-slate-950 mb-4">
-                <AppIcon name="Wallet" className="h-5 w-5 text-orange-600" />
-                {t('partnerSpace.latestSupports', { defaultValue: 'Historique récent' })}
-              </h2>
+            <div>
               {sectionErrors.soutiens && <SectionLoadError message={sectionErrors.soutiens} />}
-              {mesSoutiens.length === 0 ? (
-                <div className="text-center py-6 text-gray-400">
-                  <AppIcon name="Wallet" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
-                  <p className="text-sm">{t('partnerSpace.noSupports')}</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {mesSoutiens.slice(0, 5).map(s => (
-                    <div key={s.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
-                      <div>
-                        <p className="text-sm font-semibold text-blue-900">
-                          {s.projetTitre || s.activiteTitre || t('partnerSpace.supportFallback')}
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          {new Date(s.dateCreation).toLocaleDateString(i18n.language)}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-orange-600">{s.montant} €</p>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          SUPPORT_STATUS_STYLES[s.statutPaiement] || 'bg-slate-100 text-slate-700'
-                        }`}>{supportStatusLabel(s.statutPaiement, t)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <ActivityFeed
+                title={t('activityFeed.title', { defaultValue: 'Mon fil d’activité' })}
+                subtitle={t('activityFeed.partnerSubtitle', { defaultValue: 'Soutiens, projets ouverts et activités disponibles.' })}
+                emptyLabel={t('partnerSpace.noSupports')}
+                items={buildPartnerActivityItems({ mesSoutiens, projetsOuverts, activitesOuvertes, t })}
+                language={i18n.language}
+                accent="orange"
+              />
             </div>
           </div>
         )}
@@ -647,6 +625,37 @@ function PartnerActions({ projetsOuverts, activitesOuvertes, mesSoutiens, onSupp
       </div>
     </section>
   );
+}
+
+function buildPartnerActivityItems({ mesSoutiens, projetsOuverts, activitesOuvertes, t }) {
+  const supportItems = mesSoutiens.map(soutien => ({
+    key: `soutien-${soutien.id}`,
+    icon: 'Wallet',
+    title: soutien.projetTitre || soutien.activiteTitre || t('partnerSpace.supportFallback'),
+    description: `${soutien.montant} € · ${supportStatusLabel(soutien.statutPaiement, t)}`,
+    date: soutien.dateCreation || soutien.datePaiement,
+    to: '/partenaire?tab=soutiens',
+  }));
+
+  const projectItems = projetsOuverts.map(projet => ({
+    key: `projet-${projet.id}`,
+    icon: 'Rocket',
+    title: projet.titre,
+    description: projet.budgetDemande ? `${t('partnerSpace.budget')}: ${projet.budgetDemande} €` : t('partnerSpace.openProjects'),
+    date: projet.dateModification || projet.dateCreation,
+    to: '/partenaire?tab=projets',
+  }));
+
+  const activityItems = activitesOuvertes.map(activite => ({
+    key: `activite-${activite.id}`,
+    icon: 'Calendar',
+    title: activite.titre,
+    description: activite.lieu || t('partnerSpace.openActivities'),
+    date: activite.dateModification || activite.dateCreation || activite.dateDebut,
+    to: '/partenaire?tab=activites',
+  }));
+
+  return [...supportItems, ...projectItems, ...activityItems];
 }
 
 function PartnerActionCard({ icon, title, value, description, onClick, highlight = false }) {

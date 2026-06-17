@@ -7,6 +7,7 @@ import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
 import AppIcon from '../../components/ui/AppIcons'
 import { CollaborativeDashboardLayout } from '../../components/dashboard/CollaborativeDashboard'
+import ActivityFeed from '../../components/dashboard/ActivityFeed'
 
 export default function ReferentDashboard() {
   const [stats, setStats] = useState({ groupes: 0, membres: 0, demandes: 0, activites: 0 })
@@ -95,6 +96,17 @@ export default function ReferentDashboard() {
               language={i18n.language}
             />
 
+            <div className="mb-6">
+              <ActivityFeed
+                title={t('activityFeed.title', { defaultValue: 'Mon fil d’activité' })}
+                subtitle={t('activityFeed.referentSubtitle', { defaultValue: 'Demandes, membres, activités et projets liés à vos groupes.' })}
+                emptyLabel={t('activityFeed.empty', { defaultValue: 'Aucune activité récente pour le moment.' })}
+                items={buildReferentActivityItems({ demandes: demandesRecentes, membres: membresRecents, activites, projets, t })}
+                language={i18n.language}
+                accent="teal"
+              />
+            </div>
+
             <section className="mb-6 rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-lg shadow-slate-900/5">
               <SectionHeader
                 icon="Users"
@@ -165,6 +177,46 @@ export default function ReferentDashboard() {
         )}
     </CollaborativeDashboardLayout>
   )
+}
+
+function buildReferentActivityItems({ demandes, membres, activites, projets, t }) {
+  const requestItems = demandes.map(demande => ({
+    key: `demande-${demande.id}`,
+    icon: 'ClipboardList',
+    title: t('referent.requestToReview', { defaultValue: 'Demande à valider' }),
+    description: `${demande.prenom} ${demande.nom} · ${demande.groupeNom}`,
+    date: demande.dateAdhesion || demande.dateCreation,
+    to: '/referent/demandes',
+  }))
+
+  const memberItems = membres.map(membre => ({
+    key: `membre-${membre.groupeNom}-${membre.id}`,
+    icon: 'User',
+    title: t('referent.memberToWelcome', { defaultValue: 'Nouveau membre à accueillir' }),
+    description: `${membre.prenom} ${membre.nom} · ${membre.groupeNom}`,
+    date: membre.dateAdhesion || membre.dateCreation,
+    to: '/referent/membres',
+  }))
+
+  const activityItems = activites.map(activite => ({
+    key: `activite-${activite.id}`,
+    icon: 'Calendar',
+    title: activite.titre,
+    description: activite.statut ? t(`statuses.${activite.statut}`, { defaultValue: activite.statut }) : t('nav.activities'),
+    date: activite.dateModification || activite.dateCreation || activite.dateDebut,
+    to: activite.id ? `/activites/${activite.id}` : '/referent/activites',
+  }))
+
+  const projectItems = projets.map(projet => ({
+    key: `projet-${projet.id}`,
+    icon: 'Rocket',
+    title: projet.titre,
+    description: projet.statut ? t(`statuses.${projet.statut}`, { defaultValue: projet.statut }) : t('nav.projects'),
+    date: projet.dateModification || projet.dateCreation,
+    to: projet.id ? `/projets/${projet.id}` : '/referent/projets',
+  }))
+
+  return [...requestItems, ...memberItems, ...activityItems, ...projectItems]
 }
 
 function ReferentWorkQueue({ demandes, membres, activitesAPublier, projets, t, language }) {

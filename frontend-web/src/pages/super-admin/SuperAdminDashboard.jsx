@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import api from '../../api/axios'
 import AppIcon from '../../components/ui/AppIcons'
 import { CollaborativeDashboardLayout } from '../../components/dashboard/CollaborativeDashboard'
+import ActivityFeed from '../../components/dashboard/ActivityFeed'
 
 export default function SuperAdminDashboard() {
   const { t, i18n } = useTranslation()
@@ -41,15 +42,14 @@ export default function SuperAdminDashboard() {
             </div>
           </section>
 
-          <section className="rounded-[1.5rem] border border-slate-100 bg-white shadow-lg shadow-slate-900/5 overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100">
-              <h2 className="flex items-center gap-2 font-black text-slate-950">
-                <AppIcon name="BarChart" className="h-5 w-5 text-indigo-700" />
-                {t('superAdmin.latestLogs')}
-              </h2>
-            </div>
-            <LogPreview logs={dashboard.derniersLogs || []} t={t} language={i18n.language} />
-          </section>
+          <ActivityFeed
+            title={t('activityFeed.title', { defaultValue: 'Mon fil d’activité' })}
+            subtitle={t('activityFeed.superAdminSubtitle', { defaultValue: 'Actions sensibles, sécurité et activité administrative.' })}
+            emptyLabel={t('audit.noCriticalLog')}
+            items={buildSuperAdminActivityItems({ logs: dashboard.derniersLogs || [], t })}
+            language={i18n.language}
+            accent="indigo"
+          />
         </>
       )}
     </CollaborativeDashboardLayout>
@@ -148,24 +148,15 @@ function SectionHeader({ icon, title, subtitle }) {
   )
 }
 
-function LogPreview({ logs, t, language }) {
-  if (logs.length === 0) {
-    return <p className="text-sm text-slate-400 px-5 py-6">{t('audit.noCriticalLog')}</p>
-  }
-
-  return (
-    <div className="divide-y divide-gray-100">
-      {logs.slice(0, 5).map(log => (
-        <div key={log.id} className="px-5 py-3 text-sm flex flex-col md:flex-row md:items-center md:justify-between gap-1 transition hover:bg-slate-50">
-          <div>
-            <span className="font-semibold text-slate-950">{log.action}</span>
-            <span className="text-slate-500"> · {log.cibleEmail}</span>
-          </div>
-          <span className="text-xs text-slate-400">{formatDate(log.dateAction, language)}</span>
-        </div>
-      ))}
-    </div>
-  )
+function buildSuperAdminActivityItems({ logs, t }) {
+  return logs.map(log => ({
+    key: `log-${log.id}`,
+    icon: 'Shield',
+    title: log.action || t('superAdmin.latestLogs'),
+    description: log.cibleEmail,
+    date: log.dateAction,
+    to: '/super-admin/logs',
+  }))
 }
 
 function Alert({ type, children }) {
@@ -174,8 +165,4 @@ function Alert({ type, children }) {
     : 'bg-green-50 border-green-200 text-green-700'
 
   return <div className={`border px-4 py-3 rounded-xl mb-5 text-sm ${styles}`}>{children}</div>
-}
-
-function formatDate(value, language = 'fr') {
-  return value ? new Date(value).toLocaleString(language) : '-'
 }

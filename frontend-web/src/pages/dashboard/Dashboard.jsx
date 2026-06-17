@@ -5,10 +5,10 @@ import { useAuth } from '../../context/AuthContext'
 import MemberGroupCard from '../../components/member/MemberGroupCard'
 import MemberReferentCard from '../../components/member/MemberReferentCard'
 import MemberActivitiesCard from '../../components/member/MemberActivitiesCard'
-import MemberNotificationsCard from '../../components/member/MemberNotificationsCard'
 import MemberProjectsCard from '../../components/member/MemberProjectsCard'
 import api from '../../api/axios'
 import AppIcon from '../../components/ui/AppIcons'
+import ActivityFeed from '../../components/dashboard/ActivityFeed'
 import {
   CollaborativeDashboardLayout,
   WorkspaceEmpty,
@@ -16,7 +16,7 @@ import {
 } from '../../components/dashboard/CollaborativeDashboard'
 
 export default function Dashboard() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const [dashboard, setDashboard] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -111,12 +111,14 @@ export default function Dashboard() {
               </CompactPanel>
             </section>
 
-            <CompactPanel
-              icon="Bell"
-              title={t('memberDashboard.recentActivity', { defaultValue: 'Activité récente' })}
-            >
-              <MemberNotificationsCard notifications={(dashboard.notifications || []).slice(0, 5)} />
-            </CompactPanel>
+            <ActivityFeed
+              title={t('activityFeed.title', { defaultValue: 'Mon fil d’activité' })}
+              subtitle={t('activityFeed.memberSubtitle', { defaultValue: 'Messages, activités, projets et notifications importantes.' })}
+              emptyLabel={t('activityFeed.empty', { defaultValue: 'Aucune activité récente pour le moment.' })}
+              items={buildMemberActivityItems({ dashboard, groupe, t })}
+              language={i18n.language}
+              accent="blue"
+            />
           </>
         ) : (
           <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-10 text-center">
@@ -128,6 +130,48 @@ export default function Dashboard() {
         )}
     </CollaborativeDashboardLayout>
   )
+}
+
+function buildMemberActivityItems({ dashboard, groupe, t }) {
+  const notifications = (dashboard.notifications || []).map(notification => ({
+    key: `notification-${notification.id}`,
+    icon: notification.lue ? 'Bell' : 'TriangleAlert',
+    title: notification.titre || t('nav.notifications'),
+    description: notification.message,
+    date: notification.dateCreation,
+    to: '/notifications',
+  }))
+
+  const inscriptions = (dashboard.inscriptions || []).map(inscription => ({
+    key: `inscription-${inscription.id || inscription.activiteId || inscription.titre}`,
+    icon: 'Calendar',
+    title: inscription.titre || inscription.activiteTitre || t('memberDashboard.activities.title', { defaultValue: 'Activité à venir' }),
+    description: inscription.dateDebut
+      ? t('activityFeed.activityDate', { date: new Date(inscription.dateDebut).toLocaleDateString('fr-BE'), defaultValue: `Prévue le ${new Date(inscription.dateDebut).toLocaleDateString('fr-BE')}` })
+      : t('memberDashboard.activities.dateToConfirm', { defaultValue: 'Date à confirmer' }),
+    date: inscription.dateInscription || inscription.dateCreation || inscription.dateDebut,
+    to: '/activites',
+  }))
+
+  const projets = (dashboard.projets || []).map(projet => ({
+    key: `projet-${projet.id || projet.titre}`,
+    icon: 'Rocket',
+    title: projet.titre || t('nav.projects'),
+    description: projet.statut ? t(`statuses.${projet.statut}`, { defaultValue: projet.statut }) : t('activityFeed.projectTracked', { defaultValue: 'Projet suivi' }),
+    date: projet.dateModification || projet.dateCreation,
+    to: projet.id ? `/projets/${projet.id}` : '/projets',
+  }))
+
+  const groupItem = groupe && {
+    key: `groupe-${groupe.id || groupe.nom}`,
+    icon: 'Users',
+    title: t('activityFeed.currentGroup', { defaultValue: 'Groupe actuel' }),
+    description: groupe.nom,
+    date: groupe.dateAdhesion || groupe.dateCreation,
+    to: groupe.id ? `/groupes/${groupe.id}` : '/groupes',
+  }
+
+  return [groupItem, ...notifications, ...inscriptions, ...projets]
 }
 
 function MemberPrioritySection({ groupe, inscriptions, notifications, projets, messagerieDisponible, t }) {

@@ -5,6 +5,7 @@ import api from '../../api/axios'
 import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
 import AppIcon from '../../components/ui/AppIcons'
+import ActivityFeed from '../../components/dashboard/ActivityFeed'
 import {
   CollaborativeDashboardLayout,
 } from '../../components/dashboard/CollaborativeDashboard'
@@ -89,20 +90,13 @@ export default function AdminDashboard() {
               </div>
             </section>
 
-            <section className="rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-lg shadow-slate-900/5">
-              <SectionHeader icon="BarChart" title={t('admin.recentActivity', { defaultValue: 'Activité récente' })} />
-              <div className="grid gap-3 md:grid-cols-2">
-                {projets.slice(0, 3).map(projet => (
-                  <RecentItem key={`projet-${projet.id}`} icon="Rocket" title={projet.titre} meta={t(`statuses.${projet.statut}`, { defaultValue: projet.statut })} to="/admin/projets" />
-                ))}
-                {soutiens.slice(0, 2).map(soutien => (
-                  <RecentItem key={`soutien-${soutien.id}`} icon="Handshake" title={soutien.projetTitre || soutien.activiteTitre || t('nav.supports', { defaultValue: 'Soutien partenaire' })} meta={soutien.statutPaiement} to="/admin/soutiens" />
-                ))}
-                {projets.length === 0 && soutiens.length === 0 && (
-                  <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-400">{t('admin.noRecentActivity', { defaultValue: 'Aucune activité récente à afficher.' })}</p>
-                )}
-              </div>
-            </section>
+            <ActivityFeed
+              title={t('activityFeed.title', { defaultValue: 'Mon fil d’activité' })}
+              subtitle={t('activityFeed.adminSubtitle', { defaultValue: 'Validations, créations et changements de statut à surveiller.' })}
+              emptyLabel={t('admin.noRecentActivity', { defaultValue: 'Aucune activité récente à afficher.' })}
+              items={buildAdminActivityItems({ groupesEnAttente, groupesSansReferent, projets, soutiens, activites, t })}
+              accent="blue"
+            />
 
             {groupes.length === 0 && (
               <div className="mt-8">
@@ -118,6 +112,56 @@ export default function AdminDashboard() {
         )}
     </CollaborativeDashboardLayout>
   )
+}
+
+function buildAdminActivityItems({ groupesEnAttente, groupesSansReferent, projets, soutiens, activites, t }) {
+  const groupItems = [
+    ...groupesEnAttente.map(groupe => ({
+      key: `groupe-attente-${groupe.id}`,
+      icon: 'Users',
+      title: t('ux.adminDashboard.pendingGroups'),
+      description: groupe.nom,
+      date: groupe.dateCreation || groupe.dateDemande,
+      to: '/admin/groupes',
+    })),
+    ...groupesSansReferent.map(groupe => ({
+      key: `groupe-sans-referent-${groupe.id}`,
+      icon: 'User',
+      title: t('ux.adminDashboard.groupsWithoutReferent'),
+      description: groupe.nom,
+      date: groupe.dateModification || groupe.dateCreation,
+      to: '/admin/groupes',
+    })),
+  ]
+
+  const projectItems = projets.map(projet => ({
+    key: `projet-${projet.id}`,
+    icon: 'Rocket',
+    title: projet.titre,
+    description: projet.statut ? t(`statuses.${projet.statut}`, { defaultValue: projet.statut }) : t('nav.projects'),
+    date: projet.dateModification || projet.dateCreation,
+    to: '/admin/projets',
+  }))
+
+  const supportItems = soutiens.map(soutien => ({
+    key: `soutien-${soutien.id}`,
+    icon: 'Handshake',
+    title: soutien.projetTitre || soutien.activiteTitre || t('nav.supports', { defaultValue: 'Soutien partenaire' }),
+    description: soutien.statutPaiement || t('partnerSupport.admin.title'),
+    date: soutien.dateCreation || soutien.datePaiement,
+    to: '/admin/soutiens',
+  }))
+
+  const activityItems = activites.map(activite => ({
+    key: `activite-${activite.id}`,
+    icon: 'Calendar',
+    title: activite.titre,
+    description: activite.statut ? t(`statuses.${activite.statut}`, { defaultValue: activite.statut }) : t('nav.activities'),
+    date: activite.dateModification || activite.dateCreation || activite.dateDebut,
+    to: '/admin/activites',
+  }))
+
+  return [...groupItems, ...projectItems, ...supportItems, ...activityItems]
 }
 
 function AdminQueue({ groupesSansReferent, groupesEnAttente, projetsSoumis, soutiensEnAttente, activitesAPublier, t }) {
@@ -199,20 +243,6 @@ function NavCard({ to, title, description, color, icon }) {
       </div>
       <h3 className="font-black text-slate-950 mb-1">{title}</h3>
       <p className="line-clamp-2 text-slate-500 text-sm">{description}</p>
-    </Link>
-  )
-}
-
-function RecentItem({ icon, title, meta, to }) {
-  return (
-    <Link to={to} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:bg-white hover:shadow-md">
-      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-        <AppIcon name={icon} className="h-5 w-5" />
-      </span>
-      <span className="min-w-0">
-        <span className="block truncate font-black text-slate-950">{title}</span>
-        {meta && <span className="text-xs font-bold text-slate-400">{meta}</span>}
-      </span>
     </Link>
   )
 }
