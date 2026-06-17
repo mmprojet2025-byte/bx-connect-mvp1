@@ -68,6 +68,42 @@
   transform: translateY(0);
 }
 
+.collab-dashboard-space {
+  display: grid;
+  gap: 1rem;
+}
+
+.collab-reveal {
+  animation: landingFadeUp 520ms ease-out both;
+}
+
+.collab-sidebar {
+  align-self: start;
+}
+
+.collab-sidebar nav {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(37, 99, 235, 0.35) transparent;
+}
+
+.collab-sidebar nav::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.collab-sidebar nav::-webkit-scrollbar-thumb {
+  background: rgba(37, 99, 235, 0.35);
+  border-radius: 999px;
+}
+
+.collab-nav-item {
+  will-change: transform;
+}
+
+.collab-nav-item:hover {
+  transform: translateY(-1px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -76,6 +112,7 @@
   }
 
   .landing-fade-up,
+  .collab-reveal,
   .landing-hero-photo {
     animation: none !important;
   }
@@ -88,6 +125,7 @@
   .landing-button,
   .landing-feature-card,
   .landing-gallery-card,
+  .collab-nav-item,
   .reveal.fade-up {
     transition: none !important;
     transform: none !important;

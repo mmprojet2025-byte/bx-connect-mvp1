@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -12,10 +13,11 @@ import AppIcon from '../components/ui/AppIcons';
 import { confirmSensitiveAction, userFriendlyError } from '../utils/userFriendlyError';
 import LoadingState from '../components/ui/LoadingState';
 import ErrorState from '../components/ui/ErrorState';
-import { dashboardRouteForRole, resolveNotificationRoute } from '../utils/notificationRoute';
+import { dashboardRouteForRole, resolveNotificationRoute, hasExactNotificationRoute } from '../utils/notificationRoute';
 
 export default function Notifications() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,6 +56,17 @@ export default function Notifications() {
       await api.delete(`/notifications/${id}`);
       setNotifications(prev => prev.filter(n => n.id !== id));
     } catch (err) { setError(userFriendlyError(err, t('notifications.errorLoad'))); }
+  };
+
+  const handleOpenNotification = async (notification) => {
+    if (!notification.lue) await handleMarquerLue(notification.id);
+    const route = resolveNotificationRoute(notification, user?.role);
+    if (!hasExactNotificationRoute(notification, user?.role)) {
+      toast(t('notifications.smartFallback', {
+        defaultValue: 'Destination exacte indisponible : ouverture de la meilleure page liée.',
+      }));
+    }
+    navigate(route);
   };
 
   const typeIcon = (type) => {
@@ -138,15 +151,15 @@ export default function Notifications() {
                     {n.titre}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{n.message}</p>
-                  {n.lienAction && (
-                    <Link
-                      to={resolveNotificationRoute(n, user?.role)}
-                      onClick={e => { e.stopPropagation(); if (!n.lue) handleMarquerLue(n.id); }}
+                  {(n.lienAction || resolveNotificationRoute(n, user?.role)) && (
+                    <button
+                      type="button"
+                      onClick={e => { e.stopPropagation(); handleOpenNotification(n); }}
                       className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
                     >
                       <AppIcon name="Eye" className="h-3.5 w-3.5" />
                       {t('common.open')}
-                    </Link>
+                    </button>
                   )}
                   <p className="text-xs text-slate-400 mt-1">
                     {new Date(n.dateCreation).toLocaleDateString(i18n.language || 'fr-BE', {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { useAuth } from '../../context/AuthContext'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
@@ -110,8 +111,10 @@ export default function ReferentMessagerie() {
       })
       setNouveauMessage('')
       await fetchMessages(filActif.id)
+      toast.success(t('messaging.messageSent', { defaultValue: 'Message envoyé.' }))
     } catch (err) {
       setError(getAccessError(err, t))
+      toast.error(getAccessError(err, t))
     }
   }
 

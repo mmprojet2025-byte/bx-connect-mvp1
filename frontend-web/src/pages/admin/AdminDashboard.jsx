@@ -2,19 +2,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import api from '../../api/axios'
-import Navbar from '../../components/Navbar'
-import Footer from '../../components/Footer'
 import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
-import PageHeader from '../../components/ui/PageHeader'
-import QuickActionCard from '../../components/ui/QuickActionCard'
 import AppIcon from '../../components/ui/AppIcons'
+import {
+  CollaborativeDashboardLayout,
+} from '../../components/dashboard/CollaborativeDashboard'
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState(null)
   const [groupes, setGroupes] = useState([])
   const [groupesEnAttente, setGroupesEnAttente] = useState([])
-  const [referents, setReferents] = useState([])
   const [projets, setProjets] = useState([])
   const [soutiens, setSoutiens] = useState([])
   const [activites, setActivites] = useState([])
@@ -26,19 +23,15 @@ export default function AdminDashboard() {
     setLoading(true)
     setError('')
     try {
-      const [statsRes, groupesRes, attenteRes, referentsRes, projetsRes, soutiensRes, activitesRes] = await Promise.all([
-        api.get('/admin/stats'),
+      const [groupesRes, attenteRes, projetsRes, soutiensRes, activitesRes] = await Promise.all([
         api.get('/admin/groupes'),
         api.get('/admin/groupes/en-attente'),
-        api.get('/admin/referents'),
         api.get('/projets/admin/tous').catch(() => ({ data: [] })),
         api.get('/partenaire/admin/tous').catch(() => ({ data: [] })),
         api.get('/activites/admin/toutes').catch(() => ({ data: [] })),
       ])
-      setStats(statsRes.data)
       setGroupes(groupesRes.data)
       setGroupesEnAttente(attenteRes.data)
-      setReferents(referentsRes.data)
       setProjets(Array.isArray(projetsRes.data) ? projetsRes.data : [])
       setSoutiens(Array.isArray(soutiensRes.data) ? soutiensRes.data : [])
       setActivites(Array.isArray(activitesRes.data) ? activitesRes.data : [])
@@ -55,114 +48,59 @@ export default function AdminDashboard() {
     () => groupes.filter(groupe => !groupe.referentId),
     [groupes]
   )
-  const referentsActifs = referents.filter(referent => referent.actif).length
   const projetsSoumis = projets.filter(projet => projet.statut === 'SOUMIS')
   const soutiensEnAttente = soutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE')
   const activitesAPublier = activites.filter(activite => activite.statut === 'BROUILLON')
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
-      <Navbar />
-
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
-        <PageHeader
-          eyebrow={t('ux.adminDashboard.eyebrow')}
-          title={t('ux.adminDashboard.title')}
-          description={t('ux.adminDashboard.intro')}
-        />
-
+    <CollaborativeDashboardLayout
+      role="ADMIN"
+      emoji="Shield"
+      title={t('ux.adminDashboard.title', { defaultValue: 'Centre de pilotage BX-Connect' })}
+      subtitle={t('admin.dashboardSummary', {
+        count: groupesEnAttente.length + projetsSoumis.length + soutiensEnAttente.length + activitesAPublier.length,
+        defaultValue: `${groupesEnAttente.length + projetsSoumis.length + soutiensEnAttente.length + activitesAPublier.length} validation(s) en attente`,
+      })}
+    >
         {error && <Alert type="error">{error}</Alert>}
 
         {loading ? (
           <p className="text-slate-400 text-center py-10">{t('admin.loading')}</p>
         ) : (
           <>
-            {stats && (
-              <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <StatCard label={t('admin.stats_total_users')} value={stats.totalUtilisateurs} color="#2E86AB" icon="Users" />
-                <StatCard label={t('admin.activeReferents')} value={referentsActifs} color="#0d9488" icon="User" />
-                <StatCard label={t('admin.groups')} value={groupes.length} color="#7c3aed" icon="Users" />
-                <StatCard label={t('admin.stats_activities')} value={stats.totalActivites} color="#F4A261" icon="Calendar" />
-              </section>
-            )}
+            <AdminQueue
+              groupesSansReferent={groupesSansReferent}
+              groupesEnAttente={groupesEnAttente}
+              projetsSoumis={projetsSoumis}
+              soutiensEnAttente={soutiensEnAttente}
+              activitesAPublier={activitesAPublier}
+              t={t}
+            />
 
-            <section className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 mb-8">
-	              <div className="bg-white rounded-[1.75rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-950">{t('ux.adminDashboard.priority')}</h2>
-                    <p className="text-sm text-slate-500">{t('ux.adminDashboard.priorityDesc')}</p>
-                  </div>
-                  <Link to="/admin/groupes" className="text-blue-600 text-sm font-semibold hover:underline">
-                    {t('admin.viewGroups')}
-                  </Link>
-                </div>
-
-                <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  <PriorityCard
-                    label={t('ux.adminDashboard.groupsWithoutReferent')}
-                    value={groupesSansReferent.length}
-                    description={t('admin.assignReferentDesc')}
-                    to="/admin/groupes"
-                    alert={groupesSansReferent.length > 0}
-                  />
-                  <PriorityCard
-                    label={t('ux.adminDashboard.pendingGroups')}
-                    value={groupesEnAttente.length}
-                    description={t('admin.pendingGroupsDesc')}
-                    to="/admin/groupes"
-                    alert={groupesEnAttente.length > 0}
-                  />
-                  <PriorityCard
-                    label={t('ux.adminDashboard.activeReferents')}
-                    value={referentsActifs}
-                    description={t('admin.activeReferentsDesc')}
-                    to="/admin/referents"
-                  />
-                  <PriorityCard
-                    label={t('statuses.SOUMIS', { defaultValue: 'Projets soumis' })}
-                    value={projetsSoumis.length}
-                    description={t('admin.submittedProjectsDesc', { defaultValue: 'Projets à relire ou orienter.' })}
-                    to="/admin/projets"
-                    alert={projetsSoumis.length > 0}
-                  />
-                  <PriorityCard
-                    label={t('nav.supports', { defaultValue: 'Soutiens partenaires' })}
-                    value={soutiensEnAttente.length}
-                    description={t('partnerSupport.admin.listDescription', { defaultValue: 'Soutiens à valider ou refuser.' })}
-                    to="/admin/soutiens"
-                    alert={soutiensEnAttente.length > 0}
-                  />
-                  <PriorityCard
-                    label={t('activities.draftsToPublish', { defaultValue: 'Activités à publier' })}
-                    value={activitesAPublier.length}
-                    description={t('activities.draftsToPublishDesc', { defaultValue: 'Brouillons prêts à vérifier.' })}
-                    to="/admin/activites"
-                    alert={activitesAPublier.length > 0}
-                  />
-                </div>
-              </div>
-
-	              <div className="bg-white rounded-[1.75rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-6">
-                <h2 className="text-lg font-bold text-slate-950 mb-4">{t('ux.adminDashboard.quickActions')}</h2>
-                <div className="grid gap-3">
-	                  <QuickActionCard to="/admin/groupes" title={t('ux.adminDashboard.createGroup')} tone="blue" icon="Users" />
-	                  <QuickActionCard to="/admin/referents" title={t('ux.adminDashboard.createReferent')} tone="teal" icon="User" />
-	                  <QuickActionCard to="/admin/groupes" title={t('ux.adminDashboard.processRequests')} tone="amber" icon="Clock" />
-	                  <QuickActionCard to="/admin/activites" title={t('ux.adminDashboard.createActivity')} tone="violet" icon="PlusCircle" />
-                </div>
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-lg font-bold text-slate-950 mb-4">{t('admin.manage')}</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            <section className="mb-6 rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-lg shadow-slate-900/5">
+              <SectionHeader icon="Folder" title={t('admin.manage')} subtitle={t('admin.managementSubtitle', { defaultValue: 'Accès aux espaces de gestion, sans dupliquer les files d’attente.' })} />
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                 <NavCard to="/admin/utilisateurs" title={t('admin.users_title')} description={t('admin.users_desc')} color="#2E86AB" icon="Users" />
                 <NavCard to="/admin/referents" title={t('admin.referents_title')} description={t('admin.referents_desc')} color="#0d9488" icon="User" />
                 <NavCard to="/admin/groupes" title={t('admin.groups_title')} description={t('admin.groups_desc')} color="#7c3aed" icon="Folder" />
                 <NavCard to="/admin/activites" title={t('admin.activities_title')} description={t('admin.activities_desc')} color="#F4A261" icon="Calendar" />
                 <NavCard to="/admin/projets" title={t('admin.projects_title')} description={t('admin.projects_desc')} color="#28a745" icon="Rocket" />
                 <NavCard to="/admin/soutiens" title={t('partnerSupport.admin.title')} description={t('partnerSupport.admin.dashboardDescription')} color="#ea580c" icon="Handshake" />
+              </div>
+            </section>
+
+            <section className="rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-lg shadow-slate-900/5">
+              <SectionHeader icon="BarChart" title={t('admin.recentActivity', { defaultValue: 'Activité récente' })} />
+              <div className="grid gap-3 md:grid-cols-2">
+                {projets.slice(0, 3).map(projet => (
+                  <RecentItem key={`projet-${projet.id}`} icon="Rocket" title={projet.titre} meta={t(`statuses.${projet.statut}`, { defaultValue: projet.statut })} to="/admin/projets" />
+                ))}
+                {soutiens.slice(0, 2).map(soutien => (
+                  <RecentItem key={`soutien-${soutien.id}`} icon="Handshake" title={soutien.projetTitre || soutien.activiteTitre || t('nav.supports', { defaultValue: 'Soutien partenaire' })} meta={soutien.statutPaiement} to="/admin/soutiens" />
+                ))}
+                {projets.length === 0 && soutiens.length === 0 && (
+                  <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-400">{t('admin.noRecentActivity', { defaultValue: 'Aucune activité récente à afficher.' })}</p>
+                )}
               </div>
             </section>
 
@@ -178,45 +116,115 @@ export default function AdminDashboard() {
             )}
           </>
         )}
-      </main>
-
-      <Footer />
-    </div>
+    </CollaborativeDashboardLayout>
   )
 }
 
-function StatCard({ label, value, color, icon }) {
+function AdminQueue({ groupesSansReferent, groupesEnAttente, projetsSoumis, soutiensEnAttente, activitesAPublier, t }) {
+  const items = [
+    {
+      icon: 'User',
+      label: t('ux.adminDashboard.groupsWithoutReferent'),
+      value: groupesSansReferent.length,
+      description: t('admin.assignReferentDesc'),
+      to: '/admin/groupes',
+    },
+    {
+      icon: 'Clock',
+      label: t('ux.adminDashboard.pendingGroups'),
+      value: groupesEnAttente.length,
+      description: t('admin.pendingGroupsDesc'),
+      to: '/admin/groupes',
+    },
+    {
+      icon: 'Rocket',
+      label: t('statuses.SOUMIS', { defaultValue: 'Projets soumis' }),
+      value: projetsSoumis.length,
+      description: t('admin.submittedProjectsDesc', { defaultValue: 'Projets à relire ou orienter.' }),
+      to: '/admin/projets',
+    },
+    {
+      icon: 'Handshake',
+      label: t('nav.supports', { defaultValue: 'Soutiens partenaires' }),
+      value: soutiensEnAttente.length,
+      description: t('partnerSupport.admin.listDescription', { defaultValue: 'Soutiens à valider ou refuser.' }),
+      to: '/admin/soutiens',
+    },
+    {
+      icon: 'Calendar',
+      label: t('activities.draftsToPublish', { defaultValue: 'Activités à publier' }),
+      value: activitesAPublier.length,
+      description: t('activities.draftsToPublishDesc', { defaultValue: 'Brouillons prêts à vérifier.' }),
+      to: '/admin/activites',
+    },
+  ]
+  const activeItems = items.filter(item => item.value > 0)
+
   return (
-    <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md" style={{ borderLeft: `4px solid ${color}` }}>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="text-2xl font-bold" style={{ color }}>{value ?? 0}</div>
-        <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-50" style={{ color }}>
-          <AppIcon name={icon} className="h-5 w-5" />
-        </span>
-      </div>
-      <div className="text-xs text-slate-500 mt-1">{label}</div>
-    </div>
+    <section className="mb-6 rounded-[1.5rem] border border-amber-100 bg-white p-5 shadow-lg shadow-amber-950/5">
+      <SectionHeader icon="TriangleAlert" title={t('ux.adminDashboard.priority')} subtitle={t('ux.adminDashboard.priorityDesc')} />
+      {activeItems.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-center">
+          <AppIcon name="CheckCircle" className="mx-auto mb-2 h-8 w-8 text-emerald-500" />
+          <p className="text-sm font-black text-slate-700">{t('admin.noPendingValidation', { defaultValue: 'Aucune validation en attente.' })}</p>
+        </div>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {activeItems.slice(0, 5).map(item => <PriorityCard key={item.label} {...item} />)}
+        </div>
+      )}
+    </section>
   )
 }
 
-function PriorityCard({ label, value, description, to, alert = false }) {
+function PriorityCard({ icon, label, value, description, to }) {
   return (
-    <Link to={to} className={`rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 ${alert ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-gray-100'}`}>
-      <div className={`text-2xl font-bold ${alert ? 'text-amber-800' : 'text-slate-950'}`}>{value}</div>
-      <h3 className="text-sm font-semibold text-slate-950 mt-1">{label}</h3>
-      <p className="text-xs text-slate-500 mt-1">{description}</p>
+    <Link to={to} className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400">
+      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-amber-700">
+        <AppIcon name={icon} className="h-5 w-5" />
+      </span>
+      <span className="min-w-0">
+        <span className="block font-black text-slate-950">{value} · {label}</span>
+        <span className="mt-0.5 block text-sm leading-5 text-slate-500">{description}</span>
+      </span>
     </Link>
   )
 }
 
 function NavCard({ to, title, description, color, icon }) {
   return (
-    <Link to={to} className="bg-white rounded-[1.75rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-6 transition hover:-translate-y-1 hover:shadow-md border-t-4" style={{ borderTopColor: color }}>
-      <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-50" style={{ color }}>
+    <Link to={to} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md" style={{ borderLeft: `4px solid ${color}` }}>
+      <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white" style={{ color }}>
         <AppIcon name={icon} className="h-5 w-5" />
       </div>
-      <h3 className="font-semibold text-slate-950 mb-1">{title}</h3>
-      <p className="text-slate-500 text-sm">{description}</p>
+      <h3 className="font-black text-slate-950 mb-1">{title}</h3>
+      <p className="line-clamp-2 text-slate-500 text-sm">{description}</p>
     </Link>
+  )
+}
+
+function RecentItem({ icon, title, meta, to }) {
+  return (
+    <Link to={to} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:bg-white hover:shadow-md">
+      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+        <AppIcon name={icon} className="h-5 w-5" />
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate font-black text-slate-950">{title}</span>
+        {meta && <span className="text-xs font-bold text-slate-400">{meta}</span>}
+      </span>
+    </Link>
+  )
+}
+
+function SectionHeader({ icon, title, subtitle }) {
+  return (
+    <div className="mb-4">
+      <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
+        <AppIcon name={icon} className="h-5 w-5 text-blue-700" />
+        {title}
+      </h2>
+      {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+    </div>
   )
 }

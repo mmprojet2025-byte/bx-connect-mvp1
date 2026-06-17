@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import api from '../../api/axios'
@@ -48,10 +49,14 @@ export default function ReferentDemandes() {
     setError('')
     try {
       await api.patch(`/referent/groupes/${demande.groupeId}/demandes/${demande.id}/${action}`)
-      setMessage(action === 'accepter' ? t('referent.requestAccepted') : t('referent.requestRefused'))
+      const feedback = action === 'accepter' ? t('referent.requestAccepted') : t('referent.requestRefused')
+      setMessage(feedback)
+      toast.success(feedback)
       await fetchDemandes()
     } catch {
-      setError(t('referent.errorProcessRequest'))
+      const feedback = t('referent.errorProcessRequest')
+      setError(feedback)
+      toast.error(feedback)
     } finally {
       setProcessingId(null)
     }

@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
 import api from '../../api/axios';
 import { userFriendlyError } from '../../utils/userFriendlyError';
 import AppIcon from '../../components/ui/AppIcons';
 import ProjectVisibilityBadge from '../../components/ProjectVisibilityBadge';
 import { SUPPORT_STATUS_STYLES, supportStatusLabel } from '../../utils/supportStatus';
 import PartnerLogo from '../../components/PartnerLogo';
+import { CollaborativeDashboardLayout } from '../../components/dashboard/CollaborativeDashboard';
 
 const PARTNER_TABS = new Set(['dashboard', 'projets', 'activites', 'soutiens']);
 
@@ -18,7 +18,6 @@ export default function PartenaireSpace() {
   const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [stats, setStats] = useState(null);
   const [mesSoutiens, setMesSoutiens] = useState([]);
   const [projetsOuverts, setProjetsOuverts] = useState([]);
   const [activitesOuvertes, setActivitesOuvertes] = useState([]);
@@ -45,16 +44,14 @@ export default function PartenaireSpace() {
     setSectionErrors({});
     try {
       const results = await Promise.allSettled([
-        api.get('/partenaire/statistiques'),
         api.get('/partenaire/mes-soutiens'),
         api.get('/partenaire/projets-ouverts'),
         api.get('/partenaire/activites-ouvertes'),
         api.get('/partenaire/profil'),
       ]);
-      const [statsRes, soutiensRes, projetsRes, activitesRes, profilRes] = results;
+      const [soutiensRes, projetsRes, activitesRes, profilRes] = results;
       const errors = {};
 
-      applySettled(statsRes, data => setStats(data), () => { errors.stats = t('partnerSpace.sectionLoadError'); });
       applySettled(soutiensRes, data => setMesSoutiens(data || []), () => { errors.soutiens = t('partnerSpace.sectionLoadError'); });
       applySettled(projetsRes, data => setProjetsOuverts(data || []), () => { errors.projets = t('partnerSpace.sectionLoadError'); });
       applySettled(activitesRes, data => setActivitesOuvertes(data || []), () => { errors.activites = t('partnerSpace.sectionLoadError'); });
@@ -88,9 +85,13 @@ export default function PartenaireSpace() {
       setProfilInstitutionnel(response.data);
       setProfileForm(profileFromResponse(response.data));
       setShowProfileForm(false);
-      setMessage(t('partnerInstitution.profileSaved'));
+      const feedback = t('partnerInstitution.profileSaved');
+      setMessage(feedback);
+      toast.success(feedback);
     } catch (err) {
-      setError(userFriendlyError(err, t('partnerInstitution.profileError')));
+      const feedback = userFriendlyError(err, t('partnerInstitution.profileError'));
+      setError(feedback);
+      toast.error(feedback);
     } finally {
       setSavingProfile(false);
     }
@@ -111,13 +112,17 @@ export default function PartenaireSpace() {
         payload.activiteId = soutienForm.activiteId;
         await api.post('/partenaire/soutenir-activite', payload);
       }
-      setMessage(t('partnerSpace.supportSubmitted'));
+      const feedback = t('partnerSpace.supportSubmitted');
+      setMessage(feedback);
+      toast.success(feedback);
       setShowSoutienForm(false);
       setSoutienForm({ montant: '', message: '', projetId: null, activiteId: null, type: 'projet' });
       fetchAll();
       setTimeout(() => setMessage(''), 4000);
     } catch (err) {
-      setError(userFriendlyError(err, t('partnerSpace.actionError')));
+      const feedback = userFriendlyError(err, t('partnerSpace.actionError'));
+      setError(feedback);
+      toast.error(feedback);
     }
   };
 
@@ -133,38 +138,40 @@ export default function PartenaireSpace() {
   };
 
   if (loading) return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar />
-      <main className="flex-1 flex items-center justify-center">
-        <p className="text-gray-400">{t('partnerSpace.loading')}</p>
-      </main>
-      <Footer />
-    </div>
+    <CollaborativeDashboardLayout
+      role="PARTENAIRE"
+      emoji="🤝"
+      title={t('partnerSpace.title')}
+      subtitle={t('partnerSpace.loading')}
+    >
+      <p className="rounded-3xl bg-white p-10 text-center text-gray-400 shadow-sm">{t('partnerSpace.loading')}</p>
+    </CollaborativeDashboardLayout>
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar />
-
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-10">
-
+    <CollaborativeDashboardLayout
+      role="PARTENAIRE"
+      emoji="Handshake"
+      title={profilInstitutionnel?.nomOrganisation || t('partnerSpace.title')}
+      subtitle={t('partnerSpace.dashboardSubtitle', { defaultValue: `${projetsOuverts.length} projet(s) ouvert(s) · ${mesSoutiens.length} soutien(s) suivi(s)` })}
+    >
         {/* En-tête */}
-        <div className="bg-gradient-to-br from-orange-600 to-orange-500 text-white rounded-3xl p-6 mb-6 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <div className="mb-6 flex flex-col gap-4 rounded-[1.5rem] border border-orange-100 bg-white p-5 shadow-lg shadow-orange-950/5 md:flex-row md:items-center md:justify-between">
           <div className="flex min-w-0 items-center gap-4">
             <PartnerLogo
               logoUrl={profilInstitutionnel?.logoUrl}
               name={profilInstitutionnel?.nomOrganisation}
             />
             <div className="min-w-0">
-            <h1 className="flex items-center gap-3 text-2xl font-bold">
-              <AppIcon name="Handshake" className="h-7 w-7" />
+            <h1 className="flex items-center gap-3 text-xl font-black text-slate-950">
+              <AppIcon name="Handshake" className="h-6 w-6 text-orange-600" />
               {profilInstitutionnel?.nomOrganisation || t('partnerSpace.title')}
             </h1>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-white/18 px-3 py-1 text-xs font-bold">
+                <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">
                   {t(`partnerInstitution.types.${profilInstitutionnel?.typePartenaire || 'AUTRE'}`)}
                 </span>
-                <span className="text-sm text-orange-100">
+                <span className="text-sm text-slate-500">
                   {profilInstitutionnel?.personneContact || `${user?.prenom || ''} ${user?.nom || ''}`}
                 </span>
               </div>
@@ -173,14 +180,14 @@ export default function PartenaireSpace() {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setShowProfileForm(true)}
-              className="inline-flex items-center gap-2 rounded-2xl border border-white/30 bg-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/20"
+              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
             >
               <AppIcon name="Edit" className="h-4 w-4" />
               {t('partnerInstitution.editProfile')}
             </button>
             <button
               onClick={() => setShowSoutienForm(true)}
-              className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-bold text-orange-600 transition hover:bg-orange-50"
+              className="inline-flex items-center gap-2 rounded-2xl bg-orange-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-500"
             >
               <AppIcon name="PlusCircle" className="h-4 w-4" />
               {t('partnerSpace.financialSupport')}
@@ -248,31 +255,16 @@ export default function PartenaireSpace() {
               t={t}
             />
 
-            {sectionErrors.stats && <SectionLoadError message={sectionErrors.stats} />}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <StatCard label={t('partnerInstitution.projectsSupported')} value={stats?.projetsSoutenus ?? '—'} color="#7c3aed" icon="Rocket" />
-              <StatCard label={t('partnerInstitution.activitiesSupported')} value={stats?.activitesSoutenues ?? '—'} color="#2563eb" icon="Calendar" />
-              <StatCard label={t('partnerSpace.totalAmount')} value={stats ? `${stats.totalMontant || 0} €` : '—'} color="#16a34a" icon="Wallet" />
-              <StatCard label={t('partnerSpace.totalSupports')} value={stats?.totalSoutiens ?? '—'} color="#ea580c" icon="BarChart" />
-            </div>
-
-            <div className="bg-white rounded-2xl shadow p-6">
-              <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900 mb-4">
+            <div className="rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-lg shadow-slate-900/5">
+              <h2 className="flex items-center gap-2 text-lg font-black text-slate-950 mb-4">
                 <AppIcon name="Wallet" className="h-5 w-5 text-orange-600" />
-                {t('partnerSpace.latestSupports')}
+                {t('partnerSpace.latestSupports', { defaultValue: 'Historique récent' })}
               </h2>
               {sectionErrors.soutiens && <SectionLoadError message={sectionErrors.soutiens} />}
               {mesSoutiens.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">
+                <div className="text-center py-6 text-gray-400">
                   <AppIcon name="Wallet" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
                   <p className="text-sm">{t('partnerSpace.noSupports')}</p>
-                  <button
-                    onClick={() => setShowSoutienForm(true)}
-                    className="mt-3 inline-flex items-center justify-center gap-1.5 text-orange-600 text-sm hover:underline"
-                  >
-                    {t('partnerSpace.proposeFirstSupport')}
-                    <AppIcon name="Wallet" className="h-4 w-4" />
-                  </button>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -597,10 +589,7 @@ export default function PartenaireSpace() {
           </div>
         )}
 
-      </main>
-
-      <Footer />
-    </div>
+    </CollaborativeDashboardLayout>
   );
 }
 
@@ -678,20 +667,6 @@ function PartnerActionCard({ icon, title, value, description, onClick, highlight
       <h3 className="font-black text-slate-950">{title}</h3>
       <p className="mt-1 text-sm leading-5 text-slate-500">{description}</p>
     </button>
-  );
-}
-
-function StatCard({ label, value, color, icon }) {
-  return (
-    <div className="bg-white rounded-2xl shadow p-4" style={{ borderLeft: `4px solid ${color}` }}>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="text-2xl font-bold" style={{ color }}>{value}</div>
-        <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-orange-50" style={{ color }}>
-          <AppIcon name={icon} className="h-5 w-5" />
-        </span>
-      </div>
-      <div className="text-xs text-gray-500">{label}</div>
-    </div>
   );
 }
 

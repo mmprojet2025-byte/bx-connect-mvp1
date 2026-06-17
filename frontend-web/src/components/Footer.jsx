@@ -1,9 +1,14 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '../context/AuthContext'
+import AppFooter from './layout/AppFooter'
 import logoBxConnect from '../assets/images/logo-bx-connect.png'
 
 export default function Footer() {
   const { t } = useTranslation()
+  const { isAuthenticated } = useAuth()
+
+  if (isAuthenticated) return <AppFooter />
 
   return (
     <footer className="mt-auto bg-blue-950 px-5 py-12 text-sm text-white">

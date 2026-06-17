@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../api/axios'
 import Navbar from '../../components/Navbar'
@@ -9,6 +10,7 @@ import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
 import StatusBadge from '../../components/StatusBadge'
 import GroupAvatar from '../../components/GroupAvatar'
+import AppIcon from '../../components/ui/AppIcons'
 import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFriendlyError'
 import PageHeader from '../../components/ui/PageHeader'
 import LoadingState from '../../components/ui/LoadingState'
@@ -63,10 +65,14 @@ export default function Groupes() {
     setActionLoading(groupeId)
     try {
       await api.post(`/groupes/${groupeId}/rejoindre`)
-      setMessage(t('ux.groups.requestSent'))
+      const feedback = t('ux.groups.requestSent')
+      setMessage(feedback)
+      toast.success(feedback)
       await Promise.all([fetchGroupes(), fetchAdhesions()])
     } catch (err) {
-      setError(userFriendlyError(err, t('groups.error_load')))
+      const feedback = userFriendlyError(err, t('groups.error_load'))
+      setError(feedback)
+      toast.error(feedback)
     } finally {
       setActionLoading(null)
     }
@@ -79,10 +85,14 @@ export default function Groupes() {
     setActionLoading(groupeId)
     try {
       await api.delete(`/groupes/${groupeId}/quitter`)
-      setMessage(t('groups.success_leave'))
+      const feedback = t('groups.success_leave')
+      setMessage(feedback)
+      toast.success(feedback)
       await Promise.all([fetchGroupes(), fetchAdhesions()])
     } catch (err) {
-      setError(userFriendlyError(err, t('groups.error_load')))
+      const feedback = userFriendlyError(err, t('groups.error_load'))
+      setError(feedback)
+      toast.error(feedback)
     } finally {
       setActionLoading(null)
     }
@@ -249,6 +259,12 @@ function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelle
         </div>
       </div>
 
+      <WorkspacePreview
+        groupeId={groupe.id}
+        isAccepted={isAccepted}
+        isAuthenticated={isAuthenticated}
+      />
+
       <div className="mt-auto">
         {!isAuthenticated ? (
           <Link
@@ -260,7 +276,7 @@ function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelle
         ) : !isMembre ? null : isAccepted ? (
           <div className="grid grid-cols-2 gap-2">
             <Link
-              to="/dashboard"
+              to={`/groupes/${groupe.id}`}
               className="text-center bg-green-700 hover:bg-green-600 text-white text-sm font-semibold py-2 rounded-xl transition"
             >
               {t('ux.groups.openMyGroup')}
@@ -294,6 +310,82 @@ function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelle
         )}
       </div>
     </article>
+  )
+}
+
+function WorkspacePreview({ groupeId, isAccepted, isAuthenticated }) {
+  const { t } = useTranslation()
+  const items = [
+    {
+      icon: 'MessageCircle',
+      label: t('nav.messaging'),
+      to: isAccepted ? `/groupes/${groupeId}` : isAuthenticated ? `/groupes/${groupeId}` : '/login',
+      available: isAccepted,
+      note: isAccepted ? t('common.open') : t('groups.messaging_after_acceptance'),
+    },
+    {
+      icon: 'Users',
+      label: t('groups.members'),
+      to: `/groupes/${groupeId}?tab=membres`,
+      available: isAccepted,
+      note: isAccepted ? t('common.open') : t('groups.joinRequired', { defaultValue: 'Après adhésion' }),
+    },
+    {
+      icon: 'Calendar',
+      label: t('nav.activities'),
+      to: `/groupes/${groupeId}?tab=activites`,
+      available: true,
+      note: t('common.open'),
+    },
+    {
+      icon: 'Rocket',
+      label: t('nav.projects'),
+      to: `/groupes/${groupeId}?tab=projets`,
+      available: true,
+      note: t('common.open'),
+    },
+    {
+      icon: 'FileText',
+      label: t('groups.resources', { defaultValue: 'Ressources' }),
+      to: `/groupes/${groupeId}?tab=ressources`,
+      available: false,
+      note: t('groups.availableWhenReady', { defaultValue: 'Selon le groupe' }),
+    },
+  ]
+
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+      <p className="mb-2 text-[11px] font-black uppercase tracking-wide text-slate-400">
+        {t('groups.workspace', { defaultValue: 'Espace collaboratif' })}
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        {items.map(item => item.available || item.to ? (
+          <Link
+            key={item.label}
+            to={item.to}
+            className={`rounded-xl border px-2.5 py-2 transition ${
+              item.available
+                ? 'border-blue-100 bg-white hover:border-blue-300 hover:shadow-sm'
+                : 'border-slate-100 bg-white text-slate-400'
+            }`}
+          >
+            <span className="flex items-center gap-1.5 text-xs font-black text-slate-700">
+              <AppIcon name={item.icon} className="h-3.5 w-3.5" />
+              {item.label}
+            </span>
+            <span className="mt-0.5 block text-[10px] font-semibold text-slate-400">{item.note}</span>
+          </Link>
+        ) : (
+          <div key={item.label} className="rounded-xl border border-slate-100 bg-white px-2.5 py-2 text-slate-400">
+            <span className="flex items-center gap-1.5 text-xs font-black">
+              <AppIcon name={item.icon} className="h-3.5 w-3.5" />
+              {item.label}
+            </span>
+            <span className="mt-0.5 block text-[10px] font-semibold">{item.note}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 

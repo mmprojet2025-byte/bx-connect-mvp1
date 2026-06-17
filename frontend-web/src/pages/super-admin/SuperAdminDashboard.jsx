@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import api from '../../api/axios'
-import SuperAdminLayout from '../../layouts/SuperAdminLayout'
 import AppIcon from '../../components/ui/AppIcons'
+import { CollaborativeDashboardLayout } from '../../components/dashboard/CollaborativeDashboard'
 
 export default function SuperAdminDashboard() {
   const { t, i18n } = useTranslation()
@@ -19,9 +19,11 @@ export default function SuperAdminDashboard() {
   }, [t])
 
   return (
-    <SuperAdminLayout
+    <CollaborativeDashboardLayout
+      role="SUPER_ADMIN"
+      emoji="Shield"
       title={t('superAdmin.dashboardTitle')}
-      subtitle={t('superAdmin.dashboardSubtitle')}
+      subtitle={t('superAdmin.platformWatch', { defaultValue: 'Plateforme sous surveillance' })}
     >
       {error && <Alert type="error">{error}</Alert>}
 
@@ -29,41 +31,28 @@ export default function SuperAdminDashboard() {
         <p className="text-slate-400 text-center py-10">{t('common.loading')}</p>
       ) : dashboard && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <StatCard label={t('superAdmin.activeAdmins')} value={dashboard.adminsActifs} color="#2563eb" icon="Shield" />
-            <StatCard label={t('superAdmin.inactiveAdmins')} value={dashboard.adminsInactifs} color="#d97706" icon="Clock" />
-            <StatCard label={t('superAdmin.criticalActions')} value={dashboard.totalActionsCritiques} color="#7c3aed" icon="BarChart" />
-          </div>
-
           <SupervisionSection dashboard={dashboard} t={t} />
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <Link to="/super-admin/admins" className="bg-white rounded-[1.75rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-5 hover:-translate-y-1 hover:shadow-md transition focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-                <AppIcon name="Shield" className="h-5 w-5" />
-              </div>
-              <h2 className="font-bold text-slate-950 mb-1">{t('superAdmin.adminsTitle')}</h2>
-              <p className="text-sm text-slate-500">{t('superAdmin.adminsDescription')}</p>
-            </Link>
+          <section className="mb-6 rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-lg shadow-slate-900/5">
+            <SectionHeader icon="Lock" title={t('superAdmin.securityTitle', { defaultValue: 'Sécurité' })} subtitle={t('superAdmin.securitySubtitle', { defaultValue: 'Accès sensibles et comptes administrateurs.' })} />
+            <div className="grid gap-3 md:grid-cols-2">
+              <ControlLink to="/super-admin/admins" icon="Shield" title={t('superAdmin.adminsTitle')} description={t('superAdmin.adminsDescription')} />
+              <ControlLink to="/super-admin/logs" icon="BarChart" title={t('superAdmin.logsTitle')} description={t('superAdmin.logsDescription')} />
+            </div>
+          </section>
 
-            <Link to="/super-admin/logs" className="bg-white rounded-[1.75rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-5 hover:-translate-y-1 hover:shadow-md transition focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
-                <AppIcon name="BarChart" className="h-5 w-5" />
-              </div>
-              <h2 className="font-bold text-slate-950 mb-1">{t('superAdmin.logsTitle')}</h2>
-              <p className="text-sm text-slate-500">{t('superAdmin.logsDescription')}</p>
-            </Link>
-          </div>
-
-          <section className="mt-8 bg-white rounded-[1.75rem] border border-slate-100 shadow-lg shadow-slate-900/5 overflow-hidden">
+          <section className="rounded-[1.5rem] border border-slate-100 bg-white shadow-lg shadow-slate-900/5 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100">
-              <h2 className="font-bold text-slate-950">{t('superAdmin.latestLogs')}</h2>
+              <h2 className="flex items-center gap-2 font-black text-slate-950">
+                <AppIcon name="BarChart" className="h-5 w-5 text-indigo-700" />
+                {t('superAdmin.latestLogs')}
+              </h2>
             </div>
             <LogPreview logs={dashboard.derniersLogs || []} t={t} language={i18n.language} />
           </section>
         </>
       )}
-    </SuperAdminLayout>
+    </CollaborativeDashboardLayout>
   )
 }
 
@@ -73,63 +62,41 @@ function SupervisionSection({ dashboard, t }) {
   const criticalActions = dashboard.totalActionsCritiques || 0
 
   return (
-    <section className="mb-8 rounded-[1.75rem] border border-indigo-100 bg-white p-5 shadow-lg shadow-indigo-950/5">
-      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-black uppercase tracking-wide text-indigo-700">
-            {t('superAdmin.supervisionEyebrow', { defaultValue: 'Contrôle plateforme' })}
-          </p>
-          <h2 className="text-xl font-black text-slate-950">
-            {t('superAdmin.supervisionTitle', { defaultValue: 'Supervision' })}
-          </h2>
-        </div>
-        <Link to="/super-admin/logs" className="text-sm font-bold text-indigo-700 hover:underline">
-          {t('superAdmin.logsTitle')}
-        </Link>
-      </div>
+    <section className="mb-6 rounded-[1.5rem] border border-indigo-100 bg-white p-5 shadow-lg shadow-indigo-950/5">
+      <SectionHeader
+        icon="Shield"
+        title={t('superAdmin.supervisionTitle', { defaultValue: 'Supervision' })}
+        subtitle={t('superAdmin.supervisionEyebrow', { defaultValue: 'Contrôle plateforme' })}
+      />
 
-      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="grid gap-3 md:grid-cols-3">
-          <SupervisionCard
-            icon="Shield"
-            title={t('superAdmin.activeAdmins')}
-            value={dashboard.adminsActifs || 0}
-            description={t('superAdmin.adminsDescription')}
-            to="/super-admin/admins"
-          />
-          <SupervisionCard
-            icon="Clock"
-            title={t('superAdmin.inactiveAdmins')}
-            value={inactiveAdmins}
-            description={inactiveAdmins > 0
-              ? t('superAdmin.inactiveAdminsAlert', { defaultValue: 'Comptes administrateurs à contrôler.' })
-              : t('superAdmin.noInactiveAdmins', { defaultValue: 'Aucun compte administrateur inactif à signaler.' })}
-            to="/super-admin/admins"
-            highlight={inactiveAdmins > 0}
-          />
-          <SupervisionCard
-            icon="BarChart"
-            title={t('superAdmin.criticalActions')}
-            value={criticalActions}
-            description={logs.length > 0
-              ? t('superAdmin.latestSensitiveActions', { count: logs.length, defaultValue: `${logs.length} action(s) sensible(s) récente(s)` })
-              : t('audit.noCriticalLog')}
-            to="/super-admin/logs"
-            highlight={criticalActions > 0}
-          />
-        </div>
-
-        <div className="grid content-start gap-3">
-          <Link to="/super-admin/admins" className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm font-bold text-slate-700 transition hover:bg-white hover:text-indigo-700 hover:shadow-md">
-            {t('superAdmin.adminsTitle')}
-          </Link>
-          <Link to="/super-admin/logs" className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm font-bold text-slate-700 transition hover:bg-white hover:text-indigo-700 hover:shadow-md">
-            {t('superAdmin.logsTitle')}
-          </Link>
-          <Link to="/super-admin/admins" className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm font-bold text-slate-700 transition hover:bg-white hover:text-indigo-700 hover:shadow-md">
-            {t('superAdmin.manageAccess', { defaultValue: 'Gérer les accès' })}
-          </Link>
-        </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        <SupervisionCard
+          icon="Shield"
+          title={t('superAdmin.activeAdmins')}
+          value={dashboard.adminsActifs || 0}
+          description={t('superAdmin.adminsDescription')}
+          to="/super-admin/admins"
+        />
+        <SupervisionCard
+          icon="Clock"
+          title={t('superAdmin.inactiveAdmins')}
+          value={inactiveAdmins}
+          description={inactiveAdmins > 0
+            ? t('superAdmin.inactiveAdminsAlert', { defaultValue: 'Comptes administrateurs à contrôler.' })
+            : t('superAdmin.noInactiveAdmins', { defaultValue: 'Aucun compte administrateur inactif à signaler.' })}
+          to="/super-admin/admins"
+          highlight={inactiveAdmins > 0}
+        />
+        <SupervisionCard
+          icon="BarChart"
+          title={t('superAdmin.criticalActions')}
+          value={criticalActions}
+          description={logs.length > 0
+            ? t('superAdmin.latestSensitiveActions', { count: logs.length, defaultValue: `${logs.length} action(s) sensible(s) récente(s)` })
+            : t('audit.noCriticalLog')}
+          to="/super-admin/logs"
+          highlight={criticalActions > 0}
+        />
       </div>
     </section>
   )
@@ -155,16 +122,28 @@ function SupervisionCard({ icon, title, value, description, to, highlight = fals
   )
 }
 
-function StatCard({ label, value, color, icon }) {
+function ControlLink({ to, icon, title, description }) {
   return (
-    <div className="bg-white rounded-[1.75rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-5 transition hover:-translate-y-0.5 hover:shadow-md" style={{ borderLeft: `4px solid ${color}` }}>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="text-3xl font-bold" style={{ color }}>{value}</div>
-        <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-50" style={{ color }}>
-          <AppIcon name={icon} className="h-5 w-5" />
-        </span>
-      </div>
-      <div className="text-xs text-slate-500 mt-1">{label}</div>
+    <Link to={to} className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:bg-white hover:shadow-md">
+      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
+        <AppIcon name={icon} className="h-5 w-5" />
+      </span>
+      <span>
+        <span className="block font-black text-slate-950">{title}</span>
+        <span className="mt-0.5 block text-sm text-slate-500">{description}</span>
+      </span>
+    </Link>
+  )
+}
+
+function SectionHeader({ icon, title, subtitle }) {
+  return (
+    <div className="mb-4">
+      <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
+        <AppIcon name={icon} className="h-5 w-5 text-indigo-700" />
+        {title}
+      </h2>
+      {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
     </div>
   )
 }

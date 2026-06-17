@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
+import AppSidebar from './components/navigation/AppSidebar'
 
 // Pages publiques
 import Accueil          from './pages/Accueil'
@@ -19,6 +20,7 @@ import LegalPage        from './pages/legal/LegalPage'
 import Dashboard        from './pages/dashboard/Dashboard'
 import Profil           from './pages/profil/Profil'
 import Groupes          from './pages/groupes/Groupes'
+import GroupeEspace     from './pages/groupes/GroupeEspace'
 import Messagerie       from './pages/messagerie/Messagerie'
 import Prestations      from './pages/prestations/Prestations'
 
@@ -96,71 +98,80 @@ function PublicOrMembreRoute({ children }) {
 }
 
 export default function App() {
+  const { isAuthenticated } = useAuth()
+
   return (
-    <Routes>
-      {/* ── Pages publiques ── */}
-      <Route path="/"              element={<Accueil />} />
-      <Route path="/a-propos"      element={<APropos />} />
-      <Route path="/login"         element={<Login />} />
-      <Route path="/register"      element={<Register />} />
-      <Route path="/mot-de-passe-oublie" element={<ForgotPassword />} />
-      <Route path="/activites"     element={<PublicOrMembreRoute><Activites /></PublicOrMembreRoute>} />
-      <Route path="/activites/:id" element={<PublicOrMembreRoute><ActiviteDetail /></PublicOrMembreRoute>} />
-      <Route path="/groupes"       element={<PublicOrMembreRoute><Groupes /></PublicOrMembreRoute>} />
-      <Route path="/projets"       element={<PublicOrMembreRoute><Projets /></PublicOrMembreRoute>} />
-      <Route path="/annonces"      element={<Annonces />} />
-      <Route path="/conditions-utilisation" element={<LegalPage document="terms" />} />
-      <Route path="/politique-confidentialite" element={<LegalPage document="privacy" />} />
-      <Route path="/mentions-legales" element={<LegalPage document="notices" />} />
+    <>
+      <AppSidebar />
+      <div className={isAuthenticated ? 'min-h-screen bg-[#f5f7fb] pb-28 lg:pb-0 lg:pl-[320px]' : ''}>
+        <Routes>
+          {/* ── Pages publiques ── */}
+          <Route path="/"              element={<Accueil />} />
+          <Route path="/a-propos"      element={<APropos />} />
+          <Route path="/login"         element={<Login />} />
+          <Route path="/register"      element={<Register />} />
+          <Route path="/mot-de-passe-oublie" element={<ForgotPassword />} />
+          <Route path="/activites"     element={<PublicOrMembreRoute><Activites /></PublicOrMembreRoute>} />
+          <Route path="/activites/:id" element={<PublicOrMembreRoute><ActiviteDetail /></PublicOrMembreRoute>} />
+          <Route path="/groupes"       element={<PublicOrMembreRoute><Groupes /></PublicOrMembreRoute>} />
+          <Route path="/groupes/:id"   element={<GroupeEspace />} />
+          <Route path="/projets/:id"   element={<Projets />} />
+          <Route path="/projets"       element={<Projets />} />
+          <Route path="/annonces"      element={<Annonces />} />
+          <Route path="/conditions-utilisation" element={<LegalPage document="terms" />} />
+          <Route path="/politique-confidentialite" element={<LegalPage document="privacy" />} />
+          <Route path="/mentions-legales" element={<LegalPage document="notices" />} />
 
-      {/* ── Pages membres connectés ── */}
-      <Route path="/messagerie"    element={<MembreRoute><Messagerie /></MembreRoute>} />
-      <Route path="/dashboard"     element={<MembreRoute><Dashboard /></MembreRoute>} />
-      <Route path="/profil"        element={<PrivateRoute><Profil /></PrivateRoute>} />
-      <Route path="/prestations"   element={<PrivateRoute><Prestations /></PrivateRoute>} />
-      <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
+          {/* ── Pages membres connectés ── */}
+          <Route path="/messagerie"    element={<MembreRoute><Messagerie /></MembreRoute>} />
+          <Route path="/dashboard"     element={<MembreRoute><Dashboard /></MembreRoute>} />
+          <Route path="/profil"        element={<PrivateRoute><Profil /></PrivateRoute>} />
+          <Route path="/prestations"   element={<PrivateRoute><Prestations /></PrivateRoute>} />
+          <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
 
-      {/* ── Pages Paiement Stripe ── */}
-      <Route path="/paiement/stripe"     element={<PrivateRoute><PaiementStripe /></PrivateRoute>} />
-      <Route path="/paiement/succes"     element={<PrivateRoute><PaiementSuccess /></PrivateRoute>} />
-      <Route path="/paiement/annule"     element={<PaiementCancel />} />
-      <Route path="/paiement/historique" element={<PrivateRoute><HistoriquePaiements /></PrivateRoute>} />
+          {/* ── Pages Paiement Stripe ── */}
+          <Route path="/paiement/stripe"     element={<PrivateRoute><PaiementStripe /></PrivateRoute>} />
+          <Route path="/paiement/succes"     element={<PrivateRoute><PaiementSuccess /></PrivateRoute>} />
+          <Route path="/paiement/annule"     element={<PaiementCancel />} />
+          <Route path="/paiement/historique" element={<PrivateRoute><HistoriquePaiements /></PrivateRoute>} />
 
-      {/* ── Pages Partenaire ── */}
-      <Route path="/partenaire" element={<PartenaireRoute><PartenaireSpace /></PartenaireRoute>} />
+          {/* ── Pages Partenaire ── */}
+          <Route path="/partenaire" element={<PartenaireRoute><PartenaireSpace /></PartenaireRoute>} />
 
-      {/* ── Pages Référent ── */}
-      <Route path="/referent"             element={<Navigate to="/referent/dashboard" replace />} />
-      <Route path="/referent/dashboard"   element={<ReferentRoute><ReferentDashboard /></ReferentRoute>} />
-      <Route path="/referent/groupes"     element={<ReferentRoute><ReferentGroupes /></ReferentRoute>} />
-      <Route path="/referent/membres"     element={<ReferentRoute><ReferentMembres /></ReferentRoute>} />
-      <Route path="/referent/demandes"    element={<ReferentRoute><ReferentDemandes /></ReferentRoute>} />
-      <Route path="/referent/activites"   element={<ReferentRoute><ReferentActivites /></ReferentRoute>} />
-      <Route path="/referent/projets"     element={<ReferentRoute><ReferentProjets /></ReferentRoute>} />
-      <Route path="/referent/messagerie"  element={<ReferentRoute><ReferentMessagerie /></ReferentRoute>} />
-      <Route path="/referent/prestations" element={<ReferentRoute><GestionPrestations /></ReferentRoute>} />
-      <Route path="/referent/annonces"     element={<ReferentRoute><Annonces /></ReferentRoute>} />
+          {/* ── Pages Référent ── */}
+          <Route path="/referent"             element={<Navigate to="/referent/dashboard" replace />} />
+          <Route path="/referent/dashboard"   element={<ReferentRoute><ReferentDashboard /></ReferentRoute>} />
+          <Route path="/referent/groupes"     element={<ReferentRoute><ReferentGroupes /></ReferentRoute>} />
+          <Route path="/referent/membres"     element={<ReferentRoute><ReferentMembres /></ReferentRoute>} />
+          <Route path="/referent/demandes"    element={<ReferentRoute><ReferentDemandes /></ReferentRoute>} />
+          <Route path="/referent/activites"   element={<ReferentRoute><ReferentActivites /></ReferentRoute>} />
+          <Route path="/referent/projets"     element={<ReferentRoute><ReferentProjets /></ReferentRoute>} />
+          <Route path="/referent/messagerie"  element={<ReferentRoute><ReferentMessagerie /></ReferentRoute>} />
+          <Route path="/referent/prestations" element={<ReferentRoute><GestionPrestations /></ReferentRoute>} />
+          <Route path="/referent/annonces"     element={<ReferentRoute><Annonces /></ReferentRoute>} />
 
-      {/* ── Pages Admin ── */}
-      <Route path="/admin"               element={<Navigate to="/admin/dashboard" replace />} />
-      <Route path="/admin/dashboard"     element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-      <Route path="/admin/utilisateurs"  element={<AdminRoute><AdminUtilisateurs /></AdminRoute>} />
-      <Route path="/admin/referents"     element={<AdminRoute><AdminReferents /></AdminRoute>} />
-      <Route path="/admin/activites"     element={<AdminRoute><AdminActivites /></AdminRoute>} />
-      <Route path="/admin/projets"       element={<AdminRoute><AdminProjets /></AdminRoute>} />
-      <Route path="/admin/groupes"       element={<AdminRoute><AdminGroupes /></AdminRoute>} />
-      <Route path="/admin/soutiens"      element={<AdminRoute><AdminSoutiens /></AdminRoute>} />
-      <Route path="/admin/prestations"   element={<AdminRoute><GestionPrestations /></AdminRoute>} />
-      <Route path="/admin/annonces"      element={<AdminRoute><Annonces /></AdminRoute>} />
+          {/* ── Pages Admin ── */}
+          <Route path="/admin"               element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="/admin/dashboard"     element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="/admin/utilisateurs"  element={<AdminRoute><AdminUtilisateurs /></AdminRoute>} />
+          <Route path="/admin/referents"     element={<AdminRoute><AdminReferents /></AdminRoute>} />
+          <Route path="/admin/activites"     element={<AdminRoute><AdminActivites /></AdminRoute>} />
+          <Route path="/admin/projets"       element={<AdminRoute><AdminProjets /></AdminRoute>} />
+          <Route path="/admin/groupes"       element={<AdminRoute><AdminGroupes /></AdminRoute>} />
+          <Route path="/admin/soutiens"      element={<AdminRoute><AdminSoutiens /></AdminRoute>} />
+          <Route path="/admin/prestations"   element={<AdminRoute><GestionPrestations /></AdminRoute>} />
+          <Route path="/admin/annonces"      element={<AdminRoute><Annonces /></AdminRoute>} />
 
-      {/* ── Pages SUPER_ADMIN ── */}
-      <Route path="/super-admin"           element={<Navigate to="/super-admin/dashboard" replace />} />
-      <Route path="/super-admin/dashboard" element={<SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>} />
-      <Route path="/super-admin/admins"    element={<SuperAdminRoute><SuperAdminAdmins /></SuperAdminRoute>} />
-      <Route path="/super-admin/logs"      element={<SuperAdminRoute><SuperAdminLogs /></SuperAdminRoute>} />
+          {/* ── Pages SUPER_ADMIN ── */}
+          <Route path="/super-admin"           element={<Navigate to="/super-admin/dashboard" replace />} />
+          <Route path="/super-admin/dashboard" element={<SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>} />
+          <Route path="/super-admin/admins"    element={<SuperAdminRoute><SuperAdminAdmins /></SuperAdminRoute>} />
+          <Route path="/super-admin/logs"      element={<SuperAdminRoute><SuperAdminLogs /></SuperAdminRoute>} />
 
-      {/* ── Page 404 ── */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+          {/* ── Page 404 ── */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </div>
+    </>
   )
 }
