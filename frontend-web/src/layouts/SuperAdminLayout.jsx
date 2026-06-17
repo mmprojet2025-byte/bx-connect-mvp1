@@ -7,8 +7,7 @@ import AppIcon from '../components/ui/AppIcons'
 const links = [
   { to: '/super-admin/dashboard', labelKey: 'nav.dashboard', icon: 'Dashboard' },
   { to: '/super-admin/admins', labelKey: 'nav.admins', icon: 'Shield' },
-  { to: '/super-admin/logs', labelKey: 'nav.logs', icon: 'Folder' },
-  { to: '/profil', labelKey: 'nav.profile', icon: 'User' },
+  { to: '/super-admin/logs', labelKey: 'nav.logs', icon: 'BarChart' },
 ]
 
 export default function SuperAdminLayout({ children, title, subtitle }) {
@@ -20,13 +19,16 @@ export default function SuperAdminLayout({ children, title, subtitle }) {
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
-          <aside className="h-fit rounded-[1.75rem] border border-slate-100 bg-white p-4 shadow-lg shadow-slate-900/5">
-            <p className="mb-3 rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-700">{t('nav.platform')}</p>
-            <nav className="space-y-2">
+          <aside className="h-fit rounded-[1.75rem] border border-slate-100 bg-white p-4 shadow-lg shadow-slate-900/5 lg:sticky lg:top-28">
+            <p className="mb-3 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-700">
+              {t('nav.superAdmin')}
+            </p>
+            <nav className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
               {links.map(link => (
                 <NavLink
                   key={link.to}
                   to={link.to}
+                  end={link.to === '/super-admin/dashboard'}
                   className={({ isActive }) =>
                     `flex items-center gap-2 px-3 py-2.5 rounded-2xl text-sm font-bold transition ${
                       isActive

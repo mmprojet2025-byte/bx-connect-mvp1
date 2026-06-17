@@ -2,6 +2,8 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,10 +19,10 @@ import AppIcon from '../components/AppIcon';
 import { COLORS } from '../components/MobileUI';
 
 const benefits = [
-  { label: 'Activités', icon: 'activity' },
-  { label: 'Groupes', icon: 'group' },
-  { label: 'Projets', icon: 'project' },
-  { label: 'Messages', icon: 'message' },
+  { labelKey: 'auth.benefit_activities', icon: 'activity' },
+  { labelKey: 'auth.benefit_groups', icon: 'group' },
+  { labelKey: 'auth.benefit_projects', icon: 'project' },
+  { labelKey: 'auth.benefit_messages', icon: 'message' },
 ];
 
 export default function LoginScreen({ navigation }) {
@@ -56,11 +58,16 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
-    <ScrollView
+    <KeyboardAvoidingView
       style={styles.container}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={80}
     >
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
       <View style={[styles.hero, { minHeight: Math.max(270, height * 0.38) }]}>
         <View style={styles.visualBlock}>
           <Image
@@ -70,22 +77,20 @@ export default function LoginScreen({ navigation }) {
           />
         </View>
 
-        <Text style={styles.slogan}>Connecter • Inspirer • Impacter</Text>
-        <Text style={styles.heroTitle}>Connecte-toi à la communauté BX-Connect</Text>
-        <Text style={styles.heroText}>
-          Retrouve tes activités, tes groupes, tes projets et tes messages.
-        </Text>
+        <Text style={styles.slogan}>{t('brand.slogan')}</Text>
+        <Text style={styles.heroTitle}>{t('auth.login_hero_title')}</Text>
+        <Text style={styles.heroText}>{t('auth.login_hero_text')}</Text>
       </View>
 
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <View>
             <Text style={styles.formTitle}>{t('auth.login_btn')}</Text>
-            <Text style={styles.formSubtitle}>Accède à ton espace communautaire.</Text>
+            <Text style={styles.formSubtitle}>{t('auth.login_subtitle')}</Text>
           </View>
           <View style={styles.secureBadge}>
             <AppIcon name="shield" size={15} color={COLORS.success} />
-            <Text style={styles.secureBadgeText}>Sécurisé</Text>
+            <Text style={styles.secureBadgeText}>{t('auth.secure')}</Text>
           </View>
         </View>
 
@@ -142,13 +147,6 @@ export default function LoginScreen({ navigation }) {
               />
             </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.forgotPassword}
-            onPress={() => navigation.navigate('ForgotPassword')}
-            activeOpacity={0.75}
-          >
-            <Text style={styles.forgotPasswordText}>{t('auth.forgot_password')}</Text>
-          </TouchableOpacity>
         </View>
 
         <TouchableOpacity
@@ -177,12 +175,12 @@ export default function LoginScreen({ navigation }) {
       </View>
 
       <View style={styles.benefitsBlock}>
-        <Text style={styles.benefitsTitle}>Pourquoi BX-Connect ?</Text>
+        <Text style={styles.benefitsTitle}>{t('auth.benefits_title')}</Text>
         <View style={styles.benefitsGrid}>
           {benefits.map((benefit) => (
-            <View key={benefit.label} style={styles.benefitPill}>
+            <View key={benefit.labelKey} style={styles.benefitPill}>
               <AppIcon name={benefit.icon} size={16} color={COLORS.bxBlue} />
-              <Text style={styles.benefitText}>{benefit.label}</Text>
+              <Text style={styles.benefitText}>{t(benefit.labelKey)}</Text>
             </View>
           ))}
         </View>
@@ -203,7 +201,8 @@ export default function LoginScreen({ navigation }) {
         <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalPrivacy')}>{t('legal.links.privacy')}</Text>
         <Text style={styles.legalLink} onPress={() => navigation.navigate('LegalNotices')}>{t('legal.links.notices')}</Text>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -303,8 +302,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  forgotPassword: { alignSelf: 'flex-end', paddingTop: 9, paddingBottom: 2 },
-  forgotPasswordText: { color: COLORS.bxBlueLight, fontSize: 13, fontWeight: '800' },
   btnLogin: {
     backgroundColor: COLORS.bxBlue,
     minHeight: 56,

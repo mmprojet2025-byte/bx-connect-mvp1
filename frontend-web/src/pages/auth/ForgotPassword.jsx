@@ -22,7 +22,7 @@ export default function ForgotPassword() {
             <img
               src={logoBxConnect}
               alt="BX-CONNECT"
-              className="h-16 w-[200px] object-contain"
+              className="w-[230px] max-w-full object-contain sm:w-[280px]"
             />
           </Link>
           <h1 className="mt-4 text-2xl font-bold text-slate-950">

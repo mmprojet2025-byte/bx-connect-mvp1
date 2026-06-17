@@ -1,1 +1,96 @@
 @import "tailwindcss";
+
+@keyframes landingFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landingHeroZoom {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.06);
+  }
+}
+
+.landing-fade-up {
+  animation: landingFadeUp 700ms ease-out both;
+}
+
+.landing-delay-1 {
+  animation-delay: 90ms;
+}
+
+.landing-delay-2 {
+  animation-delay: 180ms;
+}
+
+.landing-delay-3 {
+  animation-delay: 270ms;
+}
+
+.landing-delay-4 {
+  animation-delay: 360ms;
+}
+
+.landing-hero-photo {
+  animation: landingHeroZoom 18s ease-in-out infinite alternate;
+}
+
+.landing-button,
+.landing-feature-card,
+.landing-gallery-card {
+  will-change: transform;
+}
+
+.landing-button:hover {
+  transform: translateY(-2px);
+}
+
+.reveal.fade-up {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 650ms ease,
+    transform 650ms ease;
+  transition-delay: var(--stagger-delay, 0ms);
+}
+
+.reveal.fade-up.reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+
+  .landing-fade-up,
+  .landing-hero-photo {
+    animation: none !important;
+  }
+
+  .reveal.fade-up {
+    opacity: 1;
+    transform: none;
+  }
+
+  .landing-button,
+  .landing-feature-card,
+  .landing-gallery-card,
+  .reveal.fade-up {
+    transition: none !important;
+    transform: none !important;
+    will-change: auto;
+  }
+}

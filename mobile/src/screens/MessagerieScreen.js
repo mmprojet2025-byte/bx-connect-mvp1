@@ -197,7 +197,7 @@ export default function MessagerieScreen() {
       {emptyMessage ? (
         <SharedEmptyState
           icon="message"
-          illustrationSource={require('../../assets/illustrations/messages.png')}
+          illustrationSource={require('../assets/images/placeholders/messages.png')}
           title={t('messaging.threadUnavailable')}
           text={emptyMessage}
           actionLabel={t('common.retry')}
@@ -206,7 +206,7 @@ export default function MessagerieScreen() {
       ) : !filActif ? (
         <SharedEmptyState
           icon="message"
-          illustrationSource={require('../../assets/illustrations/messages.png')}
+          illustrationSource={require('../assets/images/placeholders/messages.png')}
           title={t('messaging.noThread')}
           text={t('messaging.threadNotCreated')}
           actionLabel={t('common.retry')}
@@ -401,7 +401,7 @@ function getAccessError(err, t, fallback) {
   if (err.response?.status === 403) {
     return t('messaging.accessDenied');
   }
-  return err.response?.data?.message || fallback;
+  return fallback;
 }
 
 function getInitiales(prenom, nom) {

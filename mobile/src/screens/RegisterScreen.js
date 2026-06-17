@@ -2,6 +2,8 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,10 +20,10 @@ import { COLORS } from '../components/MobileUI';
 import { LEGAL_VERSION } from '../constants/legal';
 
 const benefits = [
-  { label: 'Activités', icon: 'activity' },
-  { label: 'Groupes', icon: 'group' },
-  { label: 'Projets', icon: 'project' },
-  { label: 'Messages', icon: 'message' },
+  { labelKey: 'auth.benefit_activities', icon: 'activity' },
+  { labelKey: 'auth.benefit_groups', icon: 'group' },
+  { labelKey: 'auth.benefit_projects', icon: 'project' },
+  { labelKey: 'auth.benefit_messages', icon: 'message' },
 ];
 
 export default function RegisterScreen({ navigation }) {
@@ -85,7 +87,16 @@ export default function RegisterScreen({ navigation }) {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={80}
+    >
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
       <View style={[styles.hero, { minHeight: Math.max(260, height * 0.36) }]}>
         <View style={styles.visualBlock}>
           <Image
@@ -95,22 +106,20 @@ export default function RegisterScreen({ navigation }) {
           />
         </View>
 
-        <Text style={styles.slogan}>Connecter • Inspirer • Impacter</Text>
-        <Text style={styles.heroTitle}>Rejoins la communauté BX-Connect</Text>
-        <Text style={styles.heroText}>
-          Crée ton compte pour retrouver tes activités, tes groupes, tes projets et tes messages.
-        </Text>
+        <Text style={styles.slogan}>{t('brand.slogan')}</Text>
+        <Text style={styles.heroTitle}>{t('auth.register_hero_title')}</Text>
+        <Text style={styles.heroText}>{t('auth.register_hero_text')}</Text>
       </View>
 
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <View>
             <Text style={styles.formTitle}>{t('auth.register_btn')}</Text>
-            <Text style={styles.formSubtitle}>Quelques informations pour ouvrir ton espace.</Text>
+            <Text style={styles.formSubtitle}>{t('auth.register_subtitle')}</Text>
           </View>
           <View style={styles.secureBadge}>
             <AppIcon name="shield" size={15} color={COLORS.success} />
-            <Text style={styles.secureBadgeText}>Sécurisé</Text>
+            <Text style={styles.secureBadgeText}>{t('auth.secure')}</Text>
           </View>
         </View>
 
@@ -270,12 +279,12 @@ export default function RegisterScreen({ navigation }) {
       </View>
 
       <View style={styles.benefitsBlock}>
-        <Text style={styles.benefitsTitle}>Pourquoi BX-Connect ?</Text>
+        <Text style={styles.benefitsTitle}>{t('auth.benefits_title')}</Text>
         <View style={styles.benefitsGrid}>
           {benefits.map((benefit) => (
-            <View key={benefit.label} style={styles.benefitPill}>
+            <View key={benefit.labelKey} style={styles.benefitPill}>
               <AppIcon name={benefit.icon} size={16} color={COLORS.bxBlue} />
-              <Text style={styles.benefitText}>{benefit.label}</Text>
+              <Text style={styles.benefitText}>{t(benefit.labelKey)}</Text>
             </View>
           ))}
         </View>
@@ -285,7 +294,8 @@ export default function RegisterScreen({ navigation }) {
         <Text style={styles.backText}>{t('auth.back_home_short')}</Text>
       </TouchableOpacity>
       <LegalLinks navigation={navigation} t={t} />
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

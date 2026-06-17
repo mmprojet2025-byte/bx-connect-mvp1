@@ -3,10 +3,13 @@ import {
   View, Text, StyleSheet, TouchableOpacity,
   TextInput, ScrollView, ActivityIndicator, Platform, Linking
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import AppIcon from '../components/AppIcon';
 
 export default function PaymentScreen({ route }) {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
 
   // Paramètres passés depuis un autre écran
@@ -64,8 +67,8 @@ export default function PaymentScreen({ route }) {
           }
         }
       }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de la création du paiement.');
+    } catch {
+      setError(t('errors.generic'));
     } finally {
       setLoading(false);
     }
@@ -74,7 +77,9 @@ export default function PaymentScreen({ route }) {
   if (success) {
     return (
       <View style={styles.successContainer}>
-        <Text style={styles.successIcon}>✅</Text>
+        <View style={styles.successIcon}>
+          <AppIcon name="checkmark-circle" size={42} color="#22C55E" />
+        </View>
         <Text style={styles.successTitle}>Redirection en cours</Text>
         <Text style={styles.successText}>
           {"Complétez votre paiement dans le navigateur qui vient de s'ouvrir."}
@@ -92,17 +97,18 @@ export default function PaymentScreen({ route }) {
 
       {/* En-tête */}
       <View style={styles.header}>
-        <Text style={styles.headerIcon}>💳</Text>
+        <AppIcon name="payment" size={34} color="#38BDF8" />
         <Text style={styles.headerTitle}>Soutenir via Stripe</Text>
         <Text style={styles.headerSubtitle}>
-          {projetId ? '🚀 Projet' : '🎯 Activité'} : {titre}
+          {projetId ? 'Projet' : 'Activité'} : {titre}
         </Text>
       </View>
 
       {/* Erreur */}
       {error !== '' && (
         <View style={styles.errorBox}>
-          <Text style={styles.errorText}>❌ {error}</Text>
+          <AppIcon name="warning" size={18} color="#EF4444" />
+          <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
 
@@ -156,7 +162,7 @@ export default function PaymentScreen({ route }) {
         </View>
         <View style={styles.recapRow}>
           <Text style={styles.recapLabel}>Fournisseur</Text>
-          <Text style={styles.recapValue}>💳 Stripe</Text>
+          <Text style={styles.recapValue}>Stripe</Text>
         </View>
         <View style={styles.recapRow}>
           <Text style={styles.recapLabel}>Cible</Text>
@@ -173,13 +179,21 @@ export default function PaymentScreen({ route }) {
       >
         {loading
           ? <ActivityIndicator color="#fff" />
-          : <Text style={styles.btnPayerText}>💳 Payer {montant} € avec Stripe</Text>
+          : (
+            <>
+              <AppIcon name="payment" size={18} color="#fff" />
+              <Text style={styles.btnPayerText}>Payer {montant} € avec Stripe</Text>
+            </>
+          )
         }
       </TouchableOpacity>
 
-      <Text style={styles.securityNote}>
-        🔒 Paiement sécurisé par Stripe — Données bancaires jamais stockées
-      </Text>
+      <View style={styles.securityNoteRow}>
+        <AppIcon name="lock" size={14} color="#94a3b8" />
+        <Text style={styles.securityNote}>
+          Paiement sécurisé par Stripe · Données bancaires jamais stockées
+        </Text>
+      </View>
 
     </ScrollView>
   );
@@ -197,8 +211,9 @@ const styles = StyleSheet.create({
   errorBox: {
     backgroundColor: '#fef2f2', borderLeftWidth: 4, borderLeftColor: '#EF4444',
     padding: 12, borderRadius: 8, marginBottom: 16,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
   },
-  errorText: { color: '#EF4444', fontSize: 13 },
+  errorText: { flex: 1, color: '#EF4444', fontSize: 13 },
 
   label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8 },
 
@@ -236,19 +251,26 @@ const styles = StyleSheet.create({
 
   btnPayer: {
     backgroundColor: '#1E3A8A', paddingVertical: 16,
-    borderRadius: 14, alignItems: 'center', marginBottom: 12,
+    borderRadius: 14, alignItems: 'center', justifyContent: 'center',
+    flexDirection: 'row', gap: 8, marginBottom: 12,
   },
   btnDisabled: { backgroundColor: '#94a3b8' },
   btnPayerText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 
   securityNote: { textAlign: 'center', fontSize: 11, color: '#94a3b8' },
+  securityNoteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
 
   // Succès
   successContainer: {
     flex: 1, backgroundColor: '#F8FAFC',
     alignItems: 'center', justifyContent: 'center', padding: 40,
   },
-  successIcon: { fontSize: 64, marginBottom: 16 },
+  successIcon: { marginBottom: 16 },
   successTitle: { fontSize: 22, fontWeight: 'bold', color: '#22C55E', marginBottom: 8 },
   successText: { fontSize: 14, color: '#64748b', textAlign: 'center', lineHeight: 20, marginBottom: 8 },
   successHint: { fontSize: 12, color: '#94a3b8', textAlign: 'center' },

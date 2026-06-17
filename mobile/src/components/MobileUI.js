@@ -3,24 +3,25 @@ import AppIcon from './AppIcon';
 
 export const COLORS = {
   bxBlue: '#1E3A8A',
-  bxBlueLight: '#3B82F6',
+  bxBlueLight: '#2563EB',
+  interactive: '#2563EB',
   impactOrange: '#F97316',
   success: '#22C55E',
   warning: '#F59E0B',
   danger: '#EF4444',
   info: '#38BDF8',
-  surface: '#ffffff',
-  page: '#F8FAFC',
-  text: '#0f172a',
-  muted: '#64748b',
-  border: '#e2e8f0',
-  borderSoft: '#eef2f7',
-  softBlue: '#E0F2FE',
-  softOrange: '#ffedd5',
-  softGreen: '#dcfce7',
-  softRed: '#fee2e2',
-  softYellow: '#fef3c7',
-  softPurple: '#ede9fe',
+  surface: '#FFFFFF',
+  page: '#F3F4F6',
+  text: '#111827',
+  muted: '#64748B',
+  border: '#E5E7EB',
+  borderSoft: '#E5E7EB',
+  softBlue: '#EFF6FF',
+  softOrange: '#FFF7ED',
+  softGreen: '#F0FDF4',
+  softRed: '#FEF2F2',
+  softYellow: '#FFFBEB',
+  softPurple: '#F5F3FF',
 };
 
 export const SPACING = {
@@ -34,44 +35,44 @@ export const SPACING = {
 
 export const BORDER_RADIUS = {
   sm: 10,
-  md: 14,
-  lg: 18,
-  xl: 22,
-  xxl: 28,
+  md: 12,
+  lg: 14,
+  xl: 14,
+  xxl: 14,
   pill: 999,
 };
 
 export const SHADOWS = {
   soft: {
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 2,
+    shadowColor: '#111827',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.035,
+    shadowRadius: 5,
+    elevation: 1,
   },
   medium: {
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 7 },
-    shadowOpacity: 0.1,
-    shadowRadius: 18,
-    elevation: 4,
+    shadowColor: '#111827',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   colored: (color = COLORS.bxBlue) => ({
     shadowColor: color,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
   }),
 };
 
 export const TYPOGRAPHY = {
-  hero: { fontSize: 26, lineHeight: 32, fontWeight: '900' },
-  title: { fontSize: 21, lineHeight: 27, fontWeight: '900' },
-  section: { fontSize: 17, lineHeight: 22, fontWeight: '900' },
+  hero: { fontSize: 26, lineHeight: 32, fontWeight: '800' },
+  title: { fontSize: 21, lineHeight: 27, fontWeight: '700' },
+  section: { fontSize: 17, lineHeight: 22, fontWeight: '700' },
   body: { fontSize: 14, lineHeight: 20 },
-  caption: { fontSize: 12, lineHeight: 17 },
-  tiny: { fontSize: 10, lineHeight: 14 },
+  caption: { fontSize: 14, lineHeight: 19 },
+  tiny: { fontSize: 12, lineHeight: 16 },
 };
 
 export function Card({ children, style }) {
@@ -117,7 +118,9 @@ export function EmptyState({
   return (
     <Card style={styles.emptyState}>
       {illustrationSource ? (
-        <Image source={illustrationSource} style={styles.emptyIllustration} resizeMode="contain" />
+        <View style={styles.emptyIllustrationFrame}>
+          <Image source={illustrationSource} style={styles.emptyIllustration} resizeMode="cover" />
+        </View>
       ) : (
         <View style={styles.emptyIcon}>
           <AppIcon name={icon} size={34} color={COLORS.info} />
@@ -240,11 +243,11 @@ const styles = StyleSheet.create({
     ...SHADOWS.soft,
   },
   badge: { borderRadius: BORDER_RADIUS.pill, paddingHorizontal: 10, paddingVertical: 5, maxWidth: 124 },
-  badgeText: { ...TYPOGRAPHY.tiny, fontWeight: '900', textAlign: 'center' },
+  badgeText: { ...TYPOGRAPHY.tiny, fontWeight: '700', textAlign: 'center' },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md },
   sectionIcon: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
     borderRadius: BORDER_RADIUS.md,
     backgroundColor: COLORS.softBlue,
     alignItems: 'center',
@@ -254,8 +257,27 @@ const styles = StyleSheet.create({
   sectionText: { flex: 1 },
   sectionTitle: { color: COLORS.bxBlue, ...TYPOGRAPHY.section },
   sectionSubtitle: { color: COLORS.muted, ...TYPOGRAPHY.caption, marginTop: 2 },
-  emptyState: { alignItems: 'center', justifyContent: 'center', padding: SPACING.xxl },
-  emptyIllustration: { width: 154, height: 122, marginBottom: SPACING.md },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.xxl,
+    borderRadius: 20,
+    ...SHADOWS.medium,
+  },
+  emptyIllustrationFrame: {
+    width: 200,
+    height: 200,
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: '#F8FBFF',
+    marginBottom: SPACING.lg,
+    shadowColor: COLORS.bxBlue,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 3,
+  },
+  emptyIllustration: { width: '100%', height: '100%' },
   emptyIcon: {
     width: 64,
     height: 64,
@@ -267,8 +289,8 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { color: COLORS.bxBlue, ...TYPOGRAPHY.title, textAlign: 'center', marginBottom: SPACING.sm },
   emptyText: { color: COLORS.muted, ...TYPOGRAPHY.body, textAlign: 'center' },
-  emptyAction: { marginTop: SPACING.lg, backgroundColor: COLORS.bxBlue, borderRadius: BORDER_RADIUS.lg, paddingHorizontal: 18, paddingVertical: 11, minHeight: 46, justifyContent: 'center' },
-  emptyActionText: { color: '#fff', fontSize: 13, fontWeight: '900' },
+  emptyAction: { marginTop: SPACING.lg, backgroundColor: COLORS.interactive, borderRadius: BORDER_RADIUS.lg, paddingHorizontal: 18, paddingVertical: 11, minHeight: 44, justifyContent: 'center' },
+  emptyActionText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   feedbackState: {
     flex: 1,
     minHeight: 220,
@@ -304,10 +326,10 @@ const styles = StyleSheet.create({
     marginTop: SPACING.lg,
     justifyContent: 'center',
     borderRadius: BORDER_RADIUS.lg,
-    backgroundColor: COLORS.bxBlue,
+    backgroundColor: COLORS.interactive,
     paddingHorizontal: SPACING.xl,
   },
-  feedbackActionText: { color: '#fff', fontSize: 13, fontWeight: '900' },
+  feedbackActionText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   statCard: {
     flex: 1,
     minWidth: '47%',
@@ -325,8 +347,8 @@ const styles = StyleSheet.create({
     marginRight: SPACING.sm,
   },
   statContent: { flex: 1, minWidth: 0 },
-  statValue: { fontSize: 20, lineHeight: 23, fontWeight: '900' },
-  statLabel: { color: COLORS.muted, fontSize: 10, lineHeight: 13, fontWeight: '700', flexShrink: 1 },
+  statValue: { fontSize: 20, lineHeight: 23, fontWeight: '700' },
+  statLabel: { color: COLORS.muted, fontSize: 14, lineHeight: 18, fontWeight: '600', flexShrink: 1 },
   actionCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -336,33 +358,33 @@ const styles = StyleSheet.create({
     borderColor: COLORS.borderSoft,
     padding: SPACING.md,
     marginBottom: SPACING.sm,
-    minHeight: 68,
+    minHeight: 64,
     ...SHADOWS.soft,
   },
-  actionIcon: { width: 42, height: 42, borderRadius: BORDER_RADIUS.md, alignItems: 'center', justifyContent: 'center', marginRight: SPACING.md },
+  actionIcon: { width: 44, height: 44, borderRadius: BORDER_RADIUS.md, alignItems: 'center', justifyContent: 'center', marginRight: SPACING.md },
   actionText: { flex: 1 },
-  actionLabel: { color: COLORS.bxBlue, fontSize: 14, fontWeight: '900' },
+  actionLabel: { color: COLORS.text, fontSize: 14, lineHeight: 19, fontWeight: '700' },
   actionDescription: { color: COLORS.muted, ...TYPOGRAPHY.caption, marginTop: 2 },
   actionCardCompact: {
     width: '48.5%',
-    minHeight: 102,
-    padding: 10,
+    minHeight: 108,
+    padding: 12,
     marginBottom: 0,
     alignItems: 'flex-start',
     flexDirection: 'column',
     position: 'relative',
   },
   actionIconCompact: {
-    width: 32,
-    height: 32,
+    width: 44,
+    height: 44,
     borderRadius: BORDER_RADIUS.md,
     marginRight: 0,
     marginBottom: 6,
   },
   actionTextCompact: { flex: 1, width: '100%' },
-  actionLabelCompact: { fontSize: 13, lineHeight: 17 },
-  actionDescriptionCompact: { fontSize: 10, lineHeight: 14, marginTop: 3 },
+  actionLabelCompact: { fontSize: 14, lineHeight: 18 },
+  actionDescriptionCompact: { fontSize: 14, lineHeight: 18, marginTop: 3 },
   actionChevron: { position: 'absolute', top: 12, right: 10 },
   avatar: { alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#fff', fontWeight: '900' },
+  avatarText: { color: '#fff', fontWeight: '700' },
 });

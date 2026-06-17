@@ -1,33 +1,34 @@
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import AppIcon from '../components/AppIcon';
 import { COLORS, Card, SectionHeader } from '../components/MobileUI';
 
 const features = [
   {
-    title: 'Activités',
-    text: 'Découvre les prochains rendez-vous de BX-Jeunes Impact.',
+    titleKey: 'home.features.activitiesTitle',
+    textKey: 'home.features.activitiesText',
     icon: 'activity',
     color: COLORS.info,
     route: 'Activities',
   },
   {
-    title: 'Projets',
-    text: 'Suis les initiatives portées par la communauté.',
+    titleKey: 'home.features.projectsTitle',
+    textKey: 'home.features.projectsText',
     icon: 'project',
     color: COLORS.impactOrange,
     route: 'Login',
   },
   {
-    title: 'Groupes',
-    text: 'Trouve un groupe qui correspond à tes envies.',
+    titleKey: 'home.features.groupsTitle',
+    textKey: 'home.features.groupsText',
     icon: 'group',
     color: COLORS.success,
     route: 'Groupes',
   },
   {
-    title: 'Communauté',
-    text: 'Échange avec ton groupe après connexion.',
+    titleKey: 'home.features.communityTitle',
+    textKey: 'home.features.communityText',
     icon: 'message',
     color: '#8B5CF6',
     route: 'Login',
@@ -35,13 +36,14 @@ const features = [
 ];
 
 const audiences = [
-  { label: 'Jeunes', icon: 'user', color: COLORS.info },
-  { label: 'Référents', icon: 'shield', color: COLORS.success },
-  { label: 'Partenaires', icon: 'wallet', color: COLORS.impactOrange },
+  { labelKey: 'home.audiences.members', icon: 'user', color: COLORS.info },
+  { labelKey: 'home.audiences.referents', icon: 'shield', color: COLORS.success },
+  { labelKey: 'home.audiences.partners', icon: 'wallet', color: COLORS.impactOrange },
 ];
 
 export default function HomeScreen({ navigation }) {
   const { isAuthenticated, user } = useAuth();
+  const { t } = useTranslation();
 
   const goTo = (route) => {
     if (route === 'Login' && isAuthenticated) {
@@ -60,11 +62,8 @@ export default function HomeScreen({ navigation }) {
           resizeMode="contain"
         />
 
-        <Text style={styles.slogan}>Connecter. Inspirer. Impacter.</Text>
-        <Text style={styles.heroText}>
-          La plateforme communautaire pour découvrir des activités, rejoindre un groupe
-          et porter des projets qui ont du sens.
-        </Text>
+        <Text style={styles.slogan}>{t('brand.slogan')}</Text>
+        <Text style={styles.heroText}>{t('home.heroText')}</Text>
 
         <View style={styles.heroActions}>
           <TouchableOpacity
@@ -74,7 +73,7 @@ export default function HomeScreen({ navigation }) {
           >
             <AppIcon name={isAuthenticated ? 'activity' : 'lock'} size={18} color="#fff" />
             <Text style={styles.primaryButtonText}>
-              {isAuthenticated ? 'Voir les activités' : 'Se connecter'}
+              {isAuthenticated ? t('home.viewActivities') : t('auth.login_btn')}
             </Text>
           </TouchableOpacity>
 
@@ -84,7 +83,7 @@ export default function HomeScreen({ navigation }) {
             activeOpacity={0.86}
           >
             <AppIcon name="search" size={18} color={COLORS.bxBlue} />
-            <Text style={styles.secondaryButtonText}>Découvrir</Text>
+            <Text style={styles.secondaryButtonText}>{t('home.discover')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -95,24 +94,26 @@ export default function HomeScreen({ navigation }) {
             <AppIcon name="check" size={22} color={COLORS.success} />
           </View>
           <View style={styles.welcomeTextWrap}>
-            <Text style={styles.welcomeTitle}>Bon retour{user?.prenom ? `, ${user.prenom}` : ''}</Text>
-            <Text style={styles.welcomeText}>
-              Continue ton parcours et retrouve rapidement tes activités.
+            <Text style={styles.welcomeTitle}>
+              {user?.prenom
+                ? t('home.welcomeNamed', { name: user.prenom })
+                : t('home.welcome')}
             </Text>
+            <Text style={styles.welcomeText}>{t('home.welcomeText')}</Text>
           </View>
         </Card>
       ) : null}
 
       <View style={styles.section}>
         <SectionHeader
-          title="Ce que tu peux faire"
-          subtitle="Un espace simple pour participer, collaborer et rester connecté."
+          title={t('home.featuresTitle')}
+          subtitle={t('home.featuresSubtitle')}
           icon="project"
         />
         <View style={styles.featureGrid}>
           {features.map((feature) => (
             <TouchableOpacity
-              key={feature.title}
+              key={feature.titleKey}
               style={styles.featureCard}
               onPress={() => goTo(feature.route)}
               activeOpacity={0.86}
@@ -120,8 +121,8 @@ export default function HomeScreen({ navigation }) {
               <View style={[styles.featureIcon, { backgroundColor: `${feature.color}18` }]}>
                 <AppIcon name={feature.icon} size={22} color={feature.color} />
               </View>
-              <Text style={styles.featureTitle}>{feature.title}</Text>
-              <Text style={styles.featureText}>{feature.text}</Text>
+              <Text style={styles.featureTitle}>{t(feature.titleKey)}</Text>
+              <Text style={styles.featureText}>{t(feature.textKey)}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -129,17 +130,17 @@ export default function HomeScreen({ navigation }) {
 
       <View style={styles.section}>
         <SectionHeader
-          title="Pour qui ?"
-          subtitle="Une même application, adaptée aux rôles de la communauté."
+          title={t('home.audiencesTitle')}
+          subtitle={t('home.audiencesSubtitle')}
           icon="group"
         />
         <View style={styles.audienceRow}>
           {audiences.map((audience) => (
-            <View key={audience.label} style={styles.audiencePill}>
+            <View key={audience.labelKey} style={styles.audiencePill}>
               <View style={[styles.audienceIcon, { backgroundColor: `${audience.color}18` }]}>
                 <AppIcon name={audience.icon} size={18} color={audience.color} />
               </View>
-              <Text style={styles.audienceText}>{audience.label}</Text>
+              <Text style={styles.audienceText}>{t(audience.labelKey)}</Text>
             </View>
           ))}
         </View>
@@ -153,17 +154,15 @@ export default function HomeScreen({ navigation }) {
             resizeMode="contain"
           />
           <View style={styles.joinContent}>
-            <Text style={styles.joinTitle}>Prêt à rejoindre la communauté ?</Text>
-            <Text style={styles.joinText}>
-              Crée ton compte pour demander à rejoindre un groupe et accéder à la messagerie.
-            </Text>
+            <Text style={styles.joinTitle}>{t('home.joinTitle')}</Text>
+            <Text style={styles.joinText}>{t('home.joinText')}</Text>
           </View>
           <TouchableOpacity
             style={styles.joinButton}
             onPress={() => navigation.navigate('Register')}
             activeOpacity={0.86}
           >
-            <Text style={styles.joinButtonText}>Créer un compte</Text>
+            <Text style={styles.joinButtonText}>{t('auth.create_free_account')}</Text>
           </TouchableOpacity>
         </Card>
       ) : null}

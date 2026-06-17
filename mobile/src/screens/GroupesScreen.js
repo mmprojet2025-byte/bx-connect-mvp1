@@ -55,13 +55,26 @@ export default function GroupesScreen() {
         setGroupes(res.data);
         setAdhesions([]);
       } else {
-        const groupesRes = await api.get('/groupes');
-        setGroupes(groupesRes.data);
+        let groupesData = [];
+        try {
+          const groupesRes = await api.get('/groupes');
+          groupesData = groupesRes.data || [];
+        } catch (err) {
+          if (!isMembre || err.response?.status !== 403) throw err;
+
+          try {
+            const groupesMembreRes = await api.get('/groupes/mes-groupes');
+            groupesData = groupesMembreRes.data || [];
+          } catch (fallbackError) {
+            throw fallbackError;
+          }
+        }
+        setGroupes(groupesData);
 
         if (isMembre) {
           try {
             const adhesionsRes = await api.get('/groupes/mes-adhesions');
-            setAdhesions(adhesionsRes.data);
+            setAdhesions(adhesionsRes.data || []);
           } catch {
             setAdhesions([]);
           }
@@ -70,7 +83,13 @@ export default function GroupesScreen() {
         }
       }
     } catch (err) {
-      setError(getApiError(err, t, t('groups.error_load')));
+      if (isMembre && err.response?.status === 403) {
+        setGroupes([]);
+        setAdhesions([]);
+        setError('');
+      } else {
+        setError(getApiError(err, t, t('groups.error_load')));
+      }
     } finally {
       setLoading(false);
     }
@@ -202,7 +221,7 @@ export default function GroupesScreen() {
       ) : groupesFiltres.length === 0 ? (
         <SharedEmptyState
           icon="group"
-          illustrationSource={require('../../assets/illustrations/groups.png')}
+          illustrationSource={require('../assets/images/placeholders/groupes.png')}
           title={recherche ? t('groups.no_search_results') : t('groups.no_groups')}
           text={isReferent
             ? t('groups.no_referent_groups')
@@ -420,7 +439,7 @@ function getApiError(err, t, fallback) {
   if (err.response?.status === 403) {
     return t('errors.forbidden');
   }
-  return err.response?.data?.message || fallback;
+  return fallback;
 }
 
 const styles = StyleSheet.create({

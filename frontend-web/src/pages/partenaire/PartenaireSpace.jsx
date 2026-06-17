@@ -237,6 +237,17 @@ export default function PartenaireSpace() {
         {/* ── Dashboard ── */}
         {onglet === 'dashboard' && (
           <div>
+            <PartnerActions
+              projetsOuverts={projetsOuverts}
+              activitesOuvertes={activitesOuvertes}
+              mesSoutiens={mesSoutiens}
+              onSupport={() => setShowSoutienForm(true)}
+              onProjects={() => setOnglet('projets')}
+              onActivities={() => setOnglet('activites')}
+              onSupports={() => setOnglet('soutiens')}
+              t={t}
+            />
+
             {sectionErrors.stats && <SectionLoadError message={sectionErrors.stats} />}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <StatCard label={t('partnerInstitution.projectsSupported')} value={stats?.projetsSoutenus ?? '—'} color="#7c3aed" icon="Rocket" />
@@ -590,6 +601,83 @@ export default function PartenaireSpace() {
 
       <Footer />
     </div>
+  );
+}
+
+function PartnerActions({ projetsOuverts, activitesOuvertes, mesSoutiens, onSupport, onProjects, onActivities, onSupports, t }) {
+  const pending = mesSoutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE').length;
+  const paid = mesSoutiens.filter(soutien => soutien.statutPaiement === 'PAYE').length;
+  const rejected = mesSoutiens.filter(soutien => soutien.statutPaiement === 'REMBOURSE').length;
+
+  return (
+    <section className="mb-6 rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">
+      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-orange-600">
+            {t('partnerSpace.actionsEyebrow', { defaultValue: 'Priorités partenaire' })}
+          </p>
+          <h2 className="text-xl font-black text-slate-950">
+            {t('partnerSpace.myActions', { defaultValue: 'Mes actions' })}
+          </h2>
+        </div>
+        <button
+          type="button"
+          onClick={onSupport}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-orange-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-500"
+        >
+          <AppIcon name="Wallet" className="h-4 w-4" />
+          {t('partnerSpace.proposeSupport')}
+        </button>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <PartnerActionCard
+          icon="Rocket"
+          title={t('partnerSpace.openProjects')}
+          value={projetsOuverts.length}
+          description={projetsOuverts.length > 0 ? t('partnerSpace.projectsAvailable', { count: projetsOuverts.length, defaultValue: `${projetsOuverts.length} projet(s) ouvert(s)` }) : t('partnerSpace.noOpenProjects')}
+          onClick={onProjects}
+        />
+        <PartnerActionCard
+          icon="Calendar"
+          title={t('partnerSpace.openActivities')}
+          value={activitesOuvertes.length}
+          description={activitesOuvertes.length > 0 ? t('partnerSpace.activitiesAvailable', { count: activitesOuvertes.length, defaultValue: `${activitesOuvertes.length} activité(s) ouverte(s)` }) : t('partnerSpace.noOpenActivities')}
+          onClick={onActivities}
+        />
+        <PartnerActionCard
+          icon="Wallet"
+          title={t('partnerSpace.mySupports')}
+          value={mesSoutiens.length}
+          description={mesSoutiens.length > 0
+            ? t('partnerSpace.supportStatusSummary', { pending, paid, rejected, defaultValue: `${pending} en attente · ${paid} payé(s) · ${rejected} refusé(s)` })
+            : t('partnerSpace.noSupports')}
+          onClick={onSupports}
+          highlight={pending > 0}
+        />
+      </div>
+    </section>
+  );
+}
+
+function PartnerActionCard({ icon, title, value, description, onClick, highlight = false }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${
+        highlight ? 'border-amber-200 bg-amber-50' : 'border-slate-100 bg-slate-50 hover:bg-white'
+      }`}
+    >
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${highlight ? 'bg-white text-amber-700' : 'bg-orange-50 text-orange-600'}`}>
+          <AppIcon name={icon} className="h-5 w-5" />
+        </span>
+        <span className={`text-2xl font-black ${highlight ? 'text-amber-800' : 'text-slate-950'}`}>{value}</span>
+      </div>
+      <h3 className="font-black text-slate-950">{title}</h3>
+      <p className="mt-1 text-sm leading-5 text-slate-500">{description}</p>
+    </button>
   );
 }
 

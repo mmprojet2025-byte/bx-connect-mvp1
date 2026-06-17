@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import AppIcon from '../components/AppIcon';
 
 export default function PaymentHistoryScreen() {
   const { isAuthenticated } = useAuth();
@@ -52,20 +53,18 @@ export default function PaymentHistoryScreen() {
     }
   };
 
-  const fournisseurIcon = (f) => f === 'STRIPE' ? '💳' : f === 'PAYPAL' ? '🅿️' : '📋';
-
   const renderPaiement = ({ item }) => {
     const sc = statutColor(item.statutPaiement);
     return (
       <View style={styles.card}>
         <View style={styles.cardLeft}>
           <View style={styles.iconContainer}>
-            <Text style={styles.icon}>{fournisseurIcon(item.fournisseur)}</Text>
+            <AppIcon name="payment" size={20} color="#1E3A8A" />
           </View>
           <View style={styles.cardInfo}>
             <Text style={styles.cardTitle} numberOfLines={1}>
-              {item.activiteTitre ? `🎯 ${item.activiteTitre}` :
-               item.projetTitre   ? `🚀 ${item.projetTitre}` :
+              {item.activiteTitre ? item.activiteTitre :
+               item.projetTitre   ? item.projetTitre :
                'Soutien BX-CONNECT'}
             </Text>
             <Text style={styles.cardDate}>
@@ -96,7 +95,9 @@ export default function PaymentHistoryScreen() {
   if (!isAuthenticated) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.emptyIcon}>🔐</Text>
+        <View style={styles.emptyIcon}>
+          <AppIcon name="lock" size={32} color="#38BDF8" />
+        </View>
         <Text style={styles.emptyTitle}>Connexion requise</Text>
         <Text style={styles.emptyText}>Connectez-vous pour voir votre historique.</Text>
       </View>
@@ -109,13 +110,13 @@ export default function PaymentHistoryScreen() {
       {/* En-tête */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>📋 Historique paiements</Text>
+          <Text style={styles.headerTitle}>Historique des paiements</Text>
           <Text style={styles.headerSub}>
             Total payé : <Text style={styles.totalPaye}>{totalPaye.toFixed(2)} €</Text>
           </Text>
         </View>
         <TouchableOpacity style={styles.refreshBtn} onPress={fetchHistorique}>
-          <Text style={styles.refreshBtnText}>🔄</Text>
+          <AppIcon name="refresh" size={18} color="#1E3A8A" />
         </TouchableOpacity>
       </View>
 
@@ -149,7 +150,9 @@ export default function PaymentHistoryScreen() {
         </View>
       ) : paiementsFiltres.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyIcon}>💳</Text>
+          <View style={styles.emptyIcon}>
+            <AppIcon name="payment" size={32} color="#38BDF8" />
+          </View>
           <Text style={styles.emptyTitle}>Aucun paiement</Text>
           <Text style={styles.emptyText}>
             {filtre === 'TOUS'
@@ -187,7 +190,6 @@ const styles = StyleSheet.create({
     width: 36, height: 36, backgroundColor: '#f1f5f9',
     borderRadius: 10, alignItems: 'center', justifyContent: 'center',
   },
-  refreshBtnText: { fontSize: 18 },
 
   filtresRow: {
     flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 8,
@@ -221,7 +223,6 @@ const styles = StyleSheet.create({
     width: 44, height: 44, backgroundColor: '#f1f5f9',
     borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
-  icon: { fontSize: 22 },
   cardInfo: { flex: 1 },
   cardTitle: { fontSize: 14, fontWeight: '600', color: '#1E3A8A', marginBottom: 2 },
   cardDate: { fontSize: 11, color: '#94a3b8' },
@@ -234,7 +235,15 @@ const styles = StyleSheet.create({
 
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   loadingText: { marginTop: 12, color: '#64748b', fontSize: 14 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EFF6FF',
+    marginBottom: 12,
+  },
   emptyTitle: { fontSize: 16, fontWeight: 'bold', color: '#1E3A8A', marginBottom: 6 },
   emptyText: { color: '#64748b', fontSize: 13, textAlign: 'center' },
 });

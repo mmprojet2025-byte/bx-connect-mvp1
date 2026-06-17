@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import AppIcon from '../components/AppIcon';
 
 export default function AnnoncesScreen() {
   const { isAuthenticated } = useAuth();
@@ -39,13 +40,13 @@ export default function AnnoncesScreen() {
       <View style={[styles.card, item.epinglee && styles.cardEpinglee]}>
         <View style={styles.cardHeader}>
           <View style={styles.cardTitleRow}>
-            {item.epinglee && <Text style={styles.pinIcon}>📌</Text>}
+            {item.epinglee && <AppIcon name="pin" size={15} color="#38BDF8" style={styles.pinIcon} />}
             <Text style={styles.cardTitle} numberOfLines={2}>{item.titre}</Text>
           </View>
           <View style={[styles.typeBadge, { backgroundColor: ts.bg }]}>
             <Text style={[styles.typeBadgeText, { color: ts.color }]}>
-              {item.type === 'GLOBALE' ? '🌍 Global' :
-               item.type === 'GROUPE'  ? `👥 ${item.groupeNom || 'Groupe'}` : '⚙️'}
+              {item.type === 'GLOBALE' ? 'Global' :
+               item.type === 'GROUPE' ? item.groupeNom || 'Groupe' : 'Système'}
             </Text>
           </View>
         </View>
@@ -61,9 +62,12 @@ export default function AnnoncesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>📢 Annonces</Text>
+        <View style={styles.headerTitleRow}>
+          <AppIcon name="alert" size={20} color="#1E3A8A" />
+          <Text style={styles.headerTitle}>Annonces</Text>
+        </View>
         <TouchableOpacity style={styles.refreshBtn} onPress={fetchAnnonces}>
-          <Text>🔄</Text>
+          <AppIcon name="refresh" size={19} color="#1E3A8A" />
         </TouchableOpacity>
       </View>
 
@@ -80,7 +84,9 @@ export default function AnnoncesScreen() {
         </View>
       ) : annonces.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyIcon}>📢</Text>
+          <View style={styles.emptyIcon}>
+            <AppIcon name="alert" size={32} color="#38BDF8" />
+          </View>
           <Text style={styles.emptyText}>Aucune annonce pour le moment.</Text>
         </View>
       ) : (
@@ -106,6 +112,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e2e8f0',
   },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1E3A8A' },
+  headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   refreshBtn: { padding: 4 },
   errorBox: {
     backgroundColor: '#fef2f2', borderLeftWidth: 4, borderLeftColor: '#EF4444',
@@ -124,7 +131,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start', marginBottom: 8,
   },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 },
-  pinIcon: { fontSize: 14, marginRight: 4 },
+  pinIcon: { marginRight: 4 },
   cardTitle: { fontSize: 15, fontWeight: 'bold', color: '#1E3A8A', flex: 1 },
   typeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
   typeBadgeText: { fontSize: 10, fontWeight: '600' },
@@ -132,6 +139,14 @@ const styles = StyleSheet.create({
   cardMeta: { fontSize: 11, color: '#94a3b8' },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   loadingText: { marginTop: 12, color: '#64748b', fontSize: 14 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EFF6FF',
+    marginBottom: 12,
+  },
   emptyText: { color: '#64748b', fontSize: 14, textAlign: 'center' },
 });

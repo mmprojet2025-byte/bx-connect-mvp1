@@ -138,7 +138,7 @@ function statusColor(status) {
 function getApiError(err, t, fallback) {
   if (err.response?.status === 401) return t('errors.session_expired');
   if (err.response?.status === 403) return t('errors.forbidden');
-  return err.response?.data?.message || fallback;
+  return fallback;
 }
 
 const styles = StyleSheet.create({

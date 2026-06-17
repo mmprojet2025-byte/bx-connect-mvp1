@@ -16,6 +16,7 @@ export default function ReferentDashboard() {
   const [groupes, setGroupes] = useState([])
   const [detailsGroupes, setDetailsGroupes] = useState([])
   const [activites, setActivites] = useState([])
+  const [projets, setProjets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const { t, i18n } = useTranslation()
@@ -23,9 +24,10 @@ export default function ReferentDashboard() {
   const fetchDashboard = useCallback(async () => {
     setLoading(true)
     try {
-      const [groupesRes, activitesRes] = await Promise.all([
+      const [groupesRes, activitesRes, projetsRes] = await Promise.all([
         api.get('/referent/groupes'),
         api.get('/referent/mes-activites'),
+        api.get('/projets/referent/mes-groupes').catch(() => ({ data: [] })),
       ])
 
       const groupesData = groupesRes.data
@@ -40,6 +42,7 @@ export default function ReferentDashboard() {
       setGroupes(groupesData)
       setDetailsGroupes(details)
       setActivites(activitesRes.data)
+      setProjets(Array.isArray(projetsRes.data) ? projetsRes.data : [])
       setStats({
         groupes: groupesData.length,
         membres: details.reduce((total, item) => total + item.membres.length, 0),
@@ -65,6 +68,7 @@ export default function ReferentDashboard() {
     [detailsGroupes]
   )
   const prochainesActivites = activites.slice(0, 4)
+  const projetsRecents = projets.slice(0, 4)
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -118,6 +122,15 @@ export default function ReferentDashboard() {
                 icon="Calendar"
               />
             </section>
+
+            <ReferentWorkQueue
+              demandes={demandesRecentes}
+              groupes={groupes}
+              membres={membresRecents}
+              activites={prochainesActivites}
+              projets={projetsRecents}
+              t={t}
+            />
 
             <section className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 mb-8">
               <SectionCard>
@@ -223,6 +236,94 @@ export default function ReferentDashboard() {
       </main>
       <Footer />
     </div>
+  )
+}
+
+function ReferentWorkQueue({ demandes, groupes, membres, activites, projets, t }) {
+  return (
+    <section className="mb-8 rounded-[1.75rem] border border-teal-100 bg-white p-5 shadow-lg shadow-teal-950/5">
+      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-teal-700">
+            {t('referent.workQueue.eyebrow', { defaultValue: 'Priorités' })}
+          </p>
+          <h2 className="text-xl font-black text-slate-950">
+            {t('referent.workQueue.title', { defaultValue: 'À traiter' })}
+          </h2>
+        </div>
+        <Link to="/referent/demandes" className="text-sm font-bold text-teal-700 hover:underline">
+          {t('referent.processRequests')}
+        </Link>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="grid gap-3 md:grid-cols-2">
+          <WorkItem
+            icon="Clock"
+            title={t('ux.referentDashboard.pendingRequests')}
+            value={demandes.length}
+            description={demandes.length > 0 ? t('referent.pendingRequestsCount', { count: demandes.length }) : t('referent.noPendingRequests')}
+            to="/referent/demandes"
+            highlight={demandes.length > 0}
+          />
+          <WorkItem
+            icon="Users"
+            title={t('ux.referentDashboard.assignedGroups')}
+            value={groupes.length}
+            description={groupes.length > 0 ? t('referent.groupsSubtitle', { defaultValue: 'Groupes encadrés à suivre.' }) : t('referent.noAssignedGroups')}
+            to="/referent/groupes"
+          />
+          <WorkItem
+            icon="User"
+            title={t('ux.referentDashboard.recentMembers')}
+            value={membres.length}
+            description={membres.length > 0 ? t('referent.visibleMembersCount', { count: membres.length }) : t('referent.noMembersYet')}
+            to="/referent/membres"
+          />
+          <WorkItem
+            icon="Calendar"
+            title={t('ux.referentDashboard.upcomingActivities')}
+            value={activites.length}
+            description={activites.length > 0 ? t('referent.activitiesCount', { count: activites.length }) : t('referent.noActivitiesYet')}
+            to="/referent/activites"
+          />
+          <WorkItem
+            icon="Rocket"
+            title={t('nav.projects')}
+            value={projets.length}
+            description={projets.length > 0 ? t('referent.projectsSubtitle') : t('referent.noProjects')}
+            to="/referent/projets"
+          />
+        </div>
+
+        <div className="grid content-start gap-3">
+          <QuickActionCard to="/referent/demandes" title={t('referent.processRequests')} tone="amber" icon="Clock" />
+          <QuickActionCard to="/referent/groupes" title={t('referent.viewMyGroups')} tone="teal" icon="Users" />
+          <QuickActionCard to="/referent/membres" title={t('nav.members')} tone="blue" icon="User" />
+          <QuickActionCard to="/referent/messagerie" title={t('ux.referentDashboard.openMessaging')} tone="violet" icon="MessageCircle" />
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function WorkItem({ icon, title, value, description, to, highlight = false }) {
+  return (
+    <Link
+      to={to}
+      className={`rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:shadow-md ${
+        highlight ? 'border-amber-200 bg-amber-50' : 'border-slate-100 bg-slate-50 hover:bg-white'
+      }`}
+    >
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${highlight ? 'bg-white text-amber-700' : 'bg-teal-50 text-teal-700'}`}>
+          <AppIcon name={icon} className="h-5 w-5" />
+        </span>
+        <span className={`text-2xl font-black ${highlight ? 'text-amber-800' : 'text-slate-950'}`}>{value}</span>
+      </div>
+      <h3 className="font-black text-slate-950">{title}</h3>
+      <p className="mt-1 text-sm leading-5 text-slate-500">{description}</p>
+    </Link>
   )
 }
 

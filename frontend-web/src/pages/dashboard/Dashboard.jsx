@@ -17,6 +17,7 @@ import MemberStatsCard from '../../components/member/MemberStatsCard'
 import api from '../../api/axios'
 import PageHeader from '../../components/ui/PageHeader'
 import QuickActionCard from '../../components/ui/QuickActionCard'
+import AppIcon from '../../components/ui/AppIcons'
 
 export default function Dashboard() {
   const { t } = useTranslation()
@@ -64,6 +65,15 @@ export default function Dashboard() {
           <p className="text-slate-400 text-center py-10">{t('memberDashboard.loading')}</p>
         ) : dashboard ? (
           <div className="space-y-6">
+            <MemberTodaySection
+              groupe={groupe}
+              inscriptions={dashboard.inscriptions || []}
+              notifications={dashboard.notifications || []}
+              projets={dashboard.projets || []}
+              messagerieDisponible={messagerieDisponible}
+              t={t}
+            />
+
             <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6">
               <MemberGroupCard
                 groupe={groupe}
@@ -114,6 +124,102 @@ export default function Dashboard() {
       </main>
       <Footer />
     </div>
+  )
+}
+
+function MemberTodaySection({ groupe, inscriptions, notifications, projets, messagerieDisponible, t }) {
+  const hasGroup = !!groupe
+  const unreadNotifications = notifications.filter(notification => !notification.lue).length
+  const nextInscriptions = inscriptions.slice(0, 2)
+  const latestProjects = projets.slice(0, 2)
+
+  return (
+    <section className="rounded-[1.75rem] border border-blue-100 bg-white p-5 shadow-lg shadow-blue-950/5">
+      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-blue-700">
+            {t('memberDashboard.today.eyebrow', { defaultValue: 'À faire' })}
+          </p>
+          <h2 className="text-xl font-black text-slate-950">
+            {t('memberDashboard.today.title', { defaultValue: 'Mon espace aujourd’hui' })}
+          </h2>
+        </div>
+        <Link to="/notifications" className="text-sm font-bold text-blue-700 hover:underline">
+          {t('nav.notifications')}
+          {unreadNotifications > 0 ? ` (${unreadNotifications})` : ''}
+        </Link>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="grid gap-3 md:grid-cols-2">
+          <TodayCard
+            title={hasGroup ? t('memberDashboard.group.current', { defaultValue: 'Groupe actuel' }) : t('memberDashboard.group.noGroup', { defaultValue: 'Aucun groupe rejoint' })}
+            description={hasGroup ? groupe.nom : t('memberDashboard.group.noGroupDescription')}
+            to={hasGroup ? '/dashboard' : '/groupes'}
+            action={hasGroup ? t('common.open') : t('ux.groups.joinGroup', { defaultValue: 'Rejoindre un groupe' })}
+            tone={hasGroup ? 'green' : 'blue'}
+            icon="Users"
+          />
+          <TodayCard
+            title={t('nav.activities')}
+            description={nextInscriptions.length > 0
+              ? t('memberDashboard.today.nextActivities', { count: nextInscriptions.length, defaultValue: `${nextInscriptions.length} inscription(s) à suivre` })
+              : t('memberDashboard.activities.empty', { defaultValue: 'Aucune inscription à venir pour le moment.' })}
+            to="/activites"
+            action={t('activities.viewActivities', { defaultValue: 'Voir les activités' })}
+            tone="blue"
+            icon="Calendar"
+          />
+          <TodayCard
+            title={t('nav.messaging')}
+            description={messagerieDisponible
+              ? t('memberDashboard.nextActions.openGroupMessaging')
+              : t('messaging.joinGroupDescription')}
+            to={messagerieDisponible ? '/messagerie' : '/groupes'}
+            action={messagerieDisponible ? t('common.open') : t('groups.discover')}
+            tone="teal"
+            icon="MessageCircle"
+          />
+          <TodayCard
+            title={t('nav.projects')}
+            description={latestProjects.length > 0
+              ? t('memberDashboard.today.projectsCount', { count: latestProjects.length, defaultValue: `${latestProjects.length} projet(s) à suivre` })
+              : t('projects.no_projects', { defaultValue: 'Aucun projet à suivre pour le moment.' })}
+            to="/projets"
+            action={t('common.open')}
+            tone="violet"
+            icon="Rocket"
+          />
+        </div>
+
+        <div className="grid gap-3">
+          <QuickActionCard to="/groupes" title={t('ux.groups.joinGroup', { defaultValue: 'Rejoindre un groupe' })} tone="blue" icon="Users" />
+          <QuickActionCard to="/activites" title={t('activities.viewActivities', { defaultValue: 'Voir les activités' })} tone="teal" icon="Calendar" />
+          <QuickActionCard to={messagerieDisponible ? '/messagerie' : '/groupes'} title={t('messaging.openMessaging', { defaultValue: 'Ouvrir la messagerie' })} tone="violet" icon="MessageCircle" />
+          <QuickActionCard to="/notifications" title={t('memberDashboard.today.viewNotifications', { defaultValue: 'Voir mes notifications' })} tone="amber" icon="Bell" />
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function TodayCard({ title, description, to, action, tone = 'blue', icon = 'Folder' }) {
+  const tones = {
+    blue: 'bg-blue-50 text-blue-700',
+    green: 'bg-emerald-50 text-emerald-700',
+    teal: 'bg-teal-50 text-teal-700',
+    violet: 'bg-violet-50 text-violet-700',
+  }
+
+  return (
+    <Link to={to} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md">
+      <span className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl ${tones[tone] || tones.blue}`}>
+        <AppIcon name={icon} className="h-5 w-5" />
+      </span>
+      <h3 className="font-black text-slate-950">{title}</h3>
+      <p className="mt-1 min-h-[38px] text-sm leading-5 text-slate-500">{description}</p>
+      <span className="mt-3 inline-flex text-xs font-black text-blue-700">{action}</span>
+    </Link>
   )
 }
 

@@ -15,6 +15,9 @@ export default function AdminDashboard() {
   const [groupes, setGroupes] = useState([])
   const [groupesEnAttente, setGroupesEnAttente] = useState([])
   const [referents, setReferents] = useState([])
+  const [projets, setProjets] = useState([])
+  const [soutiens, setSoutiens] = useState([])
+  const [activites, setActivites] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const { t } = useTranslation()
@@ -23,16 +26,22 @@ export default function AdminDashboard() {
     setLoading(true)
     setError('')
     try {
-      const [statsRes, groupesRes, attenteRes, referentsRes] = await Promise.all([
+      const [statsRes, groupesRes, attenteRes, referentsRes, projetsRes, soutiensRes, activitesRes] = await Promise.all([
         api.get('/admin/stats'),
         api.get('/admin/groupes'),
         api.get('/admin/groupes/en-attente'),
         api.get('/admin/referents'),
+        api.get('/projets/admin/tous').catch(() => ({ data: [] })),
+        api.get('/partenaire/admin/tous').catch(() => ({ data: [] })),
+        api.get('/activites/admin/toutes').catch(() => ({ data: [] })),
       ])
       setStats(statsRes.data)
       setGroupes(groupesRes.data)
       setGroupesEnAttente(attenteRes.data)
       setReferents(referentsRes.data)
+      setProjets(Array.isArray(projetsRes.data) ? projetsRes.data : [])
+      setSoutiens(Array.isArray(soutiensRes.data) ? soutiensRes.data : [])
+      setActivites(Array.isArray(activitesRes.data) ? activitesRes.data : [])
     } catch {
       setError(t('admin.error_load'))
     } finally {
@@ -47,6 +56,9 @@ export default function AdminDashboard() {
     [groupes]
   )
   const referentsActifs = referents.filter(referent => referent.actif).length
+  const projetsSoumis = projets.filter(projet => projet.statut === 'SOUMIS')
+  const soutiensEnAttente = soutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE')
+  const activitesAPublier = activites.filter(activite => activite.statut === 'BROUILLON')
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -86,7 +98,7 @@ export default function AdminDashboard() {
                   </Link>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
                   <PriorityCard
                     label={t('ux.adminDashboard.groupsWithoutReferent')}
                     value={groupesSansReferent.length}
@@ -106,6 +118,27 @@ export default function AdminDashboard() {
                     value={referentsActifs}
                     description={t('admin.activeReferentsDesc')}
                     to="/admin/referents"
+                  />
+                  <PriorityCard
+                    label={t('statuses.SOUMIS', { defaultValue: 'Projets soumis' })}
+                    value={projetsSoumis.length}
+                    description={t('admin.submittedProjectsDesc', { defaultValue: 'Projets à relire ou orienter.' })}
+                    to="/admin/projets"
+                    alert={projetsSoumis.length > 0}
+                  />
+                  <PriorityCard
+                    label={t('nav.supports', { defaultValue: 'Soutiens partenaires' })}
+                    value={soutiensEnAttente.length}
+                    description={t('partnerSupport.admin.listDescription', { defaultValue: 'Soutiens à valider ou refuser.' })}
+                    to="/admin/soutiens"
+                    alert={soutiensEnAttente.length > 0}
+                  />
+                  <PriorityCard
+                    label={t('activities.draftsToPublish', { defaultValue: 'Activités à publier' })}
+                    value={activitesAPublier.length}
+                    description={t('activities.draftsToPublishDesc', { defaultValue: 'Brouillons prêts à vérifier.' })}
+                    to="/admin/activites"
+                    alert={activitesAPublier.length > 0}
                   />
                 </div>
               </div>

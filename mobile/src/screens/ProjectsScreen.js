@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, ActivityIndicator, Modal, ScrollView
+  TextInput, ActivityIndicator, KeyboardAvoidingView, Modal, Platform, ScrollView
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
@@ -287,7 +287,7 @@ export default function ProjectsScreen() {
       ) : projetsFiltres.length === 0 ? (
         <SharedEmptyState
           icon="project"
-          illustrationSource={require('../../assets/illustrations/projects.png')}
+          illustrationSource={require('../assets/images/placeholders/projets.png')}
           title={recherche ? t('projects.no_search_results') : t('projects.no_projects')}
           text={isReferent
             ? t('projects.no_referent_projects')
@@ -407,7 +407,10 @@ function ProjectFormModal({
 }) {
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
+      <KeyboardAvoidingView
+        style={styles.modalOverlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <View style={styles.modalCard}>
           <View style={styles.modalHeader}>
             <View>
@@ -513,7 +516,7 @@ function ProjectFormModal({
             </TouchableOpacity>
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -631,7 +634,7 @@ function getApiError(err, t, fallback) {
   if (err.response?.status === 403) {
     return t('errors.forbidden');
   }
-  return err.response?.data?.message || fallback;
+  return fallback;
 }
 
 const styles = StyleSheet.create({

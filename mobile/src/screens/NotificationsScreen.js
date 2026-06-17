@@ -223,6 +223,7 @@ export default function NotificationsScreen({ navigation }) {
       ) : notifications.length === 0 ? (
         <SharedEmptyState
           icon="bell"
+          illustrationSource={require('../assets/images/placeholders/notifications.png')}
           title={t('notifications.emptyShort')}
           text={t('notifications.emptyDescriptionMobile')}
           actionLabel={t('common.retry')}
@@ -292,18 +293,37 @@ function resolveActionTarget(lienAction, roles) {
   if (path.includes('/dashboard') && availableTabs.has('TabDashboard')) {
     return { tab: 'TabDashboard' };
   }
+  if ((path.includes('/utilisateurs') || path.includes('/admins')) && availableTabs.has('TabUsers')) {
+    return { tab: 'TabUsers' };
+  }
+  if (path.includes('/demandes') && roles.isReferent) {
+    return { tab: 'TabDashboard', params: { screen: 'ReferentRequestsAccess' } };
+  }
+  if (path.includes('/groupes/en-attente') && roles.isAdmin) {
+    return { tab: 'TabDashboard', params: { screen: 'AdminPendingGroupsAccess' } };
+  }
+  if ((path.includes('/soutiens') || path.includes('/paiements')) && roles.isPartenaire) {
+    return { tab: 'TabDashboard', params: { screen: 'SupportsAccess' } };
+  }
   if (path.includes('/groupes')) {
-    return availableTabs.has('TabGroupes')
-      ? { tab: 'TabGroupes' }
-      : { tab: 'TabDashboard', params: { screen: 'GroupesAccess' } };
+    if (availableTabs.has('TabGroupes')) return { tab: 'TabGroupes' };
+    if (roles.isAdmin) return { tab: 'TabDashboard', params: { screen: 'GroupesAccess' } };
+    return null;
   }
   if (path.includes('/activites') && availableTabs.has('TabActivities')) {
     return { tab: 'TabActivities' };
   }
   if (path.includes('/projets')) {
-    return availableTabs.has('TabProjects')
-      ? { tab: 'TabProjects' }
-      : { tab: 'TabDashboard', params: { screen: 'ProjectsAccess' } };
+    if (availableTabs.has('TabProjects')) {
+      return { tab: 'TabProjects' };
+    }
+    if (availableTabs.has('TabGroupes')) {
+      return { tab: 'TabGroupes', params: { screen: 'ProjectsAccess' } };
+    }
+    if (roles.isAdmin) {
+      return { tab: 'TabDashboard', params: { screen: 'ProjectsAccess' } };
+    }
+    return null;
   }
   if (path.includes('/messagerie') && availableTabs.has('TabMessagerie')) {
     return { tab: 'TabMessagerie' };
@@ -327,6 +347,7 @@ function getAvailableTabs({ isMembre, isReferent, isAdmin, isSuperAdmin, isParte
   if (isReferent) {
     return new Set([
       'TabDashboard',
+      'TabGroupes',
       'TabActivities',
       'TabMessagerie',
       'TabNotifications',
@@ -336,6 +357,7 @@ function getAvailableTabs({ isMembre, isReferent, isAdmin, isSuperAdmin, isParte
   if (isMembre) {
     return new Set([
       'TabDashboard',
+      'TabGroupes',
       'TabActivities',
       'TabMessagerie',
       'TabNotifications',
@@ -363,7 +385,7 @@ function getApiError(err, t, fallback) {
   if (err.response?.status === 403) {
     return t('errors.forbidden');
   }
-  return err.response?.data?.message || fallback;
+  return fallback;
 }
 
 const styles = StyleSheet.create({

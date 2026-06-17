@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, ActivityIndicator, Modal, ScrollView, Platform
+  TextInput, ActivityIndicator, KeyboardAvoidingView, Modal, ScrollView, Platform
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import AppIcon from '../components/AppIcon';
 
 const TYPES = ['ANIMATION', 'LOGISTIQUE', 'COMMUNICATION', 'FORMATION', 'AUTRE'];
 
 export default function PrestationsMobileScreen() {
+  const { t } = useTranslation();
   const { isAuthenticated, isReferent, isAdmin } = useAuth();
   const [prestations, setPrestations] = useState([]);
   const [mesGroupes, setMesGroupes] = useState([]);
@@ -71,19 +74,19 @@ export default function PrestationsMobileScreen() {
         dureeHeures: parseFloat(form.dureeHeures),
         groupeId: form.groupeId,
       });
-      setMessage('✅ Prestation encodée !');
+      setMessage('Prestation encodée.');
       setShowForm(false);
       fetchPrestations();
       setTimeout(() => setMessage(''), 3000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de l\'encodage.');
+    } catch {
+      setError(t('errors.generic'));
     }
   };
 
   const handleValider = async (id) => {
     try {
       await api.patch(`/prestations/${id}/valider`, { commentaire: 'Validée' });
-      setMessage('✅ Prestation validée !');
+      setMessage('Prestation validée.');
       fetchPrestations();
       setTimeout(() => setMessage(''), 3000);
     } catch { setError('Erreur lors de la validation.'); }
@@ -116,10 +119,10 @@ export default function PrestationsMobileScreen() {
           <View style={styles.cardLeft}>
             <Text style={styles.cardTitle} numberOfLines={1}>{item.titre}</Text>
             <Text style={styles.cardMeta}>
-              📅 {item.datePrestation} · ⏱️ {item.dureeHeures}h · 🏷️ {item.type}
+              {item.datePrestation} · {item.dureeHeures} h · {item.type}
             </Text>
             {onglet === 'valider' && item.membrePrenom && (
-              <Text style={styles.cardMeta}>👤 {item.membrePrenom} {item.membreNom}</Text>
+              <Text style={styles.cardMeta}>{item.membrePrenom} {item.membreNom}</Text>
             )}
           </View>
           <View style={[styles.statutBadge, { backgroundColor: sc.bg }]}>
@@ -127,15 +130,17 @@ export default function PrestationsMobileScreen() {
           </View>
         </View>
         {item.commentaire && (
-          <Text style={styles.commentaire}>💬 {item.commentaire}</Text>
+          <Text style={styles.commentaire}>{item.commentaire}</Text>
         )}
         {onglet === 'valider' && item.statut === 'EN_ATTENTE' && (
           <View style={styles.actions}>
             <TouchableOpacity style={styles.btnValider} onPress={() => handleValider(item.id)}>
-              <Text style={styles.btnValiderText}>✅ Valider</Text>
+              <AppIcon name="check" size={15} color="#22C55E" />
+              <Text style={styles.btnValiderText}>Valider</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.btnRefuser} onPress={() => handleRefuser(item.id)}>
-              <Text style={styles.btnRefuserText}>❌ Refuser</Text>
+              <AppIcon name="close" size={15} color="#EF4444" />
+              <Text style={styles.btnRefuserText}>Refuser</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -146,7 +151,9 @@ export default function PrestationsMobileScreen() {
   if (!isAuthenticated) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.emptyIcon}>🔐</Text>
+        <View style={styles.emptyIcon}>
+          <AppIcon name="lock" size={32} color="#38BDF8" />
+        </View>
         <Text style={styles.emptyText}>Connectez-vous pour accéder aux prestations.</Text>
       </View>
     );
@@ -212,12 +219,15 @@ export default function PrestationsMobileScreen() {
 
       {/* Modal formulaire */}
       <Modal visible={showForm} animationType="slide" transparent onRequestClose={() => setShowForm(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Encoder une prestation</Text>
               <TouchableOpacity onPress={() => setShowForm(false)}>
-                <Text style={styles.modalClose}>✕</Text>
+                <AppIcon name="close" size={22} color="#94a3b8" />
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -256,7 +266,7 @@ export default function PrestationsMobileScreen() {
               </TouchableOpacity>
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -310,16 +320,26 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: 8 },
   btnValider: {
     flex: 1, backgroundColor: '#dcfce7', borderWidth: 1, borderColor: '#86efac',
-    paddingVertical: 8, borderRadius: 10, alignItems: 'center',
+    paddingVertical: 8, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+    flexDirection: 'row', gap: 6,
   },
   btnValiderText: { color: '#22C55E', fontWeight: '600', fontSize: 12 },
   btnRefuser: {
     flex: 1, backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fca5a5',
-    paddingVertical: 8, borderRadius: 10, alignItems: 'center',
+    paddingVertical: 8, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+    flexDirection: 'row', gap: 6,
   },
   btnRefuserText: { color: '#EF4444', fontWeight: '600', fontSize: 12 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EFF6FF',
+    marginBottom: 12,
+  },
   emptyText: { color: '#64748b', fontSize: 14, textAlign: 'center' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalCard: {
@@ -328,7 +348,6 @@ const styles = StyleSheet.create({
   },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   modalTitle: { fontSize: 17, fontWeight: 'bold', color: '#1E3A8A' },
-  modalClose: { fontSize: 20, color: '#94a3b8', fontWeight: 'bold' },
   label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
   input: {
     borderWidth: 1, borderColor: '#d1d5db', borderRadius: 12,

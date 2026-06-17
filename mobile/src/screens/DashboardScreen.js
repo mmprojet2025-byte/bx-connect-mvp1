@@ -19,6 +19,7 @@ export default function DashboardScreen({ navigation }) {
   const [roleDashboard, setRoleDashboard] = useState(null);
   const [loading, setLoading] = useState(isMembre || isReferent || isAdmin || isSuperAdmin || isPartenaire);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
   useEffect(() => {
     if (isMembre) {
@@ -39,6 +40,7 @@ export default function DashboardScreen({ navigation }) {
   const chargerDashboard = async () => {
     setLoading(true);
     setError('');
+    setNotice('');
     try {
       const res = await api.get('/membre/dashboard');
       setDashboard(res.data);
@@ -46,9 +48,10 @@ export default function DashboardScreen({ navigation }) {
       if (err.response?.status === 401) {
         setError(t('errors.session_expired'));
       } else if (err.response?.status === 403) {
-        setError(t('memberDashboard.errorForbidden'));
+        setDashboard({});
+        setNotice(t('dashboard.partialData'));
       } else {
-        setError(err.response?.data?.message || t('memberDashboard.errorLoad'));
+        setError(t('memberDashboard.errorLoad'));
       }
     } finally {
       setLoading(false);
@@ -58,22 +61,32 @@ export default function DashboardScreen({ navigation }) {
   const chargerReferentDashboard = async () => {
     setLoading(true);
     setError('');
+    setNotice('');
     try {
-      const [dashboardRes, groupesRes, notificationsRes] = await Promise.all([
+      const results = await Promise.allSettled([
         api.get('/referent/dashboard'),
         api.get('/referent/groupes'),
-        api.get('/notifications').catch(() => ({ data: [] })),
+        api.get('/notifications'),
       ]);
+      const [dashboardRes, groupesRes, notificationsRes] = results;
+      if (allRejected(results)) {
+        const reason = firstRejection(results);
+        if (reason?.response?.status !== 403) throw reason;
+      }
       setReferentDashboard({
-        ...dashboardRes.data,
-        groupes: groupesRes.data || [],
-        notifications: notificationsRes.data || [],
+        ...settledData(dashboardRes, {}),
+        groupes: settledData(groupesRes, []),
+        notifications: settledData(notificationsRes, []),
       });
+      if (results.some(result => result.status === 'rejected')) {
+        setNotice(t('dashboard.partialData'));
+      }
     } catch (err) {
       if (err.response?.status === 401) {
         setError(t('errors.session_expired'));
       } else if (err.response?.status === 403) {
-        setError(t('memberDashboard.errorForbidden'));
+        setReferentDashboard({ groupes: [], notifications: [] });
+        setNotice(t('dashboard.partialData'));
       } else {
         setError(t('referentDashboard.errorLoad', { defaultValue: 'Impossible de charger le dashboard référent.' }));
       }
@@ -85,25 +98,35 @@ export default function DashboardScreen({ navigation }) {
   const chargerAdminDashboard = async () => {
     setLoading(true);
     setError('');
+    setNotice('');
     try {
-      const [statsRes, groupesRes, groupesAttenteRes, referentsRes] = await Promise.all([
+      const results = await Promise.allSettled([
         api.get('/admin/stats'),
         api.get('/admin/groupes'),
         api.get('/admin/groupes/en-attente'),
         api.get('/admin/referents'),
       ]);
+      const [statsRes, groupesRes, groupesAttenteRes, referentsRes] = results;
+      if (allRejected(results)) {
+        const reason = firstRejection(results);
+        if (reason?.response?.status !== 403) throw reason;
+      }
       setRoleDashboard({
         type: 'ADMIN',
-        stats: statsRes.data || {},
-        groupes: groupesRes.data || [],
-        groupesEnAttente: groupesAttenteRes.data || [],
-        referents: referentsRes.data || [],
+        stats: settledData(statsRes, {}),
+        groupes: settledData(groupesRes, []),
+        groupesEnAttente: settledData(groupesAttenteRes, []),
+        referents: settledData(referentsRes, []),
       });
+      if (results.some(result => result.status === 'rejected')) {
+        setNotice(t('dashboard.partialData'));
+      }
     } catch (err) {
       if (err.response?.status === 401) {
         setError(t('errors.session_expired'));
       } else if (err.response?.status === 403) {
-        setError(t('errors.forbidden'));
+        setRoleDashboard({ type: 'ADMIN', stats: {}, groupes: [], groupesEnAttente: [], referents: [] });
+        setNotice(t('dashboard.partialData'));
       } else {
         setError(t('adminMobile.dashboardLoadError', { defaultValue: 'Impossible de charger le dashboard administrateur.' }));
       }
@@ -115,6 +138,7 @@ export default function DashboardScreen({ navigation }) {
   const chargerPartenaireDashboard = async () => {
     setLoading(true);
     setError('');
+    setNotice('');
     try {
       const results = await Promise.allSettled([
         api.get('/partenaire/statistiques'),
@@ -125,7 +149,8 @@ export default function DashboardScreen({ navigation }) {
       ]);
       const [statsRes, soutiensRes, projetsRes, activitesRes, profilRes] = results;
       if (results.every(result => result.status === 'rejected')) {
-        throw statsRes.reason;
+        const reason = firstRejection(results);
+        if (reason?.response?.status !== 403) throw reason;
       }
       setRoleDashboard({
         type: 'PARTENAIRE',
@@ -135,11 +160,22 @@ export default function DashboardScreen({ navigation }) {
         activitesOuvertes: settledData(activitesRes, []),
         profil: settledData(profilRes, null),
       });
+      if (results.some(result => result.status === 'rejected')) {
+        setNotice(t('dashboard.partialData'));
+      }
     } catch (err) {
       if (err.response?.status === 401) {
         setError(t('errors.session_expired'));
       } else if (err.response?.status === 403) {
-        setError(t('errors.forbidden'));
+        setRoleDashboard({
+          type: 'PARTENAIRE',
+          stats: {},
+          soutiens: [],
+          projetsOuverts: [],
+          activitesOuvertes: [],
+          profil: null,
+        });
+        setNotice(t('dashboard.partialData'));
       } else {
         setError(t('partner.dashboardLoadError', { defaultValue: 'Impossible de charger le dashboard partenaire.' }));
       }
@@ -151,6 +187,7 @@ export default function DashboardScreen({ navigation }) {
   const chargerSuperAdminDashboard = async () => {
     setLoading(true);
     setError('');
+    setNotice('');
     try {
       const response = await api.get('/super-admin/dashboard');
       setRoleDashboard({
@@ -161,7 +198,8 @@ export default function DashboardScreen({ navigation }) {
       if (err.response?.status === 401) {
         setError(t('errors.session_expired'));
       } else if (err.response?.status === 403) {
-        setError(t('errors.forbidden'));
+        setRoleDashboard({ type: 'SUPER_ADMIN', stats: {} });
+        setNotice(t('dashboard.partialData'));
       } else {
         setError(t('superAdmin.mobile.dashboardLoadError', {
           defaultValue: 'Impossible de charger la synthèse de la plateforme.',
@@ -203,6 +241,7 @@ export default function DashboardScreen({ navigation }) {
           navigation={navigation}
           t={t}
           language={i18n.language}
+          notice={notice}
         />
       );
     }
@@ -246,6 +285,7 @@ export default function DashboardScreen({ navigation }) {
         dashboard={roleDashboard}
         navigation={navigation}
         t={t}
+        notice={notice}
       />
     );
   }
@@ -283,6 +323,7 @@ export default function DashboardScreen({ navigation }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <WelcomeCard user={user} role={user?.role || 'MEMBRE'} t={t} />
+      <DashboardNotice text={notice} />
       <MemberStatusCard statut={adhesion} t={t} />
       <MemberGroupCard
         groupe={groupe}
@@ -306,7 +347,7 @@ export default function DashboardScreen({ navigation }) {
   );
 }
 
-function ReferentDashboard({ user, dashboard, navigation, t, language }) {
+function ReferentDashboard({ user, dashboard, navigation, t, language, notice }) {
   const groupes = dashboard?.groupes || [];
   const activites = dashboard?.mesActivites || [];
   const projets = dashboard?.projetsSoumisListe || [];
@@ -316,6 +357,7 @@ function ReferentDashboard({ user, dashboard, navigation, t, language }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <WelcomeCard user={user} role="REFERENT" t={t} />
+      <DashboardNotice text={notice} />
 
       <DashboardSectionTitle
         title={t('referentDashboard.mobileTitle', { defaultValue: 'Mon espace référent' })}
@@ -382,7 +424,7 @@ function ReferentActivitiesCard({ activites, navigation, language, t }) {
         <Text style={styles.counter}>{activites.length}</Text>
       </View>
       {activites.length === 0 ? (
-        <EmptyText text={t('referentDashboard.noActivities', { defaultValue: 'Aucune activité référent pour le moment.' })} />
+        <EmptyText text={t('referentDashboard.noActivities', { defaultValue: 'Aucune activité à afficher pour le moment.' })} />
       ) : (
         activites.slice(0, 3).map((activite) => (
           <ListItem
@@ -441,7 +483,7 @@ function ReferentNotificationsCard({ notifications, navigation, t }) {
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>{t('navigation.notifications', { defaultValue: 'Notifications' })}</Text>
-        <Text style={styles.counter}>{t('referentDashboard.unreadCount', { count: nonLues, defaultValue: `${nonLues} non lue(s)` })}</Text>
+        <Text style={styles.counter}>{t('notifications.unreadCount', { count: nonLues })}</Text>
       </View>
       {notifications.length === 0 ? (
         <EmptyText text={t('referentDashboard.noNotifications', { defaultValue: 'Aucune notification pour le moment.' })} />
@@ -513,7 +555,7 @@ function ReferentQuickActions({ navigation, t }) {
   );
 }
 
-function RoleDashboard({ user, role, isAdmin, isSuperAdmin, isPartenaire, dashboard, navigation, t }) {
+function RoleDashboard({ user, role, isAdmin, isSuperAdmin, isPartenaire, dashboard, navigation, t, notice }) {
   const roleLabel = role ? t(`roles.${role}`, { defaultValue: role }) : t('memberDashboard.userFallback');
   const config = roleDashboardConfig({
     roleLabel,
@@ -527,6 +569,7 @@ function RoleDashboard({ user, role, isAdmin, isSuperAdmin, isPartenaire, dashbo
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <DashboardNotice text={notice} />
       <View style={styles.roleHero}>
         <View style={styles.roleBrandRow}>
           <View style={styles.brandIcon}>
@@ -588,7 +631,7 @@ function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, d
   if (isSuperAdmin) {
     const stats = dashboard?.stats || {};
     return {
-      title: t('superAdmin.mobile.title', { defaultValue: 'Pilotage plateforme' }),
+      title: t('superAdmin.mobile.title', { defaultValue: 'Vue d’ensemble de la plateforme' }),
       subtitle: t('superAdmin.mobile.subtitle', { defaultValue: 'Indicateurs essentiels et suivi de la sécurité BX-Connect.' }),
       sectionTitle: t('superAdmin.mobile.sectionTitle', { defaultValue: 'Vue synthétique' }),
       sectionText: t('superAdmin.mobile.sectionText', { defaultValue: 'Suivez les comptes clés, les administrateurs et les signaux importants de la plateforme.' }),
@@ -624,7 +667,7 @@ function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, d
         stat(t('navigation.mentors', { defaultValue: 'Référents' }), referents.length, 'profile', '#0f766e'),
       ],
       actions: [
-        action(t('navigation.users', { defaultValue: 'Utilisateurs' }), t('adminMobile.usersAction', { defaultValue: 'Consulter les comptes métier.' }), 'group', COLORS.info, () => navigateAccess(navigation, 'TabUsers')),
+        action(t('navigation.users', { defaultValue: 'Utilisateurs' }), t('adminMobile.usersAction', { defaultValue: 'Consulter les comptes utilisateurs.' }), 'group', COLORS.info, () => navigateAccess(navigation, 'TabUsers')),
         action(t('navigation.groups', { defaultValue: 'Groupes' }), t('adminMobile.groupsAction', { defaultValue: 'Suivre les groupes et leurs référents.' }), 'group', COLORS.bxBlue, () => navigateAccess(navigation, 'TabGroupes', 'GroupesAccess')),
         action(t('adminMobile.pendingGroupsTitle', { defaultValue: 'Groupes en attente' }), t('adminMobile.pendingGroupsAction', { defaultValue: 'Valider ou refuser les groupes proposés.' }), 'warning', '#d97706', () => navigation.navigate('AdminPendingGroupsAccess')),
         action(t('navigation.activities', { defaultValue: 'Activités' }), t('adminMobile.activitiesAction', { defaultValue: 'Voir les activités de l’association.' }), 'activity', COLORS.success, () => navigateAccess(navigation, 'TabActivities')),
@@ -682,6 +725,24 @@ function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, d
 
 function settledData(result, fallback) {
   return result.status === 'fulfilled' ? (result.value.data ?? fallback) : fallback;
+}
+
+function allRejected(results) {
+  return results.every(result => result.status === 'rejected');
+}
+
+function firstRejection(results) {
+  return results.find(result => result.status === 'rejected')?.reason;
+}
+
+function DashboardNotice({ text }) {
+  if (!text) return null;
+  return (
+    <View style={styles.noticeBox}>
+      <AppIcon name="information-circle-outline" size={18} color="#1D4ED8" />
+      <Text style={styles.dashboardNoticeText}>{text}</Text>
+    </View>
+  );
 }
 
 function PartnerInstitutionCard({ profile, t }) {
@@ -1166,6 +1227,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   loadingText: { marginTop: 12, color: '#64748b', fontSize: 14 },
+  noticeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: 12,
+    padding: 11,
+    marginBottom: 12,
+  },
+  dashboardNoticeText: { flex: 1, color: '#1E40AF', fontSize: 12, lineHeight: 17 },
   errorTitle: { color: '#1E3A8A', fontSize: 18, fontWeight: '800', marginBottom: 8 },
   welcomeCard: {
     backgroundColor: '#1E3A8A',

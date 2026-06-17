@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, ActivityIndicator, Alert, Modal, ScrollView
+  TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, ScrollView
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
@@ -86,13 +86,13 @@ export default function ActivitiesScreen() {
         return;
       }
 
-      const activitesRes = await api.get('/activites');
-      setActivites(activitesRes.data);
+      const activitesRes = await api.get('/activites', { skipAuth: true });
+      setActivites(activitesRes.data || []);
 
       if (isMembre) {
         try {
           const inscriptionsRes = await api.get('/inscriptions/mes-inscriptions');
-          setInscriptions(inscriptionsRes.data);
+          setInscriptions(inscriptionsRes.data || []);
         } catch {
           setInscriptions([]);
         }
@@ -100,7 +100,13 @@ export default function ActivitiesScreen() {
         setInscriptions([]);
       }
     } catch (err) {
-      setError(getApiError(err, t, t('activities.error_load')));
+      if (isMembre && err.response?.status === 403) {
+        setActivites([]);
+        setInscriptions([]);
+        setError('');
+      } else {
+        setError(getApiError(err, t, t('activities.error_load')));
+      }
     } finally {
       setLoading(false);
     }
@@ -322,7 +328,7 @@ export default function ActivitiesScreen() {
       ) : activitesFiltrees.length === 0 ? (
         <SharedEmptyState
           icon="activity"
-          illustrationSource={require('../../assets/illustrations/activities.png')}
+          illustrationSource={require('../assets/images/placeholders/activites.png')}
           title={recherche ? t('activities.no_search_results') : t('activities.no_activities')}
           text={isReferent
             ? t('activities.no_referent_activities')
@@ -521,7 +527,10 @@ function ActivityFormModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
+      <KeyboardAvoidingView
+        style={styles.modalOverlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <View style={styles.modalCard}>
           <View style={styles.modalHeader}>
             <View style={styles.modalTitleBlock}>
@@ -657,7 +666,7 @@ function ActivityFormModal({
             </TouchableOpacity>
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -874,7 +883,7 @@ function getApiError(err, t, fallback) {
   if (err.response?.status === 403) {
     return t('errors.forbidden');
   }
-  return err.response?.data?.message || fallback;
+  return fallback;
 }
 
 const styles = StyleSheet.create({

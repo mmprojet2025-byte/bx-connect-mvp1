@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Image,
-  TouchableOpacity, TextInput, ActivityIndicator, Switch
+  TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Switch
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
@@ -35,7 +35,7 @@ const LANGUES = [
 ];
 
 export default function ProfileScreen({ navigation }) {
-  const { logout, login } = useAuth();
+  const { user, logout, login } = useAuth();
   const { t, i18n } = useTranslation();
 
   const [profil, setProfil] = useState(null);
@@ -45,6 +45,7 @@ export default function ProfileScreen({ navigation }) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [profileNotice, setProfileNotice] = useState('');
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
 
@@ -67,6 +68,7 @@ export default function ProfileScreen({ navigation }) {
     setLoading(true);
     setError('');
     setMessage('');
+    setProfileNotice('');
     try {
       const res = await api.get('/users/me');
       setProfil(res.data);
@@ -75,10 +77,17 @@ export default function ProfileScreen({ navigation }) {
         nom: res.data.nom,
         languePreference: res.data.languePreference || 'FR',
       });
-      fetchPushPreference();
-    } catch (err) {
-      setProfil(null);
-      setError(getApiError(err, t('profile.error_load'), t));
+      await fetchPushPreference();
+    } catch {
+      const localProfile = await getStoredProfile(user, i18n.language);
+      setProfil(localProfile);
+      setForm({
+        prenom: localProfile.prenom || '',
+        nom: localProfile.nom || '',
+        languePreference: localProfile.languePreference || 'FR',
+      });
+      setProfileNotice(t('profile.localFallback'));
+      await fetchPushPreference();
     } finally {
       setLoading(false);
     }
@@ -107,6 +116,7 @@ export default function ProfileScreen({ navigation }) {
         languePreference: form.languePreference,
       });
       setProfil(res.data);
+      setProfileNotice('');
       setEditMode(false);
       setMessage(t('profile.success_update'));
       await changeAppLanguage(form.languePreference.toLowerCase());
@@ -216,10 +226,25 @@ export default function ProfileScreen({ navigation }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={90}
+    >
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
       {message !== '' && (
         <View style={styles.successBox}>
           <Text style={styles.successText}>{message}</Text>
+        </View>
+      )}
+      {profileNotice !== '' && (
+        <View style={styles.noticeBox}>
+          <AppIcon name="information-circle-outline" size={18} color={COLORS.info} />
+          <Text style={styles.noticeText}>{profileNotice}</Text>
         </View>
       )}
       {error !== '' && (
@@ -480,7 +505,8 @@ export default function ProfileScreen({ navigation }) {
         <AppIcon name="logout" size={17} color={COLORS.muted} />
         <Text style={styles.btnLogoutText}>{t('profile.logout')}</Text>
       </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -519,6 +545,28 @@ function getApiError(err, fallback, t) {
   return fallback;
 }
 
+async function getStoredProfile(user, language) {
+  let storedUser = null;
+  try {
+    const raw = await AsyncStorage.getItem('user');
+    storedUser = raw ? JSON.parse(raw) : null;
+  } catch {
+    storedUser = null;
+  }
+
+  const source = storedUser || user || {};
+  return {
+    prenom: source.prenom || '',
+    nom: source.nom || '',
+    email: source.email || '',
+    role: source.role || '',
+    languePreference: source.languePreference || language?.slice(0, 2).toUpperCase() || 'FR',
+    dateInscription: source.dateInscription || null,
+    actif: source.actif !== false,
+    legalVersion: source.legalVersion || null,
+  };
+}
+
 function languageLabel(value, t) {
   return {
     FR: t('common.language_fr'),
@@ -536,6 +584,18 @@ function formatMonthYear(dateStr, language, t) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.page },
   content: { padding: SPACING.md, paddingBottom: SPACING.xxl },
+  noticeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: COLORS.softBlue,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  noticeText: { flex: 1, color: COLORS.bxBlue, ...TYPOGRAPHY.caption },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, backgroundColor: COLORS.page },
   loadingText: { marginTop: SPACING.md, color: COLORS.muted, ...TYPOGRAPHY.body },
   emptyIconCircle: {

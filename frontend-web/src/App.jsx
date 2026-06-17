@@ -139,6 +139,7 @@ export default function App() {
       <Route path="/referent/projets"     element={<ReferentRoute><ReferentProjets /></ReferentRoute>} />
       <Route path="/referent/messagerie"  element={<ReferentRoute><ReferentMessagerie /></ReferentRoute>} />
       <Route path="/referent/prestations" element={<ReferentRoute><GestionPrestations /></ReferentRoute>} />
+      <Route path="/referent/annonces"     element={<ReferentRoute><Annonces /></ReferentRoute>} />
 
       {/* ── Pages Admin ── */}
       <Route path="/admin"               element={<Navigate to="/admin/dashboard" replace />} />
@@ -150,6 +151,7 @@ export default function App() {
       <Route path="/admin/groupes"       element={<AdminRoute><AdminGroupes /></AdminRoute>} />
       <Route path="/admin/soutiens"      element={<AdminRoute><AdminSoutiens /></AdminRoute>} />
       <Route path="/admin/prestations"   element={<AdminRoute><GestionPrestations /></AdminRoute>} />
+      <Route path="/admin/annonces"      element={<AdminRoute><Annonces /></AdminRoute>} />
 
       {/* ── Pages SUPER_ADMIN ── */}
       <Route path="/super-admin"           element={<Navigate to="/super-admin/dashboard" replace />} />

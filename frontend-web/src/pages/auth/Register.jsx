@@ -58,7 +58,7 @@ export default function Register() {
             <img
               src={logoBxConnect}
               alt="BX-CONNECT"
-              className="h-16 w-[200px] object-contain"
+              className="w-[230px] max-w-full object-contain sm:w-[280px]"
             />
           </Link>
           <p className="text-gray-500 text-sm mt-1">{t('auth.register_subtitle')}</p>
