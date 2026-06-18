@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import AppSidebar from './components/navigation/AppSidebar'
 
@@ -97,20 +97,36 @@ function PublicOrMembreRoute({ children }) {
   return children
 }
 
+function PublicOnlyRoute({ children }) {
+  const { isAuthenticated, user } = useAuth()
+  if (isAuthenticated) return <Navigate to={getDefaultRouteForRole(user?.role)} replace />
+  return children
+}
+
+const PUBLIC_ONLY_PATHS = new Set([
+  '/login',
+  '/register',
+  '/mot-de-passe-oublie',
+  '/forgot-password',
+])
+
 export default function App() {
   const { isAuthenticated } = useAuth()
+  const location = useLocation()
+  const showAppShell = isAuthenticated && !PUBLIC_ONLY_PATHS.has(location.pathname)
 
   return (
     <>
-      <AppSidebar />
-      <div className={isAuthenticated ? 'min-h-screen bg-[#f5f7fb] pb-28 lg:pb-0 lg:pl-[320px]' : ''}>
+      {showAppShell && <AppSidebar />}
+      <div className={showAppShell ? 'min-h-screen bg-[#f5f7fb] pb-28 lg:pb-0 lg:pl-[320px]' : ''}>
         <Routes>
           {/* ── Pages publiques ── */}
           <Route path="/"              element={<Accueil />} />
           <Route path="/a-propos"      element={<APropos />} />
-          <Route path="/login"         element={<Login />} />
-          <Route path="/register"      element={<Register />} />
-          <Route path="/mot-de-passe-oublie" element={<ForgotPassword />} />
+          <Route path="/login"         element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+          <Route path="/register"      element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
+          <Route path="/mot-de-passe-oublie" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
+          <Route path="/forgot-password" element={<Navigate to="/mot-de-passe-oublie" replace />} />
           <Route path="/activites"     element={<PublicOrMembreRoute><Activites /></PublicOrMembreRoute>} />
           <Route path="/activites/:id" element={<PublicOrMembreRoute><ActiviteDetail /></PublicOrMembreRoute>} />
           <Route path="/groupes"       element={<PublicOrMembreRoute><Groupes /></PublicOrMembreRoute>} />

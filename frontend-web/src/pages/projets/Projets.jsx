@@ -18,7 +18,6 @@ import ProjectTypeBadge from '../../components/ProjectTypeBadge'
 import LoadingState from '../../components/ui/LoadingState'
 import ErrorState from '../../components/ui/ErrorState'
 import AppIcon from '../../components/ui/AppIcons'
-import projectsIllustration from '../../assets/illustrations/projects.png'
 
 const MEMBER_VISIBILITIES = ['GROUPE', 'COMMUNAUTE']
 const PROJECT_STATUSES = ['BROUILLON', 'SOUMIS', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE']
@@ -40,6 +39,10 @@ export default function Projets() {
   const [filtreVisibilite, setFiltreVisibilite] = useState('')
   const [expandedProjectId, setExpandedProjectId] = useState(null)
   const [actionLoading, setActionLoading] = useState(null)
+  const [participationIds, setParticipationIds] = useState([])
+  const [commentsByProject, setCommentsByProject] = useState({})
+  const [commentsLoading, setCommentsLoading] = useState(null)
+  const [commentDrafts, setCommentDrafts] = useState({})
   const [form, setForm] = useState({
     titre: '',
     description: '',
@@ -80,6 +83,13 @@ export default function Projets() {
   }, [fetchProjets])
 
   useEffect(() => {
+    if (!isAuthenticated || !isMembre) return
+    api.get('/projets/mes-participations')
+      .then(res => setParticipationIds((res.data || []).map(projet => projet.id)))
+      .catch(() => setParticipationIds([]))
+  }, [isAuthenticated, isMembre])
+
+  useEffect(() => {
     if (isAuthenticated && isMembre) fetchAdhesions()
   }, [fetchAdhesions, isAuthenticated, isMembre])
 
@@ -93,6 +103,17 @@ export default function Projets() {
     () => [...new Set(projets.map(projet => projet.groupeNom).filter(Boolean))],
     [projets]
   )
+  const projetsParStatut = useMemo(() => {
+    return PROJECT_STATUSES.reduce((acc, statut) => {
+      acc[statut] = projets.filter(projet => projet.statut === statut).length
+      return acc
+    }, {})
+  }, [projets])
+  const projetsRecents = useMemo(() => {
+    return [...projets]
+      .sort((a, b) => new Date(b.dateSoumission || b.dateCreation || 0) - new Date(a.dateSoumission || a.dateCreation || 0))
+      .slice(0, 3)
+  }, [projets])
   const projetsFiltres = useMemo(() => {
     return projets.filter(projet => {
       if (focusedProjectId && String(projet.id) !== String(focusedProjectId)) return false
@@ -114,6 +135,11 @@ export default function Projets() {
   useEffect(() => {
     if (focusedProjectId) setExpandedProjectId(Number(focusedProjectId))
   }, [focusedProjectId])
+
+  useEffect(() => {
+    if (!expandedProjectId || commentsByProject[expandedProjectId]) return
+    fetchProjectComments(expandedProjectId)
+  }, [commentsByProject, expandedProjectId])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -163,8 +189,66 @@ export default function Projets() {
   const handleFollow = (projet) => {
     toast(t('projects.followUnavailable', {
       title: projet.titre,
-      defaultValue: 'Le suivi de projet sera relié au backend dès que cette donnée sera disponible.',
+      defaultValue: 'Vous participez déjà à ce projet. Les nouvelles interactions apparaîtront dans vos notifications.',
     }))
+  }
+
+  const handleJoinProject = async (projet) => {
+    setActionLoading(`${projet.id}-JOIN`)
+    setError('')
+    setMessage('')
+    try {
+      await api.post(`/projets/${projet.id}/rejoindre`)
+      setParticipationIds(current => current.includes(projet.id) ? current : [...current, projet.id])
+      setProjets(current => current.map(item => item.id === projet.id
+        ? { ...item, nombreParticipants: Number(item.nombreParticipants || 0) + 1 }
+        : item
+      ))
+      const feedback = t('projects.joined', { defaultValue: 'Vous participez maintenant à ce projet.' })
+      setMessage(feedback)
+      toast.success(feedback)
+    } catch (err) {
+      const feedback = userFriendlyError(err, t('projects.joinError', { defaultValue: 'Impossible de rejoindre ce projet.' }))
+      setError(feedback)
+      toast.error(feedback)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const fetchProjectComments = async (projectId) => {
+    setCommentsLoading(projectId)
+    try {
+      const res = await api.get(`/projets/${projectId}/commentaires`)
+      setCommentsByProject(current => ({ ...current, [projectId]: res.data || [] }))
+    } catch {
+      setCommentsByProject(current => ({ ...current, [projectId]: [] }))
+    } finally {
+      setCommentsLoading(null)
+    }
+  }
+
+  const handleCommentSubmit = async (projet) => {
+    const contenu = (commentDrafts[projet.id] || '').trim()
+    if (!contenu) return
+    setActionLoading(`${projet.id}-COMMENT`)
+    try {
+      const res = await api.post(`/projets/${projet.id}/commentaires`, { contenu })
+      setCommentsByProject(current => ({
+        ...current,
+        [projet.id]: [...(current[projet.id] || []), res.data],
+      }))
+      setCommentDrafts(current => ({ ...current, [projet.id]: '' }))
+      setProjets(current => current.map(item => item.id === projet.id
+        ? { ...item, nombreCommentaires: Number(item.nombreCommentaires || 0) + 1 }
+        : item
+      ))
+      toast.success(t('projects.commentAdded', { defaultValue: 'Commentaire ajouté.' }))
+    } catch (err) {
+      toast.error(userFriendlyError(err, t('projects.commentError', { defaultValue: 'Impossible d’ajouter le commentaire.' })))
+    } finally {
+      setActionLoading(null)
+    }
   }
 
   const resetFilters = () => {
@@ -182,32 +266,7 @@ export default function Projets() {
           eyebrow={t('ux.projects.eyebrow')}
           title={t('ux.projects.title')}
           description={t('ux.projects.intro')}
-          action={(
-            <img
-              src={projectsIllustration}
-              alt=""
-              className="mx-auto w-[200px] object-contain md:w-[300px]"
-            />
-          )}
-        />
-
-        {message && <Alert>{message}</Alert>}
-        {error && projets.length > 0 && <Alert type="error">{error}</Alert>}
-
-        <section className="bg-white rounded-[1.5rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-5 mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h2 className="font-semibold text-slate-950">{t('ux.projects.workflow')}</h2>
-            <p className="text-sm text-slate-500 mt-1">
-              {t('ux.projects.workflowDesc')}
-            </p>
-            {isMembre && !groupeActif && (
-              <p className="text-sm text-amber-700 mt-2">{t('ux.projects.needGroup')}</p>
-            )}
-            {groupeActif && (
-              <p className="text-sm text-green-700 mt-2">{t('ux.projects.attachedGroup', { group: groupeActif.groupeNom })}</p>
-            )}
-          </div>
-          {isMembre && (
+          action={isMembre && (
             <button
               type="button"
               onClick={() => setShowForm(open => !open)}
@@ -216,6 +275,45 @@ export default function Projets() {
             >
               {showForm ? t('common.cancel') : t('ux.projects.propose')}
             </button>
+          )}
+        />
+
+        {message && <Alert>{message}</Alert>}
+        {error && projets.length > 0 && <Alert type="error">{error}</Alert>}
+
+        <section className="bg-white rounded-[1.25rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-4 mb-5">
+          <div>
+            <h2 className="font-semibold text-slate-950">{t('projects.workspaceTitle', { defaultValue: 'Projets à suivre' })}</h2>
+            <p className="text-sm text-slate-500 mt-1">
+              {t('projects.workspaceDesc', {
+                count: projets.length,
+                defaultValue: `${projets.length} projet(s) visibles avec leur statut, leur groupe et leur besoin de soutien.`,
+              })}
+            </p>
+            {isMembre && !groupeActif && (
+              <p className="text-sm text-amber-700 mt-2">{t('ux.projects.needGroup')}</p>
+            )}
+            {groupeActif && (
+              <p className="text-sm text-green-700 mt-2">{t('ux.projects.attachedGroup', { group: groupeActif.groupeNom })}</p>
+            )}
+          </div>
+          {projetsRecents.length > 0 && (
+            <div className="mt-4 grid gap-2 md:grid-cols-3">
+              {projetsRecents.map(projet => (
+                <button
+                  key={projet.id}
+                  type="button"
+                  onClick={() => setExpandedProjectId(projet.id)}
+                  className="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2 text-left transition hover:border-blue-200 hover:bg-blue-50"
+                >
+                  <span className="block truncate text-xs font-black text-slate-950">{projet.titre}</span>
+                  <span className="mt-1 flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-500">
+                    <span className="truncate">{projet.groupeNom || t('projects.typeInstitutional')}</span>
+                    <StatusBadge status={projet.statut}>{t(`statuses.${projet.statut}`, { defaultValue: projet.statut })}</StatusBadge>
+                  </span>
+                </button>
+              ))}
+            </div>
           )}
         </section>
 
@@ -227,7 +325,12 @@ export default function Projets() {
           </div>
         )}
 
-        <WorkflowStepper />
+        <WorkflowStepper
+          counts={projetsParStatut}
+          activeStatus={filtreStatut}
+          onSelectStatus={(statut) => setFiltreStatut(current => current === statut ? '' : statut)}
+          t={t}
+        />
 
         <section className="mb-6 rounded-[1.5rem] border border-slate-100 bg-white p-4 shadow-lg shadow-slate-900/5">
           <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -337,8 +440,15 @@ export default function Projets() {
                 isPartenaire={isPartenaire}
                 expanded={expandedProjectId === projet.id}
                 actionLoading={actionLoading}
+                isParticipant={participationIds.includes(projet.id)}
+                comments={commentsByProject[projet.id] || []}
+                commentsLoading={commentsLoading === projet.id}
+                commentDraft={commentDrafts[projet.id] || ''}
                 onToggleDetails={() => setExpandedProjectId(current => current === projet.id ? null : projet.id)}
                 onFollow={() => handleFollow(projet)}
+                onJoin={() => handleJoinProject(projet)}
+                onCommentChange={(value) => setCommentDrafts(current => ({ ...current, [projet.id]: value }))}
+                onCommentSubmit={() => handleCommentSubmit(projet)}
                 onApprove={() => handleStatusChange(projet, 'APPROUVE')}
                 onReject={() => handleStatusChange(projet, 'REJETE')}
                 t={t}
@@ -352,37 +462,82 @@ export default function Projets() {
   )
 }
 
-function WorkflowStepper() {
+function WorkflowStepper({ counts, activeStatus, onSelectStatus, t }) {
   const steps = [
-    { label: 'Créé', icon: 'PlusCircle' },
-    { label: 'Soumis', icon: 'Clock' },
-    { label: 'Validation', icon: 'Shield' },
-    { label: 'Approuvé', icon: 'CheckCircle' },
-    { label: 'Visible', icon: 'Eye' },
-    { label: 'Soutenu', icon: 'Handshake' },
-    { label: 'Suivi', icon: 'Rocket' },
+    { label: 'Créé', status: 'BROUILLON', icon: 'PlusCircle' },
+    { label: 'Soumis', status: 'SOUMIS', icon: 'Clock' },
+    { label: 'Validation', status: 'SOUMIS', icon: 'Shield' },
+    { label: 'Approuvé', status: 'APPROUVE', icon: 'CheckCircle' },
+    { label: 'Visible', status: 'EN_COURS', icon: 'Eye' },
+    { label: 'Soutenu', status: 'EN_COURS', icon: 'Handshake' },
+    { label: 'Terminé', status: 'TERMINE', icon: 'Rocket' },
   ]
 
   return (
-    <section className="mb-6 rounded-[1.5rem] border border-blue-100 bg-white p-4 shadow-lg shadow-blue-950/5">
+    <section className="mb-5 rounded-[1.25rem] border border-blue-100 bg-white p-4 shadow-lg shadow-blue-950/5">
+      <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-sm font-black text-slate-950">{t('ux.projects.workflow')}</h2>
+          <p className="text-xs text-slate-500">{t('projects.workflowFilterHint', { defaultValue: 'Clique sur une étape pour filtrer les projets par statut.' })}</p>
+        </div>
+        {activeStatus && (
+          <button type="button" onClick={() => onSelectStatus(activeStatus)} className="text-xs font-bold text-blue-700 hover:underline">
+            {t('activities.reset_filters', { defaultValue: 'Réinitialiser' })}
+          </button>
+        )}
+      </div>
       <div className="flex gap-2 overflow-x-auto pb-1">
         {steps.map((step, index) => (
-          <div key={step.label} className="flex min-w-[118px] items-center gap-2">
+          <button
+            key={`${step.label}-${index}`}
+            type="button"
+            onClick={() => onSelectStatus(step.status)}
+            className={`flex min-w-[128px] items-center gap-2 rounded-2xl border px-2.5 py-2 text-left transition ${
+              activeStatus === step.status
+                ? 'border-blue-300 bg-blue-50 shadow-sm'
+                : 'border-slate-100 bg-white hover:border-blue-200 hover:bg-slate-50'
+            }`}
+          >
             <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
               <AppIcon name={step.icon} className="h-4 w-4" />
             </span>
-            <span className="text-xs font-black text-slate-700">{step.label}</span>
-            {index < steps.length - 1 && <span className="h-px min-w-5 flex-1 bg-slate-200" />}
-          </div>
+            <span className="min-w-0">
+              <span className="block text-xs font-black text-slate-700">{step.label}</span>
+              <span className="block text-[11px] font-semibold text-slate-400">
+                {counts[step.status] ?? 0} {t('nav.projects').toLowerCase()}
+              </span>
+            </span>
+          </button>
         ))}
       </div>
     </section>
   )
 }
 
-function ProjectCard({ projet, isAuthenticated, isMembre, isAdmin, isPartenaire, expanded, actionLoading, onToggleDetails, onFollow, onApprove, onReject, t }) {
+function ProjectCard({
+  projet,
+  isAuthenticated,
+  isMembre,
+  isAdmin,
+  isPartenaire,
+  expanded,
+  actionLoading,
+  isParticipant,
+  comments,
+  commentsLoading,
+  commentDraft,
+  onToggleDetails,
+  onFollow,
+  onJoin,
+  onCommentChange,
+  onCommentSubmit,
+  onApprove,
+  onReject,
+  t,
+}) {
   const besoinSoutien = Number(projet.budgetDemande) > 0
   const peutValider = isAdmin && projet.statut === 'SOUMIS'
+  const nextStep = projectNextStep(projet, isAdmin, isPartenaire, isMembre, isParticipant, t)
 
   return (
     <article className="bg-white rounded-[1.25rem] border border-slate-100 shadow-lg shadow-slate-900/5 overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition flex flex-col">
@@ -424,17 +579,26 @@ function ProjectCard({ projet, isAuthenticated, isMembre, isAdmin, isPartenaire,
           <InfoPill
             label={t('groups.members')}
             value={t('projects.participants_count', { count: projet.nombreParticipants ?? 0 })}
+            highlight={isParticipant}
           />
           <InfoPill
-            label={t('projects.createdAt')}
-            value={formatProjectDate(projet.dateSoumission || projet.dateCreation)}
+            label={t('projects.comments', { defaultValue: 'Commentaires' })}
+            value={projet.nombreCommentaires ?? comments.length}
           />
         </div>
         {expanded && (
-          <div className="mt-3 rounded-2xl border border-slate-100 bg-slate-50 p-3 text-xs leading-5 text-slate-600">
-            <p className="font-black text-slate-800">{t('projects.workflowStatus', { defaultValue: 'Lecture du workflow' })}</p>
-            <p className="mt-1">{projectWorkflowText(projet, t)}</p>
-          </div>
+          <ProjectAlivePanel
+            projet={projet}
+            nextStep={nextStep}
+            comments={comments}
+            commentsLoading={commentsLoading}
+            commentDraft={commentDraft}
+            canComment={isAuthenticated}
+            onCommentChange={onCommentChange}
+            onCommentSubmit={onCommentSubmit}
+            commentLoading={actionLoading === `${projet.id}-COMMENT`}
+            t={t}
+          />
         )}
         <ProjectActions
           projet={projet}
@@ -442,9 +606,11 @@ function ProjectCard({ projet, isAuthenticated, isMembre, isAdmin, isPartenaire,
           isMembre={isMembre}
           isPartenaire={isPartenaire}
           peutValider={peutValider}
+          isParticipant={isParticipant}
           actionLoading={actionLoading}
           onToggleDetails={onToggleDetails}
           onFollow={onFollow}
+          onJoin={onJoin}
           onApprove={onApprove}
           onReject={onReject}
           t={t}
@@ -454,7 +620,82 @@ function ProjectCard({ projet, isAuthenticated, isMembre, isAdmin, isPartenaire,
   )
 }
 
-function ProjectActions({ projet, isAuthenticated, isMembre, isPartenaire, peutValider, actionLoading, onToggleDetails, onFollow, onApprove, onReject, t }) {
+function ProjectAlivePanel({ projet, nextStep, comments, commentsLoading, commentDraft, canComment, onCommentChange, onCommentSubmit, commentLoading, t }) {
+  const recentEvents = buildProjectRecentEvents(projet, comments, t)
+
+  return (
+    <div className="mt-3 space-y-3 rounded-2xl border border-slate-100 bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="rounded-xl bg-white p-3">
+          <p className="font-black text-slate-800">{t('projects.currentState', { defaultValue: 'État actuel' })}</p>
+          <p className="mt-1">{projectWorkflowText(projet, t)}</p>
+        </div>
+        <div className="rounded-xl bg-white p-3">
+          <p className="font-black text-slate-800">{t('projects.nextStep', { defaultValue: 'Prochaine étape' })}</p>
+          <p className="mt-1">{nextStep}</p>
+        </div>
+      </div>
+
+      <div className="rounded-xl bg-white p-3">
+        <p className="mb-2 font-black text-slate-800">{t('activityFeed.title', { defaultValue: 'Activité récente' })}</p>
+        <div className="space-y-2">
+          {recentEvents.map(event => (
+            <div key={event.key} className="flex items-start gap-2">
+              <AppIcon name={event.icon} className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-700" />
+              <span>
+                <span className="font-semibold text-slate-700">{event.title}</span>
+                {event.date && <span className="ml-1 text-slate-400">{formatProjectDate(event.date)}</span>}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-xl bg-white p-3">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <p className="font-black text-slate-800">{t('projects.discussion', { defaultValue: 'Discussion du projet' })}</p>
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-500">{comments.length}</span>
+        </div>
+        {commentsLoading ? (
+          <p className="text-slate-400">{t('common.loading')}</p>
+        ) : comments.length === 0 ? (
+          <p className="text-slate-400">{t('projects.noComments', { defaultValue: 'Aucun commentaire pour le moment.' })}</p>
+        ) : (
+          <div className="max-h-32 space-y-2 overflow-y-auto pr-1">
+            {comments.slice(-4).map(comment => (
+              <div key={comment.id} className="rounded-xl bg-slate-50 px-3 py-2">
+                <p className="font-black text-slate-700">
+                  {[comment.auteurPrenom, comment.auteurNom].filter(Boolean).join(' ') || t('users.user', { defaultValue: 'Utilisateur' })}
+                </p>
+                <p className="text-slate-600">{comment.contenu}</p>
+              </div>
+            ))}
+          </div>
+        )}
+        {canComment && (
+          <div className="mt-3 flex gap-2">
+            <input
+              value={commentDraft}
+              onChange={event => onCommentChange(event.target.value)}
+              placeholder={t('projects.commentPlaceholder', { defaultValue: 'Ajouter une note de suivi...' })}
+              className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <button
+              type="button"
+              onClick={onCommentSubmit}
+              disabled={commentLoading || !commentDraft.trim()}
+              className="rounded-xl bg-blue-600 px-3 py-2 font-black text-white transition hover:bg-blue-500 disabled:opacity-50"
+            >
+              {t('common.send', { defaultValue: 'Envoyer' })}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ProjectActions({ projet, isAuthenticated, isMembre, isPartenaire, peutValider, isParticipant, actionLoading, onToggleDetails, onFollow, onJoin, onApprove, onReject, t }) {
   return (
     <div className="mt-auto flex flex-wrap gap-2 pt-4">
       <button type="button" onClick={onToggleDetails} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-200">
@@ -462,9 +703,18 @@ function ProjectActions({ projet, isAuthenticated, isMembre, isPartenaire, peutV
         {t('common.open', { defaultValue: 'Voir' })}
       </button>
       {isMembre && (
-        <button type="button" onClick={onFollow} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white transition hover:bg-blue-500">
-          <AppIcon name="Bell" className="h-3.5 w-3.5" />
-          {t('projects.follow', { defaultValue: 'Suivre' })}
+        <button
+          type="button"
+          onClick={isParticipant ? onFollow : onJoin}
+          disabled={actionLoading === `${projet.id}-JOIN`}
+          className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-black transition disabled:opacity-60 ${
+            isParticipant
+              ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+              : 'bg-blue-600 text-white hover:bg-blue-500'
+          }`}
+        >
+          <AppIcon name={isParticipant ? 'CheckCircle' : 'PlusCircle'} className="h-3.5 w-3.5" />
+          {isParticipant ? t('projects.joinedLabel', { defaultValue: 'Participant' }) : t('projects.join', { defaultValue: 'Rejoindre' })}
         </button>
       )}
       {isPartenaire && projet.statut === 'APPROUVE' && (
@@ -538,6 +788,78 @@ function projectWorkflowText(projet, t) {
     default:
       return t('projects.workflowUnknown', { defaultValue: 'Statut du projet à vérifier.' })
   }
+}
+
+function projectNextStep(projet, isAdmin, isPartenaire, isMembre, isParticipant, t) {
+  if (isAdmin && projet.statut === 'SOUMIS') {
+    return t('projects.nextAdminValidation', { defaultValue: 'Relire le projet puis approuver ou refuser.' })
+  }
+  if (isPartenaire && projet.statut === 'APPROUVE') {
+    return t('projects.nextPartnerSupport', { defaultValue: 'Évaluer le besoin et proposer un soutien si le projet correspond à vos priorités.' })
+  }
+  if (isMembre && !isParticipant && ['APPROUVE', 'EN_COURS'].includes(projet.statut)) {
+    return t('projects.nextMemberJoin', { defaultValue: 'Rejoindre le projet pour suivre son avancement.' })
+  }
+  if (isParticipant) {
+    return t('projects.nextParticipant', { defaultValue: 'Suivre la discussion et contribuer aux prochaines étapes.' })
+  }
+  if (projet.statut === 'BROUILLON') {
+    return t('projects.nextDraft', { defaultValue: 'Compléter le projet avant soumission.' })
+  }
+  if (projet.statut === 'SOUMIS') {
+    return t('projects.nextSubmitted', { defaultValue: 'Attendre la validation administrative.' })
+  }
+  if (projet.statut === 'TERMINE') {
+    return t('projects.nextDone', { defaultValue: 'Consulter le bilan et les contributions.' })
+  }
+  if (projet.statut === 'REJETE') {
+    return t('projects.nextRejected', { defaultValue: 'Consulter le motif ou revoir la proposition.' })
+  }
+  return t('projects.nextDefault', { defaultValue: 'Suivre l’évolution du projet.' })
+}
+
+function buildProjectRecentEvents(projet, comments, t) {
+  const events = [
+    projet.dateCreation && {
+      key: 'created',
+      icon: 'PlusCircle',
+      title: t('projects.eventCreated', { defaultValue: 'Projet créé' }),
+      date: projet.dateCreation,
+    },
+    projet.dateSoumission && {
+      key: 'submitted',
+      icon: 'Clock',
+      title: t('projects.eventSubmitted', { defaultValue: 'Soumis pour validation' }),
+      date: projet.dateSoumission,
+    },
+    projet.dateValidation && {
+      key: 'validated',
+      icon: projet.statut === 'REJETE' ? 'XCircle' : 'CheckCircle',
+      title: projet.statut === 'REJETE'
+        ? t('projects.eventRejected', { defaultValue: 'Projet refusé' })
+        : t('projects.eventValidated', { defaultValue: 'Projet validé' }),
+      date: projet.dateValidation,
+    },
+    projet.dateCloture && {
+      key: 'closed',
+      icon: 'Archive',
+      title: t('projects.eventClosed', { defaultValue: 'Projet clôturé' }),
+      date: projet.dateCloture,
+    },
+    ...comments.slice(-2).map(comment => ({
+      key: `comment-${comment.id}`,
+      icon: 'MessageCircle',
+      title: t('projects.eventComment', {
+        author: [comment.auteurPrenom, comment.auteurNom].filter(Boolean).join(' '),
+        defaultValue: 'Nouveau commentaire',
+      }),
+      date: comment.dateCommentaire,
+    })),
+  ].filter(Boolean)
+
+  return events
+    .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+    .slice(0, 4)
 }
 
 function formatProjectDate(value) {

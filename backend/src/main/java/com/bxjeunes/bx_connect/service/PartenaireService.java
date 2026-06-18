@@ -19,17 +19,20 @@ public class PartenaireService {
     private final ProjetRepository projetRepository;
     private final ActiviteRepository activiteRepository;
     private final PartenaireProfilRepository partenaireProfilRepository;
+    private final NotificationService notificationService;
 
     public PartenaireService(SoutienFinancierRepository soutienRepository,
                              UserRepository userRepository,
                              ProjetRepository projetRepository,
                              ActiviteRepository activiteRepository,
-                             PartenaireProfilRepository partenaireProfilRepository) {
+                             PartenaireProfilRepository partenaireProfilRepository,
+                             NotificationService notificationService) {
         this.soutienRepository  = soutienRepository;
         this.userRepository     = userRepository;
         this.projetRepository   = projetRepository;
         this.activiteRepository = activiteRepository;
         this.partenaireProfilRepository = partenaireProfilRepository;
+        this.notificationService = notificationService;
     }
 
     public PartenaireProfilResponse getProfilInstitutionnel(String emailPartenaire) {
@@ -90,7 +93,9 @@ public class PartenaireService {
         soutien.setTypeSource("DECLARATION");
         soutien.setStatutPaiement(StatutPaiement.EN_ATTENTE);
 
-        return SoutienResponse.fromEntity(soutienRepository.save(soutien));
+        SoutienFinancier saved = soutienRepository.save(soutien);
+        notifierAdminsNouveauSoutien(saved);
+        return SoutienResponse.fromEntity(saved);
     }
 
     // ─── P06 : Soumettre un soutien à une activité ────────────────────────────
@@ -119,7 +124,9 @@ public class PartenaireService {
         soutien.setTypeSource("DECLARATION");
         soutien.setStatutPaiement(StatutPaiement.EN_ATTENTE);
 
-        return SoutienResponse.fromEntity(soutienRepository.save(soutien));
+        SoutienFinancier saved = soutienRepository.save(soutien);
+        notifierAdminsNouveauSoutien(saved);
+        return SoutienResponse.fromEntity(saved);
     }
 
     // ─── P07 : Consulter le statut de ses offres ──────────────────────────────
@@ -208,20 +215,30 @@ public class PartenaireService {
     }
 
     // ─── Admin : Valider un soutien (A25) ────────────────────────────────────
-    public SoutienResponse validerSoutien(Long soutienId) {
+    public SoutienResponse validerSoutien(Long soutienId, String commentaireAdmin) {
         SoutienFinancier soutien = soutienRepository.findById(soutienId)
                 .orElseThrow(() -> new RuntimeException("Soutien introuvable : " + soutienId));
         soutien.setStatutPaiement(StatutPaiement.PAYE);
         soutien.setDatePaiement(java.time.LocalDateTime.now());
-        return SoutienResponse.fromEntity(soutienRepository.save(soutien));
+        soutien.setReponseAdmin(normaliser(commentaireAdmin));
+        soutien.setDateReponseAdmin(java.time.LocalDateTime.now());
+        SoutienFinancier saved = soutienRepository.save(soutien);
+        notifierPartenaireDecision(saved, "Soutien validé",
+                "Votre soutien pour \"" + cibleTitre(saved) + "\" a été validé.");
+        return SoutienResponse.fromEntity(saved);
     }
 
     // ─── Admin : Refuser un soutien ───────────────────────────────────────────
-    public SoutienResponse refuserSoutien(Long soutienId) {
+    public SoutienResponse refuserSoutien(Long soutienId, String commentaireAdmin) {
         SoutienFinancier soutien = soutienRepository.findById(soutienId)
                 .orElseThrow(() -> new RuntimeException("Soutien introuvable : " + soutienId));
         soutien.setStatutPaiement(StatutPaiement.REMBOURSE);
-        return SoutienResponse.fromEntity(soutienRepository.save(soutien));
+        soutien.setReponseAdmin(normaliser(commentaireAdmin));
+        soutien.setDateReponseAdmin(java.time.LocalDateTime.now());
+        SoutienFinancier saved = soutienRepository.save(soutien);
+        notifierPartenaireDecision(saved, "Soutien refusé",
+                "Votre soutien pour \"" + cibleTitre(saved) + "\" a été refusé.");
+        return SoutienResponse.fromEntity(saved);
     }
 
     // ─── Admin : Tous les soutiens ────────────────────────────────────────────
@@ -249,5 +266,32 @@ public class PartenaireService {
 
     private String normaliser(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private void notifierAdminsNouveauSoutien(SoutienFinancier soutien) {
+        String titreCible = cibleTitre(soutien);
+        for (User admin : userRepository.findByRoleAndActifTrue(Role.ADMIN)) {
+            notificationService.creer(
+                    admin,
+                    "Nouveau soutien partenaire",
+                    soutien.getDonateur().getPrenom() + " propose " + soutien.getMontant() + " € pour \"" + titreCible + "\".",
+                    "SOUTIEN",
+                    "/admin/soutiens?soutien=" + soutien.getId());
+        }
+    }
+
+    private void notifierPartenaireDecision(SoutienFinancier soutien, String titre, String message) {
+        notificationService.creer(
+                soutien.getDonateur(),
+                titre,
+                message,
+                "SOUTIEN",
+                "/partenaire?tab=soutiens&soutien=" + soutien.getId());
+    }
+
+    private String cibleTitre(SoutienFinancier soutien) {
+        if (soutien.getProjet() != null) return soutien.getProjet().getTitre();
+        if (soutien.getActivite() != null) return soutien.getActivite().getTitre();
+        return "votre proposition";
     }
 }

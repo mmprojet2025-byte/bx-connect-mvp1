@@ -12,9 +12,11 @@ public class SoutienResponse {
     private BigDecimal montant;
     private StatutPaiement statutPaiement;
     private String message;
+    private String reponseAdmin;
     private String typeSource;
     private LocalDateTime dateCreation;
     private LocalDateTime datePaiement;
+    private LocalDateTime dateReponseAdmin;
 
     // Partenaire
     private Long partenaireId;
@@ -35,9 +37,11 @@ public class SoutienResponse {
         r.montant        = s.getMontant();
         r.statutPaiement = s.getStatutPaiement();
         r.message        = s.getMessage();
+        r.reponseAdmin   = s.getReponseAdmin();
         r.typeSource     = s.getTypeSource();
         r.dateCreation   = s.getDateCreation();
         r.datePaiement   = s.getDatePaiement();
+        r.dateReponseAdmin = s.getDateReponseAdmin();
 
         if (s.getDonateur() != null) {
             r.partenaireId     = s.getDonateur().getId();
@@ -61,9 +65,11 @@ public class SoutienResponse {
     public BigDecimal getMontant()             { return montant; }
     public StatutPaiement getStatutPaiement()  { return statutPaiement; }
     public String getMessage()                 { return message; }
+    public String getReponseAdmin()            { return reponseAdmin; }
     public String getTypeSource()              { return typeSource; }
     public LocalDateTime getDateCreation()     { return dateCreation; }
     public LocalDateTime getDatePaiement()     { return datePaiement; }
+    public LocalDateTime getDateReponseAdmin() { return dateReponseAdmin; }
     public Long getPartenaireId()              { return partenaireId; }
     public String getPartenairePrenom()        { return partenairePrenom; }
     public String getPartenaireNom()           { return partenaireNom; }

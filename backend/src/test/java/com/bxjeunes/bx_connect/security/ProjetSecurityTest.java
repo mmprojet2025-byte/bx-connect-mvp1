@@ -18,6 +18,7 @@ import com.bxjeunes.bx_connect.repository.MembreGroupeRepository;
 import com.bxjeunes.bx_connect.repository.ParticipationProjetRepository;
 import com.bxjeunes.bx_connect.repository.ProjetRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
+import com.bxjeunes.bx_connect.service.NotificationService;
 import com.bxjeunes.bx_connect.service.ProjetService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -46,6 +47,7 @@ class ProjetSecurityTest {
     @Mock private UserRepository userRepository;
     @Mock private GroupeRepository groupeRepository;
     @Mock private MembreGroupeRepository membreGroupeRepository;
+    @Mock private NotificationService notificationService;
 
     @InjectMocks
     private ProjetService projetService;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
@@ -23,6 +23,7 @@ export default function PartenaireSpace() {
   const [projetsOuverts, setProjetsOuverts] = useState([]);
   const [activitesOuvertes, setActivitesOuvertes] = useState([]);
   const [profilInstitutionnel, setProfilInstitutionnel] = useState(null);
+  const [statistiques, setStatistiques] = useState(null);
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState(emptyPartnerProfile());
@@ -32,6 +33,7 @@ export default function PartenaireSpace() {
   const [sectionErrors, setSectionErrors] = useState({});
   const requestedTab = searchParams.get('tab');
   const onglet = PARTNER_TABS.has(requestedTab) ? requestedTab : 'dashboard';
+  const focusedSupportId = searchParams.get('soutien');
 
   // Formulaire soutien
   const [showSoutienForm, setShowSoutienForm] = useState(false);
@@ -49,8 +51,9 @@ export default function PartenaireSpace() {
         api.get('/partenaire/projets-ouverts'),
         api.get('/partenaire/activites-ouvertes'),
         api.get('/partenaire/profil'),
+        api.get('/partenaire/statistiques'),
       ]);
-      const [soutiensRes, projetsRes, activitesRes, profilRes] = results;
+      const [soutiensRes, projetsRes, activitesRes, profilRes, statsRes] = results;
       const errors = {};
 
       applySettled(soutiensRes, data => setMesSoutiens(data || []), () => { errors.soutiens = t('partnerSpace.sectionLoadError'); });
@@ -60,6 +63,7 @@ export default function PartenaireSpace() {
         setProfilInstitutionnel(data);
         setProfileForm(profileFromResponse(data));
       }, () => { errors.profil = t('partnerSpace.profileLoadError'); });
+      applySettled(statsRes, data => setStatistiques(data || null), () => { errors.stats = t('partnerSpace.sectionLoadError'); });
 
       setSectionErrors(errors);
       if (results.every(result => result.status === 'rejected')) {
@@ -137,6 +141,20 @@ export default function PartenaireSpace() {
   const setOnglet = (tab) => {
     setSearchParams(tab === 'dashboard' ? {} : { tab });
   };
+
+  const impact = useMemo(
+    () => buildPartnerImpact({ statistiques, mesSoutiens }),
+    [mesSoutiens, statistiques]
+  );
+
+  const displayedPartnerSupports = useMemo(() => {
+    if (!focusedSupportId) return mesSoutiens;
+    return [...mesSoutiens].sort((a, b) => {
+      if (String(a.id) === String(focusedSupportId)) return -1;
+      if (String(b.id) === String(focusedSupportId)) return 1;
+      return new Date(b.dateCreation || 0) - new Date(a.dateCreation || 0);
+    });
+  }, [focusedSupportId, mesSoutiens]);
 
   if (loading) return (
     <CollaborativeDashboardLayout
@@ -219,6 +237,7 @@ export default function PartenaireSpace() {
           </div>
         )}
         {sectionErrors.profil && <SectionLoadError message={sectionErrors.profil} />}
+        {sectionErrors.stats && <SectionLoadError message={sectionErrors.stats} />}
 
         {/* Messages */}
         {message && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>}
@@ -245,6 +264,8 @@ export default function PartenaireSpace() {
         {/* ── Dashboard ── */}
         {onglet === 'dashboard' && (
           <div>
+            <PartnerImpactSummary impact={impact} t={t} />
+
             <PartnerActions
               projetsOuverts={projetsOuverts}
               activitesOuvertes={activitesOuvertes}
@@ -373,39 +394,16 @@ export default function PartenaireSpace() {
                 <p>{t('partnerSpace.noDeclarations')}</p>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl shadow overflow-hidden">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100">
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('partnerSpace.target')}</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('partnerSupport.amount')}</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.status')}</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('partnerSupport.date')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mesSoutiens.map((s, i) => (
-                      <tr key={s.id} className={`border-b border-gray-50 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
-                        <td className="px-4 py-3 text-sm text-blue-900 font-medium">
-                          {s.projetTitre ? (
-                            <InlineIconLabel icon="Rocket">{s.projetTitre}</InlineIconLabel>
-                          ) : s.activiteTitre ? (
-                            <InlineIconLabel icon="Folder">{s.activiteTitre}</InlineIconLabel>
-                          ) : '—'}
-                        </td>
-                        <td className="px-4 py-3 text-sm font-bold text-orange-600">{s.montant} €</td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                            SUPPORT_STATUS_STYLES[s.statutPaiement] || 'bg-slate-100 text-slate-700'
-                          }`}>{supportStatusLabel(s.statutPaiement, t)}</span>
-                        </td>
-                        <td className="px-4 py-3 text-xs text-gray-400">
-                          {new Date(s.dateCreation).toLocaleDateString(i18n.language)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="grid gap-4 lg:grid-cols-2">
+                {displayedPartnerSupports.map(soutien => (
+                  <PartnerSupportCard
+                    key={soutien.id}
+                    soutien={soutien}
+                    language={i18n.language}
+                    focused={String(soutien.id) === String(focusedSupportId)}
+                    t={t}
+                  />
+                ))}
               </div>
             )}
           </div>
@@ -627,6 +625,167 @@ function PartnerActions({ projetsOuverts, activitesOuvertes, mesSoutiens, onSupp
   );
 }
 
+function PartnerImpactSummary({ impact, t }) {
+  const hasImpact = impact.totalSoutiens > 0;
+
+  return (
+    <section className="mb-6 rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">
+      <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-orange-600">
+            {t('partnerSpace.impactEyebrow', { defaultValue: 'Impact visible' })}
+          </p>
+          <h2 className="text-xl font-black text-slate-950">
+            {t('partnerSpace.impactTitle', { defaultValue: 'À quoi servent vos soutiens' })}
+          </h2>
+        </div>
+        <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-black text-orange-700">
+          {impact.totalMontant} €
+        </span>
+      </div>
+
+      {!hasImpact ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5">
+          <p className="text-sm font-semibold text-slate-600">
+            {t('partnerSpace.noImpactYet', { defaultValue: 'Aucun soutien enregistré pour le moment. Les projets ouverts vous permettent de créer votre premier impact.' })}
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-4">
+          <ImpactMetric icon="Wallet" label={t('partnerSpace.totalSupported', { defaultValue: 'Montant engagé' })} value={`${impact.totalMontant} €`} />
+          <ImpactMetric icon="Rocket" label={t('partnerSpace.supportedProjects', { defaultValue: 'Projets soutenus' })} value={impact.projetsSoutenus} />
+          <ImpactMetric icon="Calendar" label={t('partnerSpace.supportedActivities', { defaultValue: 'Activités soutenues' })} value={impact.activitesSoutenues} />
+          <ImpactMetric icon="CheckCircle" label={t('partnerSpace.validatedSupports', { defaultValue: 'Soutiens validés' })} value={impact.soutiensValides} />
+        </div>
+      )}
+
+      {impact.recentSupports.length > 0 && (
+        <div className="mt-4 rounded-2xl bg-slate-50 p-3">
+          <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">
+            {t('partnerSpace.recentSupports', { defaultValue: 'Derniers soutiens' })}
+          </p>
+          <div className="grid gap-2 md:grid-cols-2">
+            {impact.recentSupports.map(soutien => (
+              <div key={soutien.id} className="rounded-xl bg-white px-3 py-2">
+                <p className="truncate text-sm font-black text-slate-950">
+                  {soutien.projetTitre || soutien.activiteTitre || t('partnerSpace.supportFallback')}
+                </p>
+                <p className="mt-0.5 text-xs font-semibold text-slate-500">
+                  {soutien.montant} € · {supportStatusLabel(soutien.statutPaiement, t)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function PartnerSupportCard({ soutien, language, focused, t }) {
+  const target = soutien.projetTitre || soutien.activiteTitre || t('partnerSpace.supportFallback')
+  const nextStep = partnerSupportNextStep(soutien, t)
+
+  return (
+    <article className={`rounded-2xl border bg-white p-5 shadow-sm ${focused ? 'border-orange-300 ring-2 ring-orange-100' : 'border-slate-100'}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-black uppercase tracking-wide text-orange-600">
+            {soutien.projetTitre ? t('partnerSupport.project') : t('partnerSupport.activity')}
+          </p>
+          <h3 className="mt-1 truncate font-black text-slate-950">{target}</h3>
+          <p className="mt-1 text-sm font-black text-orange-600">{soutien.montant} €</p>
+        </div>
+        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-black ${SUPPORT_STATUS_STYLES[soutien.statutPaiement] || 'bg-slate-100 text-slate-700'}`}>
+          {supportStatusLabel(soutien.statutPaiement, t)}
+        </span>
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-orange-100 bg-orange-50 px-4 py-3">
+        <p className="text-xs font-black uppercase tracking-wide text-orange-700">
+          {t('partnerSpace.nextStep', { defaultValue: 'Prochaine étape' })}
+        </p>
+        <p className="mt-1 text-sm font-semibold leading-relaxed text-orange-950">{nextStep}</p>
+      </div>
+
+      <div className="mt-4 rounded-2xl bg-slate-50 p-3">
+        <p className="text-xs font-black uppercase tracking-wide text-slate-400">
+          {t('partnerSupport.admin.exchangeHistory', { defaultValue: 'Historique des échanges' })}
+        </p>
+        <div className="mt-3 space-y-3">
+          <SupportExchange
+            icon="Handshake"
+            title={t('partnerSupport.admin.partnerProposal', { defaultValue: 'Proposition partenaire' })}
+            date={soutien.dateCreation}
+            text={soutien.message || t('partnerSpace.noMessage', { defaultValue: 'Aucun message ajouté.' })}
+            language={language}
+          />
+          {soutien.reponseAdmin ? (
+            <SupportExchange
+              icon="Shield"
+              title={t('partnerSupport.admin.adminReply', { defaultValue: 'Réponse admin' })}
+              date={soutien.dateReponseAdmin || soutien.datePaiement}
+              text={soutien.reponseAdmin}
+              language={language}
+            />
+          ) : (
+            <p className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-500">
+              {t('partnerSpace.waitingAdminReply', { defaultValue: 'En attente d’une réponse admin.' })}
+            </p>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function SupportExchange({ icon, title, date, text, language }) {
+  return (
+    <div className="flex gap-3 rounded-xl bg-white px-3 py-3">
+      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+        <AppIcon name={icon} className="h-4 w-4" />
+      </span>
+      <div>
+        <p className="text-sm font-black text-slate-950">{title}</p>
+        {date && <p className="text-xs font-semibold text-slate-400">{new Date(date).toLocaleDateString(language || 'fr-BE')}</p>}
+        <p className="mt-1 text-sm leading-relaxed text-slate-600">{text}</p>
+      </div>
+    </div>
+  );
+}
+
+function ImpactMetric({ icon, label, value }) {
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+      <AppIcon name={icon} className="mb-3 h-5 w-5 text-orange-600" />
+      <p className="text-2xl font-black text-slate-950">{value}</p>
+      <p className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-400">{label}</p>
+    </div>
+  );
+}
+
+function buildPartnerImpact({ statistiques, mesSoutiens }) {
+  const totalMontant = statistiques?.totalMontant
+    ?? mesSoutiens.reduce((sum, soutien) => sum + Number(soutien.montant || 0), 0);
+  const soutiensValides = statistiques?.soutiensValides
+    ?? mesSoutiens.filter(soutien => soutien.statutPaiement === 'PAYE').length;
+  const projetsSoutenus = statistiques?.projetsSoutenus
+    ?? new Set(mesSoutiens.map(soutien => soutien.projetId).filter(Boolean)).size;
+  const activitesSoutenues = statistiques?.activitesSoutenues
+    ?? new Set(mesSoutiens.map(soutien => soutien.activiteId).filter(Boolean)).size;
+
+  return {
+    totalSoutiens: statistiques?.totalSoutiens ?? mesSoutiens.length,
+    totalMontant,
+    soutiensValides,
+    projetsSoutenus,
+    activitesSoutenues,
+    recentSupports: [...mesSoutiens]
+      .sort((a, b) => new Date(b.dateCreation || 0) - new Date(a.dateCreation || 0))
+      .slice(0, 4),
+  };
+}
+
 function buildPartnerActivityItems({ mesSoutiens, projetsOuverts, activitesOuvertes, t }) {
   const supportItems = mesSoutiens.map(soutien => ({
     key: `soutien-${soutien.id}`,
@@ -634,7 +793,7 @@ function buildPartnerActivityItems({ mesSoutiens, projetsOuverts, activitesOuver
     title: soutien.projetTitre || soutien.activiteTitre || t('partnerSpace.supportFallback'),
     description: `${soutien.montant} € · ${supportStatusLabel(soutien.statutPaiement, t)}`,
     date: soutien.dateCreation || soutien.datePaiement,
-    to: '/partenaire?tab=soutiens',
+    to: `/partenaire?tab=soutiens&soutien=${soutien.id}`,
   }));
 
   const projectItems = projetsOuverts.map(projet => ({
@@ -656,6 +815,19 @@ function buildPartnerActivityItems({ mesSoutiens, projetsOuverts, activitesOuver
   }));
 
   return [...supportItems, ...projectItems, ...activityItems];
+}
+
+function partnerSupportNextStep(soutien, t) {
+  if (soutien.statutPaiement === 'EN_ATTENTE') {
+    return t('partnerSpace.nextStepPending', { defaultValue: 'En attente de réponse admin. Vous pourrez suivre ici la décision et le commentaire.' });
+  }
+  if (soutien.statutPaiement === 'PAYE') {
+    return t('partnerSpace.nextStepApproved', { defaultValue: 'Validé par l’administration. Le soutien est pris en compte dans votre impact partenaire.' });
+  }
+  if (soutien.statutPaiement === 'REMBOURSE') {
+    return t('partnerSpace.nextStepRejected', { defaultValue: 'Refusé par l’administration. Consultez la réponse admin pour comprendre le motif.' });
+  }
+  return t('partnerSpace.nextStepFollow', { defaultValue: 'Statut à suivre dans votre historique de contributions.' });
 }
 
 function PartnerActionCard({ icon, title, value, description, onClick, highlight = false }) {

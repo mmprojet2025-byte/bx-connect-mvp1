@@ -15,7 +15,6 @@ import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFrien
 import PageHeader from '../../components/ui/PageHeader'
 import LoadingState from '../../components/ui/LoadingState'
 import ErrorState from '../../components/ui/ErrorState'
-import groupsIllustration from '../../assets/illustrations/groups.png'
 
 export default function Groupes() {
   const { isAuthenticated, isMembre } = useAuth()
@@ -112,6 +111,11 @@ export default function Groupes() {
   const groupesFiltres = groupes.filter((groupe) =>
     groupe.nom?.toLowerCase().includes(recherche.toLowerCase())
   )
+  const groupLife = useMemo(() => {
+    const totalMembers = groupes.reduce((sum, groupe) => sum + Number(groupe.nombreMembres || 0), 0)
+    const groupsWithReferent = groupes.filter(groupe => groupe.referentPrenom || groupe.referentNom).length
+    return { totalMembers, groupsWithReferent }
+  }, [groupes])
 
   const intro = isAuthenticated && isMembre
     ? t('ux.groups.memberIntro')
@@ -127,17 +131,18 @@ export default function Groupes() {
           title={t('groups.title')}
           description={intro}
           action={(
-            <img
-              src={groupsIllustration}
-              alt=""
-              className="mx-auto w-[200px] object-contain md:w-[300px]"
-            />
+            <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-black text-blue-800">
+              <AppIcon name="Users" className="mr-2 inline h-4 w-4" />
+              {t('groups.publicCount', { count: groupes.length, defaultValue: `${groupes.length} groupe(s)` })}
+            </div>
           )}
         />
 
         {isAuthenticated && isMembre && (
           <MemberGroupSummary adhesionActive={adhesionActive} adhesionEnAttente={adhesionEnAttente} />
         )}
+
+        <GroupLifeSummary groupLife={groupLife} isAuthenticated={isAuthenticated} />
 
         {message && <Alert type="success">{message}</Alert>}
         {error && groupes.length > 0 && <Alert type="error">{error}</Alert>}
@@ -222,6 +227,26 @@ function MemberGroupSummary({ adhesionActive, adhesionEnAttente }) {
       <p className="text-slate-950 font-semibold text-sm">{t('groups.no_group_joined')}</p>
       <p className="text-blue-600 text-sm mt-1">{t('groups.choose_group')}</p>
     </div>
+  )
+}
+
+function GroupLifeSummary({ groupLife, isAuthenticated }) {
+  const { t } = useTranslation()
+  return (
+    <section className="mb-5 grid gap-3 md:grid-cols-3">
+      <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-lg shadow-slate-900/5">
+        <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">{t('groups.lifeMembers', { defaultValue: 'Membres visibles' })}</p>
+        <p className="mt-1 text-xl font-black text-slate-950">{groupLife.totalMembers}</p>
+      </div>
+      <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-lg shadow-slate-900/5">
+        <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">{t('groups.lifeReferents', { defaultValue: 'Groupes encadrés' })}</p>
+        <p className="mt-1 text-xl font-black text-slate-950">{groupLife.groupsWithReferent}</p>
+      </div>
+      <Link to={isAuthenticated ? '/messagerie' : '/login'} className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 shadow-lg shadow-blue-950/5 transition hover:border-blue-300">
+        <p className="text-[11px] font-black uppercase tracking-wide text-blue-500">{t('nav.messaging')}</p>
+        <p className="mt-1 text-sm font-black text-blue-900">{t('groups.lifeMessaging', { defaultValue: 'Échanger avec son groupe après adhésion' })}</p>
+      </Link>
+    </section>
   )
 }
 
@@ -343,13 +368,6 @@ function WorkspacePreview({ groupeId, isAccepted, isAuthenticated }) {
       to: `/groupes/${groupeId}?tab=projets`,
       available: true,
       note: t('common.open'),
-    },
-    {
-      icon: 'FileText',
-      label: t('groups.resources', { defaultValue: 'Ressources' }),
-      to: `/groupes/${groupeId}?tab=ressources`,
-      available: false,
-      note: t('groups.availableWhenReady', { defaultValue: 'Selon le groupe' }),
     },
   ]
 

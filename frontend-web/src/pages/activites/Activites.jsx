@@ -79,6 +79,16 @@ export default function Activites() {
     () => [...new Set(activites.map(activite => activite.groupeNom).filter(Boolean))],
     [activites]
   );
+  const prochainesActivites = useMemo(() => {
+    const now = new Date();
+    return activites
+      .filter(activite => activite.dateDebut && new Date(activite.dateDebut) >= now && !['TERMINEE', 'TERMINE', 'ANNULEE'].includes(activite.statut))
+      .sort((a, b) => new Date(a.dateDebut) - new Date(b.dateDebut))
+      .slice(0, 3);
+  }, [activites]);
+  const inscriptionsVisibles = useMemo(() => {
+    return activites.filter(activite => activite.inscrit || activite.dejaInscrit || activite.inscriptionId || activite.statutInscription).length;
+  }, [activites]);
 
   const activitesAffichees = useMemo(() => activites.filter(activite => {
     const matchStatut = filtreStatut ? activite.statut === filtreStatut : true;
@@ -221,8 +231,15 @@ export default function Activites() {
         {message && <Alert>{message}</Alert>}
         {error && activites.length > 0 && <Alert type="error">{error}</Alert>}
 
+        <UpcomingActivitiesStrip
+          activities={prochainesActivites}
+          registrationsCount={inscriptionsVisibles}
+          t={t}
+          language={i18n.language}
+        />
+
         {/* ── Filtres (V03) ── */}
-        <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-5 mb-6">
+        <div className="bg-white rounded-[1.25rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-4 mb-5">
           <h2 className="text-sm font-bold text-slate-950 mb-3">{t('activities.filters_title')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
             <input
@@ -415,6 +432,50 @@ export default function Activites() {
       <Footer />
     </div>
   );
+}
+
+function UpcomingActivitiesStrip({ activities, registrationsCount, t, language }) {
+  return (
+    <section className="mb-5 rounded-[1.25rem] border border-slate-100 bg-white p-4 shadow-lg shadow-slate-900/5">
+      <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-sm font-black text-slate-950">
+            {t('activities.upcomingTitle', { defaultValue: 'Prochaines activités' })}
+          </h2>
+          <p className="text-xs text-slate-500">
+            {registrationsCount > 0
+              ? t('activities.myRegistrationsCount', { count: registrationsCount, defaultValue: `${registrationsCount} inscription(s) visible(s)` })
+              : t('activities.upcomingHint', { defaultValue: 'Les prochaines dates publiées apparaissent ici dès qu’elles sont disponibles.' })}
+          </p>
+        </div>
+        <Link to="/activites" className="text-xs font-bold text-blue-700 hover:underline">
+          {t('common.showAll', { defaultValue: 'Voir tout' })}
+        </Link>
+      </div>
+
+      {activities.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-500">
+          {t('activities.noUpcoming', { defaultValue: 'Aucune activité à venir pour le moment.' })}
+        </div>
+      ) : (
+        <div className="grid gap-2 md:grid-cols-3">
+          {activities.map(activity => (
+            <Link
+              key={activity.id}
+              to={`/activites/${activity.id}`}
+              className="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2 transition hover:border-blue-200 hover:bg-blue-50"
+            >
+              <span className="block truncate text-xs font-black text-slate-950">{activity.titre}</span>
+              <span className="mt-1 flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-500">
+                <span className="truncate">{activity.dateDebut ? new Date(activity.dateDebut).toLocaleDateString(language || 'fr-BE') : '—'}</span>
+                <span className="truncate text-blue-700">{activity.groupeNom || activity.lieu || t('nav.activities')}</span>
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </section>
+  )
 }
 
 function ActivityCard({ activity, isAuthenticated, peutGerer, actionLoading, onRegister, onPublish, onComplete, t, language }) {

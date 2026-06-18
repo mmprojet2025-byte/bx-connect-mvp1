@@ -149,7 +149,7 @@ function buildAdminActivityItems({ groupesEnAttente, groupesSansReferent, projet
     title: soutien.projetTitre || soutien.activiteTitre || t('nav.supports', { defaultValue: 'Soutien partenaire' }),
     description: soutien.statutPaiement || t('partnerSupport.admin.title'),
     date: soutien.dateCreation || soutien.datePaiement,
-    to: '/admin/soutiens',
+    to: `/admin/soutiens?soutien=${soutien.id}`,
   }))
 
   const activityItems = activites.map(activite => ({

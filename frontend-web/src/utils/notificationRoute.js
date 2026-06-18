@@ -108,6 +108,8 @@ function exactRouteFromAction(actionPath, role) {
   }
   if (actionPath.includes('/messagerie') || actionPath.includes('/messages')) return routes.message || routes.dashboard
   if (actionPath.includes('/demandes') || actionPath.includes('/adhesions')) return routes.request || routes.group || routes.dashboard
+  if (actionPath.startsWith('/admin/soutiens') && routes.support?.startsWith('/admin/soutiens')) return actionPath
+  if (actionPath.startsWith('/partenaire?tab=soutiens') && routes.support?.startsWith('/partenaire')) return actionPath
   if (actionPath.includes('/soutiens') || actionPath.includes('/paiements') || actionPath.includes('/partenaire')) return routes.support || routes.dashboard
   if (actionPath.includes('/projets')) return routes.project || routes.dashboard
   if (actionPath.includes('/groupes')) return routes.group || routes.dashboard

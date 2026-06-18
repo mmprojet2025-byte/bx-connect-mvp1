@@ -50,6 +50,9 @@ public class SoutienFinancier {
     @Column(columnDefinition = "TEXT")
     private String message;
 
+    @Column(columnDefinition = "TEXT")
+    private String reponseAdmin;
+
     @Column(length = 50)
     private String typeSource; // 'PAYPAL', 'STRIPE', 'DECLARATION'
 
@@ -57,6 +60,8 @@ public class SoutienFinancier {
     private LocalDateTime dateCreation = LocalDateTime.now();
 
     private LocalDateTime datePaiement;
+
+    private LocalDateTime dateReponseAdmin;
 
     // ─── Relations ────────────────────────────────────────────────────────────
     @ManyToOne(fetch = FetchType.LAZY)
@@ -115,6 +120,9 @@ public class SoutienFinancier {
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }
 
+    public String getReponseAdmin() { return reponseAdmin; }
+    public void setReponseAdmin(String reponseAdmin) { this.reponseAdmin = reponseAdmin; }
+
     public String getTypeSource() { return typeSource; }
     public void setTypeSource(String typeSource) { this.typeSource = typeSource; }
 
@@ -123,6 +131,9 @@ public class SoutienFinancier {
 
     public LocalDateTime getDatePaiement() { return datePaiement; }
     public void setDatePaiement(LocalDateTime d) { this.datePaiement = d; }
+
+    public LocalDateTime getDateReponseAdmin() { return dateReponseAdmin; }
+    public void setDateReponseAdmin(LocalDateTime d) { this.dateReponseAdmin = d; }
 
     public User getDonateur() { return donateur; }
     public void setDonateur(User donateur) { this.donateur = donateur; }

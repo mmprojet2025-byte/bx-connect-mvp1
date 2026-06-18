@@ -25,19 +25,22 @@ public class ProjetService {
     private final UserRepository userRepository;
     private final GroupeRepository groupeRepository;
     private final MembreGroupeRepository membreGroupeRepository;
+    private final NotificationService notificationService;
 
     public ProjetService(ProjetRepository projetRepository,
                          ParticipationProjetRepository participationRepository,
                          CommentaireProjetRepository commentaireRepository,
                          UserRepository userRepository,
                          GroupeRepository groupeRepository,
-                         MembreGroupeRepository membreGroupeRepository) {
+                         MembreGroupeRepository membreGroupeRepository,
+                         NotificationService notificationService) {
         this.projetRepository = projetRepository;
         this.participationRepository = participationRepository;
         this.commentaireRepository = commentaireRepository;
         this.userRepository = userRepository;
         this.groupeRepository = groupeRepository;
         this.membreGroupeRepository = membreGroupeRepository;
+        this.notificationService = notificationService;
     }
 
     // ─── Lister les projets publics (APPROUVE + EN_COURS) ────────────────────
@@ -140,7 +143,9 @@ public class ProjetService {
 
         projet.setStatut(StatutProjet.SOUMIS);
         projet.setDateSoumission(LocalDateTime.now());
-        return ProjetResponse.fromEntity(projetRepository.save(projet));
+        Projet saved = projetRepository.save(projet);
+        notifierAdminsProjetSoumis(saved);
+        return ProjetResponse.fromEntity(saved);
     }
 
     // ─── Modifier un projet (porteur / ADMIN) ────────────────────────────────
@@ -190,7 +195,16 @@ public class ProjetService {
         projet.setStatut(approuver ? StatutProjet.APPROUVE : StatutProjet.REJETE);
         projet.setDateValidation(LocalDateTime.now());
         projet.setCommentaireAdmin(commentaire);
-        return ProjetResponse.fromEntity(projetRepository.save(projet));
+        Projet saved = projetRepository.save(projet);
+        notificationService.creer(
+                saved.getPorteur(),
+                approuver ? "Projet validé" : "Projet refusé",
+                approuver
+                        ? "Votre projet \"" + saved.getTitre() + "\" a été validé."
+                        : "Votre projet \"" + saved.getTitre() + "\" a été refusé.",
+                approuver ? "VALIDATION_PROJET" : "REFUS_PROJET",
+                "/projets/" + saved.getId());
+        return ProjetResponse.fromEntity(saved);
     }
 
     // ─── Changer le statut d'un projet (ADMIN) — A10 ─────────────────────────
@@ -205,7 +219,14 @@ public class ProjetService {
             projet.setDateCloture(LocalDateTime.now());
         }
 
-        return ProjetResponse.fromEntity(projetRepository.save(projet));
+        Projet saved = projetRepository.save(projet);
+        notificationService.creer(
+                saved.getPorteur(),
+                "Statut du projet mis à jour",
+                "Le projet \"" + saved.getTitre() + "\" est maintenant " + nouveauStatut + ".",
+                "PROJET",
+                "/projets/" + saved.getId());
+        return ProjetResponse.fromEntity(saved);
     }
 
     // ─── Supprimer un projet (ADMIN) ─────────────────────────────────────────
@@ -238,6 +259,14 @@ public class ProjetService {
 
         ParticipationProjet participation = new ParticipationProjet(user, projet);
         participationRepository.save(participation);
+        if (projet.getPorteur() != null && !projet.getPorteur().getId().equals(user.getId())) {
+            notificationService.creer(
+                    projet.getPorteur(),
+                    "Nouveau participant",
+                    user.getPrenom() + " rejoint le projet \"" + projet.getTitre() + "\".",
+                    "PROJET",
+                    "/projets/" + projet.getId());
+        }
     }
 
     // ─── Commenter un projet (M27) ────────────────────────────────────────────
@@ -250,7 +279,16 @@ public class ProjetService {
 
         verifierAccesProjet(projet, user, ActionProjet.LIRE);
         CommentaireProjet commentaire = new CommentaireProjet(request.getContenu(), user, projet);
-        return CommentaireResponse.fromEntity(commentaireRepository.save(commentaire));
+        CommentaireProjet saved = commentaireRepository.save(commentaire);
+        if (projet.getPorteur() != null && !projet.getPorteur().getId().equals(user.getId())) {
+            notificationService.creer(
+                    projet.getPorteur(),
+                    "Nouveau commentaire",
+                    user.getPrenom() + " a commenté le projet \"" + projet.getTitre() + "\".",
+                    "PROJET",
+                    "/projets/" + projet.getId());
+        }
+        return CommentaireResponse.fromEntity(saved);
     }
 
     // ─── Commentaires d'un projet ─────────────────────────────────────────────
@@ -375,6 +413,17 @@ public class ProjetService {
         return projet.getPorteur() != null
                 && projet.getPorteur().getId() != null
                 && projet.getPorteur().getId().equals(user.getId());
+    }
+
+    private void notifierAdminsProjetSoumis(Projet projet) {
+        for (User admin : userRepository.findByRoleAndActifTrue(Role.ADMIN)) {
+            notificationService.creer(
+                    admin,
+                    "Projet soumis",
+                    "Le projet \"" + projet.getTitre() + "\" attend une validation.",
+                    "PROJET",
+                    "/projets/" + projet.getId());
+        }
     }
 
     private Groupe chargerGroupeEncadre(Long groupeId, User referent) {

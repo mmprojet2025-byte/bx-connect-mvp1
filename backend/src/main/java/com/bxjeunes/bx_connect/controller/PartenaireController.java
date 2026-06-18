@@ -2,6 +2,7 @@ package com.bxjeunes.bx_connect.controller;
 
 import com.bxjeunes.bx_connect.dto.SoutienRequest;
 import com.bxjeunes.bx_connect.dto.SoutienResponse;
+import com.bxjeunes.bx_connect.dto.AdminSoutienDecisionRequest;
 import com.bxjeunes.bx_connect.dto.PartenaireProfilRequest;
 import com.bxjeunes.bx_connect.dto.PartenaireProfilResponse;
 import com.bxjeunes.bx_connect.service.PartenaireService;
@@ -97,14 +98,20 @@ public class PartenaireController {
     // ─── Admin : Valider un soutien (A25) ────────────────────────────────────
     @PatchMapping("/admin/{id}/valider")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<SoutienResponse> valider(@PathVariable Long id) {
-        return ResponseEntity.ok(partenaireService.validerSoutien(id));
+    public ResponseEntity<SoutienResponse> valider(
+            @PathVariable Long id,
+            @RequestBody(required = false) AdminSoutienDecisionRequest request) {
+        String commentaire = request != null ? request.getCommentaireAdmin() : null;
+        return ResponseEntity.ok(partenaireService.validerSoutien(id, commentaire));
     }
 
     // ─── Admin : Refuser un soutien (A25) ────────────────────────────────────
     @PatchMapping("/admin/{id}/refuser")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<SoutienResponse> refuser(@PathVariable Long id) {
-        return ResponseEntity.ok(partenaireService.refuserSoutien(id));
+    public ResponseEntity<SoutienResponse> refuser(
+            @PathVariable Long id,
+            @RequestBody(required = false) AdminSoutienDecisionRequest request) {
+        String commentaire = request != null ? request.getCommentaireAdmin() : null;
+        return ResponseEntity.ok(partenaireService.refuserSoutien(id, commentaire));
     }
 }
