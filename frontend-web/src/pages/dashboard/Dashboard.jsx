@@ -250,6 +250,7 @@ function TodayCard({ title, description, to, tone = 'blue', icon = 'Folder' }) {
     green: 'bg-emerald-50 text-emerald-700',
     teal: 'bg-teal-50 text-teal-700',
     violet: 'bg-violet-50 text-violet-700',
+    amber: 'bg-amber-50 text-amber-700',
   }
 
   return (

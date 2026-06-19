@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useTranslation } from 'react-i18next'
 import api from '../../api/axios'
 import { LEGAL_VERSION } from '../../constants/legal'
+import { getDefaultRouteForRole } from '../../routes/roleRoutes'
 import logoBxConnect from '../../assets/images/logo-bx-connect.png'
 import AppIcon from '../../components/ui/AppIcons'
 
@@ -44,7 +45,7 @@ export default function Register() {
       })
       const { token, prenom, nom, email, role } = res.data
       login(token, { prenom, nom, email, role })
-      navigate('/dashboard')
+      navigate(getDefaultRouteForRole(role))
     } catch (err) {
       setErreur(formatAuthError(err, t('auth.error_register'), t))
     } finally { setLoading(false) }

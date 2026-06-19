@@ -2,8 +2,13 @@ import { Link } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import AppIcon from '../../components/ui/AppIcons';
+import { useAuth } from '../../context/AuthContext';
+import { getDefaultRouteForRole } from '../../routes/roleRoutes';
 
 export default function PaiementCancel() {
+  const { user } = useAuth();
+  const homeRoute = getDefaultRouteForRole(user?.role);
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
@@ -37,7 +42,7 @@ export default function PaiementCancel() {
               Voir les projets
             </Link>
             <Link
-              to="/dashboard"
+              to={homeRoute}
               className="text-gray-400 hover:underline text-sm"
             >
               Retour au dashboard

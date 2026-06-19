@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import AppSidebar from './components/navigation/AppSidebar'
@@ -114,11 +115,28 @@ export default function App() {
   const { isAuthenticated } = useAuth()
   const location = useLocation()
   const showAppShell = isAuthenticated && !PUBLIC_ONLY_PATHS.has(location.pathname)
+  const [contextSidebarCollapsed, setContextSidebarCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const stored = window.localStorage.getItem('bx-app-sidebar-collapsed')
+      ?? window.localStorage.getItem('bx-context-sidebar-collapsed')
+    return stored === 'true'
+  })
+
+  useEffect(() => {
+    window.localStorage.setItem('bx-app-sidebar-collapsed', String(contextSidebarCollapsed))
+  }, [contextSidebarCollapsed])
 
   return (
     <>
-      {showAppShell && <AppSidebar />}
-      <div className={showAppShell ? 'min-h-screen bg-[#f5f7fb] pb-28 lg:pb-0 lg:pl-[320px]' : ''}>
+      {showAppShell && (
+        <AppSidebar
+          contextCollapsed={contextSidebarCollapsed}
+          onToggleContext={() => setContextSidebarCollapsed(value => !value)}
+        />
+      )}
+      <div className={showAppShell
+        ? `min-h-screen bg-[#f5f7fb] transition-[padding] duration-200 ${contextSidebarCollapsed ? 'lg:pl-[88px]' : 'lg:pl-[260px]'}`
+        : ''}>
         <Routes>
           {/* ── Pages publiques ── */}
           <Route path="/"              element={<Accueil />} />
@@ -142,7 +160,7 @@ export default function App() {
           <Route path="/messagerie"    element={<MembreRoute><Messagerie /></MembreRoute>} />
           <Route path="/dashboard"     element={<MembreRoute><Dashboard /></MembreRoute>} />
           <Route path="/profil"        element={<PrivateRoute><Profil /></PrivateRoute>} />
-          <Route path="/prestations"   element={<PrivateRoute><Prestations /></PrivateRoute>} />
+          <Route path="/prestations"   element={<MembreRoute><Prestations /></MembreRoute>} />
           <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
 
           {/* ── Pages Paiement Stripe ── */}

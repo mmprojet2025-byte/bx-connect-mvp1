@@ -32,8 +32,8 @@ export default function ReferentDashboard() {
       const groupesData = groupesRes.data
       const details = await Promise.all(groupesData.map(async (groupe) => {
         const [membresRes, demandesRes] = await Promise.all([
-          api.get(`/referent/groupes/${groupe.id}/membres`),
-          api.get(`/referent/groupes/${groupe.id}/demandes`),
+          api.get(`/referent/groupes/${groupe.id}/membres`).catch(() => ({ data: [] })),
+          api.get(`/referent/groupes/${groupe.id}/demandes`).catch(() => ({ data: [] })),
         ])
         return { groupe, membres: membresRes.data, demandes: demandesRes.data }
       }))
@@ -89,7 +89,6 @@ export default function ReferentDashboard() {
           <>
             <ReferentWorkQueue
               demandes={demandesRecentes}
-              membres={membresRecents}
               activitesAPublier={activitesAPublier}
               projets={projetsASuivre}
               t={t}
@@ -219,7 +218,7 @@ function buildReferentActivityItems({ demandes, membres, activites, projets, t }
   return [...requestItems, ...memberItems, ...activityItems, ...projectItems]
 }
 
-function ReferentWorkQueue({ demandes, membres, activitesAPublier, projets, t, language }) {
+function ReferentWorkQueue({ demandes, activitesAPublier, projets, t, language }) {
   const actions = [
     ...demandes.map(demande => ({
       key: `demande-${demande.id}`,
@@ -229,14 +228,6 @@ function ReferentWorkQueue({ demandes, membres, activitesAPublier, projets, t, l
       meta: formatDate(demande.dateAdhesion, language),
       to: '/referent/demandes',
       tone: 'amber',
-    })),
-    ...membres.slice(0, 2).map(membre => ({
-      key: `membre-${membre.groupeNom}-${membre.id}`,
-      icon: 'User',
-      title: t('referent.memberToWelcome', { defaultValue: 'Nouveau membre à accueillir' }),
-      description: `${membre.prenom} ${membre.nom} · ${membre.groupeNom}`,
-      to: '/referent/membres',
-      tone: 'blue',
     })),
     ...activitesAPublier.map(activite => ({
       key: `activite-${activite.id}`,

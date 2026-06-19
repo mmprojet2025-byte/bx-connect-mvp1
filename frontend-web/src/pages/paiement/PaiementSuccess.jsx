@@ -4,10 +4,14 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
 import AppIcon from '../../components/ui/AppIcons';
+import { useAuth } from '../../context/AuthContext';
+import { getDefaultRouteForRole } from '../../routes/roleRoutes';
 
 export default function PaiementSuccess() {
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
+  const homeRoute = getDefaultRouteForRole(user?.role);
 
   const [paiement, setPaiement] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -49,7 +53,7 @@ export default function PaiementSuccess() {
               <AppIcon name="AlertTriangle" className="mx-auto mb-4 h-12 w-12 text-orange-400" />
               <h1 className="text-xl font-bold text-gray-700 mb-2">Vérification impossible</h1>
               <p className="text-gray-500 text-sm mb-6">{error}</p>
-              <Link to="/dashboard" className="bg-blue-700 text-white px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-blue-600 transition">
+              <Link to={homeRoute} className="bg-blue-700 text-white px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-blue-600 transition">
                 Retour au dashboard
               </Link>
             </div>
@@ -114,7 +118,7 @@ export default function PaiementSuccess() {
                   Voir l'historique des paiements
                 </Link>
                 <Link
-                  to="/dashboard"
+                  to={homeRoute}
                   className="inline-flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl transition text-sm"
                 >
                   <AppIcon name="Home" className="h-4 w-4" />
