@@ -17,8 +17,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.never;
@@ -142,9 +144,15 @@ class GroupeSecurityTest {
 
         GroupeRequest request = new GroupeRequest();
         request.setNom("Groupe Numerique V2");
+        request.setAdresseReunion("Rue du Groupe 12");
+        request.setCommune("Bruxelles");
+        request.setLatitude(new BigDecimal("50.8503000"));
+        request.setLongitude(new BigDecimal("4.3517000"));
 
-        // Ne doit pas lever d'exception
-        groupeService.modifierGroupe(10L, request, "referent1@test.be");
+        var response = groupeService.modifierGroupe(10L, request, "referent1@test.be");
+
+        assertThat(response.getAdresseReunion()).isEqualTo("Rue du Groupe 12");
+        assertThat(response.getCommune()).isEqualTo("Bruxelles");
     }
 
     @Test
@@ -157,14 +165,22 @@ class GroupeSecurityTest {
         AdminGroupeRequest request = new AdminGroupeRequest();
         request.setNom("Groupe Creatif");
         request.setReferentId(1L);
+        request.setAdresseReunion("Rue Admin 5");
+        request.setCommune("Ixelles");
+        request.setLatitude(new BigDecimal("50.8333000"));
+        request.setLongitude(new BigDecimal("4.3667000"));
 
-        groupeService.creerGroupeParAdmin(request);
+        var response = groupeService.creerGroupeParAdmin(request);
+
+        assertThat(response.getAdresseReunion()).isEqualTo("Rue Admin 5");
+        assertThat(response.getCommune()).isEqualTo("Ixelles");
 
         org.mockito.Mockito.verify(groupeRepository).save(
                 org.mockito.ArgumentMatchers.argThat(groupe ->
                         groupe.getReferent().getId().equals(1L)
                                 && groupe.getStatut() == StatutGroupe.VALIDE
-                                && groupe.isActif())
+                                && groupe.isActif()
+                                && "Rue Admin 5".equals(groupe.getAdresseReunion()))
         );
     }
 

@@ -76,7 +76,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
       <aside className={`app-sidebar fixed inset-y-0 left-0 z-50 hidden flex-col border-r border-slate-200 bg-white text-slate-900 shadow-xl shadow-slate-950/5 transition-[width] duration-200 lg:flex ${
         contextCollapsed ? 'w-[88px]' : 'w-[260px]'
       }`}>
-        <div className={`flex items-center gap-3 border-b border-slate-100 px-3 py-4 ${contextCollapsed ? 'justify-center' : 'justify-between'}`}>
+        <div className={`flex gap-3 border-b border-slate-100 px-3 py-4 ${contextCollapsed ? 'flex-col items-center' : 'items-center justify-between'}`}>
           <Link
             to={homeRoute}
             className={`flex min-w-0 items-center gap-3 rounded-2xl transition hover:bg-slate-50 ${contextCollapsed ? 'p-2' : 'px-2 py-2'}`}
@@ -92,6 +92,17 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
               </span>
             )}
           </Link>
+          {contextCollapsed && (
+            <button
+              type="button"
+              onClick={onToggleContext}
+              title="Ouvrir la sidebar"
+              aria-label="Ouvrir la sidebar"
+              className="grid h-10 w-10 place-items-center rounded-2xl text-slate-500 transition hover:bg-blue-50 hover:text-blue-700"
+            >
+              <AppIcon name="PanelLeftOpen" className="h-5 w-5" />
+            </button>
+          )}
           {!contextCollapsed && (
             <button
               type="button"
@@ -106,21 +117,12 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
         </div>
 
         {contextCollapsed ? (
-          <div className="flex min-h-0 flex-1 flex-col items-center justify-between px-2 py-3">
+          <div className="flex min-h-0 flex-1 flex-col items-center px-2 py-3">
             <nav className="flex min-h-0 flex-col items-center gap-1.5 overflow-y-auto" aria-label="Navigation BX-Connect compacte">
               {sidebarSections.flatMap(section => section.items).map(item => (
                 <CollapsedSidebarLink key={`${item.label}-${item.to}`} item={item} location={location} />
               ))}
             </nav>
-            <button
-              type="button"
-              onClick={onToggleContext}
-              title="Ouvrir la sidebar"
-              aria-label="Ouvrir la sidebar"
-              className="grid h-10 w-10 place-items-center rounded-2xl text-slate-500 transition hover:bg-blue-50 hover:text-blue-700"
-            >
-              <AppIcon name="PanelLeftOpen" className="h-5 w-5" />
-            </button>
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col">

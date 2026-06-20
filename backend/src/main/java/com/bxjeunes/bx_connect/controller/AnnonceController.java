@@ -1,6 +1,10 @@
 package com.bxjeunes.bx_connect.controller;
 
+import com.bxjeunes.bx_connect.dto.AnnonceRequest;
+import com.bxjeunes.bx_connect.dto.AnnonceResponse;
+import com.bxjeunes.bx_connect.dto.OpportunitePartenaireRequest;
 import com.bxjeunes.bx_connect.service.AnnonceService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -53,10 +57,43 @@ public class AnnonceController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
     public ResponseEntity<Map<String, Object>> creer(
-            @RequestBody Map<String, Object> request,
+            @Valid @RequestBody AnnonceRequest request,
             Authentication auth) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(annonceService.creerAnnonce(request, auth.getName()));
+    }
+
+    @PostMapping("/opportunites")
+    @PreAuthorize("hasRole('PARTENAIRE')")
+    public ResponseEntity<AnnonceResponse> creerOpportunite(
+            @Valid @RequestBody OpportunitePartenaireRequest request,
+            Authentication auth) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(annonceService.creerOpportunitePartenaire(request, auth.getName()));
+    }
+
+    @GetMapping("/partenaire/mes-opportunites")
+    @PreAuthorize("hasRole('PARTENAIRE')")
+    public ResponseEntity<List<AnnonceResponse>> mesOpportunites(Authentication auth) {
+        return ResponseEntity.ok(annonceService.mesOpportunitesPartenaire(auth.getName()));
+    }
+
+    @GetMapping("/admin/opportunites")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<AnnonceResponse>> opportunitesAdmin() {
+        return ResponseEntity.ok(annonceService.opportunitesAdmin());
+    }
+
+    @PatchMapping("/admin/{id}/publier")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AnnonceResponse> publierOpportunite(@PathVariable Long id) {
+        return ResponseEntity.ok(annonceService.publierOpportunite(id));
+    }
+
+    @PatchMapping("/admin/{id}/refuser")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AnnonceResponse> refuserOpportunite(@PathVariable Long id) {
+        return ResponseEntity.ok(annonceService.refuserOpportunite(id));
     }
 
     // PATCH /api/annonces/{id}/epingler — Épingler/désépingler (Admin)

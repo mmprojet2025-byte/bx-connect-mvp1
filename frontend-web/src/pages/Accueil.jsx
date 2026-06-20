@@ -117,11 +117,26 @@ const STEPS = [
   },
 ]
 
+const PARTNER_TYPE_LABELS = {
+  COMMUNE: 'Commune',
+  BIJ: 'BIJ',
+  ECOLE: 'École',
+  HAUTE_ECOLE: 'Haute école',
+  ENTREPRISE: 'Entreprise',
+  SPONSOR: 'Sponsor',
+  ASSOCIATION: 'Association',
+  ONG: 'ONG',
+  FONDATION: 'Fondation',
+  AUTRE: 'Partenaire',
+}
+
 export default function Accueil() {
   const [activites, setActivites] = useState([])
   const [projets, setProjets] = useState([])
+  const [partenaires, setPartenaires] = useState([])
   const [loadingActivites, setLoadingActivites] = useState(true)
   const [loadingProjets, setLoadingProjets] = useState(true)
+  const [loadingPartenaires, setLoadingPartenaires] = useState(true)
   const { t, i18n } = useTranslation()
 
   useRevealOnScroll()
@@ -138,6 +153,13 @@ export default function Accueil() {
       .then(res => setProjets(Array.isArray(res.data) ? res.data.slice(0, 3) : []))
       .catch(() => setProjets([]))
       .finally(() => setLoadingProjets(false))
+  }, [])
+
+  useEffect(() => {
+    api.get('/partenaire/publics')
+      .then(res => setPartenaires(Array.isArray(res.data) ? res.data.slice(0, 6) : []))
+      .catch(() => setPartenaires([]))
+      .finally(() => setLoadingPartenaires(false))
   }, [])
 
   return (
@@ -207,6 +229,32 @@ export default function Accueil() {
             <InfoCard key={card.title} item={card} index={index} />
           ))}
         </section>
+
+        {(loadingPartenaires || partenaires.length > 0) && (
+          <section className="bg-slate-50 py-16">
+            <div className="mx-auto max-w-7xl px-5 lg:px-8">
+              <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-sm font-bold uppercase tracking-wide text-blue-700">Réseau local</p>
+                  <h2 className="mt-2 text-3xl font-black text-slate-950">Nos partenaires</h2>
+                  <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
+                    Des organisations locales qui soutiennent les initiatives et renforcent la communauté BX-Connect.
+                  </p>
+                </div>
+              </div>
+
+              {loadingPartenaires ? (
+                <LoadingBlock label={t('common.loading')} />
+              ) : (
+                <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                  {partenaires.map((partenaire, index) => (
+                    <PartnerCard key={partenaire.id || partenaire.nomOrganisation} partner={partenaire} index={index} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         <SectionHeader
           eyebrow="Actions principales"
@@ -498,6 +546,50 @@ function ProjectCard({ project, t }) {
   )
 }
 
+function PartnerCard({ partner, index }) {
+  const typeLabel = PARTNER_TYPE_LABELS[partner.typePartenaire] || PARTNER_TYPE_LABELS.AUTRE
+  const description = partner.description || 'Partenaire engagé auprès de la communauté BX-Connect.'
+  const website = normalizeExternalUrl(partner.siteWeb)
+
+  return (
+    <article
+      className="reveal fade-up stagger flex min-h-[230px] flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-950/10"
+      style={{ '--stagger-delay': `${index * 80}ms` }}
+    >
+      <div className="flex items-start gap-4">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+          {partner.logoUrl ? (
+            <img src={partner.logoUrl} alt="" loading="lazy" className="h-full w-full object-contain p-2" />
+          ) : (
+            <AppIcon name="Building" className="h-6 w-6 text-blue-700" />
+          )}
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-bold uppercase tracking-wide text-blue-700">{typeLabel}</p>
+          <h3 className="mt-1 line-clamp-2 text-lg font-black leading-snug text-slate-950">
+            {partner.nomOrganisation}
+          </h3>
+        </div>
+      </div>
+      <p className="mt-5 line-clamp-3 text-sm leading-6 text-slate-600">{description}</p>
+      {website ? (
+        <a
+          href={website}
+          target="_blank"
+          rel="noreferrer"
+          className="landing-button mt-auto inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-4 text-sm font-bold text-blue-800 transition hover:border-blue-700 hover:bg-blue-700 hover:text-white"
+        >
+          Site web
+        </a>
+      ) : (
+        <span className="mt-auto inline-flex h-10 items-center justify-center rounded-xl bg-slate-100 px-4 text-sm font-bold text-slate-600">
+          Découvrir
+        </span>
+      )}
+    </article>
+  )
+}
+
 function EmptyLandingState({ text }) {
   return (
     <div className="reveal fade-up rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm font-semibold text-slate-500 shadow-sm shadow-slate-900/5">
@@ -529,6 +621,13 @@ function LoadingBlock({ label }) {
       {label}
     </div>
   )
+}
+
+function normalizeExternalUrl(value) {
+  if (!value) return null
+  const trimmed = String(value).trim()
+  if (!trimmed) return null
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
 }
 
 function formatDate(value, language = 'fr') {

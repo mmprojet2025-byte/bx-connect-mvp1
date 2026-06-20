@@ -98,6 +98,14 @@ function PublicOrMembreRoute({ children }) {
   return children
 }
 
+function ActivityCatalogRoute({ children }) {
+  const { isAuthenticated, isMembre, isAdmin, isReferent, user } = useAuth()
+  if (isAuthenticated && !isMembre && !isAdmin && !isReferent) {
+    return <Navigate to={getDefaultRouteForRole(user?.role)} replace />
+  }
+  return children
+}
+
 function PublicOnlyRoute({ children }) {
   const { isAuthenticated, user } = useAuth()
   if (isAuthenticated) return <Navigate to={getDefaultRouteForRole(user?.role)} replace />
@@ -145,8 +153,8 @@ export default function App() {
           <Route path="/register"      element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
           <Route path="/mot-de-passe-oublie" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
           <Route path="/forgot-password" element={<Navigate to="/mot-de-passe-oublie" replace />} />
-          <Route path="/activites"     element={<PublicOrMembreRoute><Activites /></PublicOrMembreRoute>} />
-          <Route path="/activites/:id" element={<PublicOrMembreRoute><ActiviteDetail /></PublicOrMembreRoute>} />
+          <Route path="/activites"     element={<ActivityCatalogRoute><Activites /></ActivityCatalogRoute>} />
+          <Route path="/activites/:id" element={<ActivityCatalogRoute><ActiviteDetail /></ActivityCatalogRoute>} />
           <Route path="/groupes"       element={<PublicOrMembreRoute><Groupes /></PublicOrMembreRoute>} />
           <Route path="/groupes/:id"   element={<GroupeEspace />} />
           <Route path="/projets/:id"   element={<Projets />} />

@@ -51,6 +51,15 @@ public class ProjetController {
         return ResponseEntity.ok(projetService.projetsGroupesReferent(authentication.getName()));
     }
 
+    @PutMapping("/referent/{id}")
+    @PreAuthorize("hasRole('REFERENT')")
+    public ResponseEntity<ProjetResponse> modifierProjetReferent(
+            @PathVariable Long id,
+            @Valid @RequestBody ProjetRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(projetService.modifierProjetReferent(id, request, authentication.getName()));
+    }
+
     // ─── GET /api/projets/{id} — Détail d'un projet ──────────────────────────
 
     @GetMapping("/{id}")

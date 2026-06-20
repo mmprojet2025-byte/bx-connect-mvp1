@@ -3,6 +3,7 @@ package com.bxjeunes.bx_connect.dto;
 import com.bxjeunes.bx_connect.entity.Groupe;
 import com.bxjeunes.bx_connect.entity.StatutGroupe;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class GroupeResponse {
@@ -13,6 +14,10 @@ public class GroupeResponse {
     private String categorie;
     private String theme;
     private String objectif;
+    private String adresseReunion;
+    private String commune;
+    private BigDecimal latitude;
+    private BigDecimal longitude;
     private int capaciteMax;
     private StatutGroupe statut;
     private String motifRefus;
@@ -33,6 +38,10 @@ public class GroupeResponse {
         r.categorie     = groupe.getCategorie();
         r.theme         = groupe.getTheme();
         r.objectif      = groupe.getObjectif();
+        r.adresseReunion = groupe.getAdresseReunion();
+        r.commune       = groupe.getCommune();
+        r.latitude      = groupe.getLatitude();
+        r.longitude     = groupe.getLongitude();
         r.capaciteMax   = groupe.getCapaciteMax();
         r.statut        = groupe.getStatut();
         r.motifRefus    = groupe.getMotifRefus();
@@ -58,6 +67,10 @@ public class GroupeResponse {
     public String getCategorie()           { return categorie; }
     public String getTheme()               { return theme; }
     public String getObjectif()            { return objectif; }
+    public String getAdresseReunion()      { return adresseReunion; }
+    public String getCommune()             { return commune; }
+    public BigDecimal getLatitude()        { return latitude; }
+    public BigDecimal getLongitude()       { return longitude; }
     public int getCapaciteMax()            { return capaciteMax; }
     public StatutGroupe getStatut()        { return statut; }
     public String getMotifRefus()          { return motifRefus; }

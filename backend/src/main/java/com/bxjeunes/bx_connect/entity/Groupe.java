@@ -1,6 +1,7 @@
 package com.bxjeunes.bx_connect.entity;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +29,18 @@ public class Groupe {
 
     @Column(columnDefinition = "TEXT")
     private String objectif;        // Objectif du groupe
+
+    @Column(length = 255)
+    private String adresseReunion;
+
+    @Column(length = 100)
+    private String commune;
+
+    @Column(precision = 10, scale = 7)
+    private BigDecimal latitude;
+
+    @Column(precision = 10, scale = 7)
+    private BigDecimal longitude;
 
     @Column(nullable = false)
     private int capaciteMax = 0;    // 0 = illimité
@@ -77,6 +90,18 @@ public class Groupe {
 
     public String getObjectif() { return objectif; }
     public void setObjectif(String objectif) { this.objectif = objectif; }
+
+    public String getAdresseReunion() { return adresseReunion; }
+    public void setAdresseReunion(String adresseReunion) { this.adresseReunion = adresseReunion; }
+
+    public String getCommune() { return commune; }
+    public void setCommune(String commune) { this.commune = commune; }
+
+    public BigDecimal getLatitude() { return latitude; }
+    public void setLatitude(BigDecimal latitude) { this.latitude = latitude; }
+
+    public BigDecimal getLongitude() { return longitude; }
+    public void setLongitude(BigDecimal longitude) { this.longitude = longitude; }
 
     public int getCapaciteMax() { return capaciteMax; }
     public void setCapaciteMax(int capaciteMax) { this.capaciteMax = capaciteMax; }

@@ -24,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -117,8 +118,12 @@ class ActiviteSecurityTest {
         when(activiteRepository.save(any(Activite.class))).thenAnswer(inv -> inv.getArgument(0));
         when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);
 
-        assertThat(activiteService.modifier(30L, request, referentA.getEmail()).getTitre())
+        var response = activiteService.modifier(30L, request, referentA.getEmail());
+
+        assertThat(response.getTitre())
                 .isEqualTo("Nouveau titre");
+        assertThat(response.getAdresse())
+                .isEqualTo("Rue de Bruxelles 1");
     }
 
     @Test
@@ -166,6 +171,10 @@ class ActiviteSecurityTest {
         activite.setDateDebut(LocalDateTime.now().plusDays(1));
         activite.setDateFin(LocalDateTime.now().plusDays(1).plusHours(2));
         activite.setLieu("Bruxelles");
+        activite.setAdresse("Rue de Bruxelles 1");
+        activite.setCommune("Bruxelles");
+        activite.setLatitude(new BigDecimal("50.8466000"));
+        activite.setLongitude(new BigDecimal("4.3528000"));
         activite.setGratuite(true);
         activite.setCapaciteMax(10);
         activite.setStatut(statut);
@@ -180,6 +189,10 @@ class ActiviteSecurityTest {
         request.setDateDebut(LocalDateTime.now().plusDays(2));
         request.setDateFin(LocalDateTime.now().plusDays(2).plusHours(2));
         request.setLieu("Bruxelles");
+        request.setAdresse("Rue de Bruxelles 1");
+        request.setCommune("Bruxelles");
+        request.setLatitude(new BigDecimal("50.8466000"));
+        request.setLongitude(new BigDecimal("4.3528000"));
         request.setGratuite(true);
         request.setCapaciteMax(12);
         request.setCategorie("Atelier");

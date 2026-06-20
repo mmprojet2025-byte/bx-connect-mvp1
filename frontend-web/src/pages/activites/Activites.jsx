@@ -16,8 +16,6 @@ import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import AppIcon from '../../components/ui/AppIcons';
 
-const ACTIVITY_STATUSES = ['BROUILLON', 'PUBLIEE', 'TERMINEE', 'ANNULEE'];
-
 export default function Activites() {
   const { isAuthenticated, isAdmin, isReferent } = useAuth();
   const { t, i18n } = useTranslation();
@@ -27,26 +25,20 @@ export default function Activites() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  // Filtres (V03)
   const [recherche, setRecherche] = useState('');
   const [filtreCategorie, setFiltreCategorie] = useState('');
-  const [filtreTheme, setFiltreTheme] = useState('');
-  const [filtreLieu, setFiltreLieu] = useState('');
   const [filtreGratuite, setFiltreGratuite] = useState('');
-  const [filtreStatut, setFiltreStatut] = useState('');
-  const [filtreGroupe, setFiltreGroupe] = useState('');
   const [options, setOptions] = useState({ categories: [], themes: [], lieux: [] });
   const [actionLoading, setActionLoading] = useState(null);
-
-  // Formulaire création (Admin/Référent)
-  const [showForm, setShowForm] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
+  const [nearbyMode, setNearbyMode] = useState(false);
+  const [geoStatus, setGeoStatus] = useState('idle');
+  const [geoMessage, setGeoMessage] = useState('');
   const peutGerer = isAdmin || isReferent;
-
-  const [form, setForm] = useState({
-    titre: '', description: '', dateDebut: '', dateFin: '',
-    lieu: '', gratuite: true, prix: '', capaciteMax: 0,
-    categorie: '', theme: '', imageUrl: '',
-  });
+  const gestionLink = isAdmin ? '/admin/activites' : '/referent/activites';
+  const gestionLabel = isAdmin
+    ? t('activities.manageActivities', { defaultValue: 'Gérer les activités' })
+    : t('activities.manageMyActivities', { defaultValue: 'Gérer mes activités' });
 
   useEffect(() => {
     fetchActivites();
@@ -56,8 +48,7 @@ export default function Activites() {
   const fetchActivites = async () => {
     try {
       setError('');
-      const endpoint = peutGerer ? '/activites/admin/toutes' : '/activites';
-      const res = await api.get(endpoint);
+      const res = await api.get('/activites');
       setActivites(res.data);
     } catch {
       setError(t('activities.error_load'));
@@ -75,10 +66,6 @@ export default function Activites() {
     }
   };
 
-  const groupesDisponibles = useMemo(
-    () => [...new Set(activites.map(activite => activite.groupeNom).filter(Boolean))],
-    [activites]
-  );
   const prochainesActivites = useMemo(() => {
     const now = new Date();
     return activites
@@ -90,11 +77,21 @@ export default function Activites() {
     return activites.filter(activite => activite.inscrit || activite.dejaInscrit || activite.inscriptionId || activite.statutInscription).length;
   }, [activites]);
 
-  const activitesAffichees = useMemo(() => activites.filter(activite => {
-    const matchStatut = filtreStatut ? activite.statut === filtreStatut : true;
-    const matchGroupe = filtreGroupe ? activite.groupeNom === filtreGroupe : true;
-    return matchStatut && matchGroupe;
-  }), [activites, filtreGroupe, filtreStatut]);
+  const activitesAffichees = useMemo(() => {
+    const filtered = activites
+      .map(activite => ({
+        ...activite,
+        distanceKm: userLocation ? calculateDistanceKm(userLocation, activite) : null,
+      }));
+
+    if (!nearbyMode || !userLocation) return filtered;
+
+    return filtered.sort((a, b) => {
+      const distanceA = Number.isFinite(a.distanceKm) ? a.distanceKm : Number.POSITIVE_INFINITY;
+      const distanceB = Number.isFinite(b.distanceKm) ? b.distanceKm : Number.POSITIVE_INFINITY;
+      return distanceA - distanceB;
+    });
+  }, [activites, nearbyMode, userLocation]);
 
   const handleFiltrer = async () => {
     setLoading(true);
@@ -102,8 +99,6 @@ export default function Activites() {
       const params = new URLSearchParams();
       if (recherche)       params.append('q', recherche);
       if (filtreCategorie) params.append('categorie', filtreCategorie);
-      if (filtreTheme)     params.append('theme', filtreTheme);
-      if (filtreLieu)      params.append('lieu', filtreLieu);
       if (filtreGratuite !== '') params.append('gratuite', filtreGratuite);
 
       const res = await api.get(`/activites/filtrer?${params.toString()}`);
@@ -117,9 +112,45 @@ export default function Activites() {
 
   const handleReset = () => {
     setRecherche(''); setFiltreCategorie('');
-    setFiltreTheme(''); setFiltreLieu(''); setFiltreGratuite('');
-    setFiltreStatut(''); setFiltreGroupe('');
+    setFiltreGratuite('');
+    setNearbyMode(false);
     fetchActivites();
+  };
+
+  const handleNearbyActivities = () => {
+    setGeoMessage('');
+    if (!navigator.geolocation) {
+      setNearbyMode(false);
+      setGeoStatus('error');
+      setGeoMessage('La géolocalisation navigateur n’est pas disponible. Les activités restent triées normalement.');
+      return;
+    }
+
+    setGeoStatus('loading');
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        setUserLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+        setNearbyMode(true);
+        setGeoStatus('success');
+        setGeoMessage('Votre position est utilisée uniquement dans ce navigateur pour trier les activités proches. Elle n’est pas enregistrée.');
+      },
+      geoError => {
+        setNearbyMode(false);
+        setGeoStatus('error');
+        setGeoMessage(getGeolocationErrorMessage(geoError));
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+    );
+  };
+
+  const handleStopNearbyMode = () => {
+    setNearbyMode(false);
+    setUserLocation(null);
+    setGeoStatus('idle');
+    setGeoMessage('');
   };
 
   const handleInscrire = async (activiteId) => {
@@ -150,63 +181,6 @@ export default function Activites() {
     }
   };
 
-  const handlePublier = async (id) => {
-    setActionLoading(id);
-    try {
-      await api.patch(`/activites/${id}/statut?statut=PUBLIEE`);
-      const feedback = t('activities.success_publish');
-      setMessage(feedback);
-      toast.success(feedback);
-      fetchActivites();
-      setTimeout(() => setMessage(''), 3000);
-    } catch {
-      const feedback = t('activities.error_publish');
-      setError(feedback);
-      toast.error(feedback);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleTerminer = async (id) => {
-    setActionLoading(id);
-    try {
-      await api.patch(`/activites/${id}/statut?statut=TERMINEE`);
-      const feedback = t('activities.successComplete', { defaultValue: 'Activité marquée comme terminée.' });
-      setMessage(feedback);
-      toast.success(feedback);
-      fetchActivites();
-      setTimeout(() => setMessage(''), 3000);
-    } catch (err) {
-      const feedback = userFriendlyError(err, t('activities.errorStatusUpdate', { defaultValue: 'Impossible de modifier le statut.' }));
-      setError(feedback);
-      toast.error(feedback);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await api.post('/activites', {
-        ...form,
-        prix: form.gratuite ? null : parseFloat(form.prix),
-        capaciteMax: parseInt(form.capaciteMax),
-      });
-      const feedback = t('activities.success_create');
-      setMessage(feedback);
-      toast.success(feedback);
-      setShowForm(false);
-      setForm({ titre: '', description: '', dateDebut: '', dateFin: '', lieu: '', gratuite: true, prix: '', capaciteMax: 0, categorie: '', theme: '', imageUrl: '' });
-      fetchActivites();
-    } catch {
-      const feedback = t('activities.error_create');
-      setError(feedback);
-      toast.error(feedback);
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
@@ -214,16 +188,17 @@ export default function Activites() {
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
 
         <PageHeader
-          eyebrow={peutGerer ? t('activities.manage_mode', { count: activites.length }) : t('nav.activities')}
+          eyebrow={t('nav.activities')}
           title={t('activities.title')}
           description={t('ux.activities.intro', { defaultValue: 'Découvre les activités, ateliers et événements de la communauté BX-Connect.' })}
           action={peutGerer && (
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500"
+            <Link
+              to={gestionLink}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-blue-100 bg-white px-4 py-2 text-sm font-bold text-blue-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
             >
-              {showForm ? t('common.cancel') : t('activities.new_activity')}
-            </button>
+              <AppIcon name="Settings" className="h-4 w-4" />
+              {gestionLabel}
+            </Link>
           )}
         />
 
@@ -238,7 +213,47 @@ export default function Activites() {
           language={i18n.language}
         />
 
-        {/* ── Filtres (V03) ── */}
+        <section className="mb-5 rounded-2xl border border-blue-100 bg-white px-4 py-3 shadow-sm">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0">
+              <h2 className="inline-flex items-center gap-2 text-sm font-black text-slate-950">
+                <AppIcon name="MapPin" className="h-4 w-4 text-blue-700" />
+                Activités proches de moi
+              </h2>
+              <p className="mt-0.5 text-xs leading-5 text-slate-500">
+                Position utilisée seulement dans ce navigateur pour trier par distance.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleNearbyActivities}
+                disabled={geoStatus === 'loading'}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 py-2 text-xs font-black text-white transition hover:bg-blue-600 disabled:opacity-60"
+              >
+                <AppIcon name="MapPin" className="h-3.5 w-3.5" />
+                {geoStatus === 'loading' ? 'Localisation...' : 'Plus proches'}
+              </button>
+              {nearbyMode && (
+                <button
+                  type="button"
+                  onClick={handleStopNearbyMode}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-200"
+                >
+                  Tri normal
+                </button>
+              )}
+            </div>
+          </div>
+          {geoMessage && (
+            <div className={`mt-3 rounded-xl px-3 py-2 text-xs font-semibold ${
+              geoStatus === 'error' ? 'bg-amber-50 text-amber-800' : 'bg-blue-50 text-blue-800'
+            }`}>
+              {geoMessage}
+            </div>
+          )}
+        </section>
+
         <div className="bg-white rounded-[1.25rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-4 mb-5">
           <h2 className="text-sm font-bold text-slate-950 mb-3">{t('activities.filters_title')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
@@ -258,22 +273,6 @@ export default function Activites() {
               {options.categories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
             <select
-              value={filtreTheme}
-              onChange={e => setFiltreTheme(e.target.value)}
-              className="border border-gray-300 rounded-xl px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-            >
-              <option value="">{t('activities.all_themes')}</option>
-              {options.themes.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-            <select
-              value={filtreLieu}
-              onChange={e => setFiltreLieu(e.target.value)}
-              className="border border-gray-300 rounded-xl px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-            >
-              <option value="">{t('activities.all_places')}</option>
-              {options.lieux.map(l => <option key={l} value={l}>{l}</option>)}
-            </select>
-            <select
               value={filtreGratuite}
               onChange={e => setFiltreGratuite(e.target.value)}
               className="border border-gray-300 rounded-xl px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -281,22 +280,6 @@ export default function Activites() {
               <option value="">{t('activities.free_and_paid')}</option>
               <option value="true">{t('activities.free_only')}</option>
               <option value="false">{t('activities.paid_only')}</option>
-            </select>
-            <select
-              value={filtreStatut}
-              onChange={e => setFiltreStatut(e.target.value)}
-              className="border border-gray-300 rounded-xl px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-            >
-              <option value="">{t('partnerSupport.admin.allStatuses', { defaultValue: 'Tous les statuts' })}</option>
-              {ACTIVITY_STATUSES.map(statut => <option key={statut} value={statut}>{t(`statuses.${statut}`, { defaultValue: statut })}</option>)}
-            </select>
-            <select
-              value={filtreGroupe}
-              onChange={e => setFiltreGroupe(e.target.value)}
-              className="border border-gray-300 rounded-xl px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-            >
-              <option value="">{t('projects.allGroups', { defaultValue: 'Tous les groupes' })}</option>
-              {groupesDisponibles.map(groupe => <option key={groupe} value={groupe}>{groupe}</option>)}
             </select>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -318,72 +301,6 @@ export default function Activites() {
           </div>
         </div>
 
-        {/* ── Formulaire création ── */}
-        {showForm && peutGerer && (
-          <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-6 mb-6">
-            <h2 className="text-lg font-bold text-slate-950 mb-4">{t('activities.new_title')}</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('activities.form_title')}</label>
-                  <input required value={form.titre} onChange={e => setForm({...form, titre: e.target.value})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('activities.form_place')}</label>
-                  <input value={form.lieu} onChange={e => setForm({...form, lieu: e.target.value})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('activities.form_start')}</label>
-                  <input required type="datetime-local" value={form.dateDebut} onChange={e => setForm({...form, dateDebut: e.target.value})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('activities.form_end')}</label>
-                  <input required type="datetime-local" value={form.dateFin} onChange={e => setForm({...form, dateFin: e.target.value})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('activities.form_category')}</label>
-                  <input value={form.categorie} onChange={e => setForm({...form, categorie: e.target.value})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('activities.form_theme')}</label>
-                  <input value={form.theme} onChange={e => setForm({...form, theme: e.target.value})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('activities.form_capacity')}</label>
-                  <input type="number" min="0" value={form.capaciteMax} onChange={e => setForm({...form, capaciteMax: e.target.value})}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                </div>
-                <div className="flex items-center gap-2 pt-6">
-                  <input type="checkbox" id="gratuite" checked={form.gratuite} onChange={e => setForm({...form, gratuite: e.target.checked})} />
-                  <label htmlFor="gratuite" className="text-sm text-slate-700">{t('activities.form_free')}</label>
-                </div>
-              </div>
-              {!form.gratuite && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('activities.form_price')}</label>
-                  <input type="number" min="0" step="0.01" value={form.prix} onChange={e => setForm({...form, prix: e.target.value})}
-                    className="w-48 border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                </div>
-              )}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{t('activities.form_description')}</label>
-                <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={3}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-vertical" />
-              </div>
-              <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition">
-                {t('activities.create_btn')}
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* ── Liste des activités ── */}
         {loading ? (
           <LoadingState label={t('common.loading')} />
         ) : error && activites.length === 0 ? (
@@ -416,11 +333,8 @@ export default function Activites() {
                 key={a.id}
                 activity={a}
                 isAuthenticated={isAuthenticated}
-                peutGerer={peutGerer}
                 actionLoading={actionLoading === a.id}
                 onRegister={() => handleInscrire(a.id)}
-                onPublish={() => handlePublier(a.id)}
-                onComplete={() => handleTerminer(a.id)}
                 t={t}
                 language={i18n.language}
               />
@@ -437,7 +351,7 @@ export default function Activites() {
 function UpcomingActivitiesStrip({ activities, registrationsCount, t, language }) {
   return (
     <section className="mb-5 rounded-[1.25rem] border border-slate-100 bg-white p-4 shadow-lg shadow-slate-900/5">
-      <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-3">
         <div>
           <h2 className="text-sm font-black text-slate-950">
             {t('activities.upcomingTitle', { defaultValue: 'Prochaines activités' })}
@@ -448,9 +362,6 @@ function UpcomingActivitiesStrip({ activities, registrationsCount, t, language }
               : t('activities.upcomingHint', { defaultValue: 'Les prochaines dates publiées apparaissent ici dès qu’elles sont disponibles.' })}
           </p>
         </div>
-        <Link to="/activites" className="text-xs font-bold text-blue-700 hover:underline">
-          {t('common.showAll', { defaultValue: 'Voir tout' })}
-        </Link>
       </div>
 
       {activities.length === 0 ? (
@@ -478,8 +389,8 @@ function UpcomingActivitiesStrip({ activities, registrationsCount, t, language }
   )
 }
 
-function ActivityCard({ activity, isAuthenticated, peutGerer, actionLoading, onRegister, onPublish, onComplete, t, language }) {
-  const situation = getActivitySituation(activity, peutGerer, t)
+function ActivityCard({ activity, isAuthenticated, actionLoading, onRegister, t, language }) {
+  const situation = getActivitySituation(activity, t)
   return (
     <article className="bg-white rounded-[1.25rem] border border-slate-100 shadow-lg shadow-slate-900/5 overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition flex flex-col">
       <div className="relative">
@@ -518,11 +429,18 @@ function ActivityCard({ activity, isAuthenticated, peutGerer, actionLoading, onR
         )}
 
         <div className="grid grid-cols-2 gap-2 mb-4 text-xs">
-          <InfoPill label={t('activities.form_place')} value={activity.lieu || '—'} />
+          <InfoPill label={t('activities.form_place')} value={formatActivityLocation(activity)} />
           <InfoPill
             label={t('activities.start_date')}
             value={activity.dateDebut ? new Date(activity.dateDebut).toLocaleDateString(language || 'fr-BE') : '—'}
           />
+          {Number.isFinite(activity.distanceKm) && (
+            <InfoPill
+              label="Distance"
+              value={`${activity.distanceKm.toFixed(activity.distanceKm < 10 ? 1 : 0)} km`}
+              highlight
+            />
+          )}
           <InfoPill
             label={t('activities.capacity')}
             value={formatCapacity(activity, t)}
@@ -543,39 +461,14 @@ function ActivityCard({ activity, isAuthenticated, peutGerer, actionLoading, onR
             {t('activities.view_detail')}
           </Link>
 
-          {renderActivityAction({ activity, isAuthenticated, peutGerer, situation, actionLoading, onRegister, onPublish, onComplete, t })}
+          {renderActivityAction({ isAuthenticated, situation, actionLoading, onRegister, t })}
         </div>
       </div>
     </article>
   )
 }
 
-function renderActivityAction({ activity, isAuthenticated, peutGerer, situation, actionLoading, onRegister, onPublish, onComplete, t }) {
-  if (peutGerer) {
-    if (activity.statut === 'BROUILLON') {
-      return (
-        <button type="button" disabled={actionLoading} onClick={onPublish} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-green-600 px-3 py-2 text-xs font-black text-white transition hover:bg-green-500 disabled:opacity-60">
-          <AppIcon name="CheckCircle" className="h-3.5 w-3.5" />
-          {t('activities.publish')}
-        </button>
-      )
-    }
-    if (!['TERMINEE', 'TERMINE', 'ANNULEE'].includes(activity.statut)) {
-      return (
-        <button type="button" disabled={actionLoading} onClick={onComplete} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white transition hover:bg-slate-700 disabled:opacity-60">
-          <AppIcon name="Clock" className="h-3.5 w-3.5" />
-          {t('activities.complete', { defaultValue: 'Terminer' })}
-        </button>
-      )
-    }
-    return (
-      <Link to="/admin/activites" className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white transition hover:bg-blue-500">
-        <AppIcon name="Settings" className="h-3.5 w-3.5" />
-        {t('common.manage', { defaultValue: 'Gérer' })}
-      </Link>
-    )
-  }
-
+function renderActivityAction({ isAuthenticated, situation, actionLoading, onRegister, t }) {
   if (!isAuthenticated) {
     return (
       <Link to="/login" className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white transition hover:bg-blue-500">
@@ -611,10 +504,7 @@ function renderActivityAction({ activity, isAuthenticated, peutGerer, situation,
   )
 }
 
-function getActivitySituation(activity, peutGerer, t) {
-  if (peutGerer) {
-    return { key: 'organizer', label: t('activities.organizer', { defaultValue: 'Organisateur' }), dot: '🔵', className: 'bg-blue-50 text-blue-800' }
-  }
+function getActivitySituation(activity, t) {
   if (activity.inscrit || activity.dejaInscrit || activity.inscriptionId || activity.statutInscription) {
     return { key: 'registered', label: t('activities.already_registered'), dot: '🟡', className: 'bg-amber-50 text-amber-800' }
   }
@@ -642,6 +532,57 @@ function formatCapacity(activity, t) {
   if (capacity > 0 && Number.isFinite(registered)) return `${registered}/${capacity}`
   if (capacity > 0) return t('activities.capacity_max', { count: capacity })
   return t('activities.unlimited')
+}
+
+function formatActivityLocation(activity) {
+  return [activity.adresse, activity.commune].filter(Boolean).join(', ') || activity.lieu || '—';
+}
+
+function calculateDistanceKm(origin, activity) {
+  const latitude = Number(activity.latitude);
+  const longitude = Number(activity.longitude);
+  if (
+    !Number.isFinite(origin?.latitude) ||
+    !Number.isFinite(origin?.longitude) ||
+    activity.latitude === null ||
+    activity.latitude === undefined ||
+    activity.latitude === '' ||
+    activity.longitude === null ||
+    activity.longitude === undefined ||
+    activity.longitude === '' ||
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude)
+  ) {
+    return null;
+  }
+
+  const earthRadiusKm = 6371;
+  const deltaLatitude = toRadians(latitude - origin.latitude);
+  const deltaLongitude = toRadians(longitude - origin.longitude);
+  const originLatitude = toRadians(origin.latitude);
+  const activityLatitude = toRadians(latitude);
+  const haversine =
+    Math.sin(deltaLatitude / 2) ** 2 +
+    Math.cos(originLatitude) * Math.cos(activityLatitude) * Math.sin(deltaLongitude / 2) ** 2;
+
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+}
+
+function toRadians(value) {
+  return (value * Math.PI) / 180;
+}
+
+function getGeolocationErrorMessage(error) {
+  if (error?.code === 1) {
+    return 'Permission refusée. Vous pouvez continuer à parcourir les activités sans tri par distance.';
+  }
+  if (error?.code === 2) {
+    return 'Votre position est indisponible pour le moment. Les activités restent triées normalement.';
+  }
+  if (error?.code === 3) {
+    return 'La localisation prend trop de temps. Réessayez ou utilisez les filtres classiques.';
+  }
+  return 'Impossible de récupérer votre position. Les activités restent triées normalement.';
 }
 
 function InfoPill({ label, value, highlight = false }) {

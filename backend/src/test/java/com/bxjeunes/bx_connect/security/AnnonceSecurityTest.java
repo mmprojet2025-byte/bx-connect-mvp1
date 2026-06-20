@@ -1,8 +1,11 @@
 package com.bxjeunes.bx_connect.security;
 
+import com.bxjeunes.bx_connect.dto.OpportunitePartenaireRequest;
 import com.bxjeunes.bx_connect.entity.Annonce;
+import com.bxjeunes.bx_connect.entity.CategorieOpportunite;
 import com.bxjeunes.bx_connect.entity.Groupe;
 import com.bxjeunes.bx_connect.entity.Role;
+import com.bxjeunes.bx_connect.entity.StatutModeration;
 import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.repository.AnnonceRepository;
 import com.bxjeunes.bx_connect.repository.GroupeRepository;
@@ -19,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -42,6 +46,7 @@ class AnnonceSecurityTest {
     private User admin;
     private User referentA;
     private User referentB;
+    private User partenaire;
     private Groupe groupeA;
 
     @BeforeEach
@@ -49,6 +54,7 @@ class AnnonceSecurityTest {
         admin = user(1L, "admin@test.be", Role.ADMIN);
         referentA = user(2L, "referent-a@test.be", Role.REFERENT);
         referentB = user(3L, "referent-b@test.be", Role.REFERENT);
+        partenaire = user(4L, "partenaire@test.be", Role.PARTENAIRE);
 
         groupeA = new Groupe();
         groupeA.setId(10L);
@@ -134,6 +140,76 @@ class AnnonceSecurityTest {
         assertThat(resultat).doesNotContainKey("groupeId");
     }
 
+    @Test
+    @DisplayName("Un partenaire cree une opportunite en attente")
+    void partenaire_cree_opportunite_en_attente() {
+        when(userRepository.findByEmail(partenaire.getEmail())).thenReturn(Optional.of(partenaire));
+        when(annonceRepository.save(any(Annonce.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var response = annonceService.creerOpportunitePartenaire(requeteOpportunite(), partenaire.getEmail());
+
+        assertThat(response.getCategorieOpportunite()).isEqualTo(CategorieOpportunite.EMPLOI);
+        assertThat(response.getStatutModeration()).isEqualTo(StatutModeration.EN_ATTENTE);
+        assertThat(response.getType()).isEqualTo("GLOBALE");
+    }
+
+    @Test
+    @DisplayName("Le public ne voit pas une opportunite en attente")
+    void public_ne_voit_pas_opportunite_en_attente() {
+        Annonce opportunite = opportunite(partenaire, StatutModeration.EN_ATTENTE);
+        when(annonceRepository.findByTypeOrderByEpingleeDescDateCreationDesc("GLOBALE"))
+                .thenReturn(List.of(opportunite));
+
+        assertThat(annonceService.annoncesGlobales()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("ADMIN voit les opportunites en attente")
+    void admin_voit_opportunites_en_attente() {
+        Annonce opportunite = opportunite(partenaire, StatutModeration.EN_ATTENTE);
+        when(annonceRepository.findByCategorieOpportuniteIsNotNullOrderByDateCreationDesc())
+                .thenReturn(List.of(opportunite));
+
+        var opportunites = annonceService.opportunitesAdmin();
+
+        assertThat(opportunites).hasSize(1);
+        assertThat(opportunites.get(0).getStatutModeration()).isEqualTo(StatutModeration.EN_ATTENTE);
+    }
+
+    @Test
+    @DisplayName("ADMIN publie une opportunite")
+    void admin_publie_opportunite() {
+        Annonce opportunite = opportunite(partenaire, StatutModeration.EN_ATTENTE);
+        when(annonceRepository.findById(50L)).thenReturn(Optional.of(opportunite));
+        when(annonceRepository.save(any(Annonce.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var response = annonceService.publierOpportunite(50L);
+
+        assertThat(response.getStatutModeration()).isEqualTo(StatutModeration.PUBLIEE);
+    }
+
+    @Test
+    @DisplayName("Le public voit une opportunite publiee")
+    void public_voit_opportunite_publiee() {
+        Annonce opportunite = opportunite(partenaire, StatutModeration.PUBLIEE);
+        when(annonceRepository.findByTypeOrderByEpingleeDescDateCreationDesc("GLOBALE"))
+                .thenReturn(List.of(opportunite));
+
+        assertThat(annonceService.annoncesGlobales()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("ADMIN refuse une opportunite")
+    void admin_refuse_opportunite() {
+        Annonce opportunite = opportunite(partenaire, StatutModeration.EN_ATTENTE);
+        when(annonceRepository.findById(50L)).thenReturn(Optional.of(opportunite));
+        when(annonceRepository.save(any(Annonce.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var response = annonceService.refuserOpportunite(50L);
+
+        assertThat(response.getStatutModeration()).isEqualTo(StatutModeration.REFUSEE);
+    }
+
     private Map<String, Object> requeteAnnonce(Long groupeId) {
         Map<String, Object> request = new HashMap<>();
         request.put("titre", "Information");
@@ -153,6 +229,28 @@ class AnnonceSecurityTest {
         annonce.setType("GROUPE");
         annonce.setAuteur(auteur);
         annonce.setGroupe(groupe);
+        return annonce;
+    }
+
+    private OpportunitePartenaireRequest requeteOpportunite() {
+        OpportunitePartenaireRequest request = new OpportunitePartenaireRequest();
+        request.setTitre("Offre d'emploi");
+        request.setContenu("Une opportunité pour les membres.");
+        request.setCategorieOpportunite(CategorieOpportunite.EMPLOI);
+        request.setDescriptionCourte("Offre courte");
+        request.setLienExterne("https://partner.test/jobs");
+        return request;
+    }
+
+    private Annonce opportunite(User auteur, StatutModeration statut) {
+        Annonce annonce = new Annonce();
+        annonce.setId(50L);
+        annonce.setTitre("Opportunité");
+        annonce.setContenu("Contenu");
+        annonce.setType("GLOBALE");
+        annonce.setAuteur(auteur);
+        annonce.setCategorieOpportunite(CategorieOpportunite.EMPLOI);
+        annonce.setStatutModeration(statut);
         return annonce;
     }
 

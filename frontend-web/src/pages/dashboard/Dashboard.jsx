@@ -9,6 +9,7 @@ import MemberProjectsCard from '../../components/member/MemberProjectsCard'
 import api from '../../api/axios'
 import AppIcon from '../../components/ui/AppIcons'
 import ActivityFeed from '../../components/dashboard/ActivityFeed'
+import CompactKpiRow from '../../components/dashboard/CompactKpiRow'
 import {
   CollaborativeDashboardLayout,
   WorkspaceEmpty,
@@ -40,6 +41,8 @@ export default function Dashboard() {
   const groupe = dashboard?.groupe
   const referent = dashboard?.referent
   const messagerieDisponible = dashboard?.messagerieDisponible || false
+  const unreadNotifications = (dashboard?.notifications || []).filter(notification => !notification.lue).length
+  const memberActivityItems = dashboard ? buildMemberActivityItems({ dashboard, groupe, t }) : []
 
   return (
     <CollaborativeDashboardLayout
@@ -58,6 +61,17 @@ export default function Dashboard() {
           <p className="text-slate-400 text-center py-10">{t('memberDashboard.loading')}</p>
         ) : dashboard ? (
           <>
+            <CompactKpiRow
+              accent="blue"
+              className="mb-4"
+              items={[
+                { icon: 'Users', label: t('nav.myGroups'), value: groupe?.nom || t('groups.no_group_joined'), tone: groupe ? 'blue' : 'amber' },
+                { icon: 'Calendar', label: t('nav.activities'), value: (dashboard.inscriptions || []).length },
+                { icon: 'Rocket', label: t('nav.projects'), value: (dashboard.projets || []).length },
+                { icon: 'Bell', label: t('nav.notifications'), value: unreadNotifications, tone: unreadNotifications > 0 ? 'amber' : 'green' },
+              ]}
+            />
+
             <MemberPrioritySection
               groupe={groupe}
               inscriptions={dashboard.inscriptions || []}
@@ -96,29 +110,38 @@ export default function Dashboard() {
               )}
             </WorkspaceSection>
 
+            {((dashboard.inscriptions || []).length > 0 || (dashboard.projets || []).length > 0) && (
             <section className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+              {(dashboard.inscriptions || []).length > 0 && (
               <CompactPanel
                 icon="Calendar"
                 title={t('memberDashboard.activities.title', { defaultValue: 'Activités à venir' })}
               >
                 <MemberActivitiesCard inscriptions={dashboard.inscriptions || []} />
               </CompactPanel>
+              )}
+              {(dashboard.projets || []).length > 0 && (
               <CompactPanel
                 icon="Rocket"
                 title={t('memberDashboard.projects.title', { defaultValue: 'Projets suivis ou proposés' })}
               >
                 <MemberProjectsCard projets={dashboard.projets || []} />
               </CompactPanel>
+              )}
             </section>
+            )}
 
+            {memberActivityItems.length > 0 && (
             <ActivityFeed
               title={t('activityFeed.title', { defaultValue: 'Mon fil d’activité' })}
               subtitle={t('activityFeed.memberSubtitle', { defaultValue: 'Messages, activités, projets et notifications importantes.' })}
               emptyLabel={t('activityFeed.empty', { defaultValue: 'Aucune activité récente pour le moment.' })}
-              items={buildMemberActivityItems({ dashboard, groupe, t })}
+              items={memberActivityItems}
               language={i18n.language}
               accent="blue"
+              limit={5}
             />
+            )}
           </>
         ) : (
           <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-10 text-center">

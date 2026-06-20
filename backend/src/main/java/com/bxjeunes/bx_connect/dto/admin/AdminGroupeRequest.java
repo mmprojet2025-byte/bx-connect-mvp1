@@ -2,6 +2,7 @@ package com.bxjeunes.bx_connect.dto.admin;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.math.BigDecimal;
 
 public class AdminGroupeRequest {
 
@@ -12,6 +13,10 @@ public class AdminGroupeRequest {
     private String categorie;
     private String theme;
     private String objectif;
+    private String adresseReunion;
+    private String commune;
+    private BigDecimal latitude;
+    private BigDecimal longitude;
     private int capaciteMax;
 
     @NotNull(message = "Le referent est obligatoire")
@@ -27,6 +32,14 @@ public class AdminGroupeRequest {
     public void setTheme(String theme) { this.theme = theme; }
     public String getObjectif() { return objectif; }
     public void setObjectif(String objectif) { this.objectif = objectif; }
+    public String getAdresseReunion() { return adresseReunion; }
+    public void setAdresseReunion(String adresseReunion) { this.adresseReunion = adresseReunion; }
+    public String getCommune() { return commune; }
+    public void setCommune(String commune) { this.commune = commune; }
+    public BigDecimal getLatitude() { return latitude; }
+    public void setLatitude(BigDecimal latitude) { this.latitude = latitude; }
+    public BigDecimal getLongitude() { return longitude; }
+    public void setLongitude(BigDecimal longitude) { this.longitude = longitude; }
     public int getCapaciteMax() { return capaciteMax; }
     public void setCapaciteMax(int capaciteMax) { this.capaciteMax = capaciteMax; }
     public Long getReferentId() { return referentId; }

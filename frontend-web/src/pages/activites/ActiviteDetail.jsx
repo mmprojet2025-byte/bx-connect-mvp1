@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
@@ -15,6 +17,8 @@ export default function ActiviteDetail() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { t, i18n } = useTranslation();
+  const mapContainerRef = useRef(null);
+  const mapRef = useRef(null);
 
   const [activite, setActivite] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,6 +29,41 @@ export default function ActiviteDetail() {
   useEffect(() => {
     fetchActivite();
   }, [id]);
+
+  const locationDetails = useMemo(() => buildLocationDetails(activite), [activite]);
+
+  useEffect(() => {
+    if (!locationDetails?.hasCoordinates || !mapContainerRef.current) return undefined;
+
+    const coordinates = [locationDetails.latitude, locationDetails.longitude];
+    const map = L.map(mapContainerRef.current, {
+      scrollWheelZoom: false,
+      attributionControl: true,
+    }).setView(coordinates, 14);
+    mapRef.current = map;
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(map);
+
+    L.marker(coordinates, {
+      icon: L.divIcon({
+        className: '',
+        html: '<span style="display:block;width:18px;height:18px;border-radius:999px;background:#1d4ed8;border:3px solid white;box-shadow:0 8px 20px rgba(15,23,42,.25)"></span>',
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+      }),
+    })
+      .addTo(map)
+      .bindPopup(locationDetails.label || activite?.titre || 'BX-Connect');
+
+    setTimeout(() => map.invalidateSize(), 0);
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, [activite?.titre, locationDetails]);
 
   const fetchActivite = async () => {
     try {
@@ -141,10 +180,10 @@ export default function ActiviteDetail() {
 
             <aside className="bg-gray-50 rounded-2xl p-5 h-fit">
               <div className="grid gap-4">
-              {activite.lieu && (
+              {locationDetails?.label && (
                 <InfoBlock>
                   <p className="text-xs text-gray-400 font-semibold uppercase mb-1">{t('activities.form_place')}</p>
-                  <p className="text-sm font-semibold text-gray-700">{activite.lieu}</p>
+                  <p className="text-sm font-semibold text-gray-700">{locationDetails.label}</p>
                 </InfoBlock>
               )}
               {activite.dateDebut && (
@@ -183,6 +222,31 @@ export default function ActiviteDetail() {
               )}
               </div>
 
+              {locationDetails?.routeUrl && (
+                <div className="mt-5 rounded-2xl border border-blue-100 bg-white p-3">
+                  {locationDetails.hasCoordinates ? (
+                    <div
+                      ref={mapContainerRef}
+                      className="h-48 overflow-hidden rounded-xl border border-slate-100"
+                      aria-label="Carte de localisation de l’activité"
+                    />
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm font-semibold text-slate-500">
+                      Adresse disponible. Les coordonnées exactes pourront être ajoutées plus tard.
+                    </div>
+                  )}
+                  <a
+                    href={locationDetails.routeUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-600"
+                  >
+                    <AppIcon name="MapPin" className="h-4 w-4" />
+                    Voir l’itinéraire
+                  </a>
+                </div>
+              )}
+
               <div className="flex flex-col gap-3 mt-5">
               {/* S'inscrire */}
               {activite.statut === 'PUBLIEE' && !inscrit && (
@@ -219,4 +283,34 @@ export default function ActiviteDetail() {
 
 function InfoBlock({ children }) {
   return <div className="border-b border-white pb-3 last:border-0 last:pb-0">{children}</div>;
+}
+
+function buildLocationDetails(activite) {
+  if (!activite) return null;
+
+  const rawLatitude = activite.latitude;
+  const rawLongitude = activite.longitude;
+  const latitude = Number(rawLatitude);
+  const longitude = Number(rawLongitude);
+  const hasCoordinates =
+    rawLatitude !== null &&
+    rawLatitude !== undefined &&
+    rawLatitude !== '' &&
+    rawLongitude !== null &&
+    rawLongitude !== undefined &&
+    rawLongitude !== '' &&
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude);
+  const label = [activite.adresse, activite.commune].filter(Boolean).join(', ') || activite.lieu || '';
+  const routeQuery = hasCoordinates ? `${latitude},${longitude}` : label;
+
+  if (!routeQuery) return null;
+
+  return {
+    latitude,
+    longitude,
+    hasCoordinates,
+    label,
+    routeUrl: `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(routeQuery)}`,
+  };
 }

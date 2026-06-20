@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../api/axios'
 import Navbar from '../../components/Navbar'
@@ -31,6 +33,8 @@ export default function GroupeEspace() {
   const [projets, setProjets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const mapContainerRef = useRef(null)
+  const mapRef = useRef(null)
   const activeTab = TABS.some(tab => tab.id === searchParams.get('tab')) ? searchParams.get('tab') : 'discussion'
 
   const fetchWorkspace = useCallback(async () => {
@@ -70,6 +74,40 @@ export default function GroupeEspace() {
   )
   const isMember = adhesion?.statut === 'ACCEPTE'
   const referent = [groupe?.referentPrenom, groupe?.referentNom].filter(Boolean).join(' ')
+  const locationDetails = useMemo(() => buildGroupLocationDetails(groupe), [groupe])
+
+  useEffect(() => {
+    if (activeTab !== 'infos' || !locationDetails?.hasCoordinates || !mapContainerRef.current) return undefined
+
+    const coordinates = [locationDetails.latitude, locationDetails.longitude]
+    const map = L.map(mapContainerRef.current, {
+      scrollWheelZoom: false,
+      attributionControl: true,
+    }).setView(coordinates, 14)
+    mapRef.current = map
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(map)
+
+    L.marker(coordinates, {
+      icon: L.divIcon({
+        className: '',
+        html: '<span style="display:block;width:18px;height:18px;border-radius:999px;background:#1d4ed8;border:3px solid white;box-shadow:0 8px 20px rgba(15,23,42,.25)"></span>',
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+      }),
+    })
+      .addTo(map)
+      .bindPopup(locationDetails.label || groupe?.nom || 'BX-Connect')
+
+    setTimeout(() => map.invalidateSize(), 0)
+
+    return () => {
+      map.remove()
+      mapRef.current = null
+    }
+  }, [activeTab, groupe?.nom, locationDetails])
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
@@ -126,7 +164,7 @@ export default function GroupeEspace() {
               {activeTab === 'membres' && <MembersPanel groupe={groupe} referent={referent} t={t} />}
               {activeTab === 'activites' && <LinkedItemsPanel type="activites" items={activites} language={i18n.language} t={t} />}
               {activeTab === 'projets' && <LinkedItemsPanel type="projets" items={projets} language={i18n.language} t={t} />}
-              {activeTab === 'infos' && <InfoPanel groupe={groupe} referent={referent} t={t} />}
+              {activeTab === 'infos' && <InfoPanel groupe={groupe} referent={referent} locationDetails={locationDetails} mapContainerRef={mapContainerRef} t={t} />}
             </section>
           </>
         )}
@@ -198,13 +236,46 @@ function LinkedItemsPanel({ type, items, language, t }) {
   )
 }
 
-function InfoPanel({ groupe, referent, t }) {
+function InfoPanel({ groupe, referent, locationDetails, mapContainerRef, t }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <InfoTile icon="BookOpen" title="Description" value={groupe.description || t('groups.description_soon')} />
       <InfoTile icon="User" title="Référent" value={referent || 'Non assigné'} />
       <InfoTile icon="Users" title="Membres" value={t('groups.members_count', { count: groupe.nombreMembres ?? 0 })} />
       <InfoTile icon="Folder" title="Catégorie" value={groupe.categorie || groupe.theme || 'Non renseignée'} />
+      {locationDetails && (
+        <div className="rounded-2xl border border-blue-100 bg-slate-50 p-4 md:col-span-2">
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-wide text-blue-700">
+                <AppIcon name="MapPin" className="h-4 w-4" />
+                Lieu de réunion
+              </p>
+              <p className="mt-1 text-sm font-bold text-slate-800">{locationDetails.label}</p>
+            </div>
+            <a
+              href={locationDetails.routeUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 py-2 text-xs font-black text-white transition hover:bg-blue-600"
+            >
+              <AppIcon name="MapPin" className="h-3.5 w-3.5" />
+              Voir l’itinéraire
+            </a>
+          </div>
+          {locationDetails.hasCoordinates ? (
+            <div
+              ref={mapContainerRef}
+              className="h-56 overflow-hidden rounded-xl border border-slate-100"
+              aria-label="Carte du lieu de réunion du groupe"
+            />
+          ) : (
+            <div className="rounded-xl border border-dashed border-slate-200 bg-white px-4 py-5 text-sm font-semibold text-slate-500">
+              Adresse disponible. Les coordonnées exactes pourront être ajoutées plus tard.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -235,4 +306,34 @@ function filterByGroup(items, group) {
     || item.groupe?.id === group.id
     || item.groupe?.nom === group.nom
   ))
+}
+
+function buildGroupLocationDetails(groupe) {
+  if (!groupe) return null
+
+  const rawLatitude = groupe.latitude
+  const rawLongitude = groupe.longitude
+  const latitude = Number(rawLatitude)
+  const longitude = Number(rawLongitude)
+  const hasCoordinates =
+    rawLatitude !== null &&
+    rawLatitude !== undefined &&
+    rawLatitude !== '' &&
+    rawLongitude !== null &&
+    rawLongitude !== undefined &&
+    rawLongitude !== '' &&
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude)
+  const label = [groupe.adresseReunion, groupe.commune].filter(Boolean).join(', ')
+  const routeQuery = hasCoordinates ? `${latitude},${longitude}` : label
+
+  if (!routeQuery) return null
+
+  return {
+    latitude,
+    longitude,
+    hasCoordinates,
+    label,
+    routeUrl: `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(routeQuery)}`,
+  }
 }

@@ -63,6 +63,7 @@ public class GroupeService {
         groupe.setCategorie(request.getCategorie());
         groupe.setTheme(request.getTheme());
         groupe.setObjectif(request.getObjectif());
+        appliquerLocalisation(groupe, request);
         groupe.setCapaciteMax(request.getCapaciteMax());
         groupe.setReferent(referent);
         groupe.setStatut(StatutGroupe.EN_ATTENTE);
@@ -82,6 +83,7 @@ public class GroupeService {
         groupe.setCategorie(request.getCategorie());
         groupe.setTheme(request.getTheme());
         groupe.setObjectif(request.getObjectif());
+        appliquerLocalisation(groupe, request);
         groupe.setCapaciteMax(request.getCapaciteMax());
         groupe.setReferent(referent);
         groupe.setStatut(StatutGroupe.VALIDE);
@@ -119,6 +121,7 @@ public class GroupeService {
         groupe.setCategorie(request.getCategorie());
         if (request.getTheme() != null) groupe.setTheme(request.getTheme());
         if (request.getObjectif() != null) groupe.setObjectif(request.getObjectif());
+        appliquerLocalisation(groupe, request);
         if (request.getCapaciteMax() >= 0) groupe.setCapaciteMax(request.getCapaciteMax());
         return GroupeResponse.fromEntity(groupeRepository.save(groupe));
     }
@@ -340,6 +343,20 @@ public class GroupeService {
             throw new AccessDeniedException("Impossible d'assigner un REFERENT inactif.");
         }
         return referent;
+    }
+
+    private void appliquerLocalisation(Groupe groupe, GroupeRequest request) {
+        groupe.setAdresseReunion(request.getAdresseReunion());
+        groupe.setCommune(request.getCommune());
+        groupe.setLatitude(request.getLatitude());
+        groupe.setLongitude(request.getLongitude());
+    }
+
+    private void appliquerLocalisation(Groupe groupe, AdminGroupeRequest request) {
+        groupe.setAdresseReunion(request.getAdresseReunion());
+        groupe.setCommune(request.getCommune());
+        groupe.setLatitude(request.getLatitude());
+        groupe.setLongitude(request.getLongitude());
     }
 
     private void verifierReferentDuGroupe(Long groupeId, String emailReferent) {

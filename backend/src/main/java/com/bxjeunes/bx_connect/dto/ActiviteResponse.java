@@ -14,6 +14,10 @@ public class ActiviteResponse {
     private LocalDateTime dateDebut;
     private LocalDateTime dateFin;
     private String lieu;
+    private String adresse;
+    private String commune;
+    private BigDecimal latitude;
+    private BigDecimal longitude;
     private boolean gratuite;
     private BigDecimal prix;
     private int capaciteMax;
@@ -37,6 +41,10 @@ public class ActiviteResponse {
         response.dateDebut = activite.getDateDebut();
         response.dateFin = activite.getDateFin();
         response.lieu = activite.getLieu();
+        response.adresse = activite.getAdresse();
+        response.commune = activite.getCommune();
+        response.latitude = activite.getLatitude();
+        response.longitude = activite.getLongitude();
         response.gratuite = activite.isGratuite();
         response.prix = activite.getPrix();
         response.capaciteMax = activite.getCapaciteMax();
@@ -72,6 +80,10 @@ public class ActiviteResponse {
     public LocalDateTime getDateDebut() { return dateDebut; }
     public LocalDateTime getDateFin() { return dateFin; }
     public String getLieu() { return lieu; }
+    public String getAdresse() { return adresse; }
+    public String getCommune() { return commune; }
+    public BigDecimal getLatitude() { return latitude; }
+    public BigDecimal getLongitude() { return longitude; }
     public boolean isGratuite() { return gratuite; }
     public BigDecimal getPrix() { return prix; }
     public int getCapaciteMax() { return capaciteMax; }

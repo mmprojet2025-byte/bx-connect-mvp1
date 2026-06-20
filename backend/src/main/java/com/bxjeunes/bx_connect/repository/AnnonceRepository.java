@@ -27,4 +27,8 @@ public interface AnnonceRepository extends JpaRepository<Annonce, Long> {
 
     // Annonces d'un auteur
     List<Annonce> findByAuteurId(Long auteurId);
+
+    // Opportunités partenaires
+    List<Annonce> findByCategorieOpportuniteIsNotNullOrderByDateCreationDesc();
+    List<Annonce> findByAuteurIdAndCategorieOpportuniteIsNotNullOrderByDateCreationDesc(Long auteurId);
 }

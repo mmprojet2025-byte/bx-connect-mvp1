@@ -11,8 +11,10 @@ import { SUPPORT_STATUS_STYLES, supportStatusLabel } from '../../utils/supportSt
 import PartnerLogo from '../../components/PartnerLogo';
 import { CollaborativeDashboardLayout } from '../../components/dashboard/CollaborativeDashboard';
 import ActivityFeed from '../../components/dashboard/ActivityFeed';
+import CompactKpiRow from '../../components/dashboard/CompactKpiRow';
 
-const PARTNER_TABS = new Set(['dashboard', 'projets', 'activites', 'soutiens']);
+const PARTNER_TABS = new Set(['dashboard', 'projets', 'activites', 'soutiens', 'opportunites']);
+const OPPORTUNITY_CATEGORIES = ['EMPLOI', 'STAGE', 'FORMATION', 'EVENEMENT', 'APPEL_PROJET', 'PUBLICITE'];
 
 export default function PartenaireSpace() {
   const { user } = useAuth();
@@ -20,6 +22,7 @@ export default function PartenaireSpace() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [mesSoutiens, setMesSoutiens] = useState([]);
+  const [mesOpportunites, setMesOpportunites] = useState([]);
   const [projetsOuverts, setProjetsOuverts] = useState([]);
   const [activitesOuvertes, setActivitesOuvertes] = useState([]);
   const [profilInstitutionnel, setProfilInstitutionnel] = useState(null);
@@ -40,6 +43,12 @@ export default function PartenaireSpace() {
   const [soutienForm, setSoutienForm] = useState({
     montant: '', message: '', projetId: null, activiteId: null, type: 'projet'
   });
+  const [editingSupport, setEditingSupport] = useState(null);
+  const [editSupportForm, setEditSupportForm] = useState({ montant: '', message: '' });
+  const [supportActionLoading, setSupportActionLoading] = useState(null);
+  const [showOpportunityForm, setShowOpportunityForm] = useState(false);
+  const [savingOpportunity, setSavingOpportunity] = useState(false);
+  const [opportunityForm, setOpportunityForm] = useState(emptyOpportunityForm());
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -52,8 +61,9 @@ export default function PartenaireSpace() {
         api.get('/partenaire/activites-ouvertes'),
         api.get('/partenaire/profil'),
         api.get('/partenaire/statistiques'),
+        api.get('/annonces/partenaire/mes-opportunites'),
       ]);
-      const [soutiensRes, projetsRes, activitesRes, profilRes, statsRes] = results;
+      const [soutiensRes, projetsRes, activitesRes, profilRes, statsRes, opportunitesRes] = results;
       const errors = {};
 
       applySettled(soutiensRes, data => setMesSoutiens(data || []), () => { errors.soutiens = t('partnerSpace.sectionLoadError'); });
@@ -64,6 +74,7 @@ export default function PartenaireSpace() {
         setProfileForm(profileFromResponse(data));
       }, () => { errors.profil = t('partnerSpace.profileLoadError'); });
       applySettled(statsRes, data => setStatistiques(data || null), () => { errors.stats = t('partnerSpace.sectionLoadError'); });
+      applySettled(opportunitesRes, data => setMesOpportunites(data || []), () => { errors.opportunites = t('partnerSpace.sectionLoadError'); });
 
       setSectionErrors(errors);
       if (results.every(result => result.status === 'rejected')) {
@@ -131,11 +142,108 @@ export default function PartenaireSpace() {
     }
   };
 
+  const openEditSupport = (soutien) => {
+    setMessage('');
+    setError('');
+    setEditingSupport(soutien);
+    setEditSupportForm({
+      montant: soutien.montant ?? '',
+      message: soutien.message || '',
+    });
+  };
+
+  const closeEditSupport = () => {
+    setEditingSupport(null);
+    setEditSupportForm({ montant: '', message: '' });
+  };
+
+  const handleModifierSoutien = async (event) => {
+    event.preventDefault();
+    if (!editingSupport) return;
+    setSupportActionLoading(`edit-${editingSupport.id}`);
+    setMessage('');
+    setError('');
+    try {
+      await api.put(`/partenaire/mes-soutiens/${editingSupport.id}`, {
+        montant: parseFloat(editSupportForm.montant),
+        message: editSupportForm.message,
+      });
+      const feedback = t('partnerSpace.supportUpdated', { defaultValue: 'Proposition de soutien mise à jour.' });
+      setMessage(feedback);
+      toast.success(feedback);
+      closeEditSupport();
+      await fetchAll();
+    } catch (err) {
+      const feedback = supportMutationError(err, t);
+      setError(feedback);
+      toast.error(feedback);
+    } finally {
+      setSupportActionLoading(null);
+    }
+  };
+
+  const handleAnnulerSoutien = async (soutien) => {
+    const confirmed = window.confirm(t('partnerSpace.confirmCancelSupport', {
+      defaultValue: 'Annuler cette proposition de soutien ? Elle restera visible dans votre historique.',
+    }));
+    if (!confirmed) return;
+
+    setSupportActionLoading(`cancel-${soutien.id}`);
+    setMessage('');
+    setError('');
+    try {
+      await api.patch(`/partenaire/mes-soutiens/${soutien.id}/annuler`);
+      const feedback = t('partnerSpace.supportCanceled', { defaultValue: 'Proposition de soutien annulée.' });
+      setMessage(feedback);
+      toast.success(feedback);
+      await fetchAll();
+    } catch (err) {
+      const feedback = supportMutationError(err, t);
+      setError(feedback);
+      toast.error(feedback);
+    } finally {
+      setSupportActionLoading(null);
+    }
+  };
+
+  const handleCreateOpportunity = async (event) => {
+    event.preventDefault();
+    setSavingOpportunity(true);
+    setMessage('');
+    setError('');
+    try {
+      const payload = {
+        titre: opportunityForm.titre,
+        descriptionCourte: opportunityForm.descriptionCourte,
+        contenu: opportunityForm.contenu,
+        categorieOpportunite: opportunityForm.categorieOpportunite,
+        lienExterne: opportunityForm.lienExterne,
+      };
+      if (opportunityForm.dateExpiration) {
+        payload.dateExpiration = opportunityForm.dateExpiration;
+      }
+      await api.post('/annonces/opportunites', payload);
+      const feedback = t('partnerSpace.opportunitySubmitted', { defaultValue: 'Opportunité envoyée à l’administration pour validation.' });
+      setMessage(feedback);
+      toast.success(feedback);
+      setShowOpportunityForm(false);
+      setOpportunityForm(emptyOpportunityForm());
+      await fetchAll();
+    } catch (err) {
+      const feedback = userFriendlyError(err, t('partnerSpace.actionError'));
+      setError(feedback);
+      toast.error(feedback);
+    } finally {
+      setSavingOpportunity(false);
+    }
+  };
+
   const ONGLETS = [
     { id: 'dashboard',  label: t('partnerSpace.tabs.dashboard'), icon: 'BarChart' },
     { id: 'projets',    label: t('partnerSpace.tabs.projects'), icon: 'Rocket' },
     { id: 'activites',  label: t('partnerSpace.tabs.activities'), icon: 'Folder' },
     { id: 'soutiens',   label: t('partnerSpace.tabs.supports'), icon: 'Wallet' },
+    { id: 'opportunites', label: t('partnerSpace.tabs.opportunities', { defaultValue: 'Opportunités' }), icon: 'Megaphone' },
   ];
 
   const setOnglet = (tab) => {
@@ -145,6 +253,10 @@ export default function PartenaireSpace() {
   const impact = useMemo(
     () => buildPartnerImpact({ statistiques, mesSoutiens }),
     [mesSoutiens, statistiques]
+  );
+  const partnerActivityItems = useMemo(
+    () => buildPartnerActivityItems({ mesSoutiens, projetsOuverts, activitesOuvertes, t }),
+    [activitesOuvertes, mesSoutiens, projetsOuverts, t]
   );
 
   const displayedPartnerSupports = useMemo(() => {
@@ -214,28 +326,6 @@ export default function PartenaireSpace() {
           </div>
         </div>
 
-        {profilInstitutionnel && (
-          <div className="mb-6 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-            <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-              <h2 className="flex items-center gap-2 font-black text-slate-950">
-                <AppIcon name="Building" className="h-5 w-5 text-orange-600" />
-                {t('partnerInstitution.about')}
-              </h2>
-              <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                {profilInstitutionnel.description || t('partnerInstitution.noDescription')}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-              <h2 className="font-black text-slate-950">{t('partnerInstitution.contact')}</h2>
-              <div className="mt-3 space-y-2 text-sm text-slate-600">
-                <ContactLine icon="User" value={profilInstitutionnel.personneContact} />
-                <ContactLine icon="Mail" value={profilInstitutionnel.emailContact || profilInstitutionnel.compteEmail} />
-                <ContactLine icon="Phone" value={profilInstitutionnel.telephone} />
-                <ContactLine icon="Globe" value={profilInstitutionnel.siteWeb} />
-              </div>
-            </div>
-          </div>
-        )}
         {sectionErrors.profil && <SectionLoadError message={sectionErrors.profil} />}
         {sectionErrors.stats && <SectionLoadError message={sectionErrors.stats} />}
 
@@ -264,30 +354,40 @@ export default function PartenaireSpace() {
         {/* ── Dashboard ── */}
         {onglet === 'dashboard' && (
           <div>
-            <PartnerImpactSummary impact={impact} t={t} />
+            <CompactKpiRow
+              accent="orange"
+              className="mb-4"
+              items={[
+                { icon: 'Rocket', label: t('partnerSpace.openProjects'), value: projetsOuverts.length },
+                { icon: 'Calendar', label: t('partnerSpace.openActivities'), value: activitesOuvertes.length },
+                { icon: 'Wallet', label: t('partnerSpace.mySupports'), value: mesSoutiens.length },
+                { icon: 'Megaphone', label: t('partnerSpace.opportunities', { defaultValue: 'Opportunités' }), value: mesOpportunites.length },
+                { icon: 'Clock', label: t('partnerSpace.pendingSupports', { defaultValue: 'En attente' }), value: mesSoutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE').length, tone: mesSoutiens.some(soutien => soutien.statutPaiement === 'EN_ATTENTE') ? 'amber' : 'green' },
+              ]}
+            />
 
             <PartnerActions
-              projetsOuverts={projetsOuverts}
-              activitesOuvertes={activitesOuvertes}
               mesSoutiens={mesSoutiens}
               onSupport={() => setShowSoutienForm(true)}
-              onProjects={() => setOnglet('projets')}
-              onActivities={() => setOnglet('activites')}
-              onSupports={() => setOnglet('soutiens')}
               t={t}
             />
 
+            {impact.totalSoutiens > 0 && <PartnerImpactSummary impact={impact} t={t} />}
+
+            {partnerActivityItems.length > 0 && (
             <div>
               {sectionErrors.soutiens && <SectionLoadError message={sectionErrors.soutiens} />}
               <ActivityFeed
                 title={t('activityFeed.title', { defaultValue: 'Mon fil d’activité' })}
                 subtitle={t('activityFeed.partnerSubtitle', { defaultValue: 'Soutiens, projets ouverts et activités disponibles.' })}
                 emptyLabel={t('partnerSpace.noSupports')}
-                items={buildPartnerActivityItems({ mesSoutiens, projetsOuverts, activitesOuvertes, t })}
+                items={partnerActivityItems}
                 language={i18n.language}
                 accent="orange"
+                limit={5}
               />
             </div>
+            )}
           </div>
         )}
 
@@ -401,8 +501,136 @@ export default function PartenaireSpace() {
                     soutien={soutien}
                     language={i18n.language}
                     focused={String(soutien.id) === String(focusedSupportId)}
+                    processingKey={supportActionLoading}
+                    onEdit={() => openEditSupport(soutien)}
+                    onCancel={() => handleAnnulerSoutien(soutien)}
                     t={t}
                   />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Opportunités ── */}
+        {onglet === 'opportunites' && (
+          <div>
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900">
+                  <AppIcon name="Megaphone" className="h-5 w-5 text-orange-600" />
+                  {t('partnerSpace.opportunities', { defaultValue: 'Mes opportunités' })}
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  {t('partnerSpace.opportunitiesHint', { defaultValue: 'Vos publications restent en attente jusqu’à validation par un administrateur.' })}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowOpportunityForm(current => !current)}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-orange-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-500"
+              >
+                <AppIcon name={showOpportunityForm ? 'XCircle' : 'PlusCircle'} className="h-4 w-4" />
+                {showOpportunityForm
+                  ? t('common.cancel')
+                  : t('partnerSpace.newOpportunity', { defaultValue: 'Nouvelle opportunité' })}
+              </button>
+            </div>
+
+            {sectionErrors.opportunites && <SectionLoadError message={sectionErrors.opportunites} />}
+
+            {showOpportunityForm && (
+              <form onSubmit={handleCreateOpportunity} className="mb-5 rounded-2xl border border-orange-100 bg-white p-5 shadow-sm">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <ProfileInput
+                    label={t('partnerSpace.opportunityTitle', { defaultValue: 'Titre' })}
+                    value={opportunityForm.titre}
+                    onChange={value => setOpportunityForm({ ...opportunityForm, titre: value })}
+                    required
+                  />
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-semibold text-slate-700">
+                      {t('partnerSpace.opportunityCategory', { defaultValue: 'Catégorie' })}
+                    </span>
+                    <select
+                      value={opportunityForm.categorieOpportunite}
+                      onChange={event => setOpportunityForm({ ...opportunityForm, categorieOpportunite: event.target.value })}
+                      className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    >
+                      {OPPORTUNITY_CATEGORIES.map(category => (
+                        <option key={category} value={category}>{opportunityCategoryLabel(category)}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <ProfileInput
+                    label={t('partnerSpace.externalLink', { defaultValue: 'Lien externe' })}
+                    value={opportunityForm.lienExterne}
+                    onChange={value => setOpportunityForm({ ...opportunityForm, lienExterne: value })}
+                    type="url"
+                  />
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-semibold text-slate-700">
+                      {t('partnerSpace.expirationDate', { defaultValue: 'Date d’expiration' })}
+                    </span>
+                    <input
+                      type="datetime-local"
+                      value={opportunityForm.dateExpiration}
+                      onChange={event => setOpportunityForm({ ...opportunityForm, dateExpiration: event.target.value })}
+                      className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    />
+                  </label>
+                  <label className="block md:col-span-2">
+                    <span className="mb-1 block text-sm font-semibold text-slate-700">
+                      {t('partnerSpace.shortDescription', { defaultValue: 'Description courte' })}
+                    </span>
+                    <input
+                      maxLength={300}
+                      value={opportunityForm.descriptionCourte}
+                      onChange={event => setOpportunityForm({ ...opportunityForm, descriptionCourte: event.target.value })}
+                      className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    />
+                  </label>
+                  <label className="block md:col-span-2">
+                    <span className="mb-1 block text-sm font-semibold text-slate-700">
+                      {t('partnerSpace.opportunityContent', { defaultValue: 'Contenu' })} *
+                    </span>
+                    <textarea
+                      required
+                      rows={5}
+                      value={opportunityForm.contenu}
+                      onChange={event => setOpportunityForm({ ...opportunityForm, contenu: event.target.value })}
+                      className="w-full resize-none rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    />
+                  </label>
+                </div>
+                <div className="mt-5 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowOpportunityForm(false)}
+                    className="rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-700"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingOpportunity}
+                    className="rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-orange-500 disabled:opacity-50"
+                  >
+                    {savingOpportunity ? t('common.saving') : t('partnerSpace.submitForReview', { defaultValue: 'Envoyer pour validation' })}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {mesOpportunites.length === 0 ? (
+              <div className="text-center py-12 text-gray-400 bg-white rounded-2xl shadow">
+                <AppIcon name="Megaphone" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
+                <p>{t('partnerSpace.noOpportunities', { defaultValue: 'Aucune opportunité publiée pour le moment.' })}</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 lg:grid-cols-2">
+                {mesOpportunites.map(opportunite => (
+                  <OpportunityCard key={opportunite.id} opportunite={opportunite} language={i18n.language} />
                 ))}
               </div>
             )}
@@ -521,6 +749,91 @@ export default function PartenaireSpace() {
           </div>
         )}
 
+        {editingSupport && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-wide text-orange-600">
+                    {t('partnerSpace.editSupportEyebrow', { defaultValue: 'Soutien en attente' })}
+                  </p>
+                  <h2 className="mt-1 text-lg font-bold text-blue-900">
+                    {t('partnerSpace.editSupportTitle', { defaultValue: 'Modifier la proposition' })}
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {editingSupport.projetTitre || editingSupport.activiteTitre || t('partnerSpace.supportFallback')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeEditSupport}
+                  className="rounded-full p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+                  aria-label={t('common.close')}
+                >
+                  <AppIcon name="XCircle" className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleModifierSoutien} className="space-y-4">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+                  <p className="text-xs font-black uppercase tracking-wide text-slate-400">
+                    {t('partnerSpace.lockedTarget', { defaultValue: 'Cible non modifiable' })}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-slate-700">
+                    {editingSupport.projetTitre
+                      ? t('partnerSupport.project')
+                      : t('partnerSupport.activity')}
+                    {' · '}
+                    {editingSupport.projetTitre || editingSupport.activiteTitre || t('partnerSpace.supportFallback')}
+                  </p>
+                </div>
+
+                <label className="block">
+                  <span className="mb-1 block text-sm font-semibold text-gray-700">{t('partnerSpace.amountEuros')} *</span>
+                  <input
+                    required
+                    type="number"
+                    min="1"
+                    step="0.01"
+                    value={editSupportForm.montant}
+                    onChange={event => setEditSupportForm({ ...editSupportForm, montant: event.target.value })}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-1 block text-sm font-semibold text-gray-700">{t('partnerSpace.optionalMessage')}</span>
+                  <textarea
+                    value={editSupportForm.message}
+                    onChange={event => setEditSupportForm({ ...editSupportForm, message: event.target.value })}
+                    rows={3}
+                    className="w-full resize-none rounded-xl border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                </label>
+
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    disabled={supportActionLoading === `edit-${editingSupport.id}`}
+                    className="flex-1 rounded-xl bg-orange-600 py-2.5 text-sm font-bold text-white transition hover:bg-orange-500 disabled:opacity-50"
+                  >
+                    {supportActionLoading === `edit-${editingSupport.id}`
+                      ? t('common.saving')
+                      : t('common.save')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeEditSupport}
+                    className="flex-1 rounded-xl bg-gray-100 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-200"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         {showProfileForm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <form onSubmit={handleSaveProfile} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6">
@@ -569,7 +882,7 @@ export default function PartenaireSpace() {
   );
 }
 
-function PartnerActions({ projetsOuverts, activitesOuvertes, mesSoutiens, onSupport, onProjects, onActivities, onSupports, t }) {
+function PartnerActions({ mesSoutiens, onSupport, t }) {
   const pending = mesSoutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE').length;
   const paid = mesSoutiens.filter(soutien => soutien.statutPaiement === 'PAYE').length;
   const rejected = mesSoutiens.filter(soutien => soutien.statutPaiement === 'REMBOURSE').length;
@@ -595,31 +908,15 @@ function PartnerActions({ projetsOuverts, activitesOuvertes, mesSoutiens, onSupp
         </button>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
-        <PartnerActionCard
-          icon="Rocket"
-          title={t('partnerSpace.openProjects')}
-          value={projetsOuverts.length}
-          description={projetsOuverts.length > 0 ? t('partnerSpace.projectsAvailable', { count: projetsOuverts.length, defaultValue: `${projetsOuverts.length} projet(s) ouvert(s)` }) : t('partnerSpace.noOpenProjects')}
-          onClick={onProjects}
-        />
-        <PartnerActionCard
-          icon="Calendar"
-          title={t('partnerSpace.openActivities')}
-          value={activitesOuvertes.length}
-          description={activitesOuvertes.length > 0 ? t('partnerSpace.activitiesAvailable', { count: activitesOuvertes.length, defaultValue: `${activitesOuvertes.length} activité(s) ouverte(s)` }) : t('partnerSpace.noOpenActivities')}
-          onClick={onActivities}
-        />
-        <PartnerActionCard
-          icon="Wallet"
-          title={t('partnerSpace.mySupports')}
-          value={mesSoutiens.length}
-          description={mesSoutiens.length > 0
+      <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+        <p className="text-sm font-black text-slate-950">
+          {mesSoutiens.length > 0
             ? t('partnerSpace.supportStatusSummary', { pending, paid, rejected, defaultValue: `${pending} en attente · ${paid} payé(s) · ${rejected} refusé(s)` })
             : t('partnerSpace.noSupports')}
-          onClick={onSupports}
-          highlight={pending > 0}
-        />
+        </p>
+        <p className="mt-1 text-sm text-slate-500">
+          {t('partnerSpace.actionHint', { defaultValue: 'Choisissez “Projets ouverts” ou “Activités ouvertes” dans les onglets pour cibler votre soutien.' })}
+        </p>
       </div>
     </section>
   );
@@ -682,9 +979,55 @@ function PartnerImpactSummary({ impact, t }) {
   );
 }
 
-function PartnerSupportCard({ soutien, language, focused, t }) {
+function OpportunityCard({ opportunite, language }) {
+  return (
+    <article className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-black uppercase tracking-wide text-orange-600">
+            {opportunityCategoryLabel(opportunite.categorieOpportunite)}
+          </p>
+          <h3 className="mt-1 font-black text-slate-950">{opportunite.titre}</h3>
+        </div>
+        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-black ${opportunityStatusStyle(opportunite.statutModeration)}`}>
+          {opportunityStatusLabel(opportunite.statutModeration)}
+        </span>
+      </div>
+      {opportunite.descriptionCourte && (
+        <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">{opportunite.descriptionCourte}</p>
+      )}
+      <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-500">{opportunite.contenu}</p>
+      <div className="mt-4 flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-400">
+        {opportunite.dateCreation && (
+          <InlineIconLabel icon="Calendar">
+            {new Date(opportunite.dateCreation).toLocaleDateString(language || 'fr-BE')}
+          </InlineIconLabel>
+        )}
+        {opportunite.dateExpiration && (
+          <InlineIconLabel icon="Clock">
+            Expire le {new Date(opportunite.dateExpiration).toLocaleDateString(language || 'fr-BE')}
+          </InlineIconLabel>
+        )}
+        {opportunite.lienExterne && (
+          <a
+            href={normalizeExternalUrl(opportunite.lienExterne)}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-orange-700 hover:underline"
+          >
+            <AppIcon name="Globe" className="h-3.5 w-3.5" />
+            Lien externe
+          </a>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function PartnerSupportCard({ soutien, language, focused, processingKey, onEdit, onCancel, t }) {
   const target = soutien.projetTitre || soutien.activiteTitre || t('partnerSpace.supportFallback')
   const nextStep = partnerSupportNextStep(soutien, t)
+  const editable = soutien.statutPaiement === 'EN_ATTENTE'
 
   return (
     <article className={`rounded-2xl border bg-white p-5 shadow-sm ${focused ? 'border-orange-300 ring-2 ring-orange-100' : 'border-slate-100'}`}>
@@ -707,6 +1050,31 @@ function PartnerSupportCard({ soutien, language, focused, t }) {
         </p>
         <p className="mt-1 text-sm font-semibold leading-relaxed text-orange-950">{nextStep}</p>
       </div>
+
+      {editable && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onEdit}
+            disabled={processingKey === `edit-${soutien.id}` || processingKey === `cancel-${soutien.id}`}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-orange-200 bg-white px-3 py-2 text-sm font-bold text-orange-700 transition hover:bg-orange-50 disabled:opacity-50"
+          >
+            <AppIcon name="Edit" className="h-4 w-4" />
+            {t('common.edit', { defaultValue: 'Modifier' })}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={processingKey === `cancel-${soutien.id}` || processingKey === `edit-${soutien.id}`}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+          >
+            <AppIcon name="XCircle" className="h-4 w-4" />
+            {processingKey === `cancel-${soutien.id}`
+              ? t('common.saving', { defaultValue: 'Enregistrement...' })
+              : t('common.cancel', { defaultValue: 'Annuler' })}
+          </button>
+        </div>
+      )}
 
       <div className="mt-4 rounded-2xl bg-slate-50 p-3">
         <p className="text-xs font-black uppercase tracking-wide text-slate-400">
@@ -830,25 +1198,13 @@ function partnerSupportNextStep(soutien, t) {
   return t('partnerSpace.nextStepFollow', { defaultValue: 'Statut à suivre dans votre historique de contributions.' });
 }
 
-function PartnerActionCard({ icon, title, value, description, onClick, highlight = false }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${
-        highlight ? 'border-amber-200 bg-amber-50' : 'border-slate-100 bg-slate-50 hover:bg-white'
-      }`}
-    >
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${highlight ? 'bg-white text-amber-700' : 'bg-orange-50 text-orange-600'}`}>
-          <AppIcon name={icon} className="h-5 w-5" />
-        </span>
-        <span className={`text-2xl font-black ${highlight ? 'text-amber-800' : 'text-slate-950'}`}>{value}</span>
-      </div>
-      <h3 className="font-black text-slate-950">{title}</h3>
-      <p className="mt-1 text-sm leading-5 text-slate-500">{description}</p>
-    </button>
-  );
+function supportMutationError(error, t) {
+  if (error?.response?.status === 403) {
+    return t('partnerSpace.supportNotEditable', {
+      defaultValue: 'Cette proposition ne peut plus être modifiée ou annulée. Elle a peut-être déjà été traitée par l’administration.',
+    });
+  }
+  return userFriendlyError(error, t('partnerSpace.actionError'));
 }
 
 function InlineIconLabel({ icon, children }) {
@@ -861,6 +1217,17 @@ function InlineIconLabel({ icon, children }) {
 }
 
 const PARTNER_TYPES = ['COMMUNE', 'BIJ', 'ECOLE', 'HAUTE_ECOLE', 'ENTREPRISE', 'SPONSOR', 'ASSOCIATION', 'ONG', 'FONDATION', 'AUTRE'];
+
+function emptyOpportunityForm() {
+  return {
+    titre: '',
+    descriptionCourte: '',
+    contenu: '',
+    categorieOpportunite: 'EMPLOI',
+    lienExterne: '',
+    dateExpiration: '',
+  };
+}
 
 function emptyPartnerProfile() {
   return {
@@ -888,14 +1255,40 @@ function profileFromResponse(profile) {
   };
 }
 
-function ContactLine({ icon, value }) {
-  if (!value) return null;
-  return (
-    <p className="flex items-center gap-2">
-      <AppIcon name={icon} className="h-4 w-4 shrink-0 text-orange-500" />
-      <span className="break-all">{value}</span>
-    </p>
-  );
+function opportunityCategoryLabel(category) {
+  const labels = {
+    EMPLOI: 'Emploi',
+    STAGE: 'Stage',
+    FORMATION: 'Formation',
+    EVENEMENT: 'Événement',
+    APPEL_PROJET: 'Appel à projet',
+    PUBLICITE: 'Publicité',
+  };
+  return labels[category] || 'Opportunité';
+}
+
+function opportunityStatusLabel(status) {
+  const labels = {
+    EN_ATTENTE: 'En attente',
+    PUBLIEE: 'Publiée',
+    REFUSEE: 'Refusée',
+  };
+  return labels[status] || status || 'En attente';
+}
+
+function opportunityStatusStyle(status) {
+  const styles = {
+    EN_ATTENTE: 'bg-amber-100 text-amber-800',
+    PUBLIEE: 'bg-green-100 text-green-700',
+    REFUSEE: 'bg-red-100 text-red-700',
+  };
+  return styles[status] || 'bg-slate-100 text-slate-700';
+}
+
+function normalizeExternalUrl(value) {
+  if (!value) return '#';
+  const trimmed = String(value).trim();
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
 function ProfileInput({ label, value, onChange, type = 'text', required = false }) {

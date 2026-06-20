@@ -16,11 +16,6 @@ const LANGUAGES = [
 export default function Navbar() {
   const {
     isAuthenticated,
-    isAdmin,
-    isSuperAdmin,
-    isReferent,
-    isMembre,
-    isPartenaire,
     user,
     logout,
   } = useAuth()
@@ -69,15 +64,7 @@ export default function Navbar() {
     }
   }, [])
 
-  const navigation = getNavigation({
-    isAuthenticated,
-    isSuperAdmin,
-    isAdmin,
-    isReferent,
-    isMembre,
-    isPartenaire,
-    t,
-  })
+  const navigation = getPublicNavigation(t)
   const notificationItem = isAuthenticated
     ? { to: '/notifications', label: t('nav.notifications'), icon: 'Bell' }
     : navigation.communication.find(item => item.to === '/notifications')
@@ -255,103 +242,17 @@ export default function Navbar() {
   )
 }
 
-function getNavigation({ isAuthenticated, isSuperAdmin, isAdmin, isReferent, isMembre, isPartenaire, t }) {
-  if (!isAuthenticated) {
-    return {
-      space: { to: '/', label: t('nav.home'), icon: 'Home' },
-      management: [
-        { to: '/activites', label: t('nav.activities'), icon: 'Calendar' },
-        { to: '/groupes', label: t('nav.groups'), icon: 'Users' },
-        { to: '/projets', label: t('nav.projects'), icon: 'Rocket' },
-        { to: '/a-propos', label: t('nav.about'), icon: 'Building' },
-      ],
-      communication: [],
-    }
+function getPublicNavigation(t) {
+  return {
+    space: { to: '/', label: t('nav.home'), icon: 'Home' },
+    management: [
+      { to: '/activites', label: t('nav.activities'), icon: 'Calendar' },
+      { to: '/groupes', label: t('nav.groups'), icon: 'Users' },
+      { to: '/projets', label: t('nav.projects'), icon: 'Rocket' },
+      { to: '/a-propos', label: t('nav.about'), icon: 'Building' },
+    ],
+    communication: [],
   }
-
-  if (isSuperAdmin) {
-    return {
-      space: { to: '/super-admin/dashboard', label: t('nav.superAdmin'), icon: 'Shield' },
-      management: [
-        { to: '/super-admin/admins', label: t('nav.admins'), icon: 'Users' },
-        { to: '/super-admin/logs', label: t('nav.logs'), icon: 'BarChart' },
-      ],
-      communication: [
-        { to: '/notifications', label: t('nav.notifications'), icon: 'Bell' },
-      ],
-    }
-  }
-
-  if (isAdmin) {
-    return {
-      space: { to: '/admin/dashboard', label: t('nav.adminSpace'), icon: 'Dashboard' },
-      management: [
-        { to: '/admin/utilisateurs', label: t('nav.users', { defaultValue: 'Utilisateurs' }), icon: 'Users' },
-        { to: '/admin/referents', label: t('nav.referents'), icon: 'User' },
-        { to: '/admin/groupes', label: t('nav.groups'), icon: 'Folder' },
-        { to: '/admin/activites', label: t('nav.activities'), icon: 'Calendar' },
-        { to: '/admin/projets', label: t('nav.projects'), icon: 'Rocket' },
-        { to: '/admin/soutiens', label: t('nav.partnerSupports', { defaultValue: 'Soutiens partenaires' }), icon: 'Handshake' },
-        { to: '/admin/prestations', label: t('nav.prestations'), icon: 'CheckCircle' },
-        { to: '/admin/annonces', label: t('nav.announcements'), icon: 'Megaphone' },
-      ],
-      communication: [
-        { to: '/notifications', label: t('nav.notifications'), icon: 'Bell' },
-      ],
-    }
-  }
-
-  if (isReferent) {
-    return {
-      space: { to: '/referent/dashboard', label: t('nav.referentSpace'), icon: 'Dashboard' },
-      management: [
-        { to: '/referent/groupes', label: t('nav.myGroups', { defaultValue: 'Mes groupes' }), icon: 'Folder' },
-        { to: '/referent/membres', label: t('nav.members'), icon: 'Users' },
-        { to: '/referent/demandes', label: t('nav.requests', { defaultValue: 'Demandes à traiter' }), icon: 'Clock' },
-        { to: '/referent/activites', label: t('nav.activities'), icon: 'Calendar' },
-        { to: '/referent/projets', label: t('nav.projects'), icon: 'Rocket' },
-        { to: '/referent/prestations', label: t('nav.prestations'), icon: 'CheckCircle' },
-        { to: '/referent/annonces', label: t('nav.announcements'), icon: 'Megaphone' },
-      ],
-      communication: [
-        { to: '/referent/messagerie', label: t('nav.communications'), icon: 'MessageCircle' },
-        { to: '/notifications', label: t('nav.notifications'), icon: 'Bell' },
-      ],
-    }
-  }
-
-  if (isMembre) {
-    return {
-      space: { to: '/dashboard', label: t('nav.memberSpace'), icon: 'Dashboard' },
-      management: [
-        { to: '/groupes', label: t('nav.groups'), icon: 'Users' },
-        { to: '/activites', label: t('nav.activities'), icon: 'Calendar' },
-        { to: '/projets', label: t('nav.projects'), icon: 'Rocket' },
-        { to: '/prestations', label: t('nav.prestations'), icon: 'CheckCircle' },
-        { to: '/annonces', label: t('nav.announcements'), icon: 'Megaphone' },
-      ],
-      communication: [
-        { to: '/messagerie', label: t('nav.messaging'), icon: 'MessageCircle' },
-        { to: '/notifications', label: t('nav.notifications'), icon: 'Bell' },
-      ],
-    }
-  }
-
-  if (isPartenaire) {
-    return {
-      space: { to: '/partenaire?tab=dashboard', label: t('nav.partnerSpace'), icon: 'Dashboard' },
-      management: [
-        { to: '/partenaire?tab=projets', label: t('nav.projects'), icon: 'Rocket' },
-        { to: '/partenaire?tab=activites', label: t('nav.activities'), icon: 'Calendar' },
-        { to: '/partenaire?tab=soutiens', label: t('nav.supports', { defaultValue: 'Mes soutiens' }), icon: 'Handshake' },
-      ],
-      communication: [
-        { to: '/notifications', label: t('nav.notifications'), icon: 'Bell' },
-      ],
-    }
-  }
-
-  return { space: null, management: [], communication: [] }
 }
 
 function Dropdown({ name, label, icon, items, open, active, onToggle, location }) {

@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.mockito.Mockito.verify;
 
@@ -61,8 +62,55 @@ class ProjetEndpointSecurityTest {
         verify(projetService).projetsGroupesReferent("referent@test.be");
     }
 
+    @Test
+    @WithMockUser(username = "referent@test.be", roles = "REFERENT")
+    @DisplayName("REFERENT peut appeler la modification dediee de ses projets")
+    void referent_peut_appeler_modification_dediee() throws Exception {
+        mockMvc.perform(put("/api/projets/referent/1")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "titre": "Projet modifie",
+                                  "description": "Description",
+                                  "groupeId": 10,
+                                  "visibilite": "GROUPE"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        verify(projetService).modifierProjetReferent(org.mockito.ArgumentMatchers.eq(1L),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq("referent@test.be"));
+    }
+
+    @Test
+    @WithMockUser(roles = "MEMBRE")
+    @DisplayName("MEMBRE ne peut pas appeler la modification referent")
+    void membre_ne_peut_pas_modifier_projet_referent() throws Exception {
+        assertModifierProjetReferentForbidden();
+    }
+
+    @Test
+    @WithMockUser(roles = "PARTENAIRE")
+    @DisplayName("PARTENAIRE ne peut pas appeler la modification referent")
+    void partenaire_ne_peut_pas_modifier_projet_referent() throws Exception {
+        assertModifierProjetReferentForbidden();
+    }
+
     private void assertRejoindreProjetForbidden() throws Exception {
         mockMvc.perform(post("/api/projets/1/rejoindre"))
+                .andExpect(status().isForbidden());
+    }
+
+    private void assertModifierProjetReferentForbidden() throws Exception {
+        mockMvc.perform(put("/api/projets/referent/1")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "titre": "Projet modifie",
+                                  "groupeId": 10,
+                                  "visibilite": "GROUPE"
+                                }
+                                """))
                 .andExpect(status().isForbidden());
     }
 }

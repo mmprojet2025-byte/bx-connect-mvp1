@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import api from '../../api/axios'
-import AppIcon from '../../components/ui/AppIcons'
 import { CollaborativeDashboardLayout } from '../../components/dashboard/CollaborativeDashboard'
 import ActivityFeed from '../../components/dashboard/ActivityFeed'
+import CompactKpiRow from '../../components/dashboard/CompactKpiRow'
 
 export default function SuperAdminDashboard() {
   const { t, i18n } = useTranslation()
@@ -32,119 +31,31 @@ export default function SuperAdminDashboard() {
         <p className="text-slate-400 text-center py-10">{t('common.loading')}</p>
       ) : dashboard && (
         <>
-          <SupervisionSection dashboard={dashboard} t={t} />
-
-          <section className="mb-6 rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-lg shadow-slate-900/5">
-            <SectionHeader icon="Lock" title={t('superAdmin.securityTitle', { defaultValue: 'Sécurité' })} subtitle={t('superAdmin.securitySubtitle', { defaultValue: 'Accès sensibles et comptes administrateurs.' })} />
-            <div className="grid gap-3 md:grid-cols-2">
-              <ControlLink to="/super-admin/admins" icon="Shield" title={t('superAdmin.adminsTitle')} description={t('superAdmin.adminsDescription')} />
-              <ControlLink to="/super-admin/logs" icon="BarChart" title={t('superAdmin.logsTitle')} description={t('superAdmin.logsDescription')} />
-            </div>
-          </section>
-
-          <ActivityFeed
-            title={t('activityFeed.title', { defaultValue: 'Mon fil d’activité' })}
-            subtitle={t('activityFeed.superAdminSubtitle', { defaultValue: 'Actions sensibles, sécurité et activité administrative.' })}
-            emptyLabel={t('audit.noCriticalLog')}
-            items={buildSuperAdminActivityItems({ logs: dashboard.derniersLogs || [], t })}
-            language={i18n.language}
+          <CompactKpiRow
             accent="indigo"
+            className="mb-4"
+            items={[
+              { icon: 'Shield', label: t('superAdmin.activeAdmins'), value: dashboard.adminsActifs || 0 },
+              { icon: 'Clock', label: t('superAdmin.inactiveAdmins'), value: dashboard.adminsInactifs || 0, tone: dashboard.adminsInactifs > 0 ? 'amber' : 'green' },
+              { icon: 'BarChart', label: t('superAdmin.criticalActions'), value: dashboard.totalActionsCritiques || 0, tone: dashboard.totalActionsCritiques > 0 ? 'amber' : 'green' },
+              { icon: 'FileText', label: t('superAdmin.latestLogs'), value: (dashboard.derniersLogs || []).length },
+            ]}
           />
+
+          {(dashboard.derniersLogs || []).length > 0 && (
+            <ActivityFeed
+              title={t('activityFeed.title', { defaultValue: 'Mon fil d’activité' })}
+              subtitle={t('activityFeed.superAdminSubtitle', { defaultValue: 'Actions sensibles, sécurité et activité administrative.' })}
+              emptyLabel={t('audit.noCriticalLog')}
+              items={buildSuperAdminActivityItems({ logs: dashboard.derniersLogs || [], t })}
+              language={i18n.language}
+              accent="indigo"
+              limit={3}
+            />
+          )}
         </>
       )}
     </CollaborativeDashboardLayout>
-  )
-}
-
-function SupervisionSection({ dashboard, t }) {
-  const logs = dashboard.derniersLogs || []
-  const inactiveAdmins = dashboard.adminsInactifs || 0
-  const criticalActions = dashboard.totalActionsCritiques || 0
-
-  return (
-    <section className="mb-6 rounded-[1.5rem] border border-indigo-100 bg-white p-5 shadow-lg shadow-indigo-950/5">
-      <SectionHeader
-        icon="Shield"
-        title={t('superAdmin.supervisionTitle', { defaultValue: 'Supervision' })}
-        subtitle={t('superAdmin.supervisionEyebrow', { defaultValue: 'Contrôle plateforme' })}
-      />
-
-      <div className="grid gap-3 md:grid-cols-3">
-        <SupervisionCard
-          icon="Shield"
-          title={t('superAdmin.activeAdmins')}
-          value={dashboard.adminsActifs || 0}
-          description={t('superAdmin.adminsDescription')}
-          to="/super-admin/admins"
-        />
-        <SupervisionCard
-          icon="Clock"
-          title={t('superAdmin.inactiveAdmins')}
-          value={inactiveAdmins}
-          description={inactiveAdmins > 0
-            ? t('superAdmin.inactiveAdminsAlert', { defaultValue: 'Comptes administrateurs à contrôler.' })
-            : t('superAdmin.noInactiveAdmins', { defaultValue: 'Aucun compte administrateur inactif à signaler.' })}
-          to="/super-admin/admins"
-          highlight={inactiveAdmins > 0}
-        />
-        <SupervisionCard
-          icon="BarChart"
-          title={t('superAdmin.criticalActions')}
-          value={criticalActions}
-          description={logs.length > 0
-            ? t('superAdmin.latestSensitiveActions', { count: logs.length, defaultValue: `${logs.length} action(s) sensible(s) récente(s)` })
-            : t('audit.noCriticalLog')}
-          to="/super-admin/logs"
-          highlight={criticalActions > 0}
-        />
-      </div>
-    </section>
-  )
-}
-
-function SupervisionCard({ icon, title, value, description, to, highlight = false }) {
-  return (
-    <Link
-      to={to}
-      className={`rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:shadow-md ${
-        highlight ? 'border-amber-200 bg-amber-50' : 'border-slate-100 bg-slate-50 hover:bg-white'
-      }`}
-    >
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${highlight ? 'bg-white text-amber-700' : 'bg-indigo-50 text-indigo-700'}`}>
-          <AppIcon name={icon} className="h-5 w-5" />
-        </span>
-        <span className={`text-2xl font-black ${highlight ? 'text-amber-800' : 'text-slate-950'}`}>{value}</span>
-      </div>
-      <h3 className="font-black text-slate-950">{title}</h3>
-      <p className="mt-1 text-sm leading-5 text-slate-500">{description}</p>
-    </Link>
-  )
-}
-
-function ControlLink({ to, icon, title, description }) {
-  return (
-    <Link to={to} className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:bg-white hover:shadow-md">
-      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
-        <AppIcon name={icon} className="h-5 w-5" />
-      </span>
-      <span>
-        <span className="block font-black text-slate-950">{title}</span>
-        <span className="mt-0.5 block text-sm text-slate-500">{description}</span>
-      </span>
-    </Link>
-  )
-}
-
-function SectionHeader({ icon, title, subtitle }) {
-  return (
-    <div className="mb-4">
-      <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
-        <AppIcon name={icon} className="h-5 w-5 text-indigo-700" />
-        {title}
-      </h2>
-      {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
-    </div>
   )
 }
 

@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -93,5 +94,27 @@ class PartenaireProfilServiceTest {
         assertThat(stats.get("totalMontant")).isEqualTo(new BigDecimal("1250.00"));
         assertThat(stats.get("projetsSoutenus")).isEqualTo(2L);
         assertThat(stats.get("activitesSoutenues")).isEqualTo(1L);
+    }
+
+    @Test
+    void expose_les_partenaires_publics_actifs() {
+        PartenaireProfil profil = new PartenaireProfil();
+        profil.setId(12L);
+        profil.setUtilisateur(partenaire);
+        profil.setNomOrganisation("Commune de Bruxelles");
+        profil.setTypePartenaire(TypePartenaire.COMMUNE);
+        profil.setLogoUrl("https://example.test/logo.png");
+        profil.setDescription("Partenaire institutionnel local.");
+        profil.setSiteWeb("https://bruxelles.test");
+
+        when(profilRepository.findPublicActiveProfiles()).thenReturn(List.of(profil));
+
+        var publics = partenaireService.partenairesPublics();
+
+        assertThat(publics).hasSize(1);
+        assertThat(publics.get(0).getNomOrganisation()).isEqualTo("Commune de Bruxelles");
+        assertThat(publics.get(0).getTypePartenaire()).isEqualTo(TypePartenaire.COMMUNE);
+        assertThat(publics.get(0).getLogoUrl()).isEqualTo("https://example.test/logo.png");
+        assertThat(publics.get(0).getSiteWeb()).isEqualTo("https://bruxelles.test");
     }
 }

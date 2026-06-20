@@ -5,7 +5,9 @@ import com.bxjeunes.bx_connect.entity.Activite;
 import com.bxjeunes.bx_connect.entity.Projet;
 import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.StatutActivite;
+import com.bxjeunes.bx_connect.entity.StatutPaiement;
 import com.bxjeunes.bx_connect.entity.StatutProjet;
+import com.bxjeunes.bx_connect.entity.SoutienFinancier;
 import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.entity.VisibiliteProjet;
 import com.bxjeunes.bx_connect.repository.ActiviteRepository;
@@ -13,6 +15,7 @@ import com.bxjeunes.bx_connect.repository.PartenaireProfilRepository;
 import com.bxjeunes.bx_connect.repository.ProjetRepository;
 import com.bxjeunes.bx_connect.repository.SoutienFinancierRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
+import com.bxjeunes.bx_connect.service.NotificationService;
 import com.bxjeunes.bx_connect.service.PartenaireService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,6 +33,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,6 +45,7 @@ class PartenaireProjetSecurityTest {
     @Mock private ProjetRepository projetRepository;
     @Mock private ActiviteRepository activiteRepository;
     @Mock private PartenaireProfilRepository partenaireProfilRepository;
+    @Mock private NotificationService notificationService;
 
     @InjectMocks
     private PartenaireService partenaireService;
@@ -135,6 +141,89 @@ class PartenaireProjetSecurityTest {
                 .isEqualByComparingTo(BigDecimal.TEN);
     }
 
+    @Test
+    @DisplayName("Partenaire peut modifier son soutien EN_ATTENTE")
+    void partenaire_peut_modifier_son_soutien_en_attente() {
+        SoutienFinancier soutien = soutien(100L, partenaire, StatutPaiement.EN_ATTENTE);
+        SoutienRequest request = new SoutienRequest();
+        request.setMontant(new BigDecimal("25.50"));
+        request.setMessage("Message mis à jour");
+
+        when(userRepository.findByEmail(partenaire.getEmail())).thenReturn(Optional.of(partenaire));
+        when(soutienRepository.findById(100L)).thenReturn(Optional.of(soutien));
+        when(soutienRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = partenaireService.modifierSoutien(100L, request, partenaire.getEmail());
+
+        assertThat(response.getMontant()).isEqualByComparingTo("25.50");
+        assertThat(response.getMessage()).isEqualTo("Message mis à jour");
+        assertThat(response.getStatutPaiement()).isEqualTo(StatutPaiement.EN_ATTENTE);
+    }
+
+    @Test
+    @DisplayName("Partenaire ne peut pas modifier le soutien d'un autre")
+    void partenaire_ne_modifie_pas_soutien_autre_partenaire() {
+        User autrePartenaire = new User();
+        autrePartenaire.setId(99L);
+        autrePartenaire.setEmail("autre@test.be");
+        autrePartenaire.setRole(Role.PARTENAIRE);
+        SoutienFinancier soutien = soutien(100L, autrePartenaire, StatutPaiement.EN_ATTENTE);
+        SoutienRequest request = new SoutienRequest();
+        request.setMontant(BigDecimal.TEN);
+
+        when(userRepository.findByEmail(partenaire.getEmail())).thenReturn(Optional.of(partenaire));
+        when(soutienRepository.findById(100L)).thenReturn(Optional.of(soutien));
+
+        assertThatThrownBy(() -> partenaireService.modifierSoutien(100L, request, partenaire.getEmail()))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("propres soutiens");
+        verify(soutienRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Partenaire ne peut pas modifier un soutien PAYE")
+    void partenaire_ne_modifie_pas_soutien_paye() {
+        SoutienFinancier soutien = soutien(100L, partenaire, StatutPaiement.PAYE);
+        SoutienRequest request = new SoutienRequest();
+        request.setMontant(BigDecimal.TEN);
+
+        when(userRepository.findByEmail(partenaire.getEmail())).thenReturn(Optional.of(partenaire));
+        when(soutienRepository.findById(100L)).thenReturn(Optional.of(soutien));
+
+        assertThatThrownBy(() -> partenaireService.modifierSoutien(100L, request, partenaire.getEmail()))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("ne peut plus");
+        verify(soutienRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Partenaire peut annuler son soutien EN_ATTENTE")
+    void partenaire_peut_annuler_son_soutien_en_attente() {
+        SoutienFinancier soutien = soutien(100L, partenaire, StatutPaiement.EN_ATTENTE);
+
+        when(userRepository.findByEmail(partenaire.getEmail())).thenReturn(Optional.of(partenaire));
+        when(soutienRepository.findById(100L)).thenReturn(Optional.of(soutien));
+        when(soutienRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = partenaireService.annulerSoutien(100L, partenaire.getEmail());
+
+        assertThat(response.getStatutPaiement()).isEqualTo(StatutPaiement.ANNULE);
+    }
+
+    @Test
+    @DisplayName("Partenaire ne peut pas annuler un soutien PAYE")
+    void partenaire_ne_peut_pas_annuler_soutien_paye() {
+        SoutienFinancier soutien = soutien(100L, partenaire, StatutPaiement.PAYE);
+
+        when(userRepository.findByEmail(partenaire.getEmail())).thenReturn(Optional.of(partenaire));
+        when(soutienRepository.findById(100L)).thenReturn(Optional.of(soutien));
+
+        assertThatThrownBy(() -> partenaireService.annulerSoutien(100L, partenaire.getEmail()))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("ne peut plus");
+        verify(soutienRepository, never()).save(any());
+    }
+
     private Projet projet(Long id, StatutProjet statut, VisibiliteProjet visibilite) {
         User porteur = new User();
         porteur.setId(1L);
@@ -157,5 +246,17 @@ class PartenaireProjetSecurityTest {
         activite.setStatut(statut);
         activite.setCreateur(partenaire);
         return activite;
+    }
+
+    private SoutienFinancier soutien(Long id, User donateur, StatutPaiement statut) {
+        Projet projet = projet(1L, StatutProjet.APPROUVE, VisibiliteProjet.PUBLIC);
+        SoutienFinancier soutien = new SoutienFinancier();
+        soutien.setId(id);
+        soutien.setDonateur(donateur);
+        soutien.setProjet(projet);
+        soutien.setMontant(BigDecimal.TEN);
+        soutien.setMessage("Message initial");
+        soutien.setStatutPaiement(statut);
+        return soutien;
     }
 }

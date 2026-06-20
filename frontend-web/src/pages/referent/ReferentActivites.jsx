@@ -8,6 +8,7 @@ import ActivityCover from '../../components/ActivityCover'
 import AppIcon from '../../components/ui/AppIcons'
 import PageHeader from '../../components/ui/PageHeader'
 import SectionCard from '../../components/ui/SectionCard'
+import LocationPicker from '../../components/location/LocationPicker'
 
 const emptyForm = {
   titre: '',
@@ -15,6 +16,10 @@ const emptyForm = {
   dateDebut: '',
   dateFin: '',
   lieu: '',
+  adresse: '',
+  commune: '',
+  latitude: '',
+  longitude: '',
   gratuite: true,
   prix: '',
   capaciteMax: 0,
@@ -82,6 +87,10 @@ export default function ReferentActivites() {
       dateDebut: toDateTimeInput(activite.dateDebut),
       dateFin: toDateTimeInput(activite.dateFin),
       lieu: activite.lieu || '',
+      adresse: activite.adresse || '',
+      commune: activite.commune || '',
+      latitude: activite.latitude ?? '',
+      longitude: activite.longitude ?? '',
       gratuite: activite.gratuite ?? true,
       prix: activite.prix ?? '',
       capaciteMax: activite.capaciteMax ?? 0,
@@ -102,6 +111,8 @@ export default function ReferentActivites() {
       ...form,
       prix: form.gratuite ? null : Number(form.prix),
       capaciteMax: Number(form.capaciteMax) || 0,
+      latitude: form.latitude === '' ? null : Number(form.latitude),
+      longitude: form.longitude === '' ? null : Number(form.longitude),
     }
 
     try {
@@ -167,16 +178,6 @@ export default function ReferentActivites() {
             <Input label={t('activities.form_place')} value={form.lieu} onChange={value => updateForm('lieu', value)} />
             <Input label={t('activities.start_date')} type="datetime-local" value={form.dateDebut} onChange={value => updateForm('dateDebut', value)} required />
             <Input label={t('activities.end_date')} type="datetime-local" value={form.dateFin} onChange={value => updateForm('dateFin', value)} required />
-            <Input label={t('activities.form_category')} value={form.categorie} onChange={value => updateForm('categorie', value)} />
-            <Input label={t('activities.form_theme')} value={form.theme} onChange={value => updateForm('theme', value)} />
-            <Input label={t('activities.form_capacity')} type="number" min="0" value={form.capaciteMax} onChange={value => updateForm('capaciteMax', value)} />
-            <label className="flex items-center gap-2 text-sm text-gray-700 pt-7">
-              <input type="checkbox" checked={form.gratuite} onChange={e => updateForm('gratuite', e.target.checked)} />
-              {t('activities.form_free')}
-            </label>
-            {!form.gratuite && (
-              <Input label={t('activities.form_price')} type="number" min="0" value={form.prix} onChange={value => updateForm('prix', value)} />
-            )}
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-1">{t('activities.form_description')}</label>
               <textarea
@@ -186,6 +187,41 @@ export default function ReferentActivites() {
                 className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
               />
             </div>
+            <details className="md:col-span-2 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <summary className="cursor-pointer text-sm font-bold text-blue-900">
+                Localisation avancée
+              </summary>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <Input label="Adresse" value={form.adresse} onChange={value => updateForm('adresse', value)} />
+                <Input label="Commune" value={form.commune} onChange={value => updateForm('commune', value)} />
+                <Input label="Latitude" type="number" step="any" value={form.latitude} onChange={value => updateForm('latitude', value)} />
+                <Input label="Longitude" type="number" step="any" value={form.longitude} onChange={value => updateForm('longitude', value)} />
+                <LocationPicker
+                  address={form.adresse}
+                  commune={form.commune}
+                  latitude={form.latitude}
+                  longitude={form.longitude}
+                  onCoordinatesChange={(latitude, longitude) => setForm(current => ({ ...current, latitude, longitude }))}
+                />
+              </div>
+            </details>
+            <details className="md:col-span-2 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <summary className="cursor-pointer text-sm font-bold text-blue-900">
+                Paramètres avancés
+              </summary>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <Input label={t('activities.form_category')} value={form.categorie} onChange={value => updateForm('categorie', value)} />
+                <Input label={t('activities.form_theme')} value={form.theme} onChange={value => updateForm('theme', value)} />
+                <Input label={t('activities.form_capacity')} type="number" min="0" value={form.capaciteMax} onChange={value => updateForm('capaciteMax', value)} />
+                <label className="flex items-center gap-2 text-sm text-gray-700 pt-7">
+                  <input type="checkbox" checked={form.gratuite} onChange={e => updateForm('gratuite', e.target.checked)} />
+                  {t('activities.form_free')}
+                </label>
+                {!form.gratuite && (
+                  <Input label={t('activities.form_price')} type="number" min="0" value={form.prix} onChange={value => updateForm('prix', value)} />
+                )}
+              </div>
+            </details>
             <div className="md:col-span-2 flex justify-end">
               {editingActivity && (
                 <button
@@ -293,13 +329,14 @@ export default function ReferentActivites() {
   )
 }
 
-function Input({ label, value, onChange, type = 'text', required = false, min }) {
+function Input({ label, value, onChange, type = 'text', required = false, min, step }) {
   return (
     <label className="block">
       <span className="block text-sm font-semibold text-gray-700 mb-1">{label}</span>
       <input
         type={type}
         min={min}
+        step={step}
         required={required}
         value={value}
         onChange={e => onChange(e.target.value)}

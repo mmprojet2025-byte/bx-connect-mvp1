@@ -3,6 +3,7 @@ package com.bxjeunes.bx_connect.service;
 import com.bxjeunes.bx_connect.dto.*;
 import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.*;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -40,6 +41,13 @@ public class PartenaireService {
         return partenaireProfilRepository.findByUtilisateurId(partenaire.getId())
                 .map(PartenaireProfilResponse::fromEntity)
                 .orElseGet(() -> profilParDefaut(partenaire));
+    }
+
+    public List<PartenairePublicResponse> partenairesPublics() {
+        return partenaireProfilRepository.findPublicActiveProfiles()
+                .stream()
+                .map(PartenairePublicResponse::fromEntity)
+                .collect(Collectors.toList());
     }
 
     public PartenaireProfilResponse enregistrerProfilInstitutionnel(
@@ -139,6 +147,19 @@ public class PartenaireService {
                 .stream()
                 .map(SoutienResponse::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    public SoutienResponse modifierSoutien(Long soutienId, SoutienRequest request, String emailPartenaire) {
+        SoutienFinancier soutien = chargerSoutienEditable(soutienId, emailPartenaire);
+        soutien.setMontant(request.getMontant());
+        soutien.setMessage(normaliser(request.getMessage()));
+        return SoutienResponse.fromEntity(soutienRepository.save(soutien));
+    }
+
+    public SoutienResponse annulerSoutien(Long soutienId, String emailPartenaire) {
+        SoutienFinancier soutien = chargerSoutienEditable(soutienId, emailPartenaire);
+        soutien.setStatutPaiement(StatutPaiement.ANNULE);
+        return SoutienResponse.fromEntity(soutienRepository.save(soutien));
     }
 
     // ─── P09 : Statistiques du partenaire ────────────────────────────────────
@@ -252,6 +273,24 @@ public class PartenaireService {
         return userRepository.findByEmail(email)
                 .filter(user -> user.getRole() == Role.PARTENAIRE)
                 .orElseThrow(() -> new RuntimeException("Partenaire introuvable"));
+    }
+
+    private SoutienFinancier chargerSoutienEditable(Long soutienId, String emailPartenaire) {
+        User partenaire = getPartenaire(emailPartenaire);
+        SoutienFinancier soutien = soutienRepository.findById(soutienId)
+                .orElseThrow(() -> new RuntimeException("Soutien introuvable : " + soutienId));
+
+        if (soutien.getDonateur() == null
+                || soutien.getDonateur().getId() == null
+                || !soutien.getDonateur().getId().equals(partenaire.getId())) {
+            throw new AccessDeniedException("Vous ne pouvez modifier que vos propres soutiens.");
+        }
+
+        if (soutien.getStatutPaiement() != StatutPaiement.EN_ATTENTE) {
+            throw new AccessDeniedException("Ce soutien ne peut plus être modifié.");
+        }
+
+        return soutien;
     }
 
     private PartenaireProfilResponse profilParDefaut(User partenaire) {

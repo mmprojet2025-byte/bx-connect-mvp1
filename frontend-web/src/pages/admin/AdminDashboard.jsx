@@ -6,6 +6,7 @@ import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
 import AppIcon from '../../components/ui/AppIcons'
 import ActivityFeed from '../../components/dashboard/ActivityFeed'
+import CompactKpiRow from '../../components/dashboard/CompactKpiRow'
 import {
   CollaborativeDashboardLayout,
 } from '../../components/dashboard/CollaborativeDashboard'
@@ -52,6 +53,7 @@ export default function AdminDashboard() {
   const projetsSoumis = projets.filter(projet => projet.statut === 'SOUMIS')
   const soutiensEnAttente = soutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE')
   const activitesAPublier = activites.filter(activite => activite.statut === 'BROUILLON')
+  const pendingTotal = groupesEnAttente.length + projetsSoumis.length + soutiensEnAttente.length + activitesAPublier.length
 
   return (
     <CollaborativeDashboardLayout
@@ -59,8 +61,8 @@ export default function AdminDashboard() {
       emoji="Shield"
       title={t('ux.adminDashboard.title', { defaultValue: 'Centre de pilotage BX-Connect' })}
       subtitle={t('admin.dashboardSummary', {
-        count: groupesEnAttente.length + projetsSoumis.length + soutiensEnAttente.length + activitesAPublier.length,
-        defaultValue: `${groupesEnAttente.length + projetsSoumis.length + soutiensEnAttente.length + activitesAPublier.length} validation(s) en attente`,
+        count: pendingTotal,
+        defaultValue: `${pendingTotal} validation(s) en attente`,
       })}
     >
         {error && <Alert type="error">{error}</Alert>}
@@ -69,6 +71,17 @@ export default function AdminDashboard() {
           <p className="text-slate-400 text-center py-10">{t('admin.loading')}</p>
         ) : (
           <>
+            <CompactKpiRow
+              accent="blue"
+              className="mb-4"
+              items={[
+                { icon: 'TriangleAlert', label: t('ux.adminDashboard.priority'), value: pendingTotal, tone: pendingTotal > 0 ? 'amber' : 'green' },
+                { icon: 'Clock', label: t('ux.adminDashboard.pendingGroups'), value: groupesEnAttente.length, tone: groupesEnAttente.length > 0 ? 'amber' : 'blue' },
+                { icon: 'Rocket', label: t('statuses.SOUMIS', { defaultValue: 'Projets soumis' }), value: projetsSoumis.length, tone: projetsSoumis.length > 0 ? 'amber' : 'blue' },
+                { icon: 'Handshake', label: t('nav.supports', { defaultValue: 'Soutiens' }), value: soutiensEnAttente.length, tone: soutiensEnAttente.length > 0 ? 'amber' : 'blue' },
+              ]}
+            />
+
             <AdminQueue
               groupesSansReferent={groupesSansReferent}
               groupesEnAttente={groupesEnAttente}
@@ -78,24 +91,13 @@ export default function AdminDashboard() {
               t={t}
             />
 
-            <section className="mb-6 rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-lg shadow-slate-900/5">
-              <SectionHeader icon="Folder" title={t('admin.manage')} subtitle={t('admin.managementSubtitle', { defaultValue: 'Accès aux espaces de gestion, sans dupliquer les files d’attente.' })} />
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                <NavCard to="/admin/utilisateurs" title={t('admin.users_title')} description={t('admin.users_desc')} color="#2E86AB" icon="Users" />
-                <NavCard to="/admin/referents" title={t('admin.referents_title')} description={t('admin.referents_desc')} color="#0d9488" icon="User" />
-                <NavCard to="/admin/groupes" title={t('admin.groups_title')} description={t('admin.groups_desc')} color="#7c3aed" icon="Folder" />
-                <NavCard to="/admin/activites" title={t('admin.activities_title')} description={t('admin.activities_desc')} color="#F4A261" icon="Calendar" />
-                <NavCard to="/admin/projets" title={t('admin.projects_title')} description={t('admin.projects_desc')} color="#28a745" icon="Rocket" />
-                <NavCard to="/admin/soutiens" title={t('partnerSupport.admin.title')} description={t('partnerSupport.admin.dashboardDescription')} color="#ea580c" icon="Handshake" />
-              </div>
-            </section>
-
             <ActivityFeed
               title={t('activityFeed.title', { defaultValue: 'Mon fil d’activité' })}
               subtitle={t('activityFeed.adminSubtitle', { defaultValue: 'Validations, créations et changements de statut à surveiller.' })}
               emptyLabel={t('admin.noRecentActivity', { defaultValue: 'Aucune activité récente à afficher.' })}
               items={buildAdminActivityItems({ groupesEnAttente, groupesSansReferent, projets, soutiens, activites, t })}
               accent="blue"
+              limit={5}
             />
 
             {groupes.length === 0 && (
@@ -231,18 +233,6 @@ function PriorityCard({ icon, label, value, description, to }) {
         <span className="block font-black text-slate-950">{value} · {label}</span>
         <span className="mt-0.5 block text-sm leading-5 text-slate-500">{description}</span>
       </span>
-    </Link>
-  )
-}
-
-function NavCard({ to, title, description, color, icon }) {
-  return (
-    <Link to={to} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md" style={{ borderLeft: `4px solid ${color}` }}>
-      <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white" style={{ color }}>
-        <AppIcon name={icon} className="h-5 w-5" />
-      </div>
-      <h3 className="font-black text-slate-950 mb-1">{title}</h3>
-      <p className="line-clamp-2 text-slate-500 text-sm">{description}</p>
     </Link>
   )
 }

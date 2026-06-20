@@ -35,6 +35,7 @@ export default function ReferentProjets() {
   const [filtreStatut, setFiltreStatut] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [editingProject, setEditingProject] = useState(null)
   const [message, setMessage] = useState('')
   const [form, setForm] = useState(emptyForm)
 
@@ -57,24 +58,64 @@ export default function ReferentProjets() {
 
   useEffect(() => { fetchProjets() }, [fetchProjets])
 
-  const creerProjet = async event => {
+  const resetForm = () => {
+    setForm(emptyForm)
+    setEditingProject(null)
+    setShowForm(false)
+  }
+
+  const openCreateForm = () => {
+    setMessage('')
+    setError('')
+    setForm(emptyForm)
+    setEditingProject(null)
+    setShowForm(true)
+  }
+
+  const openEditForm = projet => {
+    setMessage('')
+    setError('')
+    setEditingProject(projet)
+    setForm({
+      titre: projet.titre || '',
+      description: projet.description || '',
+      objectifs: projet.objectifs || '',
+      budgetDemande: projet.budgetDemande ?? '',
+      groupeId: projet.groupeId ?? '',
+      visibilite: projet.visibilite || 'GROUPE',
+    })
+    setShowForm(true)
+  }
+
+  const enregistrerProjet = async event => {
     event.preventDefault()
     setCreating(true)
     setError('')
     setMessage('')
+    const payload = {
+      ...form,
+      groupeId: Number(form.groupeId),
+      budgetDemande: form.budgetDemande ? Number(form.budgetDemande) : null,
+    }
     try {
-      const response = await api.post('/projets', {
-        ...form,
-        groupeId: Number(form.groupeId),
-        budgetDemande: form.budgetDemande ? Number(form.budgetDemande) : null,
-      })
-      await api.patch(`/projets/${response.data.id}/soumettre`)
-      setMessage(t('projects.successSubmitted'))
-      setForm(emptyForm)
-      setShowForm(false)
-      await fetchProjets()
+      if (editingProject) {
+        const response = await api.put(`/projets/referent/${editingProject.id}`, payload)
+        setProjets(prev => prev.map(projet => projet.id === editingProject.id ? response.data : projet))
+        setMessage(t('referent.projectUpdated', { defaultValue: 'Projet mis à jour.' }))
+      } else {
+        const response = await api.post('/projets', payload)
+        await api.patch(`/projets/${response.data.id}/soumettre`)
+        setMessage(t('projects.successSubmitted'))
+        await fetchProjets()
+      }
+      resetForm()
     } catch (requestError) {
-      setError(userFriendlyError(requestError, t('projects.error_submit')))
+      const fallback = editingProject
+        ? t('referent.errorProjectUpdate', { defaultValue: 'Impossible de modifier ce projet. Vérifiez qu’il appartient bien à l’un de vos groupes.' })
+        : t('projects.error_submit')
+      setError(requestError?.response?.status === 403
+        ? t('referent.errorProjectForbidden', { defaultValue: 'Vous ne pouvez modifier que les projets des groupes que vous encadrez.' })
+        : userFriendlyError(requestError, fallback))
     } finally {
       setCreating(false)
     }
@@ -88,6 +129,7 @@ export default function ReferentProjets() {
   })
   const statuts = [...new Set(projets.map(projet => projet.statut).filter(Boolean))]
   const nombreGroupes = new Set(projets.map(projet => projet.groupeNom).filter(Boolean)).size
+  const groupesModifiables = new Set(groupes.map(groupe => Number(groupe.id)))
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -106,7 +148,7 @@ export default function ReferentProjets() {
               />
               <button
                 type="button"
-                onClick={() => setShowForm(value => !value)}
+                onClick={showForm ? resetForm : openCreateForm}
                 disabled={groupes.length === 0}
                 className="inline-flex items-center gap-2 rounded-2xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:bg-slate-300"
               >
@@ -127,8 +169,16 @@ export default function ReferentProjets() {
         {message && <Alert>{message}</Alert>}
 
         {showForm && (
-          <SectionCard className="mb-6" title={t('projects.new_title')}>
-            <form onSubmit={creerProjet} className="grid gap-4 md:grid-cols-2">
+          <SectionCard className="mb-6" title={editingProject ? t('referent.editProject', { defaultValue: 'Modifier le projet' }) : t('projects.new_title')}>
+            <form onSubmit={enregistrerProjet} className="grid gap-4 md:grid-cols-2">
+              {editingProject && (
+                <div className="md:col-span-2 flex items-center justify-between gap-3 rounded-2xl bg-teal-50 px-4 py-3 text-sm text-teal-800">
+                  <span className="font-semibold">{editingProject.titre}</span>
+                  <button type="button" onClick={resetForm} className="font-bold text-teal-700 hover:text-teal-900">
+                    {t('common.cancelEdit', { defaultValue: 'Annuler la modification' })}
+                  </button>
+                </div>
+              )}
               <Input label={t('projects.form_title')} value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
               <Input label={t('projects.form_budget')} value={form.budgetDemande} onChange={value => setForm({ ...form, budgetDemande: value })} type="number" min="0" />
               <Select
@@ -163,8 +213,12 @@ export default function ReferentProjets() {
                   disabled={creating || !form.groupeId}
                   className="inline-flex items-center gap-2 rounded-2xl bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:bg-slate-300"
                 >
-                  <AppIcon name="PlusCircle" className="h-4 w-4" />
-                  {creating ? t('common.creating') : t('projects.submit_project')}
+                  <AppIcon name={editingProject ? 'Save' : 'PlusCircle'} className="h-4 w-4" />
+                  {creating
+                    ? t('common.saving', { defaultValue: 'Enregistrement...' })
+                    : editingProject
+                      ? t('common.saveChanges', { defaultValue: 'Enregistrer les modifications' })
+                      : t('projects.submit_project')}
                 </button>
               </div>
             </form>
@@ -246,6 +300,16 @@ export default function ReferentProjets() {
                     <InfoLine label={t('projects.form_budget')} value={`${projet.budgetDemande} €`} />
                   )}
                 </dl>
+                {groupesModifiables.has(Number(projet.groupeId)) && (
+                  <button
+                    type="button"
+                    onClick={() => openEditForm(projet)}
+                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-bold text-teal-800 transition hover:bg-teal-100"
+                  >
+                    <AppIcon name="Pencil" className="h-4 w-4" />
+                    {t('common.edit', { defaultValue: 'Modifier' })}
+                  </button>
+                )}
                 </div>
               </article>
             ))}

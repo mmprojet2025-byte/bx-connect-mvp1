@@ -8,8 +8,9 @@ export default function ActivityFeed({
   emptyLabel = 'Aucune activité récente pour le moment.',
   language = 'fr-BE',
   accent = 'blue',
+  limit = 5,
 }) {
-  const visibleItems = normalizeItems(items).slice(0, 8)
+  const visibleItems = normalizeItems(items).slice(0, limit)
   const groupedItems = groupItemsByDay(visibleItems, language)
   const accentClass = getAccentClass(accent)
 

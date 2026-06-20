@@ -168,6 +168,53 @@ class ProjetSecurityTest {
     }
 
     @Test
+    @DisplayName("REFERENT peut modifier un projet de son groupe")
+    void referent_peut_modifier_projet_de_son_groupe() {
+        Projet projet = projet(42L, StatutProjet.SOUMIS, groupe, membre);
+        ProjetRequest request = request();
+        request.setTitre("Projet modifie");
+        request.setGroupeId(groupe.getId());
+        request.setVisibilite(VisibiliteProjet.COMMUNAUTE);
+
+        when(projetRepository.findById(42L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(referent.getEmail())).thenReturn(Optional.of(referent));
+        when(groupeRepository.findById(groupe.getId())).thenReturn(Optional.of(groupe));
+        when(projetRepository.save(any(Projet.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ProjetResponse response = projetService.modifierProjetReferent(42L, request, referent.getEmail());
+
+        assertThat(response.getTitre()).isEqualTo("Projet modifie");
+        assertThat(response.getGroupeId()).isEqualTo(groupe.getId());
+        assertThat(response.getVisibilite()).isEqualTo(VisibiliteProjet.COMMUNAUTE);
+    }
+
+    @Test
+    @DisplayName("REFERENT ne peut pas modifier un projet d'un autre groupe")
+    void referent_ne_peut_pas_modifier_projet_autre_groupe() {
+        Projet projet = projet(42L, StatutProjet.SOUMIS, autreGroupe, membre);
+        ProjetRequest request = request();
+        request.setGroupeId(autreGroupe.getId());
+
+        when(projetRepository.findById(42L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(referent.getEmail())).thenReturn(Optional.of(referent));
+
+        assertThatThrownBy(() -> projetService.modifierProjetReferent(42L, request, referent.getEmail()))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    @DisplayName("MEMBRE ne peut pas utiliser la modification referent")
+    void membre_ne_peut_pas_modifier_projet_comme_referent() {
+        Projet projet = projet(42L, StatutProjet.SOUMIS, groupe, membre);
+
+        when(projetRepository.findById(42L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+
+        assertThatThrownBy(() -> projetService.modifierProjetReferent(42L, request(), membre.getEmail()))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
     @DisplayName("ADMIN peut rattacher un projet au groupe demande")
     void admin_peut_rattacher_projet_au_groupe() {
         ProjetRequest request = request();

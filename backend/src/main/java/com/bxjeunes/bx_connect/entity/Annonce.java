@@ -20,6 +20,20 @@ public class Annonce {
     @Column(nullable = false, length = 20)
     private String type; // GLOBALE, GROUPE, SYSTEME
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "categorie_opportunite", length = 30)
+    private CategorieOpportunite categorieOpportunite;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "statut_moderation", nullable = false, length = 30)
+    private StatutModeration statutModeration = StatutModeration.PUBLIEE;
+
+    @Column(name = "lien_externe", length = 500)
+    private String lienExterne;
+
+    @Column(name = "description_courte", length = 300)
+    private String descriptionCourte;
+
     @Column(nullable = false)
     private boolean epinglee = false;
 
@@ -52,6 +66,18 @@ public class Annonce {
 
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
+
+    public CategorieOpportunite getCategorieOpportunite() { return categorieOpportunite; }
+    public void setCategorieOpportunite(CategorieOpportunite categorieOpportunite) { this.categorieOpportunite = categorieOpportunite; }
+
+    public StatutModeration getStatutModeration() { return statutModeration; }
+    public void setStatutModeration(StatutModeration statutModeration) { this.statutModeration = statutModeration; }
+
+    public String getLienExterne() { return lienExterne; }
+    public void setLienExterne(String lienExterne) { this.lienExterne = lienExterne; }
+
+    public String getDescriptionCourte() { return descriptionCourte; }
+    public void setDescriptionCourte(String descriptionCourte) { this.descriptionCourte = descriptionCourte; }
 
     public boolean isEpinglee() { return epinglee; }
     public void setEpinglee(boolean epinglee) { this.epinglee = epinglee; }

@@ -27,6 +27,18 @@ public class Activite {
     @Column(length = 200)
     private String lieu;
 
+    @Column(length = 255)
+    private String adresse;
+
+    @Column(length = 100)
+    private String commune;
+
+    @Column(precision = 10, scale = 7)
+    private BigDecimal latitude;
+
+    @Column(precision = 10, scale = 7)
+    private BigDecimal longitude;
+
     @Column(nullable = false)
     private boolean gratuite = true;
 
@@ -76,6 +88,18 @@ public class Activite {
 
     public String getLieu() { return lieu; }
     public void setLieu(String lieu) { this.lieu = lieu; }
+
+    public String getAdresse() { return adresse; }
+    public void setAdresse(String adresse) { this.adresse = adresse; }
+
+    public String getCommune() { return commune; }
+    public void setCommune(String commune) { this.commune = commune; }
+
+    public BigDecimal getLatitude() { return latitude; }
+    public void setLatitude(BigDecimal latitude) { this.latitude = latitude; }
+
+    public BigDecimal getLongitude() { return longitude; }
+    public void setLongitude(BigDecimal longitude) { this.longitude = longitude; }
 
     public boolean isGratuite() { return gratuite; }
     public void setGratuite(boolean gratuite) { this.gratuite = gratuite; }

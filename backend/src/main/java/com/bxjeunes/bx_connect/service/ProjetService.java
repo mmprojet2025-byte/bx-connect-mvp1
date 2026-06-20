@@ -182,6 +182,30 @@ public class ProjetService {
         return ProjetResponse.fromEntity(projetRepository.save(projet));
     }
 
+    // ─── Modifier un projet encadre par un REFERENT ─────────────────────────
+
+    public ProjetResponse modifierProjetReferent(Long id, ProjetRequest request, String emailReferent) {
+        Projet projet = projetRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Projet introuvable"));
+        User referent = userRepository.findByEmail(emailReferent)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+
+        if (referent.getRole() != Role.REFERENT || !referentEncadreProjet(referent, projet)) {
+            throw new AccessDeniedException("Vous ne pouvez modifier que les projets des groupes que vous encadrez.");
+        }
+
+        projet.setTitre(request.getTitre());
+        projet.setDescription(request.getDescription());
+        projet.setObjectifs(request.getObjectifs());
+        projet.setBudgetDemande(request.getBudgetDemande());
+        projet.setVisibilite(request.getVisibilite());
+        projet.setGroupe(chargerGroupeEncadre(request.getGroupeId(), referent));
+        verifierVisibiliteCreateur(referent, projet.getVisibilite());
+        verifierCoherenceGroupeVisibilite(projet);
+
+        return ProjetResponse.fromEntity(projetRepository.save(projet));
+    }
+
     // ─── Valider ou rejeter un projet (ADMIN / REFERENT) — A09, R13 ──────────
 
     public ProjetResponse validerProjet(Long id, boolean approuver, String commentaire, String emailAdmin) {

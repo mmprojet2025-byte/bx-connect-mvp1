@@ -46,7 +46,7 @@ public class ActiviteService {
         activite.setDescription(request.getDescription());
         activite.setDateDebut(request.getDateDebut());
         activite.setDateFin(request.getDateFin());
-        activite.setLieu(request.getLieu());
+        appliquerLocalisation(activite, request);
         activite.setGratuite(request.isGratuite());
         activite.setPrix(request.getPrix());
         activite.setCapaciteMax(request.getCapaciteMax());
@@ -205,7 +205,7 @@ public class ActiviteService {
         activite.setDescription(request.getDescription());
         activite.setDateDebut(request.getDateDebut());
         activite.setDateFin(request.getDateFin());
-        activite.setLieu(request.getLieu());
+        appliquerLocalisation(activite, request);
         activite.setGratuite(request.isGratuite());
         activite.setPrix(request.getPrix());
         activite.setCapaciteMax(request.getCapaciteMax());
@@ -251,6 +251,14 @@ public class ActiviteService {
             return;
         }
         throw new AccessDeniedException("Vous ne pouvez gerer que vos propres activites.");
+    }
+
+    private void appliquerLocalisation(Activite activite, ActiviteRequest request) {
+        activite.setLieu(request.getLieu());
+        activite.setAdresse(request.getAdresse());
+        activite.setCommune(request.getCommune());
+        activite.setLatitude(request.getLatitude());
+        activite.setLongitude(request.getLongitude());
     }
 
     private void notifierPublication(Activite activite) {

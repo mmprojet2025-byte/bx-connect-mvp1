@@ -4,14 +4,13 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../api/axios'
 import Alert from '../../components/ui/Alert'
-import EmptyState from '../../components/ui/EmptyState'
 import AppIcon from '../../components/ui/AppIcons'
 import { CollaborativeDashboardLayout } from '../../components/dashboard/CollaborativeDashboard'
 import ActivityFeed from '../../components/dashboard/ActivityFeed'
+import CompactKpiRow from '../../components/dashboard/CompactKpiRow'
 
 export default function ReferentDashboard() {
   const [stats, setStats] = useState({ groupes: 0, membres: 0, demandes: 0, activites: 0 })
-  const [groupes, setGroupes] = useState([])
   const [detailsGroupes, setDetailsGroupes] = useState([])
   const [activites, setActivites] = useState([])
   const [projets, setProjets] = useState([])
@@ -38,7 +37,6 @@ export default function ReferentDashboard() {
         return { groupe, membres: membresRes.data, demandes: demandesRes.data }
       }))
 
-      setGroupes(groupesData)
       setDetailsGroupes(details)
       setActivites(activitesRes.data)
       setProjets(Array.isArray(projetsRes.data) ? projetsRes.data : [])
@@ -66,9 +64,9 @@ export default function ReferentDashboard() {
     () => detailsGroupes.flatMap(item => item.membres.map(membre => ({ ...membre, groupeNom: item.groupe.nom }))).slice(0, 5),
     [detailsGroupes]
   )
-  const prochainesActivites = activites.slice(0, 4)
   const activitesAPublier = activites.filter(activite => activite.statut === 'BROUILLON')
   const projetsASuivre = projets.filter(projet => ['SOUMIS', 'EN_COURS'].includes(projet.statut)).slice(0, 3)
+  const activityItems = buildReferentActivityItems({ demandes: demandesRecentes, membres: membresRecents, activites, projets, t })
 
   return (
     <CollaborativeDashboardLayout
@@ -87,6 +85,17 @@ export default function ReferentDashboard() {
           <p className="text-slate-400 text-center py-10">{t('common.loading')}</p>
         ) : (
           <>
+            <CompactKpiRow
+              accent="teal"
+              className="mb-4"
+              items={[
+                { icon: 'Users', label: t('ux.referentDashboard.assignedGroups'), value: stats.groupes },
+                { icon: 'User', label: t('ux.referentDashboard.members'), value: stats.membres },
+                { icon: 'Clock', label: t('ux.referentDashboard.pendingRequests'), value: stats.demandes, tone: stats.demandes > 0 ? 'amber' : 'green' },
+                { icon: 'Calendar', label: t('nav.activities'), value: stats.activites },
+              ]}
+            />
+
             <ReferentWorkQueue
               demandes={demandesRecentes}
               activitesAPublier={activitesAPublier}
@@ -95,83 +104,19 @@ export default function ReferentDashboard() {
               language={i18n.language}
             />
 
-            <div className="mb-6">
+            {activityItems.length > 0 && (
+            <div className="mb-5">
               <ActivityFeed
                 title={t('activityFeed.title', { defaultValue: 'Mon fil d’activité' })}
                 subtitle={t('activityFeed.referentSubtitle', { defaultValue: 'Demandes, membres, activités et projets liés à vos groupes.' })}
                 emptyLabel={t('activityFeed.empty', { defaultValue: 'Aucune activité récente pour le moment.' })}
-                items={buildReferentActivityItems({ demandes: demandesRecentes, membres: membresRecents, activites, projets, t })}
+                items={activityItems}
                 language={i18n.language}
                 accent="teal"
+                limit={5}
               />
             </div>
-
-            <section className="mb-6 rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-lg shadow-slate-900/5">
-              <SectionHeader
-                icon="Users"
-                title={t('ux.referentDashboard.assignedGroups')}
-                subtitle={t('referent.groupsSubtitle', { defaultValue: 'Accès direct aux espaces collaboratifs encadrés.' })}
-              />
-              {groupes.length === 0 ? (
-                <EmptyState
-                  title={t('referent.noAssignedGroups')}
-                  description={t('referent.noAssignedGroupsDesc', { defaultValue: 'Aucun groupe ne vous est assigné pour le moment.' })}
-                />
-              ) : (
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {groupes.map(groupe => (
-                    <Link key={groupe.id} to={`/groupes/${groupe.id}`} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:bg-white hover:shadow-md">
-                      <h3 className="flex items-center gap-2 font-black text-slate-950">
-                        <AppIcon name="Users" className="h-4 w-4 text-teal-700" />
-                        {groupe.nom}
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-500">{t('groups.members_count', { count: groupe.nombreMembres ?? 0 })}</p>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </section>
-
-            <section className="rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-lg shadow-slate-900/5">
-              <SectionHeader
-                icon="Calendar"
-                title={t('ux.referentDashboard.upcomingActivities')}
-                subtitle={t('referent.activitiesSubtitle', { defaultValue: 'Les prochaines activités à suivre dans vos groupes.' })}
-              />
-              {prochainesActivites.length === 0 ? (
-                <MiniEmpty icon="Calendar" text={t('referent.noActivitiesYet')} />
-              ) : (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {prochainesActivites.map(activite => (
-                    <Link key={activite.id} to={`/activites/${activite.id}`} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:bg-white hover:shadow-md">
-                      <h3 className="inline-flex items-center gap-2 font-black text-slate-950">
-                        <AppIcon name="Calendar" className="h-4 w-4 text-teal-700" />
-                        {activite.titre}
-                      </h3>
-                      <p className="mt-1 text-xs text-slate-500">{activite.dateDebut ? formatDate(activite.dateDebut, i18n.language) : t('memberDashboard.activities.dateToConfirm')}</p>
-                      {activite.statut && <span className="mt-3 inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-black text-blue-700">{t(`statuses.${activite.statut}`, { defaultValue: activite.statut })}</span>}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </section>
-
-            <section className="mt-6 rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-lg shadow-slate-900/5">
-              <SectionHeader
-                icon="MessageCircle"
-                title={t('memberDashboard.communicationTitle', { defaultValue: 'Communication' })}
-                subtitle={t('referent.communicationSubtitle', { defaultValue: 'Un accès unique aux échanges avec les groupes encadrés.' })}
-              />
-              <Link to="/referent/messagerie" className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:bg-white hover:shadow-md">
-                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-                  <AppIcon name="MessageCircle" className="h-5 w-5" />
-                </span>
-                <span>
-                  <span className="block font-black text-slate-950">{t('ux.referentDashboard.openMessaging')}</span>
-                  <span className="mt-0.5 block text-sm text-slate-500">{t('referent.messagingDesc', { defaultValue: 'Contacter les membres et suivre les échanges importants.' })}</span>
-                </span>
-              </Link>
-            </section>
+            )}
           </>
         )}
     </CollaborativeDashboardLayout>
@@ -293,15 +238,6 @@ function ActionItem({ action }) {
         {action.meta && <span className="mt-1 block text-xs font-bold text-slate-400">{action.meta}</span>}
       </span>
     </Link>
-  )
-}
-
-function MiniEmpty({ icon, text }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center">
-      <AppIcon name={icon} className="mx-auto mb-2 h-8 w-8 text-teal-200" />
-      <p className="text-sm text-slate-400">{text}</p>
-    </div>
   )
 }
 

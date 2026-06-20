@@ -5,6 +5,7 @@ import com.bxjeunes.bx_connect.dto.SoutienResponse;
 import com.bxjeunes.bx_connect.dto.AdminSoutienDecisionRequest;
 import com.bxjeunes.bx_connect.dto.PartenaireProfilRequest;
 import com.bxjeunes.bx_connect.dto.PartenaireProfilResponse;
+import com.bxjeunes.bx_connect.dto.PartenairePublicResponse;
 import com.bxjeunes.bx_connect.service.PartenaireService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,11 @@ public class PartenaireController {
 
     public PartenaireController(PartenaireService partenaireService) {
         this.partenaireService = partenaireService;
+    }
+
+    @GetMapping("/publics")
+    public ResponseEntity<List<PartenairePublicResponse>> partenairesPublics() {
+        return ResponseEntity.ok(partenaireService.partenairesPublics());
     }
 
     @GetMapping("/profil")
@@ -79,6 +85,23 @@ public class PartenaireController {
     @PreAuthorize("hasRole('PARTENAIRE')")
     public ResponseEntity<List<SoutienResponse>> mesSoutiens(Authentication auth) {
         return ResponseEntity.ok(partenaireService.mesSoutiens(auth.getName()));
+    }
+
+    @PutMapping("/mes-soutiens/{id}")
+    @PreAuthorize("hasRole('PARTENAIRE')")
+    public ResponseEntity<SoutienResponse> modifierSoutien(
+            @PathVariable Long id,
+            @Valid @RequestBody SoutienRequest request,
+            Authentication auth) {
+        return ResponseEntity.ok(partenaireService.modifierSoutien(id, request, auth.getName()));
+    }
+
+    @PatchMapping("/mes-soutiens/{id}/annuler")
+    @PreAuthorize("hasRole('PARTENAIRE')")
+    public ResponseEntity<SoutienResponse> annulerSoutien(
+            @PathVariable Long id,
+            Authentication auth) {
+        return ResponseEntity.ok(partenaireService.annulerSoutien(id, auth.getName()));
     }
 
     // ─── P09 : Statistiques du partenaire ────────────────────────────────────

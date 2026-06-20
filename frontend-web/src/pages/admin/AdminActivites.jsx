@@ -9,6 +9,7 @@ import StatusBadge from '../../components/StatusBadge';
 import AppIcon from '../../components/ui/AppIcons';
 import PageHeader from '../../components/ui/PageHeader';
 import SectionCard from '../../components/ui/SectionCard';
+import LocationPicker from '../../components/location/LocationPicker';
 
 const STATUTS = ['BROUILLON', 'PUBLIEE', 'ANNULEE', 'TERMINEE'];
 const emptyForm = {
@@ -17,6 +18,10 @@ const emptyForm = {
   dateDebut: '',
   dateFin: '',
   lieu: '',
+  adresse: '',
+  commune: '',
+  latitude: '',
+  longitude: '',
   gratuite: true,
   prix: '',
   capaciteMax: 0,
@@ -79,6 +84,10 @@ export default function AdminActivites() {
       dateDebut: toDateTimeLocalValue(activite.dateDebut),
       dateFin: toDateTimeLocalValue(activite.dateFin),
       lieu: activite.lieu || '',
+      adresse: activite.adresse || '',
+      commune: activite.commune || '',
+      latitude: activite.latitude ?? '',
+      longitude: activite.longitude ?? '',
       gratuite: activite.gratuite ?? true,
       prix: activite.prix ?? '',
       capaciteMax: activite.capaciteMax ?? 0,
@@ -97,6 +106,8 @@ export default function AdminActivites() {
       ...form,
       prix: form.gratuite ? null : Number(form.prix),
       capaciteMax: Number(form.capaciteMax) || 0,
+      latitude: form.latitude === '' ? null : Number(form.latitude),
+      longitude: form.longitude === '' ? null : Number(form.longitude),
     };
     try {
       if (editingId) {
@@ -209,16 +220,6 @@ export default function AdminActivites() {
             <Input label={t('activities.form_place')} value={form.lieu} onChange={value => setForm({ ...form, lieu: value })} />
             <Input label={t('activities.form_start')} type="datetime-local" value={form.dateDebut} onChange={value => setForm({ ...form, dateDebut: value })} required />
             <Input label={t('activities.form_end')} type="datetime-local" value={form.dateFin} onChange={value => setForm({ ...form, dateFin: value })} required />
-            <Input label={t('activities.form_category')} value={form.categorie} onChange={value => setForm({ ...form, categorie: value })} />
-            <Input label={t('activities.form_theme')} value={form.theme} onChange={value => setForm({ ...form, theme: value })} />
-            <Input label={t('admin.maxCapacity')} type="number" min="0" value={form.capaciteMax} onChange={value => setForm({ ...form, capaciteMax: value })} />
-            <label className="flex items-center gap-2 text-sm text-gray-700 pt-7">
-              <input type="checkbox" checked={form.gratuite} onChange={e => setForm({ ...form, gratuite: e.target.checked })} />
-              {t('activities.form_free')}
-            </label>
-            {!form.gratuite && (
-              <Input label={t('activities.form_price')} type="number" min="0" value={form.prix} onChange={value => setForm({ ...form, prix: value })} />
-            )}
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-1">{t('activities.form_description')}</label>
               <textarea
@@ -228,6 +229,41 @@ export default function AdminActivites() {
                 className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
               />
             </div>
+            <details className="md:col-span-2 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <summary className="cursor-pointer text-sm font-bold text-blue-900">
+                Localisation avancée
+              </summary>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <Input label="Adresse" value={form.adresse} onChange={value => setForm({ ...form, adresse: value })} />
+                <Input label="Commune" value={form.commune} onChange={value => setForm({ ...form, commune: value })} />
+                <Input label="Latitude" type="number" step="any" value={form.latitude} onChange={value => setForm({ ...form, latitude: value })} />
+                <Input label="Longitude" type="number" step="any" value={form.longitude} onChange={value => setForm({ ...form, longitude: value })} />
+                <LocationPicker
+                  address={form.adresse}
+                  commune={form.commune}
+                  latitude={form.latitude}
+                  longitude={form.longitude}
+                  onCoordinatesChange={(latitude, longitude) => setForm(current => ({ ...current, latitude, longitude }))}
+                />
+              </div>
+            </details>
+            <details className="md:col-span-2 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <summary className="cursor-pointer text-sm font-bold text-blue-900">
+                Paramètres avancés
+              </summary>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <Input label={t('activities.form_category')} value={form.categorie} onChange={value => setForm({ ...form, categorie: value })} />
+                <Input label={t('activities.form_theme')} value={form.theme} onChange={value => setForm({ ...form, theme: value })} />
+                <Input label={t('admin.maxCapacity')} type="number" min="0" value={form.capaciteMax} onChange={value => setForm({ ...form, capaciteMax: value })} />
+                <label className="flex items-center gap-2 text-sm text-gray-700 pt-7">
+                  <input type="checkbox" checked={form.gratuite} onChange={e => setForm({ ...form, gratuite: e.target.checked })} />
+                  {t('activities.form_free')}
+                </label>
+                {!form.gratuite && (
+                  <Input label={t('activities.form_price')} type="number" min="0" value={form.prix} onChange={value => setForm({ ...form, prix: value })} />
+                )}
+              </div>
+            </details>
             <div className="md:col-span-2 flex justify-end">
               <button
                 type="submit"
@@ -441,13 +477,14 @@ function toDateTimeLocalValue(value) {
   return String(value).slice(0, 16);
 }
 
-function Input({ label, value, onChange, type = 'text', required = false, min }) {
+function Input({ label, value, onChange, type = 'text', required = false, min, step }) {
   return (
     <label className="block">
       <span className="block text-sm font-semibold text-gray-700 mb-1">{label}</span>
       <input
         type={type}
         min={min}
+        step={step}
         required={required}
         value={value}
         onChange={e => onChange(e.target.value)}

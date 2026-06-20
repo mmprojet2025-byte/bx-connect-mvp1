@@ -8,6 +8,7 @@ import GroupAvatar from '../../components/GroupAvatar';
 import AppIcon from '../../components/ui/AppIcons';
 import PageHeader from '../../components/ui/PageHeader';
 import SectionCard from '../../components/ui/SectionCard';
+import LocationPicker from '../../components/location/LocationPicker';
 
 const emptyGroupeForm = {
   nom: '',
@@ -15,6 +16,10 @@ const emptyGroupeForm = {
   categorie: '',
   theme: '',
   objectif: '',
+  adresseReunion: '',
+  commune: '',
+  latitude: '',
+  longitude: '',
   capaciteMax: '',
   referentId: '',
 };
@@ -79,6 +84,8 @@ export default function AdminGroupes() {
       await api.post('/admin/groupes', {
         ...groupeForm,
         capaciteMax: Number(groupeForm.capaciteMax) || 0,
+        latitude: groupeForm.latitude === '' ? null : Number(groupeForm.latitude),
+        longitude: groupeForm.longitude === '' ? null : Number(groupeForm.longitude),
         referentId: Number(groupeForm.referentId),
       });
       setMessage(t('admin.groupCreated'));
@@ -198,6 +205,37 @@ export default function AdminGroupes() {
               type="number"
               min="0"
             />
+            <Input
+              label="Adresse de réunion"
+              value={groupeForm.adresseReunion}
+              onChange={value => handleFormChange('adresseReunion', value)}
+            />
+            <Input
+              label="Commune"
+              value={groupeForm.commune}
+              onChange={value => handleFormChange('commune', value)}
+            />
+            <Input
+              label="Latitude"
+              value={groupeForm.latitude}
+              onChange={value => handleFormChange('latitude', value)}
+              type="number"
+              step="any"
+            />
+            <Input
+              label="Longitude"
+              value={groupeForm.longitude}
+              onChange={value => handleFormChange('longitude', value)}
+              type="number"
+              step="any"
+            />
+            <LocationPicker
+              address={groupeForm.adresseReunion}
+              commune={groupeForm.commune}
+              latitude={groupeForm.latitude}
+              longitude={groupeForm.longitude}
+              onCoordinatesChange={(latitude, longitude) => setGroupeForm(current => ({ ...current, latitude, longitude }))}
+            />
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-1">{t('admin.activeReferent')}</label>
               <select
@@ -310,6 +348,7 @@ export default function AdminGroupes() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs mb-4">
                   {g.theme && <InfoChip>{g.theme}</InfoChip>}
                   {g.categorie && <InfoChip>{g.categorie}</InfoChip>}
+                  {(g.adresseReunion || g.commune) && <InfoChip>{[g.adresseReunion, g.commune].filter(Boolean).join(', ')}</InfoChip>}
                   {g.capaciteMax > 0 && <InfoChip>{t('activities.capacity_max', { count: g.capaciteMax })}</InfoChip>}
                   <InfoChip>{new Date(g.dateCreation).toLocaleDateString(i18n.language || 'fr-BE')}</InfoChip>
                 </div>
@@ -395,13 +434,14 @@ export default function AdminGroupes() {
   );
 }
 
-function Input({ label, value, onChange, type = 'text', required = false, min }) {
+function Input({ label, value, onChange, type = 'text', required = false, min, step }) {
   return (
     <div>
       <label className="block text-sm font-semibold text-gray-700 mb-1">{label}</label>
       <input
         type={type}
         min={min}
+        step={step}
         value={value}
         onChange={e => onChange(e.target.value)}
         required={required}
