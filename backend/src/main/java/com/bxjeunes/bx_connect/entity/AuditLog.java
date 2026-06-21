@@ -26,6 +26,9 @@ public class AuditLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "acteur_id")
+    private Long acteurId;
+
     @Column(name = "acteur_email", nullable = false, length = 100)
     private String acteurEmail;
 
@@ -43,6 +46,18 @@ public class AuditLog {
 
     @Column(name = "cible_email", length = 100)
     private String cibleEmail;
+
+    @Column(name = "cible_nom", length = 200)
+    private String cibleNom;
+
+    @Column(name = "ancien_statut", length = 80)
+    private String ancienStatut;
+
+    @Column(name = "nouveau_statut", length = 80)
+    private String nouveauStatut;
+
+    @Column(name = "metadata_json", columnDefinition = "TEXT")
+    private String metadataJson;
 
     @Column(length = 500)
     private String details;
