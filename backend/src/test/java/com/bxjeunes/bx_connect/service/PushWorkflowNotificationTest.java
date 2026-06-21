@@ -39,6 +39,7 @@ class PushWorkflowNotificationTest {
     @Mock private InscriptionRepository inscriptionRepository;
     @Mock private UserRepository userRepository;
     @Mock private NotificationService notificationService;
+    @Mock private AuditLogService auditLogService;
     @Mock private FilDiscussionRepository filRepository;
     @Mock private MessageRepository messageRepository;
     @Mock private GroupeRepository groupeRepository;
@@ -60,7 +61,8 @@ class PushWorkflowNotificationTest {
                 activiteRepository,
                 userRepository,
                 inscriptionRepository,
-                notificationService
+                notificationService,
+                auditLogService
         ).changerStatut(8L, StatutActivite.PUBLIEE, admin.getEmail());
 
         verify(notificationService).creer(
@@ -91,7 +93,8 @@ class PushWorkflowNotificationTest {
                 inscriptionRepository,
                 activiteRepository,
                 userRepository,
-                notificationService
+                notificationService,
+                auditLogService
         ).inscrire(request, membre.getEmail());
 
         verify(notificationService).creer(
@@ -123,7 +126,8 @@ class PushWorkflowNotificationTest {
                 inscriptionRepository,
                 activiteRepository,
                 userRepository,
-                notificationService
+                notificationService,
+                auditLogService
         ).inscrire(request, membre.getEmail());
 
         verify(notificationService, never()).creer(

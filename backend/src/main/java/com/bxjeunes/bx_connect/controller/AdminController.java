@@ -18,6 +18,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -166,15 +167,17 @@ public class AdminController {
 
     @PostMapping("/groupes")
     public ResponseEntity<GroupeResponse> creerGroupe(
-            @Valid @RequestBody AdminGroupeRequest request) {
-        return ResponseEntity.ok(groupeService.creerGroupeParAdmin(request));
+            @Valid @RequestBody AdminGroupeRequest request,
+            Authentication auth) {
+        return ResponseEntity.ok(groupeService.creerGroupeParAdmin(request, auth.getName()));
     }
 
     @PatchMapping("/groupes/{groupeId}/referent/{referentId}")
     public ResponseEntity<GroupeResponse> assignerReferent(
             @PathVariable Long groupeId,
-            @PathVariable Long referentId) {
-        return ResponseEntity.ok(groupeService.assignerReferent(groupeId, referentId));
+            @PathVariable Long referentId,
+            Authentication auth) {
+        return ResponseEntity.ok(groupeService.assignerReferent(groupeId, referentId, auth.getName()));
     }
 
     // GET /api/admin/groupes/en-attente — Groupes en attente de validation
@@ -185,17 +188,18 @@ public class AdminController {
 
     // PATCH /api/admin/groupes/{id}/valider — Valider un groupe
     @PatchMapping("/groupes/{id}/valider")
-    public ResponseEntity<GroupeResponse> validerGroupe(@PathVariable Long id) {
-        return ResponseEntity.ok(groupeService.validerGroupe(id));
+    public ResponseEntity<GroupeResponse> validerGroupe(@PathVariable Long id, Authentication auth) {
+        return ResponseEntity.ok(groupeService.validerGroupe(id, auth.getName()));
     }
 
     // PATCH /api/admin/groupes/{id}/refuser — Refuser un groupe
     @PatchMapping("/groupes/{id}/refuser")
     public ResponseEntity<GroupeResponse> refuserGroupe(
             @PathVariable Long id,
-            @RequestBody(required = false) Map<String, String> body) {
+            @RequestBody(required = false) Map<String, String> body,
+            Authentication auth) {
         String motif = body != null ? body.getOrDefault("motif", "Non précisé") : "Non précisé";
-        return ResponseEntity.ok(groupeService.refuserGroupe(id, motif));
+        return ResponseEntity.ok(groupeService.refuserGroupe(id, motif, auth.getName()));
     }
 
     // ─── Statistiques bénévolat ───────────────────────────────────────────────

@@ -8,6 +8,8 @@ import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.GroupeRepository;
 import com.bxjeunes.bx_connect.repository.MembreGroupeRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,19 +22,25 @@ import java.util.stream.Collectors;
 @Transactional
 public class GroupeService {
 
+    private static final Logger log = LoggerFactory.getLogger(GroupeService.class);
+    private static final String TARGET_GROUP = "GROUP";
+
     private final GroupeRepository groupeRepository;
     private final MembreGroupeRepository membreGroupeRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
 
     public GroupeService(GroupeRepository groupeRepository,
                          MembreGroupeRepository membreGroupeRepository,
                          UserRepository userRepository,
-                         NotificationService notificationService) {
+                         NotificationService notificationService,
+                         AuditLogService auditLogService) {
         this.groupeRepository = groupeRepository;
         this.membreGroupeRepository = membreGroupeRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
+        this.auditLogService = auditLogService;
     }
 
     public List<GroupeResponse> listerGroupes() {
@@ -71,10 +79,17 @@ public class GroupeService {
         Groupe saved = groupeRepository.save(groupe);
         notificationService.creer(referent, "Groupe soumis",
             "Votre groupe attend la validation.", "VALIDATION_GROUPE");
+        auditerStatut(referent, "GROUP_SUBMITTED", saved, null, saved.getStatut().name(),
+                "Groupe soumis pour validation.", metadata("referentId", referent.getId()));
         return GroupeResponse.fromEntity(saved);
     }
 
     public GroupeResponse creerGroupeParAdmin(AdminGroupeRequest request) {
+        return creerGroupeParAdmin(request, null);
+    }
+
+    public GroupeResponse creerGroupeParAdmin(AdminGroupeRequest request, String emailAdmin) {
+        User admin = chargerUtilisateurOptionnel(emailAdmin);
         User referent = getReferent(request.getReferentId());
 
         Groupe groupe = new Groupe();
@@ -90,16 +105,31 @@ public class GroupeService {
         groupe.setActif(true);
         groupe.setDateValidation(LocalDateTime.now());
 
-        return GroupeResponse.fromEntity(groupeRepository.save(groupe));
+        Groupe saved = groupeRepository.save(groupe);
+        auditerStatut(admin, "GROUP_CREATED", saved, null, saved.getStatut().name(),
+                "Groupe cree par un administrateur.", metadata("referentId", referent.getId()));
+        return GroupeResponse.fromEntity(saved);
     }
 
     public GroupeResponse assignerReferent(Long groupeId, Long referentId) {
+        return assignerReferent(groupeId, referentId, null);
+    }
+
+    public GroupeResponse assignerReferent(Long groupeId, Long referentId, String emailAdmin) {
         Groupe groupe = groupeRepository.findById(groupeId)
                 .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + groupeId));
+        User admin = chargerUtilisateurOptionnel(emailAdmin);
+        User ancienReferent = groupe.getReferent();
         User referent = getReferent(referentId);
 
         groupe.setReferent(referent);
-        return GroupeResponse.fromEntity(groupeRepository.save(groupe));
+        Groupe saved = groupeRepository.save(groupe);
+        auditerAction(admin, "GROUP_REFERENT_ASSIGNED", saved,
+                "Referent assigne au groupe.",
+                metadata(
+                        "ancienReferentId", ancienReferent != null ? ancienReferent.getId() : null,
+                        "nouveauReferentId", referent.getId()));
+        return GroupeResponse.fromEntity(saved);
     }
 
     /**
@@ -123,7 +153,10 @@ public class GroupeService {
         if (request.getObjectif() != null) groupe.setObjectif(request.getObjectif());
         appliquerLocalisation(groupe, request);
         if (request.getCapaciteMax() >= 0) groupe.setCapaciteMax(request.getCapaciteMax());
-        return GroupeResponse.fromEntity(groupeRepository.save(groupe));
+        Groupe saved = groupeRepository.save(groupe);
+        auditerAction(user, "GROUP_UPDATED", saved, "Groupe modifie.",
+                metadata("capaciteMax", saved.getCapaciteMax()));
+        return GroupeResponse.fromEntity(saved);
     }
 
     /**
@@ -145,11 +178,16 @@ public class GroupeService {
                     throw new RuntimeException("Ce membre appartient deja a un groupe actif.");
                 });
 
+        StatutMembre ancienStatut = mg.getStatut();
         mg.setStatut(StatutMembre.ACCEPTE);
         MembreGroupe saved = membreGroupeRepository.save(mg);
         notificationService.creer(mg.getUser(), "Adhesion acceptee",
             "Votre adhesion a ete acceptee !", "ADHESION_ACCEPTEE",
             "/groupes/" + mg.getGroupe().getId());
+        auditerStatut(referent, "GROUP_ADHESION_ACCEPTED", saved.getGroupe(),
+                nomStatut(ancienStatut), saved.getStatut().name(),
+                "Adhesion acceptee.",
+                metadata("adhesionId", saved.getId(), "membreId", saved.getUser().getId()));
         return MembreGroupeResponse.fromEntity(saved);
     }
 
@@ -167,33 +205,54 @@ public class GroupeService {
             throw new AccessDeniedException("Vous n'etes pas le referent de ce groupe.");
         }
 
+        StatutMembre ancienStatut = mg.getStatut();
         mg.setStatut(StatutMembre.REFUSE);
         MembreGroupe saved = membreGroupeRepository.save(mg);
         notificationService.creer(mg.getUser(), "Adhesion refusee",
             "Votre adhesion a ete refusee.", "ADHESION_REFUSEE");
+        auditerStatut(referent, "GROUP_ADHESION_REJECTED", saved.getGroupe(),
+                nomStatut(ancienStatut), saved.getStatut().name(),
+                "Adhesion refusee.",
+                metadata("adhesionId", saved.getId(), "membreId", saved.getUser().getId()));
         return MembreGroupeResponse.fromEntity(saved);
     }
 
     public GroupeResponse validerGroupe(Long groupeId) {
+        return validerGroupe(groupeId, null);
+    }
+
+    public GroupeResponse validerGroupe(Long groupeId, String emailAdmin) {
         Groupe groupe = groupeRepository.findById(groupeId)
                 .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + groupeId));
+        User admin = chargerUtilisateurOptionnel(emailAdmin);
+        StatutGroupe ancienStatut = groupe.getStatut();
         groupe.setStatut(StatutGroupe.VALIDE);
         groupe.setActif(true);
         groupe.setDateValidation(LocalDateTime.now());
         Groupe saved = groupeRepository.save(groupe);
         notificationService.creer(groupe.getReferent(), "Groupe valide",
             "Votre groupe a ete valide.", "VALIDATION_GROUPE", "/groupes/" + groupe.getId());
+        auditerStatut(admin, "GROUP_VALIDATED", saved, nomStatut(ancienStatut), saved.getStatut().name(),
+                "Groupe valide.", metadata("referentId", saved.getReferent() != null ? saved.getReferent().getId() : null));
         return GroupeResponse.fromEntity(saved);
     }
 
     public GroupeResponse refuserGroupe(Long groupeId, String motif) {
+        return refuserGroupe(groupeId, motif, null);
+    }
+
+    public GroupeResponse refuserGroupe(Long groupeId, String motif, String emailAdmin) {
         Groupe groupe = groupeRepository.findById(groupeId)
                 .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + groupeId));
+        User admin = chargerUtilisateurOptionnel(emailAdmin);
+        StatutGroupe ancienStatut = groupe.getStatut();
         groupe.setStatut(StatutGroupe.REFUSE);
         groupe.setMotifRefus(motif);
         Groupe saved = groupeRepository.save(groupe);
         notificationService.creer(groupe.getReferent(), "Groupe refuse",
             "Votre groupe a ete refuse. Motif : " + motif, "REFUS_GROUPE");
+        auditerStatut(admin, "GROUP_REJECTED", saved, nomStatut(ancienStatut), saved.getStatut().name(),
+                "Groupe refuse.", metadata("motifPresent", motif != null && !motif.isBlank()));
         return GroupeResponse.fromEntity(saved);
     }
 
@@ -215,9 +274,16 @@ public class GroupeService {
     }
 
     public void supprimerGroupe(Long id) {
-        if (!groupeRepository.existsById(id))
-            throw new RuntimeException("Groupe introuvable : " + id);
+        supprimerGroupe(id, null);
+    }
+
+    public void supprimerGroupe(Long id, String emailAdmin) {
+        Groupe groupe = groupeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + id));
+        User admin = chargerUtilisateurOptionnel(emailAdmin);
         groupeRepository.deleteById(id);
+        auditerAction(admin, "GROUP_DELETED", groupe, "Groupe supprime.",
+                metadata("ancienStatut", nomStatut(groupe.getStatut())));
     }
 
     public MembreGroupeResponse rejoindreGroupe(Long groupeId, String emailMembre) {
@@ -249,6 +315,9 @@ public class GroupeService {
         notificationService.creer(groupe.getReferent(), "Nouvelle demande d'adhesion",
             membre.getPrenom() + " souhaite rejoindre " + groupe.getNom(),
             "ADHESION", "/referent/adhesions");
+        auditerStatut(membre, "GROUP_JOIN_REQUESTED", groupe, null, saved.getStatut().name(),
+                "Demande d'adhesion creee.",
+                metadata("adhesionId", saved.getId(), "membreId", membre.getId()));
         return MembreGroupeResponse.fromEntity(saved);
     }
 
@@ -260,7 +329,12 @@ public class GroupeService {
         }
         MembreGroupe mg = membreGroupeRepository.findByUserIdAndGroupeId(membre.getId(), groupeId)
                 .orElseThrow(() -> new RuntimeException("Vous n'etes pas membre de ce groupe."));
+        Groupe groupe = mg.getGroupe();
+        StatutMembre ancienStatut = mg.getStatut();
         membreGroupeRepository.delete(mg);
+        auditerStatut(membre, "GROUP_LEFT", groupe, nomStatut(ancienStatut), "QUITTE",
+                "Membre sorti du groupe.",
+                metadata("adhesionId", mg.getId(), "membreId", membre.getId()));
     }
 
     public List<MembreGroupeResponse> getMembres(Long groupeId) {
@@ -370,5 +444,81 @@ public class GroupeService {
                 !groupe.getReferent().getId().equals(referent.getId())) {
             throw new AccessDeniedException("Vous n'etes pas le referent de ce groupe.");
         }
+    }
+
+    private User chargerUtilisateurOptionnel(String email) {
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+    }
+
+    private void auditerAction(User acteur, String action, Groupe groupe, String details, String metadataJson) {
+        try {
+            auditLogService.logAction(
+                    acteur,
+                    action,
+                    TARGET_GROUP,
+                    groupe.getId(),
+                    groupe.getNom(),
+                    null,
+                    details,
+                    metadataJson);
+        } catch (Exception ex) {
+            log.warn("Echec audit {} pour le groupe {}: {}", action, groupe.getId(), ex.getMessage());
+        }
+    }
+
+    private void auditerStatut(
+            User acteur,
+            String action,
+            Groupe groupe,
+            String ancienStatut,
+            String nouveauStatut,
+            String details,
+            String metadataJson) {
+        try {
+            auditLogService.logStatusChange(
+                    acteur,
+                    action,
+                    TARGET_GROUP,
+                    groupe.getId(),
+                    groupe.getNom(),
+                    ancienStatut,
+                    nouveauStatut,
+                    details,
+                    metadataJson);
+        } catch (Exception ex) {
+            log.warn("Echec audit {} pour le groupe {}: {}", action, groupe.getId(), ex.getMessage());
+        }
+    }
+
+    private String nomStatut(Enum<?> statut) {
+        return statut == null ? null : statut.name();
+    }
+
+    private String metadata(Object... keyValues) {
+        StringBuilder json = new StringBuilder("{");
+        for (int i = 0; i + 1 < keyValues.length; i += 2) {
+            if (i > 0) {
+                json.append(',');
+            }
+            json.append('"').append(escapeJson(String.valueOf(keyValues[i]))).append("\":");
+            Object value = keyValues[i + 1];
+            if (value == null) {
+                json.append("null");
+            } else if (value instanceof Number || value instanceof Boolean) {
+                json.append(value);
+            } else {
+                json.append('"').append(escapeJson(String.valueOf(value))).append('"');
+            }
+        }
+        json.append('}');
+        return json.toString();
+    }
+
+    private String escapeJson(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }

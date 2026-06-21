@@ -106,23 +106,24 @@ public class GroupeController {
 
     @PatchMapping("/{id}/valider")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<GroupeResponse> valider(@PathVariable Long id) {
-        return ResponseEntity.ok(groupeService.validerGroupe(id));
+    public ResponseEntity<GroupeResponse> valider(@PathVariable Long id, Authentication auth) {
+        return ResponseEntity.ok(groupeService.validerGroupe(id, auth.getName()));
     }
 
     @PatchMapping("/{id}/refuser")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<GroupeResponse> refuser(
             @PathVariable Long id,
-            @RequestBody(required = false) Map<String, String> body) {
+            @RequestBody(required = false) Map<String, String> body,
+            Authentication auth) {
         String motif = body != null ? body.getOrDefault("motif", "Non precise") : "Non precise";
-        return ResponseEntity.ok(groupeService.refuserGroupe(id, motif));
+        return ResponseEntity.ok(groupeService.refuserGroupe(id, motif, auth.getName()));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> supprimer(@PathVariable Long id) {
-        groupeService.supprimerGroupe(id);
+    public ResponseEntity<Void> supprimer(@PathVariable Long id, Authentication auth) {
+        groupeService.supprimerGroupe(id, auth.getName());
         return ResponseEntity.noContent().build();
     }
 

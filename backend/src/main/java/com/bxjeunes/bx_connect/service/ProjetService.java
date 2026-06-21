@@ -3,6 +3,8 @@ package com.bxjeunes.bx_connect.service;
 import com.bxjeunes.bx_connect.dto.*;
 import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,9 @@ import java.util.stream.Collectors;
 @Transactional
 public class ProjetService {
 
+    private static final Logger log = LoggerFactory.getLogger(ProjetService.class);
+    private static final String TARGET_PROJECT = "PROJECT";
+
     private static final List<StatutProjet> STATUTS_DIFFUSABLES =
             List.of(StatutProjet.APPROUVE, StatutProjet.EN_COURS, StatutProjet.TERMINE);
 
@@ -26,6 +31,7 @@ public class ProjetService {
     private final GroupeRepository groupeRepository;
     private final MembreGroupeRepository membreGroupeRepository;
     private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
 
     public ProjetService(ProjetRepository projetRepository,
                          ParticipationProjetRepository participationRepository,
@@ -33,7 +39,8 @@ public class ProjetService {
                          UserRepository userRepository,
                          GroupeRepository groupeRepository,
                          MembreGroupeRepository membreGroupeRepository,
-                         NotificationService notificationService) {
+                         NotificationService notificationService,
+                         AuditLogService auditLogService) {
         this.projetRepository = projetRepository;
         this.participationRepository = participationRepository;
         this.commentaireRepository = commentaireRepository;
@@ -41,6 +48,7 @@ public class ProjetService {
         this.groupeRepository = groupeRepository;
         this.membreGroupeRepository = membreGroupeRepository;
         this.notificationService = notificationService;
+        this.auditLogService = auditLogService;
     }
 
     // ─── Lister les projets publics (APPROUVE + EN_COURS) ────────────────────
@@ -122,7 +130,10 @@ public class ProjetService {
         }
 
         verifierCoherenceGroupeVisibilite(projet);
-        return ProjetResponse.fromEntity(projetRepository.save(projet));
+        Projet saved = projetRepository.save(projet);
+        auditerStatut(porteur, "PROJECT_CREATED", saved, null, nomStatut(saved.getStatut()),
+                "Projet cree.", metadataProjet(saved));
+        return ProjetResponse.fromEntity(saved);
     }
 
     // ─── Soumettre un projet pour validation ─────────────────────────────────
@@ -141,10 +152,13 @@ public class ProjetService {
             throw new RuntimeException("Ce projet ne peut pas être soumis dans son état actuel");
         }
 
+        StatutProjet ancienStatut = projet.getStatut();
         projet.setStatut(StatutProjet.SOUMIS);
         projet.setDateSoumission(LocalDateTime.now());
         Projet saved = projetRepository.save(projet);
         notifierAdminsProjetSoumis(saved);
+        auditerStatut(porteur, "PROJECT_SUBMITTED", saved, nomStatut(ancienStatut), nomStatut(saved.getStatut()),
+                "Projet soumis pour validation.", metadataProjet(saved));
         return ProjetResponse.fromEntity(saved);
     }
 
@@ -179,7 +193,9 @@ public class ProjetService {
         }
         verifierCoherenceGroupeVisibilite(projet);
 
-        return ProjetResponse.fromEntity(projetRepository.save(projet));
+        Projet saved = projetRepository.save(projet);
+        auditerAction(user, "PROJECT_UPDATED", saved, "Projet modifie.", metadataProjet(saved));
+        return ProjetResponse.fromEntity(saved);
     }
 
     // ─── Modifier un projet encadre par un REFERENT ─────────────────────────
@@ -203,7 +219,9 @@ public class ProjetService {
         verifierVisibiliteCreateur(referent, projet.getVisibilite());
         verifierCoherenceGroupeVisibilite(projet);
 
-        return ProjetResponse.fromEntity(projetRepository.save(projet));
+        Projet saved = projetRepository.save(projet);
+        auditerAction(referent, "PROJECT_UPDATED", saved, "Projet modifie par referent.", metadataProjet(saved));
+        return ProjetResponse.fromEntity(saved);
     }
 
     // ─── Valider ou rejeter un projet (ADMIN / REFERENT) — A09, R13 ──────────
@@ -211,11 +229,13 @@ public class ProjetService {
     public ProjetResponse validerProjet(Long id, boolean approuver, String commentaire, String emailAdmin) {
         Projet projet = projetRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Projet introuvable"));
+        User admin = chargerUtilisateur(emailAdmin);
 
         if (projet.getStatut() != StatutProjet.SOUMIS) {
             throw new RuntimeException("Ce projet n'est pas en attente de validation");
         }
 
+        StatutProjet ancienStatut = projet.getStatut();
         projet.setStatut(approuver ? StatutProjet.APPROUVE : StatutProjet.REJETE);
         projet.setDateValidation(LocalDateTime.now());
         projet.setCommentaireAdmin(commentaire);
@@ -228,6 +248,9 @@ public class ProjetService {
                         : "Votre projet \"" + saved.getTitre() + "\" a été refusé.",
                 approuver ? "VALIDATION_PROJET" : "REFUS_PROJET",
                 "/projets/" + saved.getId());
+        auditerStatut(admin, approuver ? "PROJECT_APPROVED" : "PROJECT_REJECTED", saved,
+                nomStatut(ancienStatut), nomStatut(saved.getStatut()),
+                approuver ? "Projet approuve." : "Projet rejete.", metadataProjet(saved));
         return ProjetResponse.fromEntity(saved);
     }
 
@@ -236,7 +259,9 @@ public class ProjetService {
     public ProjetResponse changerStatut(Long id, StatutProjet nouveauStatut, String emailAdmin) {
         Projet projet = projetRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Projet introuvable"));
+        User admin = chargerUtilisateur(emailAdmin);
 
+        StatutProjet ancienStatut = projet.getStatut();
         projet.setStatut(nouveauStatut);
 
         if (nouveauStatut == StatutProjet.TERMINE || nouveauStatut == StatutProjet.ARCHIVE) {
@@ -250,16 +275,23 @@ public class ProjetService {
                 "Le projet \"" + saved.getTitre() + "\" est maintenant " + nouveauStatut + ".",
                 "PROJET",
                 "/projets/" + saved.getId());
+        auditerStatut(admin, "PROJECT_STATUS_CHANGED", saved, nomStatut(ancienStatut), nomStatut(saved.getStatut()),
+                "Statut du projet modifie.", metadataProjet(saved));
         return ProjetResponse.fromEntity(saved);
     }
 
     // ─── Supprimer un projet (ADMIN) ─────────────────────────────────────────
 
     public void supprimerProjet(Long id) {
-        if (!projetRepository.existsById(id)) {
-            throw new RuntimeException("Projet introuvable");
-        }
+        supprimerProjet(id, null);
+    }
+
+    public void supprimerProjet(Long id, String emailAdmin) {
+        Projet projet = projetRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Projet introuvable"));
+        User admin = chargerUtilisateurOptionnel(emailAdmin);
         projetRepository.deleteById(id);
+        auditerAction(admin, "PROJECT_DELETED", projet, "Projet supprime.", metadataProjet(projet));
     }
 
     // ─── Rejoindre un projet (M26) ────────────────────────────────────────────
@@ -291,6 +323,8 @@ public class ProjetService {
                     "PROJET",
                     "/projets/" + projet.getId());
         }
+        auditerAction(user, "PROJECT_JOINED", projet, "Participation au projet creee.",
+                metadata("groupeId", idGroupe(projet), "porteurId", idPorteur(projet), "membreId", user.getId()));
     }
 
     // ─── Commenter un projet (M27) ────────────────────────────────────────────
@@ -312,6 +346,8 @@ public class ProjetService {
                     "PROJET",
                     "/projets/" + projet.getId());
         }
+        auditerAction(user, "PROJECT_COMMENTED", projet, "Commentaire ajoute au projet.",
+                metadata("groupeId", idGroupe(projet), "porteurId", idPorteur(projet), "commentaireId", saved.getId()));
         return CommentaireResponse.fromEntity(saved);
     }
 
@@ -507,6 +543,101 @@ public class ProjetService {
             return false;
         }
         return projet.getGroupe().getReferent().getId().equals(referent.getId());
+    }
+
+    private User chargerUtilisateur(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+    }
+
+    private User chargerUtilisateurOptionnel(String email) {
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+        return chargerUtilisateur(email);
+    }
+
+    private void auditerAction(User acteur, String action, Projet projet, String details, String metadataJson) {
+        try {
+            auditLogService.logAction(
+                    acteur,
+                    action,
+                    TARGET_PROJECT,
+                    projet.getId(),
+                    projet.getTitre(),
+                    null,
+                    details,
+                    metadataJson);
+        } catch (Exception ex) {
+            log.warn("Echec audit {} pour le projet {}: {}", action, projet.getId(), ex.getMessage());
+        }
+    }
+
+    private void auditerStatut(
+            User acteur,
+            String action,
+            Projet projet,
+            String ancienStatut,
+            String nouveauStatut,
+            String details,
+            String metadataJson) {
+        try {
+            auditLogService.logStatusChange(
+                    acteur,
+                    action,
+                    TARGET_PROJECT,
+                    projet.getId(),
+                    projet.getTitre(),
+                    ancienStatut,
+                    nouveauStatut,
+                    details,
+                    metadataJson);
+        } catch (Exception ex) {
+            log.warn("Echec audit {} pour le projet {}: {}", action, projet.getId(), ex.getMessage());
+        }
+    }
+
+    private String metadataProjet(Projet projet) {
+        return metadata(
+                "groupeId", idGroupe(projet),
+                "porteurId", idPorteur(projet),
+                "budgetDemande", projet.getBudgetDemande());
+    }
+
+    private Long idGroupe(Projet projet) {
+        return projet.getGroupe() != null ? projet.getGroupe().getId() : null;
+    }
+
+    private Long idPorteur(Projet projet) {
+        return projet.getPorteur() != null ? projet.getPorteur().getId() : null;
+    }
+
+    private String nomStatut(Enum<?> statut) {
+        return statut == null ? null : statut.name();
+    }
+
+    private String metadata(Object... keyValues) {
+        StringBuilder json = new StringBuilder("{");
+        for (int i = 0; i + 1 < keyValues.length; i += 2) {
+            if (i > 0) {
+                json.append(',');
+            }
+            json.append('"').append(escapeJson(String.valueOf(keyValues[i]))).append("\":");
+            Object value = keyValues[i + 1];
+            if (value == null) {
+                json.append("null");
+            } else if (value instanceof Number || value instanceof Boolean) {
+                json.append(value);
+            } else {
+                json.append('"').append(escapeJson(String.valueOf(value))).append('"');
+            }
+        }
+        json.append('}');
+        return json.toString();
+    }
+
+    private String escapeJson(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private enum ActionProjet {

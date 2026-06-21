@@ -126,8 +126,8 @@ public class ProjetController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> supprimerProjet(@PathVariable Long id) {
-        projetService.supprimerProjet(id);
+    public ResponseEntity<Void> supprimerProjet(@PathVariable Long id, Authentication authentication) {
+        projetService.supprimerProjet(id, authentication.getName());
         return ResponseEntity.noContent().build();
     }
 

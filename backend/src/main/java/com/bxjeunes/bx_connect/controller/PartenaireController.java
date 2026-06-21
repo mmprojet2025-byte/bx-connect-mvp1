@@ -123,9 +123,10 @@ public class PartenaireController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<SoutienResponse> valider(
             @PathVariable Long id,
-            @RequestBody(required = false) AdminSoutienDecisionRequest request) {
+            @RequestBody(required = false) AdminSoutienDecisionRequest request,
+            Authentication auth) {
         String commentaire = request != null ? request.getCommentaireAdmin() : null;
-        return ResponseEntity.ok(partenaireService.validerSoutien(id, commentaire));
+        return ResponseEntity.ok(partenaireService.validerSoutien(id, commentaire, auth.getName()));
     }
 
     // ─── Admin : Refuser un soutien (A25) ────────────────────────────────────
@@ -133,8 +134,9 @@ public class PartenaireController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<SoutienResponse> refuser(
             @PathVariable Long id,
-            @RequestBody(required = false) AdminSoutienDecisionRequest request) {
+            @RequestBody(required = false) AdminSoutienDecisionRequest request,
+            Authentication auth) {
         String commentaire = request != null ? request.getCommentaireAdmin() : null;
-        return ResponseEntity.ok(partenaireService.refuserSoutien(id, commentaire));
+        return ResponseEntity.ok(partenaireService.refuserSoutien(id, commentaire, auth.getName()));
     }
 }

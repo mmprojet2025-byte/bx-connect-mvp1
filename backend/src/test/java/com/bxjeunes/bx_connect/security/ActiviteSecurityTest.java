@@ -2,15 +2,19 @@ package com.bxjeunes.bx_connect.security;
 
 import com.bxjeunes.bx_connect.dto.ActiviteRequest;
 import com.bxjeunes.bx_connect.entity.Activite;
+import com.bxjeunes.bx_connect.entity.Inscription;
 import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.StatutActivite;
+import com.bxjeunes.bx_connect.entity.StatutInscription;
 import com.bxjeunes.bx_connect.entity.User;
+import com.bxjeunes.bx_connect.dto.InscriptionRequest;
 import com.bxjeunes.bx_connect.repository.ActiviteRepository;
 import com.bxjeunes.bx_connect.repository.InscriptionRepository;
 import com.bxjeunes.bx_connect.repository.ProjetRepository;
 import com.bxjeunes.bx_connect.repository.SoutienFinancierRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
 import com.bxjeunes.bx_connect.service.ActiviteService;
+import com.bxjeunes.bx_connect.service.AuditLogService;
 import com.bxjeunes.bx_connect.service.InscriptionService;
 import com.bxjeunes.bx_connect.service.NotificationService;
 import com.bxjeunes.bx_connect.service.ReferentService;
@@ -31,6 +35,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -44,6 +49,7 @@ class ActiviteSecurityTest {
     @Mock private ProjetRepository projetRepository;
     @Mock private SoutienFinancierRepository soutienRepository;
     @Mock private NotificationService notificationService;
+    @Mock private AuditLogService auditLogService;
 
     @InjectMocks private ActiviteService activiteService;
     @InjectMocks private InscriptionService inscriptionService;
@@ -124,6 +130,15 @@ class ActiviteSecurityTest {
                 .isEqualTo("Nouveau titre");
         assertThat(response.getAdresse())
                 .isEqualTo("Rue de Bruxelles 1");
+        verify(auditLogService).logAction(
+                org.mockito.ArgumentMatchers.same(referentA),
+                org.mockito.ArgumentMatchers.eq("ACTIVITY_UPDATED"),
+                org.mockito.ArgumentMatchers.eq("ACTIVITY"),
+                org.mockito.ArgumentMatchers.eq(30L),
+                org.mockito.ArgumentMatchers.eq("Nouveau titre"),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq("Activite modifiee."),
+                org.mockito.ArgumentMatchers.contains("\"commune\":\"Bruxelles\""));
     }
 
     @Test
@@ -149,6 +164,190 @@ class ActiviteSecurityTest {
         inscriptionService.inscriptionsParActivite(20L, admin.getEmail());
 
         verify(inscriptionRepository).findByActiviteId(20L);
+    }
+
+    @Test
+    @DisplayName("Audit creation activite")
+    void audit_creation_activite() {
+        ActiviteRequest request = activiteRequest("Nouvelle activite");
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(activiteRepository.save(any(Activite.class))).thenAnswer(inv -> {
+            Activite activite = inv.getArgument(0);
+            activite.setId(40L);
+            return activite;
+        });
+        when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);
+
+        var response = activiteService.creer(request, admin.getEmail());
+
+        assertThat(response.getId()).isEqualTo(40L);
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(admin),
+                org.mockito.ArgumentMatchers.eq("ACTIVITY_CREATED"),
+                org.mockito.ArgumentMatchers.eq("ACTIVITY"),
+                org.mockito.ArgumentMatchers.eq(40L),
+                org.mockito.ArgumentMatchers.eq("Nouvelle activite"),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq("BROUILLON"),
+                org.mockito.ArgumentMatchers.eq("Activite creee."),
+                org.mockito.ArgumentMatchers.contains("\"commune\":\"Bruxelles\""));
+    }
+
+    @Test
+    @DisplayName("Audit publication activite")
+    void audit_publication_activite() {
+        Activite activite = activite(30L, "Atelier", StatutActivite.BROUILLON, admin);
+        when(activiteRepository.findById(30L)).thenReturn(Optional.of(activite));
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(activiteRepository.save(activite)).thenReturn(activite);
+        when(userRepository.findByRoleAndActifTrue(Role.MEMBRE)).thenReturn(List.of());
+        when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);
+
+        var response = activiteService.changerStatut(30L, StatutActivite.PUBLIEE, admin.getEmail());
+
+        assertThat(response.getStatut()).isEqualTo(StatutActivite.PUBLIEE);
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(admin),
+                org.mockito.ArgumentMatchers.eq("ACTIVITY_PUBLISHED"),
+                org.mockito.ArgumentMatchers.eq("ACTIVITY"),
+                org.mockito.ArgumentMatchers.eq(30L),
+                org.mockito.ArgumentMatchers.eq("Atelier"),
+                org.mockito.ArgumentMatchers.eq("BROUILLON"),
+                org.mockito.ArgumentMatchers.eq("PUBLIEE"),
+                org.mockito.ArgumentMatchers.eq("Statut activite modifie."),
+                org.mockito.ArgumentMatchers.contains("\"commune\":\"Bruxelles\""));
+    }
+
+    @Test
+    @DisplayName("Audit changement statut activite")
+    void audit_changement_statut_activite() {
+        Activite activite = activite(30L, "Atelier", StatutActivite.PUBLIEE, admin);
+        when(activiteRepository.findById(30L)).thenReturn(Optional.of(activite));
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(activiteRepository.save(activite)).thenReturn(activite);
+        when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);
+
+        var response = activiteService.changerStatut(30L, StatutActivite.TERMINEE, admin.getEmail());
+
+        assertThat(response.getStatut()).isEqualTo(StatutActivite.TERMINEE);
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(admin),
+                org.mockito.ArgumentMatchers.eq("ACTIVITY_STATUS_CHANGED"),
+                org.mockito.ArgumentMatchers.eq("ACTIVITY"),
+                org.mockito.ArgumentMatchers.eq(30L),
+                org.mockito.ArgumentMatchers.eq("Atelier"),
+                org.mockito.ArgumentMatchers.eq("PUBLIEE"),
+                org.mockito.ArgumentMatchers.eq("TERMINEE"),
+                org.mockito.ArgumentMatchers.eq("Statut activite modifie."),
+                org.mockito.ArgumentMatchers.contains("\"commune\":\"Bruxelles\""));
+    }
+
+    @Test
+    @DisplayName("Audit suppression activite")
+    void audit_suppression_activite() {
+        Activite activite = activite(30L, "Atelier", StatutActivite.BROUILLON, admin);
+        when(activiteRepository.findById(30L)).thenReturn(Optional.of(activite));
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+
+        activiteService.supprimer(30L, admin.getEmail());
+
+        verify(activiteRepository).delete(activite);
+        verify(auditLogService).logAction(
+                org.mockito.ArgumentMatchers.same(admin),
+                org.mockito.ArgumentMatchers.eq("ACTIVITY_DELETED"),
+                org.mockito.ArgumentMatchers.eq("ACTIVITY"),
+                org.mockito.ArgumentMatchers.eq(30L),
+                org.mockito.ArgumentMatchers.eq("Atelier"),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq("Activite supprimee."),
+                org.mockito.ArgumentMatchers.contains("\"commune\":\"Bruxelles\""));
+    }
+
+    @Test
+    @DisplayName("Audit inscription activite")
+    void audit_inscription_activite() {
+        User membre = user(4L, "membre@test.be", Role.MEMBRE);
+        Activite activite = activite(30L, "Atelier", StatutActivite.PUBLIEE, admin);
+        InscriptionRequest request = new InscriptionRequest();
+        request.setActiviteId(30L);
+
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        when(activiteRepository.findById(30L)).thenReturn(Optional.of(activite));
+        when(inscriptionRepository.findByMembreIdAndActiviteId(4L, 30L)).thenReturn(Optional.empty());
+        when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);
+        when(inscriptionRepository.save(any(Inscription.class))).thenAnswer(inv -> {
+            Inscription inscription = inv.getArgument(0);
+            inscription.setId(70L);
+            return inscription;
+        });
+
+        var response = inscriptionService.inscrire(request, membre.getEmail());
+
+        assertThat(response.getStatut()).isEqualTo(StatutInscription.CONFIRMEE);
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(membre),
+                org.mockito.ArgumentMatchers.eq("ACTIVITY_REGISTRATION_CREATED"),
+                org.mockito.ArgumentMatchers.eq("ACTIVITY"),
+                org.mockito.ArgumentMatchers.eq(30L),
+                org.mockito.ArgumentMatchers.eq("Atelier"),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq("CONFIRMEE"),
+                org.mockito.ArgumentMatchers.eq("Inscription activite creee."),
+                org.mockito.ArgumentMatchers.contains("\"inscriptionId\":70"));
+    }
+
+    @Test
+    @DisplayName("Audit annulation inscription activite")
+    void audit_annulation_inscription_activite() {
+        User membre = user(4L, "membre@test.be", Role.MEMBRE);
+        Activite activite = activite(30L, "Atelier", StatutActivite.PUBLIEE, admin);
+        Inscription inscription = new Inscription();
+        inscription.setId(70L);
+        inscription.setMembre(membre);
+        inscription.setActivite(activite);
+        inscription.setStatut(StatutInscription.CONFIRMEE);
+
+        when(inscriptionRepository.findById(70L)).thenReturn(Optional.of(inscription));
+        when(inscriptionRepository.save(inscription)).thenReturn(inscription);
+
+        var response = inscriptionService.annuler(70L, membre.getEmail());
+
+        assertThat(response.getStatut()).isEqualTo(StatutInscription.ANNULEE);
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(membre),
+                org.mockito.ArgumentMatchers.eq("ACTIVITY_REGISTRATION_CANCELLED"),
+                org.mockito.ArgumentMatchers.eq("ACTIVITY"),
+                org.mockito.ArgumentMatchers.eq(30L),
+                org.mockito.ArgumentMatchers.eq("Atelier"),
+                org.mockito.ArgumentMatchers.eq("CONFIRMEE"),
+                org.mockito.ArgumentMatchers.eq("ANNULEE"),
+                org.mockito.ArgumentMatchers.eq("Inscription activite annulee."),
+                org.mockito.ArgumentMatchers.contains("\"inscriptionId\":70"));
+    }
+
+    @Test
+    @DisplayName("Un echec AuditLog ne bloque pas la modification d'activite")
+    void echec_audit_ne_bloque_pas_modification_activite() {
+        Activite activite = activite(30L, "Ancien titre", StatutActivite.BROUILLON, referentA);
+        ActiviteRequest request = activiteRequest("Nouveau titre");
+        when(activiteRepository.findById(30L)).thenReturn(Optional.of(activite));
+        when(userRepository.findByEmail(referentA.getEmail())).thenReturn(Optional.of(referentA));
+        when(activiteRepository.save(any(Activite.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);
+        doThrow(new RuntimeException("Audit indisponible")).when(auditLogService).logAction(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.eq("ACTIVITY_UPDATED"),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any());
+
+        var response = activiteService.modifier(30L, request, referentA.getEmail());
+
+        assertThat(response.getTitre()).isEqualTo("Nouveau titre");
+        verify(activiteRepository).save(any(Activite.class));
     }
 
     private User user(Long id, String email, Role role) {

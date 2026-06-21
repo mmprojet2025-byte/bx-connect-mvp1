@@ -15,6 +15,7 @@ import com.bxjeunes.bx_connect.repository.PartenaireProfilRepository;
 import com.bxjeunes.bx_connect.repository.ProjetRepository;
 import com.bxjeunes.bx_connect.repository.SoutienFinancierRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
+import com.bxjeunes.bx_connect.service.AuditLogService;
 import com.bxjeunes.bx_connect.service.NotificationService;
 import com.bxjeunes.bx_connect.service.PartenaireService;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +34,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -46,6 +48,7 @@ class PartenaireProjetSecurityTest {
     @Mock private ActiviteRepository activiteRepository;
     @Mock private PartenaireProfilRepository partenaireProfilRepository;
     @Mock private NotificationService notificationService;
+    @Mock private AuditLogService auditLogService;
 
     @InjectMocks
     private PartenaireService partenaireService;
@@ -98,10 +101,24 @@ class PartenaireProjetSecurityTest {
 
         when(userRepository.findByEmail(partenaire.getEmail())).thenReturn(Optional.of(partenaire));
         when(projetRepository.findById(1L)).thenReturn(Optional.of(projet));
-        when(soutienRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(soutienRepository.save(any())).thenAnswer(invocation -> {
+            SoutienFinancier soutien = invocation.getArgument(0);
+            soutien.setId(100L);
+            return soutien;
+        });
 
         assertThat(partenaireService.soutenirProjet(request, partenaire.getEmail()).getMontant())
                 .isEqualByComparingTo(BigDecimal.TEN);
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(partenaire),
+                org.mockito.ArgumentMatchers.eq("SUPPORT_CREATED"),
+                org.mockito.ArgumentMatchers.eq("SUPPORT"),
+                org.mockito.ArgumentMatchers.eq(100L),
+                org.mockito.ArgumentMatchers.eq("Projet"),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq("EN_ATTENTE"),
+                org.mockito.ArgumentMatchers.eq("Soutien partenaire cree."),
+                org.mockito.ArgumentMatchers.contains("\"projetId\":1"));
     }
 
     @Test
@@ -158,6 +175,15 @@ class PartenaireProjetSecurityTest {
         assertThat(response.getMontant()).isEqualByComparingTo("25.50");
         assertThat(response.getMessage()).isEqualTo("Message mis à jour");
         assertThat(response.getStatutPaiement()).isEqualTo(StatutPaiement.EN_ATTENTE);
+        verify(auditLogService).logAction(
+                org.mockito.ArgumentMatchers.same(partenaire),
+                org.mockito.ArgumentMatchers.eq("SUPPORT_UPDATED"),
+                org.mockito.ArgumentMatchers.eq("SUPPORT"),
+                org.mockito.ArgumentMatchers.eq(100L),
+                org.mockito.ArgumentMatchers.eq("Projet"),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq("Soutien partenaire modifie."),
+                org.mockito.ArgumentMatchers.contains("\"montant\":25.50"));
     }
 
     @Test
@@ -208,6 +234,87 @@ class PartenaireProjetSecurityTest {
         var response = partenaireService.annulerSoutien(100L, partenaire.getEmail());
 
         assertThat(response.getStatutPaiement()).isEqualTo(StatutPaiement.ANNULE);
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(partenaire),
+                org.mockito.ArgumentMatchers.eq("SUPPORT_CANCELLED"),
+                org.mockito.ArgumentMatchers.eq("SUPPORT"),
+                org.mockito.ArgumentMatchers.eq(100L),
+                org.mockito.ArgumentMatchers.eq("Projet"),
+                org.mockito.ArgumentMatchers.eq("EN_ATTENTE"),
+                org.mockito.ArgumentMatchers.eq("ANNULE"),
+                org.mockito.ArgumentMatchers.eq("Soutien partenaire annule."),
+                org.mockito.ArgumentMatchers.contains("\"partenaireId\":50"));
+    }
+
+    @Test
+    @DisplayName("ADMIN valide et refuse un soutien avec audit")
+    void admin_valide_et_refuse_soutien_avec_audit() {
+        User admin = new User();
+        admin.setId(1L);
+        admin.setEmail("admin@test.be");
+        admin.setRole(Role.ADMIN);
+
+        SoutienFinancier soutienValide = soutien(100L, partenaire, StatutPaiement.EN_ATTENTE);
+        when(soutienRepository.findById(100L)).thenReturn(Optional.of(soutienValide));
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(soutienRepository.save(soutienValide)).thenReturn(soutienValide);
+
+        partenaireService.validerSoutien(100L, "ok", admin.getEmail());
+
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(admin),
+                org.mockito.ArgumentMatchers.eq("SUPPORT_APPROVED"),
+                org.mockito.ArgumentMatchers.eq("SUPPORT"),
+                org.mockito.ArgumentMatchers.eq(100L),
+                org.mockito.ArgumentMatchers.eq("Projet"),
+                org.mockito.ArgumentMatchers.eq("EN_ATTENTE"),
+                org.mockito.ArgumentMatchers.eq("PAYE"),
+                org.mockito.ArgumentMatchers.eq("Soutien partenaire valide."),
+                org.mockito.ArgumentMatchers.contains("\"montant\":10"));
+
+        SoutienFinancier soutienRefuse = soutien(101L, partenaire, StatutPaiement.EN_ATTENTE);
+        when(soutienRepository.findById(101L)).thenReturn(Optional.of(soutienRefuse));
+        when(soutienRepository.save(soutienRefuse)).thenReturn(soutienRefuse);
+
+        partenaireService.refuserSoutien(101L, "non", admin.getEmail());
+
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(admin),
+                org.mockito.ArgumentMatchers.eq("SUPPORT_REJECTED"),
+                org.mockito.ArgumentMatchers.eq("SUPPORT"),
+                org.mockito.ArgumentMatchers.eq(101L),
+                org.mockito.ArgumentMatchers.eq("Projet"),
+                org.mockito.ArgumentMatchers.eq("EN_ATTENTE"),
+                org.mockito.ArgumentMatchers.eq("REMBOURSE"),
+                org.mockito.ArgumentMatchers.eq("Soutien partenaire refuse."),
+                org.mockito.ArgumentMatchers.contains("\"projetId\":1"));
+    }
+
+    @Test
+    @DisplayName("Un echec AuditLog ne bloque pas la modification d'un soutien")
+    void echec_audit_ne_bloque_pas_modification_soutien() {
+        SoutienFinancier soutien = soutien(100L, partenaire, StatutPaiement.EN_ATTENTE);
+        SoutienRequest request = new SoutienRequest();
+        request.setMontant(new BigDecimal("33.00"));
+        request.setMessage("Toujours ok");
+
+        when(userRepository.findByEmail(partenaire.getEmail())).thenReturn(Optional.of(partenaire));
+        when(soutienRepository.findById(100L)).thenReturn(Optional.of(soutien));
+        when(soutienRepository.save(soutien)).thenReturn(soutien);
+        doThrow(new RuntimeException("Audit indisponible")).when(auditLogService).logAction(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.eq("SUPPORT_UPDATED"),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any());
+
+        var response = partenaireService.modifierSoutien(100L, request, partenaire.getEmail());
+
+        assertThat(response.getMontant()).isEqualByComparingTo("33.00");
+        verify(soutienRepository).save(soutien);
     }
 
     @Test

@@ -6,29 +6,38 @@ import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.ActiviteRepository;
 import com.bxjeunes.bx_connect.repository.InscriptionRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class InscriptionService {
 
+    private static final Logger log = LoggerFactory.getLogger(InscriptionService.class);
+    private static final String TARGET_ACTIVITY = "ACTIVITY";
+
     private final InscriptionRepository inscriptionRepository;
     private final ActiviteRepository activiteRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
 
     public InscriptionService(InscriptionRepository inscriptionRepository,
                                ActiviteRepository activiteRepository,
                                UserRepository userRepository,
-                               NotificationService notificationService) {
+                               NotificationService notificationService,
+                               AuditLogService auditLogService) {
         this.inscriptionRepository = inscriptionRepository;
         this.activiteRepository = activiteRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
+        this.auditLogService = auditLogService;
     }
 
     // ─── S'inscrire à une activité (M06 CDC) ────────────────────────────────
@@ -90,6 +99,13 @@ public class InscriptionService {
                     "/activites/" + activite.getId()
             );
         }
+        auditerStatut(
+                membre,
+                "ACTIVITY_REGISTRATION_CREATED",
+                inscriptionSauvee,
+                null,
+                nomStatut(inscriptionSauvee.getStatut()),
+                "Inscription activite creee.");
 
         return InscriptionResponse.fromEntity(inscriptionSauvee);
     }
@@ -109,10 +125,19 @@ public class InscriptionService {
             throw new RuntimeException("Cette inscription est déjà annulée.");
         }
 
+        StatutInscription ancienStatut = inscription.getStatut();
         inscription.setStatut(StatutInscription.ANNULEE);
         inscription.setDateAnnulation(LocalDateTime.now());
 
-        return InscriptionResponse.fromEntity(inscriptionRepository.save(inscription));
+        Inscription inscriptionSauvee = inscriptionRepository.save(inscription);
+        auditerStatut(
+                inscriptionSauvee.getMembre(),
+                "ACTIVITY_REGISTRATION_CANCELLED",
+                inscriptionSauvee,
+                nomStatut(ancienStatut),
+                nomStatut(inscriptionSauvee.getStatut()),
+                "Inscription activite annulee.");
+        return InscriptionResponse.fromEntity(inscriptionSauvee);
     }
 
     // ─── Consulter ses inscriptions (M11 CDC) ───────────────────────────────
@@ -149,5 +174,62 @@ public class InscriptionService {
                 .stream()
                 .map(InscriptionResponse::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    private void auditerStatut(
+            User acteur,
+            String action,
+            Inscription inscription,
+            String ancienStatut,
+            String nouveauStatut,
+            String details) {
+        Activite activite = inscription.getActivite();
+        try {
+            auditLogService.logStatusChange(
+                    acteur,
+                    action,
+                    TARGET_ACTIVITY,
+                    activite != null ? activite.getId() : null,
+                    activite != null ? activite.getTitre() : null,
+                    ancienStatut,
+                    nouveauStatut,
+                    details,
+                    metadataJson(inscription));
+        } catch (RuntimeException ex) {
+            log.warn(
+                    "Audit inscription impossible pour l'action {} sur l'inscription {}",
+                    action,
+                    inscription.getId(),
+                    ex);
+        }
+    }
+
+    private String nomStatut(StatutInscription statut) {
+        return statut == null ? null : statut.name();
+    }
+
+    private String metadataJson(Inscription inscription) {
+        List<String> entries = new ArrayList<>();
+        if (inscription.getId() != null) {
+            entries.add("\"inscriptionId\":" + inscription.getId());
+        }
+        Activite activite = inscription.getActivite();
+        if (activite != null) {
+            ajouterJson(entries, "dateDebut", activite.getDateDebut());
+            ajouterJson(entries, "commune", activite.getCommune());
+            ajouterJson(entries, "latitude", activite.getLatitude());
+            ajouterJson(entries, "longitude", activite.getLongitude());
+        }
+        return "{" + String.join(",", entries) + "}";
+    }
+
+    private void ajouterJson(List<String> entries, String key, Object value) {
+        if (value != null) {
+            entries.add("\"" + key + "\":\"" + escapeJson(value.toString()) + "\"");
+        }
+    }
+
+    private String escapeJson(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }

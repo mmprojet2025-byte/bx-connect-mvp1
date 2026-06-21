@@ -18,6 +18,7 @@ import com.bxjeunes.bx_connect.repository.MembreGroupeRepository;
 import com.bxjeunes.bx_connect.repository.ParticipationProjetRepository;
 import com.bxjeunes.bx_connect.repository.ProjetRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
+import com.bxjeunes.bx_connect.service.AuditLogService;
 import com.bxjeunes.bx_connect.service.NotificationService;
 import com.bxjeunes.bx_connect.service.ProjetService;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +36,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
@@ -48,6 +50,7 @@ class ProjetSecurityTest {
     @Mock private GroupeRepository groupeRepository;
     @Mock private MembreGroupeRepository membreGroupeRepository;
     @Mock private NotificationService notificationService;
+    @Mock private AuditLogService auditLogService;
 
     @InjectMocks
     private ProjetService projetService;
@@ -85,9 +88,23 @@ class ProjetSecurityTest {
         ProjetRequest request = request();
         request.setVisibilite(VisibiliteProjet.PUBLIC);
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
-        when(projetRepository.save(any(Projet.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(projetRepository.save(any(Projet.class))).thenAnswer(inv -> {
+            Projet projet = inv.getArgument(0);
+            projet.setId(77L);
+            return projet;
+        });
 
         assertThat(projetService.proposerProjet(request, admin.getEmail()).getGroupeNom()).isNull();
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(admin),
+                org.mockito.ArgumentMatchers.eq("PROJECT_CREATED"),
+                org.mockito.ArgumentMatchers.eq("PROJECT"),
+                org.mockito.ArgumentMatchers.eq(77L),
+                org.mockito.ArgumentMatchers.eq("Projet institutionnel"),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq("BROUILLON"),
+                org.mockito.ArgumentMatchers.eq("Projet cree."),
+                org.mockito.ArgumentMatchers.contains("\"porteurId\":1"));
     }
 
     @Test
@@ -186,6 +203,105 @@ class ProjetSecurityTest {
         assertThat(response.getTitre()).isEqualTo("Projet modifie");
         assertThat(response.getGroupeId()).isEqualTo(groupe.getId());
         assertThat(response.getVisibilite()).isEqualTo(VisibiliteProjet.COMMUNAUTE);
+        verify(auditLogService).logAction(
+                org.mockito.ArgumentMatchers.same(referent),
+                org.mockito.ArgumentMatchers.eq("PROJECT_UPDATED"),
+                org.mockito.ArgumentMatchers.eq("PROJECT"),
+                org.mockito.ArgumentMatchers.eq(42L),
+                org.mockito.ArgumentMatchers.eq("Projet modifie"),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq("Projet modifie par referent."),
+                org.mockito.ArgumentMatchers.contains("\"groupeId\":10"));
+    }
+
+    @Test
+    @DisplayName("Soumettre un projet journalise le changement de statut")
+    void soumettre_projet_journalise_changement_statut() {
+        Projet projet = projet(42L, StatutProjet.BROUILLON, groupe, membre);
+
+        when(projetRepository.findById(42L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        when(projetRepository.save(projet)).thenReturn(projet);
+        when(userRepository.findByRoleAndActifTrue(Role.ADMIN)).thenReturn(List.of(admin));
+
+        projetService.soumettreProjet(42L, membre.getEmail());
+
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(membre),
+                org.mockito.ArgumentMatchers.eq("PROJECT_SUBMITTED"),
+                org.mockito.ArgumentMatchers.eq("PROJECT"),
+                org.mockito.ArgumentMatchers.eq(42L),
+                org.mockito.ArgumentMatchers.eq("Projet test"),
+                org.mockito.ArgumentMatchers.eq("BROUILLON"),
+                org.mockito.ArgumentMatchers.eq("SOUMIS"),
+                org.mockito.ArgumentMatchers.eq("Projet soumis pour validation."),
+                org.mockito.ArgumentMatchers.contains("\"porteurId\":2"));
+    }
+
+    @Test
+    @DisplayName("Valider et refuser un projet journalisent la decision admin")
+    void valider_refuser_projet_journalisent_decision_admin() {
+        Projet projetApprouve = projet(42L, StatutProjet.SOUMIS, groupe, membre);
+        when(projetRepository.findById(42L)).thenReturn(Optional.of(projetApprouve));
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(projetRepository.save(projetApprouve)).thenReturn(projetApprouve);
+
+        projetService.validerProjet(42L, true, "ok", admin.getEmail());
+
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(admin),
+                org.mockito.ArgumentMatchers.eq("PROJECT_APPROVED"),
+                org.mockito.ArgumentMatchers.eq("PROJECT"),
+                org.mockito.ArgumentMatchers.eq(42L),
+                org.mockito.ArgumentMatchers.eq("Projet test"),
+                org.mockito.ArgumentMatchers.eq("SOUMIS"),
+                org.mockito.ArgumentMatchers.eq("APPROUVE"),
+                org.mockito.ArgumentMatchers.eq("Projet approuve."),
+                org.mockito.ArgumentMatchers.contains("\"groupeId\":10"));
+
+        Projet projetRejete = projet(43L, StatutProjet.SOUMIS, groupe, membre);
+        when(projetRepository.findById(43L)).thenReturn(Optional.of(projetRejete));
+        when(projetRepository.save(projetRejete)).thenReturn(projetRejete);
+
+        projetService.validerProjet(43L, false, "non", admin.getEmail());
+
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(admin),
+                org.mockito.ArgumentMatchers.eq("PROJECT_REJECTED"),
+                org.mockito.ArgumentMatchers.eq("PROJECT"),
+                org.mockito.ArgumentMatchers.eq(43L),
+                org.mockito.ArgumentMatchers.eq("Projet test"),
+                org.mockito.ArgumentMatchers.eq("SOUMIS"),
+                org.mockito.ArgumentMatchers.eq("REJETE"),
+                org.mockito.ArgumentMatchers.eq("Projet rejete."),
+                org.mockito.ArgumentMatchers.contains("\"groupeId\":10"));
+    }
+
+    @Test
+    @DisplayName("Un echec AuditLog ne bloque pas la modification d'un projet")
+    void echec_audit_ne_bloque_pas_modification_projet() {
+        Projet projet = projet(42L, StatutProjet.BROUILLON, groupe, membre);
+        ProjetRequest request = request();
+        request.setTitre("Projet malgre audit KO");
+        request.setVisibilite(VisibiliteProjet.GROUPE);
+
+        when(projetRepository.findById(42L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        when(projetRepository.save(projet)).thenReturn(projet);
+        doThrow(new RuntimeException("Audit indisponible")).when(auditLogService).logAction(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.eq("PROJECT_UPDATED"),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any());
+
+        ProjetResponse response = projetService.modifierProjet(42L, request, membre.getEmail());
+
+        assertThat(response.getTitre()).isEqualTo("Projet malgre audit KO");
+        verify(projetRepository).save(projet);
     }
 
     @Test

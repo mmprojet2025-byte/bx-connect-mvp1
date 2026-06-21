@@ -6,6 +6,7 @@ import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.GroupeRepository;
 import com.bxjeunes.bx_connect.repository.MembreGroupeRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
+import com.bxjeunes.bx_connect.service.AuditLogService;
 import com.bxjeunes.bx_connect.service.GroupeService;
 import com.bxjeunes.bx_connect.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.ArgumentMatchers.any;
 
 /**
@@ -41,6 +43,7 @@ class GroupeSecurityTest {
     @Mock private MembreGroupeRepository membreGroupeRepository;
     @Mock private UserRepository userRepository;
     @Mock private NotificationService notificationService;
+    @Mock private AuditLogService auditLogService;
 
     @InjectMocks
     private GroupeService groupeService;
@@ -153,6 +156,40 @@ class GroupeSecurityTest {
 
         assertThat(response.getAdresseReunion()).isEqualTo("Rue du Groupe 12");
         assertThat(response.getCommune()).isEqualTo("Bruxelles");
+        verify(auditLogService).logAction(
+                org.mockito.ArgumentMatchers.same(referent1),
+                org.mockito.ArgumentMatchers.eq("GROUP_UPDATED"),
+                org.mockito.ArgumentMatchers.eq("GROUP"),
+                org.mockito.ArgumentMatchers.eq(10L),
+                org.mockito.ArgumentMatchers.eq("Groupe Numerique V2"),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq("Groupe modifie."),
+                org.mockito.ArgumentMatchers.contains("\"capaciteMax\""));
+    }
+
+    @Test
+    @DisplayName("Un echec AuditLog ne bloque pas la modification d'un groupe")
+    void echec_audit_ne_bloque_pas_modification_groupe() {
+        when(groupeRepository.findById(10L)).thenReturn(Optional.of(groupeDeReferent1));
+        when(userRepository.findByEmail("referent1@test.be")).thenReturn(Optional.of(referent1));
+        when(groupeRepository.save(groupeDeReferent1)).thenReturn(groupeDeReferent1);
+        doThrow(new RuntimeException("Audit indisponible")).when(auditLogService).logAction(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.eq("GROUP_UPDATED"),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any());
+
+        GroupeRequest request = new GroupeRequest();
+        request.setNom("Groupe Numerique V3");
+
+        var response = groupeService.modifierGroupe(10L, request, "referent1@test.be");
+
+        assertThat(response.getNom()).isEqualTo("Groupe Numerique V3");
+        verify(groupeRepository).save(groupeDeReferent1);
     }
 
     @Test
@@ -265,6 +302,41 @@ class GroupeSecurityTest {
         assertThatThrownBy(() ->
             groupeService.accepterAdhesion(100L, "referent2@test.be")
         ).isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    @DisplayName("Accepter une adhesion journalise le changement de statut")
+    void accepter_adhesion_journalise_changement_statut() {
+        User membre = new User();
+        membre.setId(99L);
+        membre.setPrenom("Jean");
+        membre.setNom("Dupont");
+        membre.setEmail("jean@test.be");
+
+        MembreGroupe demande = new MembreGroupe();
+        demande.setId(100L);
+        demande.setGroupe(groupeDeReferent1);
+        demande.setUser(membre);
+        demande.setStatut(StatutMembre.EN_ATTENTE);
+
+        when(membreGroupeRepository.findById(100L)).thenReturn(Optional.of(demande));
+        when(userRepository.findByEmail("referent1@test.be")).thenReturn(Optional.of(referent1));
+        when(membreGroupeRepository.findFirstByUserIdAndStatut(99L, StatutMembre.ACCEPTE))
+                .thenReturn(Optional.empty());
+        when(membreGroupeRepository.save(demande)).thenReturn(demande);
+
+        groupeService.accepterAdhesion(100L, "referent1@test.be");
+
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(referent1),
+                org.mockito.ArgumentMatchers.eq("GROUP_ADHESION_ACCEPTED"),
+                org.mockito.ArgumentMatchers.eq("GROUP"),
+                org.mockito.ArgumentMatchers.eq(10L),
+                org.mockito.ArgumentMatchers.eq("Groupe Numerique"),
+                org.mockito.ArgumentMatchers.eq("EN_ATTENTE"),
+                org.mockito.ArgumentMatchers.eq("ACCEPTE"),
+                org.mockito.ArgumentMatchers.eq("Adhesion acceptee."),
+                org.mockito.ArgumentMatchers.contains("\"adhesionId\":100"));
     }
 
     @Test

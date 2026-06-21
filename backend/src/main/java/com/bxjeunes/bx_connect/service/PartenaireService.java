@@ -3,6 +3,8 @@ package com.bxjeunes.bx_connect.service;
 import com.bxjeunes.bx_connect.dto.*;
 import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -15,25 +17,32 @@ import java.util.stream.Collectors;
 @Service
 public class PartenaireService {
 
+    private static final Logger log = LoggerFactory.getLogger(PartenaireService.class);
+    private static final String TARGET_SUPPORT = "SUPPORT";
+    private static final String TARGET_PARTNER_PROFILE = "PARTNER_PROFILE";
+
     private final SoutienFinancierRepository soutienRepository;
     private final UserRepository userRepository;
     private final ProjetRepository projetRepository;
     private final ActiviteRepository activiteRepository;
     private final PartenaireProfilRepository partenaireProfilRepository;
     private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
 
     public PartenaireService(SoutienFinancierRepository soutienRepository,
                              UserRepository userRepository,
                              ProjetRepository projetRepository,
                              ActiviteRepository activiteRepository,
                              PartenaireProfilRepository partenaireProfilRepository,
-                             NotificationService notificationService) {
+                             NotificationService notificationService,
+                             AuditLogService auditLogService) {
         this.soutienRepository  = soutienRepository;
         this.userRepository     = userRepository;
         this.projetRepository   = projetRepository;
         this.activiteRepository = activiteRepository;
         this.partenaireProfilRepository = partenaireProfilRepository;
         this.notificationService = notificationService;
+        this.auditLogService = auditLogService;
     }
 
     public PartenaireProfilResponse getProfilInstitutionnel(String emailPartenaire) {
@@ -69,7 +78,10 @@ public class PartenaireService {
         profil.setTelephone(normaliser(request.getTelephone()));
         profil.setSiteWeb(normaliser(request.getSiteWeb()));
         profil.setDescription(normaliser(request.getDescription()));
-        return PartenaireProfilResponse.fromEntity(partenaireProfilRepository.save(profil));
+        PartenaireProfil saved = partenaireProfilRepository.save(profil);
+        auditerProfil(partenaire, "PARTNER_PROFILE_UPDATED", saved, "Profil partenaire modifie.",
+                metadata("partenaireId", partenaire.getId(), "typePartenaire", saved.getTypePartenaire()));
+        return PartenaireProfilResponse.fromEntity(saved);
     }
 
     // ─── P05 : Soumettre un soutien à un projet ───────────────────────────────
@@ -103,6 +115,8 @@ public class PartenaireService {
 
         SoutienFinancier saved = soutienRepository.save(soutien);
         notifierAdminsNouveauSoutien(saved);
+        auditerStatut(partenaire, "SUPPORT_CREATED", saved, null, nomStatut(saved.getStatutPaiement()),
+                "Soutien partenaire cree.", metadataSoutien(saved));
         return SoutienResponse.fromEntity(saved);
     }
 
@@ -134,6 +148,8 @@ public class PartenaireService {
 
         SoutienFinancier saved = soutienRepository.save(soutien);
         notifierAdminsNouveauSoutien(saved);
+        auditerStatut(partenaire, "SUPPORT_CREATED", saved, null, nomStatut(saved.getStatutPaiement()),
+                "Soutien partenaire cree.", metadataSoutien(saved));
         return SoutienResponse.fromEntity(saved);
     }
 
@@ -151,15 +167,24 @@ public class PartenaireService {
 
     public SoutienResponse modifierSoutien(Long soutienId, SoutienRequest request, String emailPartenaire) {
         SoutienFinancier soutien = chargerSoutienEditable(soutienId, emailPartenaire);
+        User partenaire = soutien.getDonateur();
         soutien.setMontant(request.getMontant());
         soutien.setMessage(normaliser(request.getMessage()));
-        return SoutienResponse.fromEntity(soutienRepository.save(soutien));
+        SoutienFinancier saved = soutienRepository.save(soutien);
+        auditerAction(partenaire, "SUPPORT_UPDATED", saved, "Soutien partenaire modifie.",
+                metadataSoutien(saved));
+        return SoutienResponse.fromEntity(saved);
     }
 
     public SoutienResponse annulerSoutien(Long soutienId, String emailPartenaire) {
         SoutienFinancier soutien = chargerSoutienEditable(soutienId, emailPartenaire);
+        User partenaire = soutien.getDonateur();
+        StatutPaiement ancienStatut = soutien.getStatutPaiement();
         soutien.setStatutPaiement(StatutPaiement.ANNULE);
-        return SoutienResponse.fromEntity(soutienRepository.save(soutien));
+        SoutienFinancier saved = soutienRepository.save(soutien);
+        auditerStatut(partenaire, "SUPPORT_CANCELLED", saved, nomStatut(ancienStatut), nomStatut(saved.getStatutPaiement()),
+                "Soutien partenaire annule.", metadataSoutien(saved));
+        return SoutienResponse.fromEntity(saved);
     }
 
     // ─── P09 : Statistiques du partenaire ────────────────────────────────────
@@ -237,8 +262,14 @@ public class PartenaireService {
 
     // ─── Admin : Valider un soutien (A25) ────────────────────────────────────
     public SoutienResponse validerSoutien(Long soutienId, String commentaireAdmin) {
+        return validerSoutien(soutienId, commentaireAdmin, null);
+    }
+
+    public SoutienResponse validerSoutien(Long soutienId, String commentaireAdmin, String emailAdmin) {
         SoutienFinancier soutien = soutienRepository.findById(soutienId)
                 .orElseThrow(() -> new RuntimeException("Soutien introuvable : " + soutienId));
+        User admin = chargerUtilisateurOptionnel(emailAdmin);
+        StatutPaiement ancienStatut = soutien.getStatutPaiement();
         soutien.setStatutPaiement(StatutPaiement.PAYE);
         soutien.setDatePaiement(java.time.LocalDateTime.now());
         soutien.setReponseAdmin(normaliser(commentaireAdmin));
@@ -246,19 +277,29 @@ public class PartenaireService {
         SoutienFinancier saved = soutienRepository.save(soutien);
         notifierPartenaireDecision(saved, "Soutien validé",
                 "Votre soutien pour \"" + cibleTitre(saved) + "\" a été validé.");
+        auditerStatut(admin, "SUPPORT_APPROVED", saved, nomStatut(ancienStatut), nomStatut(saved.getStatutPaiement()),
+                "Soutien partenaire valide.", metadataSoutien(saved));
         return SoutienResponse.fromEntity(saved);
     }
 
     // ─── Admin : Refuser un soutien ───────────────────────────────────────────
     public SoutienResponse refuserSoutien(Long soutienId, String commentaireAdmin) {
+        return refuserSoutien(soutienId, commentaireAdmin, null);
+    }
+
+    public SoutienResponse refuserSoutien(Long soutienId, String commentaireAdmin, String emailAdmin) {
         SoutienFinancier soutien = soutienRepository.findById(soutienId)
                 .orElseThrow(() -> new RuntimeException("Soutien introuvable : " + soutienId));
+        User admin = chargerUtilisateurOptionnel(emailAdmin);
+        StatutPaiement ancienStatut = soutien.getStatutPaiement();
         soutien.setStatutPaiement(StatutPaiement.REMBOURSE);
         soutien.setReponseAdmin(normaliser(commentaireAdmin));
         soutien.setDateReponseAdmin(java.time.LocalDateTime.now());
         SoutienFinancier saved = soutienRepository.save(soutien);
         notifierPartenaireDecision(saved, "Soutien refusé",
                 "Votre soutien pour \"" + cibleTitre(saved) + "\" a été refusé.");
+        auditerStatut(admin, "SUPPORT_REJECTED", saved, nomStatut(ancienStatut), nomStatut(saved.getStatutPaiement()),
+                "Soutien partenaire refuse.", metadataSoutien(saved));
         return SoutienResponse.fromEntity(saved);
     }
 
@@ -305,6 +346,106 @@ public class PartenaireService {
 
     private String normaliser(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private User chargerUtilisateurOptionnel(String email) {
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+    }
+
+    private void auditerAction(User acteur, String action, SoutienFinancier soutien, String details, String metadataJson) {
+        try {
+            auditLogService.logAction(
+                    acteur,
+                    action,
+                    TARGET_SUPPORT,
+                    soutien.getId(),
+                    cibleTitre(soutien),
+                    null,
+                    details,
+                    metadataJson);
+        } catch (Exception ex) {
+            log.warn("Echec audit {} pour le soutien {}: {}", action, soutien.getId(), ex.getMessage());
+        }
+    }
+
+    private void auditerStatut(
+            User acteur,
+            String action,
+            SoutienFinancier soutien,
+            String ancienStatut,
+            String nouveauStatut,
+            String details,
+            String metadataJson) {
+        try {
+            auditLogService.logStatusChange(
+                    acteur,
+                    action,
+                    TARGET_SUPPORT,
+                    soutien.getId(),
+                    cibleTitre(soutien),
+                    ancienStatut,
+                    nouveauStatut,
+                    details,
+                    metadataJson);
+        } catch (Exception ex) {
+            log.warn("Echec audit {} pour le soutien {}: {}", action, soutien.getId(), ex.getMessage());
+        }
+    }
+
+    private void auditerProfil(User acteur, String action, PartenaireProfil profil, String details, String metadataJson) {
+        try {
+            auditLogService.logAction(
+                    acteur,
+                    action,
+                    TARGET_PARTNER_PROFILE,
+                    profil.getId(),
+                    profil.getNomOrganisation(),
+                    profil.getUtilisateur() != null ? profil.getUtilisateur().getEmail() : null,
+                    details,
+                    metadataJson);
+        } catch (Exception ex) {
+            log.warn("Echec audit {} pour le profil partenaire {}: {}", action, profil.getId(), ex.getMessage());
+        }
+    }
+
+    private String metadataSoutien(SoutienFinancier soutien) {
+        return metadata(
+                "montant", soutien.getMontant(),
+                "projetId", soutien.getProjet() != null ? soutien.getProjet().getId() : null,
+                "activiteId", soutien.getActivite() != null ? soutien.getActivite().getId() : null,
+                "partenaireId", soutien.getDonateur() != null ? soutien.getDonateur().getId() : null);
+    }
+
+    private String nomStatut(Enum<?> statut) {
+        return statut == null ? null : statut.name();
+    }
+
+    private String metadata(Object... keyValues) {
+        StringBuilder json = new StringBuilder("{");
+        for (int i = 0; i + 1 < keyValues.length; i += 2) {
+            if (i > 0) {
+                json.append(',');
+            }
+            json.append('"').append(escapeJson(String.valueOf(keyValues[i]))).append("\":");
+            Object value = keyValues[i + 1];
+            if (value == null) {
+                json.append("null");
+            } else if (value instanceof Number || value instanceof Boolean) {
+                json.append(value);
+            } else {
+                json.append('"').append(escapeJson(String.valueOf(value))).append('"');
+            }
+        }
+        json.append('}');
+        return json.toString();
+    }
+
+    private String escapeJson(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private void notifierAdminsNouveauSoutien(SoutienFinancier soutien) {

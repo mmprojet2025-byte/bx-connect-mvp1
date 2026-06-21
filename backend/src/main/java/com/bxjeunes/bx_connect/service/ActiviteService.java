@@ -11,9 +11,12 @@ import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.repository.ActiviteRepository;
 import com.bxjeunes.bx_connect.repository.InscriptionRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -21,19 +24,25 @@ import java.util.stream.Collectors;
 @Service
 public class ActiviteService {
 
+    private static final Logger log = LoggerFactory.getLogger(ActiviteService.class);
+    private static final String TARGET_ACTIVITY = "ACTIVITY";
+
     private final ActiviteRepository activiteRepository;
     private final UserRepository userRepository;
     private final InscriptionRepository inscriptionRepository;
     private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
 
     public ActiviteService(ActiviteRepository activiteRepository,
                            UserRepository userRepository,
                            InscriptionRepository inscriptionRepository,
-                           NotificationService notificationService) {
+                           NotificationService notificationService,
+                           AuditLogService auditLogService) {
         this.activiteRepository = activiteRepository;
         this.userRepository = userRepository;
         this.inscriptionRepository = inscriptionRepository;
         this.notificationService = notificationService;
+        this.auditLogService = auditLogService;
     }
 
     // ─── Créer une activité ───────────────────────────────────────────────────
@@ -55,7 +64,15 @@ public class ActiviteService {
         activite.setStatut(StatutActivite.BROUILLON);
         activite.setCreateur(createur);
 
-        return toResponse(activiteRepository.save(activite));
+        Activite activiteSauvee = activiteRepository.save(activite);
+        auditerStatut(
+                createur,
+                "ACTIVITY_CREATED",
+                activiteSauvee,
+                null,
+                nomStatut(activiteSauvee.getStatut()),
+                "Activite creee.");
+        return toResponse(activiteSauvee);
     }
 
     // ─── Lister activités publiées (public) ───────────────────────────────────
@@ -199,7 +216,7 @@ public class ActiviteService {
     public ActiviteResponse modifier(Long id, ActiviteRequest request, String emailUser) {
         Activite activite = activiteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
-        verifierDroitGestion(activite, emailUser);
+        User acteur = verifierDroitGestion(activite, emailUser);
 
         activite.setTitre(request.getTitre());
         activite.setDescription(request.getDescription());
@@ -212,14 +229,16 @@ public class ActiviteService {
         activite.setCategorie(request.getCategorie());
         activite.setTheme(request.getTheme());
 
-        return toResponse(activiteRepository.save(activite));
+        Activite activiteSauvee = activiteRepository.save(activite);
+        auditerAction(acteur, "ACTIVITY_UPDATED", activiteSauvee, "Activite modifiee.");
+        return toResponse(activiteSauvee);
     }
 
     // ─── Changer le statut ────────────────────────────────────────────────────
     public ActiviteResponse changerStatut(Long id, StatutActivite nouveauStatut, String emailUser) {
         Activite activite = activiteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
-        verifierDroitGestion(activite, emailUser);
+        User acteur = verifierDroitGestion(activite, emailUser);
         StatutActivite ancienStatut = activite.getStatut();
         activite.setStatut(nouveauStatut);
         Activite activiteSauvee = activiteRepository.save(activite);
@@ -227,6 +246,15 @@ public class ActiviteService {
         if (ancienStatut != StatutActivite.PUBLIEE && nouveauStatut == StatutActivite.PUBLIEE) {
             notifierPublication(activiteSauvee);
         }
+        auditerStatut(
+                acteur,
+                ancienStatut != StatutActivite.PUBLIEE && nouveauStatut == StatutActivite.PUBLIEE
+                        ? "ACTIVITY_PUBLISHED"
+                        : "ACTIVITY_STATUS_CHANGED",
+                activiteSauvee,
+                nomStatut(ancienStatut),
+                nomStatut(nouveauStatut),
+                "Statut activite modifie.");
 
         return toResponse(activiteSauvee);
     }
@@ -235,20 +263,21 @@ public class ActiviteService {
     public void supprimer(Long id, String emailUser) {
         Activite activite = activiteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
-        verifierDroitGestion(activite, emailUser);
+        User acteur = verifierDroitGestion(activite, emailUser);
         activiteRepository.delete(activite);
+        auditerAction(acteur, "ACTIVITY_DELETED", activite, "Activite supprimee.");
     }
 
-    private void verifierDroitGestion(Activite activite, String emailUser) {
+    private User verifierDroitGestion(Activite activite, String emailUser) {
         User user = userRepository.findByEmail(emailUser)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + emailUser));
         if (user.getRole() == Role.ADMIN) {
-            return;
+            return user;
         }
         if (user.getRole() == Role.REFERENT &&
                 activite.getCreateur() != null &&
                 activite.getCreateur().getId().equals(user.getId())) {
-            return;
+            return user;
         }
         throw new AccessDeniedException("Vous ne pouvez gerer que vos propres activites.");
     }
@@ -271,6 +300,68 @@ public class ActiviteService {
                     "/activites/" + activite.getId()
             );
         }
+    }
+
+    private void auditerAction(User acteur, String action, Activite activite, String details) {
+        try {
+            auditLogService.logAction(
+                    acteur,
+                    action,
+                    TARGET_ACTIVITY,
+                    activite.getId(),
+                    activite.getTitre(),
+                    null,
+                    details,
+                    metadataJson(activite));
+        } catch (RuntimeException ex) {
+            log.warn("Audit activite impossible pour l'action {} sur l'activite {}", action, activite.getId(), ex);
+        }
+    }
+
+    private void auditerStatut(
+            User acteur,
+            String action,
+            Activite activite,
+            String ancienStatut,
+            String nouveauStatut,
+            String details) {
+        try {
+            auditLogService.logStatusChange(
+                    acteur,
+                    action,
+                    TARGET_ACTIVITY,
+                    activite.getId(),
+                    activite.getTitre(),
+                    ancienStatut,
+                    nouveauStatut,
+                    details,
+                    metadataJson(activite));
+        } catch (RuntimeException ex) {
+            log.warn("Audit activite impossible pour l'action {} sur l'activite {}", action, activite.getId(), ex);
+        }
+    }
+
+    private String nomStatut(StatutActivite statut) {
+        return statut == null ? null : statut.name();
+    }
+
+    private String metadataJson(Activite activite) {
+        List<String> entries = new ArrayList<>();
+        ajouterJson(entries, "dateDebut", activite.getDateDebut());
+        ajouterJson(entries, "commune", activite.getCommune());
+        ajouterJson(entries, "latitude", activite.getLatitude());
+        ajouterJson(entries, "longitude", activite.getLongitude());
+        return "{" + String.join(",", entries) + "}";
+    }
+
+    private void ajouterJson(List<String> entries, String key, Object value) {
+        if (value != null) {
+            entries.add("\"" + key + "\":\"" + escapeJson(value.toString()) + "\"");
+        }
+    }
+
+    private String escapeJson(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private ActiviteResponse toResponse(Activite activite) {

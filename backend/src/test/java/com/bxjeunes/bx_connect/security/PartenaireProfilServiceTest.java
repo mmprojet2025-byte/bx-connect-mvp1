@@ -7,6 +7,7 @@ import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.TypePartenaire;
 import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.repository.*;
+import com.bxjeunes.bx_connect.service.AuditLogService;
 import com.bxjeunes.bx_connect.service.PartenaireService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,6 +33,7 @@ class PartenaireProfilServiceTest {
     @Mock private ProjetRepository projetRepository;
     @Mock private ActiviteRepository activiteRepository;
     @Mock private PartenaireProfilRepository profilRepository;
+    @Mock private AuditLogService auditLogService;
 
     @InjectMocks private PartenaireService partenaireService;
 
@@ -69,7 +72,11 @@ class PartenaireProfilServiceTest {
 
         when(userRepository.findByEmail(partenaire.getEmail())).thenReturn(Optional.of(partenaire));
         when(profilRepository.findByUtilisateurId(partenaire.getId())).thenReturn(Optional.empty());
-        when(profilRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(profilRepository.save(any())).thenAnswer(invocation -> {
+            PartenaireProfil profil = invocation.getArgument(0);
+            profil.setId(12L);
+            return profil;
+        });
 
         PartenaireProfilResponse response =
                 partenaireService.enregistrerProfilInstitutionnel(request, partenaire.getEmail());
@@ -77,6 +84,15 @@ class PartenaireProfilServiceTest {
         assertThat(response.getNomOrganisation()).isEqualTo("Commune de Bruxelles");
         assertThat(response.getTypePartenaire()).isEqualTo(TypePartenaire.COMMUNE);
         assertThat(response.getPersonneContact()).isEqualTo("Rebecca Aguiar");
+        verify(auditLogService).logAction(
+                org.mockito.ArgumentMatchers.same(partenaire),
+                org.mockito.ArgumentMatchers.eq("PARTNER_PROFILE_UPDATED"),
+                org.mockito.ArgumentMatchers.eq("PARTNER_PROFILE"),
+                org.mockito.ArgumentMatchers.eq(12L),
+                org.mockito.ArgumentMatchers.eq("Commune de Bruxelles"),
+                org.mockito.ArgumentMatchers.eq("rebecca@commune.test"),
+                org.mockito.ArgumentMatchers.eq("Profil partenaire modifie."),
+                org.mockito.ArgumentMatchers.contains("\"partenaireId\":25"));
     }
 
     @Test
