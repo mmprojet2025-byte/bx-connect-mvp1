@@ -86,21 +86,21 @@ public class AnnonceController {
 
     @PatchMapping("/admin/{id}/publier")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<AnnonceResponse> publierOpportunite(@PathVariable Long id) {
-        return ResponseEntity.ok(annonceService.publierOpportunite(id));
+    public ResponseEntity<AnnonceResponse> publierOpportunite(@PathVariable Long id, Authentication auth) {
+        return ResponseEntity.ok(annonceService.publierOpportunite(id, auth.getName()));
     }
 
     @PatchMapping("/admin/{id}/refuser")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<AnnonceResponse> refuserOpportunite(@PathVariable Long id) {
-        return ResponseEntity.ok(annonceService.refuserOpportunite(id));
+    public ResponseEntity<AnnonceResponse> refuserOpportunite(@PathVariable Long id, Authentication auth) {
+        return ResponseEntity.ok(annonceService.refuserOpportunite(id, auth.getName()));
     }
 
     // PATCH /api/annonces/{id}/epingler — Épingler/désépingler (Admin)
     @PatchMapping("/{id}/epingler")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Map<String, Object>> epingler(@PathVariable Long id) {
-        return ResponseEntity.ok(annonceService.toggleEpingler(id));
+    public ResponseEntity<Map<String, Object>> epingler(@PathVariable Long id, Authentication auth) {
+        return ResponseEntity.ok(annonceService.toggleEpingler(id, auth.getName()));
     }
 
     // DELETE /api/annonces/{id} — Supprimer

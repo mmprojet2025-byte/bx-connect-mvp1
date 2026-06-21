@@ -5,6 +5,8 @@ import com.bxjeunes.bx_connect.dto.AnnonceResponse;
 import com.bxjeunes.bx_connect.dto.OpportunitePartenaireRequest;
 import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -18,19 +20,26 @@ import java.util.stream.Collectors;
 @Service
 public class AnnonceService {
 
+    private static final Logger log = LoggerFactory.getLogger(AnnonceService.class);
+    private static final String TARGET_ANNOUNCEMENT = "ANNOUNCEMENT";
+    private static final String TARGET_OPPORTUNITY = "OPPORTUNITY";
+
     private final AnnonceRepository annonceRepository;
     private final UserRepository userRepository;
     private final GroupeRepository groupeRepository;
     private final MembreGroupeRepository membreGroupeRepository;
+    private final AuditLogService auditLogService;
 
     public AnnonceService(AnnonceRepository annonceRepository,
                           UserRepository userRepository,
                           GroupeRepository groupeRepository,
-                          MembreGroupeRepository membreGroupeRepository) {
+                          MembreGroupeRepository membreGroupeRepository,
+                          AuditLogService auditLogService) {
         this.annonceRepository      = annonceRepository;
         this.userRepository         = userRepository;
         this.groupeRepository       = groupeRepository;
         this.membreGroupeRepository = membreGroupeRepository;
+        this.auditLogService        = auditLogService;
     }
 
     // ─── Créer une annonce ────────────────────────────────────────────────────
@@ -85,7 +94,9 @@ public class AnnonceService {
             throw new AccessDeniedException("Seuls les administrateurs et référents peuvent créer une annonce.");
         }
 
-        return toMap(annonceRepository.save(annonce));
+        Annonce sauvegardee = annonceRepository.save(annonce);
+        auditerAction(auteur, "ANNOUNCEMENT_CREATED", sauvegardee, "Annonce creee.");
+        return toMap(sauvegardee);
     }
 
     public AnnonceResponse creerOpportunitePartenaire(
@@ -105,7 +116,15 @@ public class AnnonceService {
         annonce.setEpinglee(false);
         annonce.setAuteur(partenaire);
 
-        return AnnonceResponse.fromEntity(annonceRepository.save(annonce));
+        Annonce sauvegardee = annonceRepository.save(annonce);
+        auditerStatut(
+                partenaire,
+                "OPPORTUNITY_CREATED",
+                sauvegardee,
+                null,
+                sauvegardee.getStatutModeration().name(),
+                "Opportunite partenaire creee.");
+        return AnnonceResponse.fromEntity(sauvegardee);
     }
 
     public List<AnnonceResponse> mesOpportunitesPartenaire(String emailPartenaire) {
@@ -125,15 +144,43 @@ public class AnnonceService {
     }
 
     public AnnonceResponse publierOpportunite(Long annonceId) {
+        return publierOpportunite(annonceId, null);
+    }
+
+    public AnnonceResponse publierOpportunite(Long annonceId, String emailAdmin) {
+        User admin = chargerUtilisateurOptionnel(emailAdmin);
         Annonce annonce = chargerOpportunite(annonceId);
+        StatutModeration ancienStatut = annonce.getStatutModeration();
         annonce.setStatutModeration(StatutModeration.PUBLIEE);
-        return AnnonceResponse.fromEntity(annonceRepository.save(annonce));
+        Annonce sauvegardee = annonceRepository.save(annonce);
+        auditerStatut(
+                admin,
+                "OPPORTUNITY_PUBLISHED",
+                sauvegardee,
+                nomStatut(ancienStatut),
+                nomStatut(sauvegardee.getStatutModeration()),
+                "Opportunite partenaire publiee.");
+        return AnnonceResponse.fromEntity(sauvegardee);
     }
 
     public AnnonceResponse refuserOpportunite(Long annonceId) {
+        return refuserOpportunite(annonceId, null);
+    }
+
+    public AnnonceResponse refuserOpportunite(Long annonceId, String emailAdmin) {
+        User admin = chargerUtilisateurOptionnel(emailAdmin);
         Annonce annonce = chargerOpportunite(annonceId);
+        StatutModeration ancienStatut = annonce.getStatutModeration();
         annonce.setStatutModeration(StatutModeration.REFUSEE);
-        return AnnonceResponse.fromEntity(annonceRepository.save(annonce));
+        Annonce sauvegardee = annonceRepository.save(annonce);
+        auditerStatut(
+                admin,
+                "OPPORTUNITY_REJECTED",
+                sauvegardee,
+                nomStatut(ancienStatut),
+                nomStatut(sauvegardee.getStatutModeration()),
+                "Opportunite partenaire refusee.");
+        return AnnonceResponse.fromEntity(sauvegardee);
     }
 
     // ─── Annonces visibles pour un utilisateur connecté ──────────────────────
@@ -186,7 +233,7 @@ public class AnnonceService {
         return annonceRepository.findByTypeOrderByEpingleeDescDateCreationDesc("GLOBALE")
                 .stream()
                 .filter(this::visibleHorsAdmin)
-                .map(this::toMap)
+                .map(this::toPublicMap)
                 .collect(Collectors.toList());
     }
 
@@ -219,10 +266,21 @@ public class AnnonceService {
 
     // ─── Épingler/désépingler (ADMIN) ────────────────────────────────────────
     public Map<String, Object> toggleEpingler(Long annonceId) {
+        return toggleEpingler(annonceId, null);
+    }
+
+    public Map<String, Object> toggleEpingler(Long annonceId, String emailAdmin) {
+        User admin = chargerUtilisateurOptionnel(emailAdmin);
         Annonce annonce = annonceRepository.findById(annonceId)
                 .orElseThrow(() -> new RuntimeException("Annonce introuvable"));
         annonce.setEpinglee(!annonce.isEpinglee());
-        return toMap(annonceRepository.save(annonce));
+        Annonce sauvegardee = annonceRepository.save(annonce);
+        auditerAction(
+                admin,
+                sauvegardee.isEpinglee() ? "ANNOUNCEMENT_PINNED" : "ANNOUNCEMENT_UNPINNED",
+                sauvegardee,
+                sauvegardee.isEpinglee() ? "Annonce epinglee." : "Annonce desepinglee.");
+        return toMap(sauvegardee);
     }
 
     // ─── Supprimer une annonce ────────────────────────────────────────────────
@@ -242,11 +300,19 @@ public class AnnonceService {
         }
 
         annonceRepository.delete(annonce);
+        auditerAction(utilisateur, "ANNOUNCEMENT_DELETED", annonce, "Annonce supprimee.");
     }
 
     private User chargerUtilisateur(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+    }
+
+    private User chargerUtilisateurOptionnel(String email) {
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+        return userRepository.findByEmail(email).orElse(null);
     }
 
     private User chargerPartenaire(String email) {
@@ -285,6 +351,75 @@ public class AnnonceService {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
+    private void auditerAction(User acteur, String action, Annonce annonce, String details) {
+        try {
+            auditLogService.logAction(
+                    acteur,
+                    action,
+                    cibleType(annonce),
+                    annonce.getId(),
+                    annonce.getTitre(),
+                    null,
+                    details,
+                    metadataJson(annonce));
+        } catch (RuntimeException ex) {
+            log.warn("Audit annonce impossible pour l'action {} sur l'annonce {}", action, annonce.getId(), ex);
+        }
+    }
+
+    private void auditerStatut(
+            User acteur,
+            String action,
+            Annonce annonce,
+            String ancienStatut,
+            String nouveauStatut,
+            String details) {
+        try {
+            auditLogService.logStatusChange(
+                    acteur,
+                    action,
+                    cibleType(annonce),
+                    annonce.getId(),
+                    annonce.getTitre(),
+                    ancienStatut,
+                    nouveauStatut,
+                    details,
+                    metadataJson(annonce));
+        } catch (RuntimeException ex) {
+            log.warn("Audit annonce impossible pour l'action {} sur l'annonce {}", action, annonce.getId(), ex);
+        }
+    }
+
+    private String cibleType(Annonce annonce) {
+        return annonce.getCategorieOpportunite() == null ? TARGET_ANNOUNCEMENT : TARGET_OPPORTUNITY;
+    }
+
+    private String nomStatut(StatutModeration statut) {
+        return statut == null ? null : statut.name();
+    }
+
+    private String metadataJson(Annonce annonce) {
+        List<String> entries = new ArrayList<>();
+        ajouterJson(entries, "type", annonce.getType());
+        ajouterJson(entries, "categorieOpportunite",
+                annonce.getCategorieOpportunite() == null ? null : annonce.getCategorieOpportunite().name());
+        if (annonce.getGroupe() != null) {
+            entries.add("\"groupeId\":" + annonce.getGroupe().getId());
+        }
+        ajouterJson(entries, "lienExterne", annonce.getLienExterne());
+        return "{" + String.join(",", entries) + "}";
+    }
+
+    private void ajouterJson(List<String> entries, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            entries.add("\"" + key + "\":\"" + escapeJson(value) + "\"");
+        }
+    }
+
+    private String escapeJson(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
     // ─── Convertir en Map ─────────────────────────────────────────────────────
     private Map<String, Object> toMap(Annonce a) {
         Map<String, Object> m = new HashMap<>();
@@ -310,5 +445,11 @@ public class AnnonceService {
             m.put("groupeNom", a.getGroupe().getNom());
         }
         return m;
+    }
+
+    private Map<String, Object> toPublicMap(Annonce annonce) {
+        Map<String, Object> map = toMap(annonce);
+        map.remove("auteurEmail");
+        return map;
     }
 }
