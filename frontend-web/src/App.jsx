@@ -99,8 +99,8 @@ function PublicOrMembreRoute({ children }) {
 }
 
 function ActivityCatalogRoute({ children }) {
-  const { isAuthenticated, isMembre, isAdmin, isReferent, user } = useAuth()
-  if (isAuthenticated && !isMembre && !isAdmin && !isReferent) {
+  const { isAuthenticated, isMembre, isAdmin, isReferent, isSuperAdmin, user } = useAuth()
+  if (isAuthenticated && !isMembre && !isAdmin && !isReferent && !isSuperAdmin) {
     return <Navigate to={getDefaultRouteForRole(user?.role)} replace />
   }
   return children
@@ -208,6 +208,7 @@ export default function App() {
           <Route path="/super-admin"           element={<Navigate to="/super-admin/dashboard" replace />} />
           <Route path="/super-admin/dashboard" element={<SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>} />
           <Route path="/super-admin/admins"    element={<SuperAdminRoute><SuperAdminAdmins /></SuperAdminRoute>} />
+          <Route path="/super-admin/utilisateurs" element={<SuperAdminRoute><AdminUtilisateurs endpoint="/super-admin/utilisateurs" readOnly pageTitle="Utilisateurs métier" pageDescription="Consultation des membres, référents et partenaires." /></SuperAdminRoute>} />
           <Route path="/super-admin/logs"      element={<SuperAdminRoute><SuperAdminLogs /></SuperAdminRoute>} />
 
           {/* ── Page 404 ── */}

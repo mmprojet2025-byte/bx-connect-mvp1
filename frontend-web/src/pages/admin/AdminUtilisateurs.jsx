@@ -11,7 +11,12 @@ import StatusBadge from '../../components/StatusBadge';
 
 const ROLES = ['MEMBRE', 'REFERENT', 'PARTENAIRE'];
 
-export default function AdminUtilisateurs() {
+export default function AdminUtilisateurs({
+  endpoint = '/admin/utilisateurs',
+  readOnly = false,
+  pageTitle,
+  pageDescription,
+}) {
   const { t, i18n } = useTranslation();
   const [utilisateurs, setUtilisateurs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,11 +24,11 @@ export default function AdminUtilisateurs() {
   const [message, setMessage] = useState('');
   const [recherche, setRecherche] = useState('');
 
-  useEffect(() => { fetchUtilisateurs(); }, []);
+  useEffect(() => { fetchUtilisateurs(); }, [endpoint]);
 
   const fetchUtilisateurs = async () => {
     try {
-      const res = await api.get('/admin/utilisateurs');
+      const res = await api.get(endpoint);
       setUtilisateurs(res.data);
     } catch (err) {
       setError(userFriendlyError(err, t('users.errorLoad')));
@@ -73,7 +78,7 @@ export default function AdminUtilisateurs() {
     u.email?.toLowerCase().includes(recherche.toLowerCase())
   );
 
-  const peutModifier = (user) => user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN';
+  const peutModifier = (user) => !readOnly && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN';
   const stats = {
     total: utilisateurs.length,
     actifs: utilisateurs.filter(u => u.actif).length,
@@ -88,8 +93,8 @@ export default function AdminUtilisateurs() {
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
         <PageHeader
           eyebrow={t('admin.users_title')}
-          title={t('admin.users_title')}
-          description={t('users.registeredCount', { count: utilisateurs.length })}
+          title={pageTitle || t('admin.users_title')}
+          description={pageDescription || t('users.registeredCount', { count: utilisateurs.length })}
         />
 
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
