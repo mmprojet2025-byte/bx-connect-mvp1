@@ -49,6 +49,19 @@ class AdminEndpointSecurityTest {
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/super-admin/logs"))
                 .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/super-admin/logs/search"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    @DisplayName("SUPER_ADMIN peut consulter les logs filtres")
+    void super_admin_peut_consulter_logs_filtres() throws Exception {
+        mockMvc.perform(get("/api/super-admin/logs/search")
+                        .param("action", "PROJECT_APPROVED")
+                        .param("cibleType", "PROJECT")
+                        .param("acteurRole", "ADMIN"))
+                .andExpect(status().isOk());
     }
 
     @Test

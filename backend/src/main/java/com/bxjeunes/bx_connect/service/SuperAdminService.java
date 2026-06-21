@@ -4,6 +4,7 @@ import com.bxjeunes.bx_connect.dto.superadmin.AdminResponse;
 import com.bxjeunes.bx_connect.dto.superadmin.CreateAdminRequest;
 import com.bxjeunes.bx_connect.dto.superadmin.ResetAdminPasswordRequest;
 import com.bxjeunes.bx_connect.dto.superadmin.SuperAdminDashboardResponse;
+import com.bxjeunes.bx_connect.dto.UserResponse;
 import com.bxjeunes.bx_connect.entity.Langue;
 import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.User;
@@ -39,6 +40,13 @@ public class SuperAdminService {
     public List<AdminResponse> listerAdmins() {
         return userRepository.findByRole(Role.ADMIN).stream()
                 .map(AdminResponse::fromEntity)
+                .toList();
+    }
+
+    public List<UserResponse> listerUtilisateursMetier() {
+        return userRepository.findAll().stream()
+                .filter(user -> user.getRole() != Role.ADMIN && user.getRole() != Role.SUPER_ADMIN)
+                .map(UserResponse::fromEntity)
                 .toList();
     }
 

@@ -5,9 +5,11 @@ import com.bxjeunes.bx_connect.dto.superadmin.AuditLogResponse;
 import com.bxjeunes.bx_connect.dto.superadmin.CreateAdminRequest;
 import com.bxjeunes.bx_connect.dto.superadmin.ResetAdminPasswordRequest;
 import com.bxjeunes.bx_connect.dto.superadmin.SuperAdminDashboardResponse;
+import com.bxjeunes.bx_connect.dto.UserResponse;
 import com.bxjeunes.bx_connect.service.AuditLogService;
 import com.bxjeunes.bx_connect.service.SuperAdminService;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,8 +21,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -40,6 +44,11 @@ public class SuperAdminController {
     @GetMapping("/admins")
     public ResponseEntity<List<AdminResponse>> listerAdmins() {
         return ResponseEntity.ok(superAdminService.listerAdmins());
+    }
+
+    @GetMapping("/utilisateurs")
+    public ResponseEntity<List<UserResponse>> listerUtilisateursMetier() {
+        return ResponseEntity.ok(superAdminService.listerUtilisateursMetier());
     }
 
     @PostMapping("/admins")
@@ -75,5 +84,24 @@ public class SuperAdminController {
     @GetMapping("/logs")
     public ResponseEntity<List<AuditLogResponse>> logs() {
         return ResponseEntity.ok(auditLogService.derniersLogs());
+    }
+
+    @GetMapping("/logs/search")
+    public ResponseEntity<List<AuditLogResponse>> rechercherLogs(
+            @RequestParam(required = false) String action,
+            @RequestParam(required = false) String cibleType,
+            @RequestParam(required = false) String acteurRole,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateDebut,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateFin,
+            @RequestParam(defaultValue = "100") int limit) {
+        return ResponseEntity.ok(auditLogService.rechercher(
+                action,
+                cibleType,
+                acteurRole,
+                dateDebut,
+                dateFin,
+                limit));
     }
 }
