@@ -33,6 +33,7 @@ export default function ProjectsScreen() {
   const [message, setMessage] = useState('');
   const [recherche, setRecherche] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [editingProject, setEditingProject] = useState(null);
   const [form, setForm] = useState({
     titre: '',
     description: '',
@@ -143,32 +144,42 @@ export default function ProjectsScreen() {
     setError('');
     setMessage('');
     try {
-      const response = await api.post('/projets', {
+      const payload = {
         titre: form.titre.trim(),
         description: form.description.trim(),
         objectifs: form.objectifs.trim(),
         budgetDemande: form.budgetDemande ? parseFloat(form.budgetDemande) : null,
         groupeId: isMembre || !form.groupeId ? null : Number(form.groupeId),
         visibilite: form.visibilite,
-      });
+      };
+
+      if (editingProject && isReferent) {
+        await api.put(`/projets/referent/${editingProject.id}`, payload);
+        setMessage(t('projects.project_updated_referent', {
+          defaultValue: 'Le projet a été modifié.',
+        }));
+        closeProjectFormAfterSave();
+        await chargerProjets();
+        return;
+      }
+
+      const response = await api.post('/projets', payload);
       if (!isAdmin) {
         await api.patch(`/projets/${response.data.id}/soumettre`);
       }
       setMessage(isAdmin
         ? t('projects.project_created_admin')
         : t('projects.project_submitted_mobile'));
-      setShowForm(false);
-      setForm({
-        titre: '',
-        description: '',
-        objectifs: '',
-        budgetDemande: '',
-        groupeId: '',
-        visibilite: isAdmin ? 'PUBLIC' : 'GROUPE',
-      });
+      closeProjectFormAfterSave();
       await chargerProjets();
     } catch (err) {
-      setError(getApiError(err, t, t('projects.error_submit')));
+      setError(getApiError(
+        err,
+        t,
+        editingProject
+          ? t('projects.error_update_referent', { defaultValue: 'Vous ne pouvez modifier que les projets des groupes que vous encadrez.' })
+          : t('projects.error_submit'),
+      ));
     } finally {
       setCreating(false);
     }
@@ -186,6 +197,7 @@ export default function ProjectsScreen() {
   const selectedGroup = groupesCreateur.find((groupe) => String(groupe.id) === String(form.groupeId));
 
   const openProjectForm = () => {
+    setEditingProject(null);
     setError('');
     setMessage('');
     setForm((current) => ({
@@ -196,6 +208,33 @@ export default function ProjectsScreen() {
       visibilite: isAdmin ? (current.visibilite || 'PUBLIC') : 'GROUPE',
     }));
     setShowForm(true);
+  };
+
+  const openEditProjectForm = (projet) => {
+    setEditingProject(projet);
+    setError('');
+    setMessage('');
+    setForm(projectToForm(projet, groupesCreateur, isAdmin));
+    setShowForm(true);
+  };
+
+  const closeProjectForm = () => {
+    if (creating) return;
+    setShowForm(false);
+    setEditingProject(null);
+  };
+
+  const closeProjectFormAfterSave = () => {
+    setShowForm(false);
+    setEditingProject(null);
+    setForm({
+      titre: '',
+      description: '',
+      objectifs: '',
+      budgetDemande: '',
+      groupeId: '',
+      visibilite: isAdmin ? 'PUBLIC' : 'GROUPE',
+    });
   };
 
   const projetsFiltres = projets.filter((projet) => {
@@ -299,7 +338,16 @@ export default function ProjectsScreen() {
         <FlatList
           data={projetsFiltres}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => <ProjectCard projet={item} t={t} language={i18n.language} isPartenaire={isPartenaire} />}
+          renderItem={({ item }) => (
+            <ProjectCard
+              projet={item}
+              t={t}
+              language={i18n.language}
+              isPartenaire={isPartenaire}
+              editable={isReferent && canEditReferentProject(item, groupesCreateur)}
+              onEdit={() => openEditProjectForm(item)}
+            />
+          )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           onRefresh={chargerProjets}
@@ -312,22 +360,26 @@ export default function ProjectsScreen() {
         form={form}
         setForm={setForm}
         creating={creating}
-        onClose={() => setShowForm(false)}
+        onClose={closeProjectForm}
         onSubmit={handleProposer}
         groupeNom={groupeActif?.nom || selectedGroup?.nom}
         groupes={groupesCreateur}
         requireGroup={isReferent || (isAdmin && form.visibilite === 'GROUPE')}
         allowNoGroup={isAdmin}
         visibilityOptions={visibilityOptions}
-        submitLabel={isAdmin ? t('projects.create_project') : t('projects.submit_project')}
-        title={isAdmin ? t('projects.create_project') : t('projects.propose')}
+        submitLabel={editingProject
+          ? t('common.save', { defaultValue: 'Enregistrer' })
+          : isAdmin ? t('projects.create_project') : t('projects.submit_project')}
+        title={editingProject
+          ? t('projects.edit_project', { defaultValue: 'Modifier le projet' })
+          : isAdmin ? t('projects.create_project') : t('projects.propose')}
         t={t}
       />
     </View>
   );
 }
 
-function ProjectCard({ projet, t, language, isPartenaire }) {
+function ProjectCard({ projet, t, language, isPartenaire, editable, onEdit }) {
   return (
     <View style={[styles.card, { borderTopColor: statusColor(projet.statut) }]}>
       <View style={styles.cardHeader}>
@@ -366,6 +418,12 @@ function ProjectCard({ projet, t, language, isPartenaire }) {
           />
         )}
       </View>
+      {editable ? (
+        <TouchableOpacity style={styles.editButton} onPress={onEdit}>
+          <AppIcon name="edit" size={16} color="#2563EB" />
+          <Text style={styles.editButtonText}>{t('common.edit', { defaultValue: 'Modifier' })}</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
@@ -618,6 +676,29 @@ function mergeProjects(...collections) {
   return Array.from(projectsById.values());
 }
 
+function projectToForm(projet, groupes, isAdmin) {
+  const groupeId = projet.groupeId
+    || groupes.find((groupe) => groupe.nom === projet.groupeNom)?.id
+    || '';
+
+  return {
+    titre: projet.titre || '',
+    description: projet.description || '',
+    objectifs: projet.objectifs || '',
+    budgetDemande: projet.budgetDemande != null ? String(projet.budgetDemande) : '',
+    groupeId: groupeId ? String(groupeId) : '',
+    visibilite: projet.visibilite || (isAdmin ? 'PUBLIC' : 'GROUPE'),
+  };
+}
+
+function canEditReferentProject(projet, groupes) {
+  if (!projet || groupes.length === 0) return false;
+  if (projet.groupeId && groupes.some((groupe) => String(groupe.id) === String(projet.groupeId))) {
+    return true;
+  }
+  return groupes.some((groupe) => groupe.nom && groupe.nom === projet.groupeNom);
+}
+
 function formatDate(dateStr, language, t) {
   if (!dateStr) return t('projects.date_not_provided');
   return new Date(dateStr).toLocaleDateString(language || 'fr-BE', {
@@ -706,12 +787,12 @@ const styles = StyleSheet.create({
   },
   errorText: { color: '#EF4444', fontSize: 13 },
 
-  listContent: { padding: 14, paddingBottom: 30 },
+  listContent: { padding: 9, paddingBottom: 22 },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 22,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 15,
+    padding: 10,
+    marginBottom: 7,
     borderTopWidth: 3,
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 4 },
@@ -725,21 +806,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 5,
   },
   cardIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 15,
+    width: 32,
+    height: 32,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
   },
   cardTitleWrap: { flex: 1, marginRight: 8 },
-  cardTitle: { fontSize: 16, fontWeight: '900', color: '#1E3A8A', marginBottom: 3, lineHeight: 21 },
-  cardSub: { color: '#64748b', fontSize: 12 },
-  cardDesc: { color: '#475569', fontSize: 12, lineHeight: 18, marginBottom: 10 },
-  statusBadge: { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
+  cardTitle: { fontSize: 14, fontWeight: '900', color: '#1E3A8A', marginBottom: 1, lineHeight: 18 },
+  cardSub: { color: '#64748b', fontSize: 10 },
+  cardDesc: { color: '#475569', fontSize: 11, lineHeight: 15, marginBottom: 6 },
+  statusBadge: { borderRadius: 20, paddingHorizontal: 7, paddingVertical: 3 },
   statusBadgeText: { color: '#fff', fontSize: 9, fontWeight: '900' },
   visibilityBadge: {
     alignSelf: 'flex-start',
@@ -747,15 +828,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
   visibilityBadgeText: { fontSize: 10, fontWeight: '900' },
   projectBadges: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 7,
-    marginBottom: 10,
+    gap: 5,
+    marginBottom: 6,
   },
   typeBadge: {
     alignSelf: 'flex-start',
@@ -763,15 +844,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     backgroundColor: '#f1f5f9',
   },
   typeBadgeText: { color: '#475569', fontSize: 10, fontWeight: '900' },
 
   metaBox: {
     backgroundColor: '#f8fafc',
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
@@ -790,6 +871,19 @@ const styles = StyleSheet.create({
     maxWidth: '58%',
     textAlign: 'right',
   },
+  editButton: {
+    marginTop: 8,
+    minHeight: 34,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    backgroundColor: '#eff6ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 7,
+  },
+  editButtonText: { color: '#2563EB', fontSize: 12, fontWeight: '900' },
 
   centered: {
     flex: 1,
