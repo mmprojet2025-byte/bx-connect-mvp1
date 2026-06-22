@@ -73,10 +73,13 @@ export default function DashboardScreen({ navigation }) {
         const reason = firstRejection(results);
         if (reason?.response?.status !== 403) throw reason;
       }
+      const groupes = settledData(groupesRes, []);
+      const demandesAdhesion = await chargerDemandesAdhesionReferent(groupes);
       setReferentDashboard({
         ...settledData(dashboardRes, {}),
-        groupes: settledData(groupesRes, []),
+        groupes,
         notifications: settledData(notificationsRes, []),
+        demandesAdhesion,
       });
       if (results.some(result => result.status === 'rejected')) {
         setNotice(t('dashboard.partialData'));
@@ -105,8 +108,11 @@ export default function DashboardScreen({ navigation }) {
         api.get('/admin/groupes'),
         api.get('/admin/groupes/en-attente'),
         api.get('/admin/referents'),
+        api.get('/annonces/admin/opportunites'),
+        api.get('/partenaire/admin/tous'),
+        api.get('/projets/admin/soumis'),
       ]);
-      const [statsRes, groupesRes, groupesAttenteRes, referentsRes] = results;
+      const [statsRes, groupesRes, groupesAttenteRes, referentsRes, opportunitesRes, soutiensRes, projetsSoumisRes] = results;
       if (allRejected(results)) {
         const reason = firstRejection(results);
         if (reason?.response?.status !== 403) throw reason;
@@ -117,6 +123,9 @@ export default function DashboardScreen({ navigation }) {
         groupes: settledData(groupesRes, []),
         groupesEnAttente: settledData(groupesAttenteRes, []),
         referents: settledData(referentsRes, []),
+        opportunites: settledData(opportunitesRes, []),
+        soutiens: settledData(soutiensRes, []),
+        projetsSoumis: settledData(projetsSoumisRes, []),
       });
       if (results.some(result => result.status === 'rejected')) {
         setNotice(t('dashboard.partialData'));
@@ -125,7 +134,7 @@ export default function DashboardScreen({ navigation }) {
       if (err.response?.status === 401) {
         setError(t('errors.session_expired'));
       } else if (err.response?.status === 403) {
-        setRoleDashboard({ type: 'ADMIN', stats: {}, groupes: [], groupesEnAttente: [], referents: [] });
+        setRoleDashboard({ type: 'ADMIN', stats: {}, groupes: [], groupesEnAttente: [], referents: [], opportunites: [], soutiens: [], projetsSoumis: [] });
         setNotice(t('dashboard.partialData'));
       } else {
         setError(t('adminMobile.dashboardLoadError', { defaultValue: 'Impossible de charger le dashboard administrateur.' }));
@@ -143,11 +152,12 @@ export default function DashboardScreen({ navigation }) {
       const results = await Promise.allSettled([
         api.get('/partenaire/statistiques'),
         api.get('/partenaire/mes-soutiens'),
+        api.get('/annonces/partenaire/mes-opportunites'),
         api.get('/partenaire/projets-ouverts'),
         api.get('/partenaire/activites-ouvertes'),
         api.get('/partenaire/profil'),
       ]);
-      const [statsRes, soutiensRes, projetsRes, activitesRes, profilRes] = results;
+      const [statsRes, soutiensRes, opportunitesRes, projetsRes, activitesRes, profilRes] = results;
       if (results.every(result => result.status === 'rejected')) {
         const reason = firstRejection(results);
         if (reason?.response?.status !== 403) throw reason;
@@ -156,6 +166,7 @@ export default function DashboardScreen({ navigation }) {
         type: 'PARTENAIRE',
         stats: settledData(statsRes, {}),
         soutiens: settledData(soutiensRes, []),
+        opportunites: settledData(opportunitesRes, []),
         projetsOuverts: settledData(projetsRes, []),
         activitesOuvertes: settledData(activitesRes, []),
         profil: settledData(profilRes, null),
@@ -171,6 +182,7 @@ export default function DashboardScreen({ navigation }) {
           type: 'PARTENAIRE',
           stats: {},
           soutiens: [],
+          opportunites: [],
           projetsOuverts: [],
           activitesOuvertes: [],
           profil: null,
@@ -236,7 +248,6 @@ export default function DashboardScreen({ navigation }) {
 
       return (
         <ReferentDashboard
-          user={user}
           dashboard={referentDashboard}
           navigation={navigation}
           t={t}
@@ -347,23 +358,35 @@ export default function DashboardScreen({ navigation }) {
   );
 }
 
-function ReferentDashboard({ user, dashboard, navigation, t, language, notice }) {
+function ReferentDashboard({ dashboard, navigation, t, language, notice }) {
   const groupes = dashboard?.groupes || [];
   const activites = dashboard?.mesActivites || [];
   const projets = dashboard?.projetsSoumisListe || [];
   const notifications = dashboard?.notifications || [];
+  const demandesAdhesion = dashboard?.demandesAdhesion || [];
   const nonLues = notifications.filter((notification) => !notification.lue).length;
+  const activitesAPublier = activites.filter((activite) => activite.statut === 'BROUILLON');
+  const projetsASuivre = projets.filter((projet) => !['TERMINE', 'REJETE'].includes(projet.statut));
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <WelcomeCard user={user} role="REFERENT" t={t} />
       <DashboardNotice text={notice} />
+
+      <GlobalSearchAccess navigation={navigation} t={t} />
 
       <DashboardSectionTitle
         title={t('referentDashboard.mobileTitle', { defaultValue: 'Mon espace référent' })}
         subtitle={t('referentDashboard.mobileDescription', {
           defaultValue: 'Suivez vos groupes, activités et projets en un coup d’œil.',
         })}
+      />
+
+      <ReferentPriorityActions
+        demandesCount={demandesAdhesion.length}
+        projetsCount={projetsASuivre.length || projets.length}
+        activitesCount={activitesAPublier.length}
+        navigation={navigation}
+        t={t}
       />
 
       <View style={styles.metricGrid}>
@@ -379,6 +402,160 @@ function ReferentDashboard({ user, dashboard, navigation, t, language, notice })
       <ReferentNotificationsCard notifications={notifications} navigation={navigation} t={t} />
       <ReferentQuickActions navigation={navigation} t={t} />
     </ScrollView>
+  );
+}
+
+function ReferentPriorityActions({ demandesCount, projetsCount, activitesCount, navigation, t }) {
+  return (
+    <View style={styles.priorityCard}>
+      <View style={styles.cardHeader}>
+        <Text style={styles.cardTitle}>{t('referentDashboard.priorityTitle', { defaultValue: 'À traiter' })}</Text>
+      </View>
+      <View style={styles.priorityGrid}>
+        <PriorityButton
+          label={t('referentMobile.requestsTitle', { defaultValue: 'Demandes d’adhésion' })}
+          count={demandesCount}
+          icon="warning"
+          color="#d97706"
+          onPress={() => navigation.navigate('ReferentRequestsAccess')}
+        />
+        <PriorityButton
+          label={t('referentDashboard.projectsToFollow', { defaultValue: 'Projets à suivre' })}
+          count={projetsCount}
+          icon="project"
+          color={COLORS.impactOrange}
+          onPress={() => navigateAccess(navigation, 'TabProjects', 'ProjectsAccess')}
+        />
+        <PriorityButton
+          label={t('referentDashboard.activitiesToPublish', { defaultValue: 'Activités à publier' })}
+          count={activitesCount}
+          icon="activity"
+          color="#0f766e"
+          onPress={() => navigateAccess(navigation, 'TabActivities')}
+        />
+      </View>
+    </View>
+  );
+}
+
+function PriorityButton({ label, count, icon, color, onPress }) {
+  const hasWork = count > 0;
+  return (
+    <TouchableOpacity
+      style={[styles.priorityButton, hasWork && { borderColor: color, backgroundColor: `${color}12` }]}
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole="button"
+    >
+      <View style={[styles.priorityIcon, { backgroundColor: `${color}18` }]}>
+        <AppIcon name={icon} size={18} color={color} />
+      </View>
+      <Text style={[styles.priorityCount, { color }]}>{count}</Text>
+      <Text style={styles.priorityLabel} numberOfLines={2}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function AdminModerationCard({ dashboard, navigation, t }) {
+  const opportunitesEnAttente = (dashboard?.opportunites || [])
+    .filter((opportunity) => opportunity.statutModeration === 'EN_ATTENTE').length;
+  const soutiensEnAttente = (dashboard?.soutiens || [])
+    .filter((support) => support.statutPaiement === 'EN_ATTENTE').length;
+  const projetsSoumis = dashboard?.projetsSoumis?.length || 0;
+  const groupesEnAttente = dashboard?.groupesEnAttente?.length || 0;
+
+  return (
+    <View style={styles.priorityCard}>
+      <View style={styles.cardHeader}>
+        <Text style={styles.cardTitle}>{t('adminMobile.toModerate', { defaultValue: 'À modérer' })}</Text>
+      </View>
+      <View style={styles.priorityGrid}>
+        <PriorityButton
+          label={t('adminMobile.opportunitiesShort', { defaultValue: 'Opportunités' })}
+          count={opportunitesEnAttente}
+          icon="alert"
+          color="#d97706"
+          onPress={() => navigation.navigate('AdminOpportunitiesAccess')}
+        />
+        <PriorityButton
+          label={t('partner.supports', { defaultValue: 'Soutiens' })}
+          count={soutiensEnAttente}
+          icon="wallet"
+          color={COLORS.info}
+          onPress={() => navigation.navigate('AdminPartnerSupportsAccess')}
+        />
+        <PriorityButton
+          label={t('navigation.projects', { defaultValue: 'Projets' })}
+          count={projetsSoumis}
+          icon="project"
+          color={COLORS.impactOrange}
+          onPress={() => navigation.navigate('AdminSubmittedProjectsAccess')}
+        />
+        <PriorityButton
+          label={t('navigation.groups', { defaultValue: 'Groupes' })}
+          count={groupesEnAttente}
+          icon="group"
+          color="#0f766e"
+          onPress={() => navigation.navigate('AdminPendingGroupsAccess')}
+        />
+      </View>
+    </View>
+  );
+}
+
+function PartnerQuickAccess({ dashboard, navigation, t }) {
+  const soutiens = dashboard?.soutiens || [];
+  const opportunites = dashboard?.opportunites || [];
+  const projets = dashboard?.projets || [];
+  const activites = dashboard?.activites || [];
+  const profile = dashboard?.profil || {};
+  const soutiensEnAttente = soutiens.filter((support) => support.statutPaiement === 'EN_ATTENTE').length;
+  const opportunitesEnAttente = opportunites.filter((opportunity) => opportunity.statutModeration === 'EN_ATTENTE').length;
+  const profileComplete = !!profile.nomOrganisation && !!profile.description;
+
+  return (
+    <View style={styles.priorityCard}>
+      <View style={styles.cardHeader}>
+        <Text style={styles.cardTitle}>{t('partner.mobile.quickAccess', { defaultValue: 'Accès partenaire' })}</Text>
+      </View>
+      <View style={styles.priorityGrid}>
+        <PriorityButton
+          label={t('partnerInstitution.profileTitle', { defaultValue: 'Profil partenaire' })}
+          count={profileComplete ? 1 : 0}
+          icon="building"
+          color={profileComplete ? COLORS.success : COLORS.warning}
+          onPress={() => navigation.navigate('PartnerProfileAccess')}
+        />
+        <PriorityButton
+          label={t('partner.supports', { defaultValue: 'Mes soutiens' })}
+          count={soutiensEnAttente}
+          icon="wallet"
+          color={COLORS.info}
+          onPress={() => navigateAccess(navigation, 'TabSupports', 'SupportsAccess')}
+        />
+        <PriorityButton
+          label={t('partner.opportunities', { defaultValue: 'Mes opportunités' })}
+          count={opportunitesEnAttente}
+          icon="alert"
+          color={COLORS.impactOrange}
+          onPress={() => navigateAccess(navigation, 'TabSupports', 'SupportsAccess', { tab: 'opportunities' })}
+        />
+        <PriorityButton
+          label={t('partner.openProjects', { defaultValue: 'Projets ouverts' })}
+          count={projets.length}
+          icon="project"
+          color={COLORS.impactOrange}
+          onPress={() => navigateAccess(navigation, 'TabProjects')}
+        />
+        <PriorityButton
+          label={t('partner.openActivities', { defaultValue: 'Activités ouvertes' })}
+          count={activites.length}
+          icon="activity"
+          color={COLORS.success}
+          onPress={() => navigateAccess(navigation, 'TabActivities')}
+        />
+      </View>
+    </View>
   );
 }
 
@@ -543,8 +720,8 @@ function ReferentQuickActions({ navigation, t }) {
         compact
       />
       <ActionCard
-        label={t('referentDashboard.viewProjects', { defaultValue: 'Consulter les projets' })}
-        description={t('referentMobile.projectsAction', { defaultValue: 'Voir les projets liés à vos groupes.' })}
+        label={t('referentMobile.myGroupProjects', { defaultValue: 'Projets de mes groupes' })}
+        description={t('referentMobile.projectsAction', { defaultValue: 'Voir et modifier les projets liés à vos groupes.' })}
         icon="project"
         color={COLORS.impactOrange}
         onPress={() => navigateAccess(navigation, 'TabProjects', 'ProjectsAccess')}
@@ -572,10 +749,11 @@ function RoleDashboard({ user, role, isAdmin, isSuperAdmin, isPartenaire, dashbo
       <DashboardNotice text={notice} />
       <View style={styles.roleHero}>
         <View style={styles.roleBrandRow}>
-          <View style={styles.brandIcon}>
-            <AppIcon name="group" size={17} color="#fff" />
-          </View>
-          <Text style={styles.brandName}>BX-CONNECT</Text>
+          <Image
+            source={require('../../assets/images/logo-bx-connect.png')}
+            style={styles.brandLogoCompact}
+            resizeMode="contain"
+          />
           <Text style={styles.brandSlogan}>{t('brand.slogan')}</Text>
         </View>
         <View style={styles.roleHeroMain}>
@@ -594,6 +772,16 @@ function RoleDashboard({ user, role, isAdmin, isSuperAdmin, isPartenaire, dashbo
 
       {isPartenaire && dashboard?.profil ? (
         <PartnerInstitutionCard profile={dashboard.profil} t={t} />
+      ) : null}
+
+      <GlobalSearchAccess navigation={navigation} t={t} />
+
+      {isPartenaire ? (
+        <PartnerQuickAccess dashboard={dashboard} navigation={navigation} t={t} />
+      ) : null}
+
+      {isAdmin ? (
+        <AdminModerationCard dashboard={dashboard} navigation={navigation} t={t} />
       ) : null}
 
       <DashboardSectionTitle title={config.title} />
@@ -642,6 +830,7 @@ function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, d
       ],
       actions: [
         action(t('navigation.users', { defaultValue: 'Utilisateurs' }), t('superAdmin.mobile.usersAction', { defaultValue: 'Consulter les administrateurs plateforme.' }), 'group', COLORS.info, () => navigateAccess(navigation, 'TabUsers')),
+        action(t('superAdmin.logsTitle', { defaultValue: 'Journal d’activité' }), t('superAdmin.logsAction', { defaultValue: 'Consulter les actions auditées de la plateforme.' }), 'lock', COLORS.impactOrange, () => navigation.navigate('SuperAdminLogsAccess')),
         action(t('navigation.notifications', { defaultValue: 'Notifications' }), t('superAdmin.mobile.notificationsAction', { defaultValue: 'Consulter les alertes importantes.' }), 'bell', COLORS.impactOrange, () => navigateAccess(navigation, 'TabNotifications')),
         action(t('navigation.profile', { defaultValue: 'Profil' }), t('superAdmin.mobile.profileAction', { defaultValue: 'Gérer vos informations et votre sécurité.' }), 'profile', COLORS.info, () => navigateAccess(navigation, 'TabProfile')),
       ],
@@ -667,11 +856,15 @@ function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, d
         stat(t('navigation.mentors', { defaultValue: 'Référents' }), referents.length, 'profile', '#0f766e'),
       ],
       actions: [
-        action(t('navigation.users', { defaultValue: 'Utilisateurs' }), t('adminMobile.usersAction', { defaultValue: 'Consulter les comptes utilisateurs.' }), 'group', COLORS.info, () => navigateAccess(navigation, 'TabUsers')),
-        action(t('navigation.groups', { defaultValue: 'Groupes' }), t('adminMobile.groupsAction', { defaultValue: 'Suivre les groupes et leurs référents.' }), 'group', COLORS.bxBlue, () => navigateAccess(navigation, 'TabGroupes', 'GroupesAccess')),
+        action(t('adminMobile.referentsTitle', { defaultValue: 'Référents' }), t('adminMobile.referentsAction', { defaultValue: 'Consulter les référents actifs et inactifs.' }), 'profile', '#0f766e', () => navigation.navigate('AdminReferentsAccess')),
+        action(t('adminMobile.partnerSupportsTitle', { defaultValue: 'Soutiens partenaires' }), t('adminMobile.partnerSupportsAction', { defaultValue: 'Valider ou refuser les soutiens en attente.' }), 'wallet', COLORS.info, () => navigation.navigate('AdminPartnerSupportsAccess')),
+        action(t('adminMobile.submittedProjects', { defaultValue: 'Projets soumis' }), t('adminMobile.submittedProjectsAction', { defaultValue: 'Suivre les projets qui attendent une décision.' }), 'project', COLORS.impactOrange, () => navigation.navigate('AdminSubmittedProjectsAccess')),
+        action(t('adminMobile.opportunitiesTitle', { defaultValue: 'Opportunités à modérer' }), t('adminMobile.opportunitiesAction', { defaultValue: 'Publier ou refuser les opportunités partenaires.' }), 'alert', '#d97706', () => navigation.navigate('AdminOpportunitiesAccess')),
         action(t('adminMobile.pendingGroupsTitle', { defaultValue: 'Groupes en attente' }), t('adminMobile.pendingGroupsAction', { defaultValue: 'Valider ou refuser les groupes proposés.' }), 'warning', '#d97706', () => navigation.navigate('AdminPendingGroupsAccess')),
+        action(t('navigation.users', { defaultValue: 'Utilisateurs' }), t('adminMobile.usersAction', { defaultValue: 'Consulter les comptes utilisateurs.' }), 'group', COLORS.info, () => navigateAccess(navigation, 'TabUsers')),
+        action(t('navigation.groups', { defaultValue: 'Groupes' }), t('adminMobile.groupsAction', { defaultValue: 'Suivre les groupes et leurs référents.' }), 'group', COLORS.bxBlue, () => navigateAccess(navigation, 'TabUsers', 'GroupesAccess')),
         action(t('navigation.activities', { defaultValue: 'Activités' }), t('adminMobile.activitiesAction', { defaultValue: 'Voir les activités de l’association.' }), 'activity', COLORS.success, () => navigateAccess(navigation, 'TabActivities')),
-        action(t('navigation.projects', { defaultValue: 'Projets' }), t('adminMobile.projectsAction', { defaultValue: 'Voir les projets suivis par l’association.' }), 'project', COLORS.impactOrange, () => navigateAccess(navigation, 'TabProjects', 'ProjectsAccess')),
+        action(t('navigation.projects', { defaultValue: 'Projets' }), t('adminMobile.projectsAction', { defaultValue: 'Voir les projets suivis par l’association.' }), 'project', COLORS.impactOrange, () => navigateAccess(navigation, 'TabUsers', 'ProjectsAccess')),
         action(t('navigation.notifications', { defaultValue: 'Notifications' }), t('admin.mobile.notificationsAction', { defaultValue: 'Suivre les alertes et demandes importantes.' }), 'bell', COLORS.impactOrange, () => navigateAccess(navigation, 'TabNotifications')),
         action(t('navigation.profile', { defaultValue: 'Profil' }), t('admin.mobile.profileAction', { defaultValue: 'Mettre à jour vos informations et préférences.' }), 'profile', COLORS.info, () => navigateAccess(navigation, 'TabProfile')),
       ],
@@ -694,9 +887,11 @@ function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, d
         stat(t('partner.totalAmount', { defaultValue: 'Montant total' }), `${pickNumber(stats, ['totalMontant', 'montantTotal'], 0)} €`, 'payment', COLORS.bxBlue),
       ],
       actions: [
+        action(t('partnerInstitution.profileTitle', { defaultValue: 'Profil partenaire' }), t('partnerInstitution.profileAction', { defaultValue: 'Mettre à jour les informations de votre organisation.' }), 'building', COLORS.bxBlue, () => navigation.navigate('PartnerProfileAccess')),
+        action(t('partner.supports', { defaultValue: 'Mes soutiens' }), t('partner.supportsAction', { defaultValue: 'Consulter vos soutiens financiers.' }), 'wallet', COLORS.info, () => navigateAccess(navigation, 'TabSupports', 'SupportsAccess')),
+        action(t('partner.opportunities', { defaultValue: 'Mes opportunités' }), t('partner.opportunitiesAction', { defaultValue: 'Créer et suivre vos publications partenaires.' }), 'alert', COLORS.impactOrange, () => navigateAccess(navigation, 'TabSupports', 'SupportsAccess', { tab: 'opportunities' })),
         action(t('partner.mobile.discoverProjects', { defaultValue: 'Découvrir les projets' }), t('partner.mobile.discoverProjectsText', { defaultValue: 'Explorer les initiatives portées par les jeunes.' }), 'project', COLORS.impactOrange, () => navigateAccess(navigation, 'TabProjects', 'ProjectsAccess')),
         action(t('partner.mobile.followInitiatives', { defaultValue: 'Suivre les initiatives' }), t('partner.mobile.followInitiativesText', { defaultValue: 'Voir les activités et temps forts de la communauté.' }), 'activity', COLORS.success, () => navigateAccess(navigation, 'TabActivities')),
-        action(t('partner.supports', { defaultValue: 'Mes soutiens' }), t('partner.supportsAction', { defaultValue: 'Consulter les soutiens déclarés.' }), 'wallet', COLORS.info, () => navigateAccess(navigation, 'TabSupports', 'SupportsAccess')),
         action(
           t('partner.mobile.contactTeam', { defaultValue: 'Contacter l’équipe' }),
           t('partner.mobile.contactTeamText', { defaultValue: `Écrire à ${PARTNER_CONTACT_EMAIL}.` }),
@@ -727,6 +922,25 @@ function settledData(result, fallback) {
   return result.status === 'fulfilled' ? (result.value.data ?? fallback) : fallback;
 }
 
+async function chargerDemandesAdhesionReferent(groupes) {
+  if (!Array.isArray(groupes) || groupes.length === 0) return [];
+
+  const results = await Promise.allSettled(
+    groupes.map(async (groupe) => {
+      const response = await api.get(`/referent/groupes/${groupe.id}/demandes`);
+      return (response.data || []).map((demande) => ({
+        ...demande,
+        groupeId: groupe.id,
+        groupeNom: groupe.nom,
+      }));
+    }),
+  );
+
+  return results
+    .filter((result) => result.status === 'fulfilled')
+    .flatMap((result) => result.value);
+}
+
 function allRejected(results) {
   return results.every(result => result.status === 'rejected');
 }
@@ -742,6 +956,28 @@ function DashboardNotice({ text }) {
       <AppIcon name="information-circle-outline" size={18} color="#1D4ED8" />
       <Text style={styles.dashboardNoticeText}>{text}</Text>
     </View>
+  );
+}
+
+function GlobalSearchAccess({ navigation, t }) {
+  return (
+    <TouchableOpacity
+      style={styles.searchAccessCard}
+      onPress={() => navigation.navigate('GlobalSearch')}
+      activeOpacity={0.82}
+      accessibilityRole="button"
+    >
+      <View style={styles.searchAccessIcon}>
+        <AppIcon name="search" size={20} color={COLORS.info} />
+      </View>
+      <View style={styles.searchAccessText}>
+        <Text style={styles.searchAccessTitle}>{t('search.title', { defaultValue: 'Recherche globale' })}</Text>
+        <Text style={styles.searchAccessSubtitle} numberOfLines={1}>
+          {t('search.startText', { defaultValue: 'Rechercher dans BX-Connect.' })}
+        </Text>
+      </View>
+      <AppIcon name="chevron-forward" size={18} color="#64748b" />
+    </TouchableOpacity>
   );
 }
 
@@ -789,17 +1025,21 @@ function action(label, description, icon, color, onPress) {
   return { label, description, icon, color, onPress };
 }
 
-function navigateAccess(navigation, tabName, stackRoute) {
+function navigateAccess(navigation, tabName, stackRoute, params) {
   const parent = navigation.getParent?.();
   const parentRoutes = parent?.getState?.()?.routeNames || [];
 
   if (parentRoutes.includes(tabName)) {
-    parent.navigate(tabName);
+    if (['TabProjects', 'TabSupports'].includes(tabName)) {
+      parent.navigate(tabName, params ? { screen: 'Main', params } : undefined);
+      return;
+    }
+    parent.navigate(tabName, stackRoute ? { screen: stackRoute, params } : undefined);
     return;
   }
 
   if (stackRoute) {
-    navigation.navigate(stackRoute);
+    navigation.navigate(stackRoute, params);
   }
 }
 
@@ -809,10 +1049,11 @@ function WelcomeCard({ user, role, t }) {
   return (
     <View style={styles.welcomeCard}>
       <View style={styles.roleBrandRow}>
-        <View style={styles.brandIcon}>
-          <AppIcon name="group" size={17} color="#fff" />
-        </View>
-        <Text style={styles.brandName}>BX-CONNECT</Text>
+        <Image
+          source={require('../../assets/images/logo-bx-connect.png')}
+          style={styles.brandLogoCompact}
+          resizeMode="contain"
+        />
         <Text style={styles.brandSlogan}>{t('brand.slogan')}</Text>
       </View>
       <View style={styles.welcomeMain}>
@@ -1239,6 +1480,29 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   dashboardNoticeText: { flex: 1, color: '#1E40AF', fontSize: 12, lineHeight: 17 },
+  searchAccessCard: {
+    minHeight: 58,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+    padding: 11,
+    marginBottom: 12,
+  },
+  searchAccessIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#eff6ff',
+  },
+  searchAccessText: { flex: 1, minWidth: 0 },
+  searchAccessTitle: { color: '#1E3A8A', fontSize: 14, lineHeight: 18, fontWeight: '900' },
+  searchAccessSubtitle: { color: '#64748b', fontSize: 11, lineHeight: 15, marginTop: 1 },
   errorTitle: { color: '#1E3A8A', fontSize: 18, fontWeight: '800', marginBottom: 8 },
   welcomeCard: {
     backgroundColor: '#1E3A8A',
@@ -1272,16 +1536,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   roleBrandRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  brandIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 10,
-    backgroundColor: 'rgba(56,189,248,0.24)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 7,
-  },
-  brandName: { color: '#fff', fontSize: 11, fontWeight: '900', letterSpacing: 0 },
+  brandLogoCompact: { width: 104, height: 30, marginRight: 8 },
   brandSlogan: { flex: 1, color: '#BAE6FD', fontSize: 9, textAlign: 'right' },
   roleHeroMain: { flexDirection: 'row', alignItems: 'center' },
   roleHeroText: { flex: 1, marginLeft: 11 },
@@ -1383,6 +1638,41 @@ const styles = StyleSheet.create({
   badge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
   badgeText: { fontSize: 11, fontWeight: '800' },
   counter: { color: '#38BDF8', fontSize: 12, fontWeight: '800' },
+  priorityCard: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  priorityGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  priorityButton: {
+    flex: 1,
+    minWidth: '31%',
+    minHeight: 96,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#eef2f7',
+    backgroundColor: '#f8fafc',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+  },
+  priorityIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  priorityCount: { fontSize: 20, lineHeight: 24, fontWeight: '900' },
+  priorityLabel: { color: '#334155', fontSize: 11, lineHeight: 14, fontWeight: '800', textAlign: 'center', marginTop: 2 },
   groupImage: {
     width: '100%',
     height: 104,

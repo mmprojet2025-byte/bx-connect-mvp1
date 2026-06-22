@@ -68,7 +68,7 @@ export default function LoginScreen({ navigation }) {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-      <View style={[styles.hero, { minHeight: Math.max(270, height * 0.38) }]}>
+      <View style={[styles.hero, { minHeight: Math.max(220, height * 0.3) }]}>
         <View style={styles.visualBlock}>
           <Image
             source={require('../../assets/images/logo-bx-connect.png')}
@@ -216,11 +216,11 @@ const styles = StyleSheet.create({
   content: { paddingBottom: 30 },
   hero: {
     backgroundColor: COLORS.bxBlue,
-    borderBottomLeftRadius: 36,
-    borderBottomRightRadius: 36,
-    paddingHorizontal: 24,
-    paddingTop: 28,
-    paddingBottom: 76,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 54,
     justifyContent: 'flex-end',
     shadowColor: COLORS.bxBlue,
     shadowOffset: { width: 0, height: 10 },
@@ -228,17 +228,17 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 4,
   },
-  visualBlock: { height: 64, marginBottom: 12, justifyContent: 'center' },
-  logoImage: { width: 195, height: 64 },
-  slogan: { color: COLORS.info, fontSize: 13, fontWeight: '900', marginBottom: 8 },
-  heroTitle: { color: '#fff', fontSize: 26, lineHeight: 32, fontWeight: '900' },
-  heroText: { color: '#DBEAFE', fontSize: 14, lineHeight: 21, marginTop: 9 },
+  visualBlock: { height: 44, marginBottom: 7, justifyContent: 'center' },
+  logoImage: { width: 152, height: 44 },
+  slogan: { color: COLORS.info, fontSize: 12, fontWeight: '900', marginBottom: 5 },
+  heroTitle: { color: '#fff', fontSize: 22, lineHeight: 27, fontWeight: '900' },
+  heroText: { color: '#DBEAFE', fontSize: 12, lineHeight: 17, marginTop: 6 },
   card: {
     backgroundColor: COLORS.surface,
-    borderRadius: 28,
-    padding: 22,
-    marginHorizontal: 18,
-    marginTop: -52,
+    borderRadius: 22,
+    padding: 17,
+    marginHorizontal: 14,
+    marginTop: -38,
     borderWidth: 1,
     borderColor: COLORS.border,
     shadowColor: '#000',
@@ -247,9 +247,9 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     elevation: 3,
   },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 18 },
-  formTitle: { color: COLORS.bxBlue, fontSize: 23, fontWeight: '900', marginBottom: 3 },
-  formSubtitle: { color: COLORS.muted, fontSize: 13, lineHeight: 18 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 13 },
+  formTitle: { color: COLORS.bxBlue, fontSize: 20, fontWeight: '900', marginBottom: 2 },
+  formSubtitle: { color: COLORS.muted, fontSize: 12, lineHeight: 16 },
   secureBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -272,14 +272,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   errorText: { color: COLORS.danger, fontSize: 13, flex: 1, lineHeight: 18 },
-  field: { marginBottom: 15 },
+  field: { marginBottom: 11 },
   label: { fontSize: 13, fontWeight: '900', color: '#334155', marginBottom: 8 },
   inputShell: {
     borderWidth: 1.5,
     borderColor: '#dbe3ef',
-    borderRadius: 18,
+    borderRadius: 14,
     paddingHorizontal: 14,
-    minHeight: 56,
+    minHeight: 48,
     backgroundColor: '#f8fafc',
     flexDirection: 'row',
     alignItems: 'center',
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  input: { flex: 1, fontSize: 16, color: '#0f172a', paddingVertical: 12 },
+  input: { flex: 1, fontSize: 15, color: '#0f172a', paddingVertical: 9 },
   passwordToggle: {
     width: 38,
     height: 38,
@@ -304,8 +304,8 @@ const styles = StyleSheet.create({
   },
   btnLogin: {
     backgroundColor: COLORS.bxBlue,
-    minHeight: 56,
-    borderRadius: 18,
+    minHeight: 48,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -318,10 +318,10 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   btnDisabled: { backgroundColor: '#94a3b8', shadowOpacity: 0 },
-  btnLoginText: { color: '#fff', fontWeight: '900', fontSize: 16 },
+  btnLoginText: { color: '#fff', fontWeight: '900', fontSize: 14 },
   btnRegister: {
-    minHeight: 50,
-    borderRadius: 17,
+    minHeight: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 12,

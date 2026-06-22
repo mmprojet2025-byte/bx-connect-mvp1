@@ -115,7 +115,11 @@ export default function MemberHomeScreen({ navigation }) {
     >
       <View style={styles.greeting}>
         <View>
-          <Text style={styles.greetingEyebrow}>BX-CONNECT</Text>
+          <Image
+            source={require('../../assets/images/logo-bx-connect.png')}
+            style={styles.greetingLogo}
+            resizeMode="contain"
+          />
           <Text style={styles.greetingTitle}>
             {user?.prenom
               ? t('memberHome.welcomeNamed', { name: user.prenom })
@@ -129,6 +133,24 @@ export default function MemberHomeScreen({ navigation }) {
           />
         </TouchableOpacity>
       </View>
+
+      <TouchableOpacity
+        style={styles.searchCard}
+        onPress={() => navigation.navigate('GlobalSearch')}
+        activeOpacity={0.82}
+        accessibilityRole="button"
+      >
+        <View style={styles.searchIcon}>
+          <AppIcon name="search" size={20} color={COLORS.interactive} />
+        </View>
+        <View style={styles.searchText}>
+          <Text style={styles.searchTitle}>{t('search.title', { defaultValue: 'Recherche globale' })}</Text>
+          <Text style={styles.searchSubtitle} numberOfLines={1}>
+            {t('search.startText', { defaultValue: 'Rechercher activités, groupes et projets.' })}
+          </Text>
+        </View>
+        <AppIcon name="chevron-forward" size={18} color={COLORS.muted} />
+      </TouchableOpacity>
 
       <ContentSection
         title={t('memberHome.upcomingTitle')}
@@ -423,62 +445,80 @@ function formatDate(value, language) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F4F5F7' },
-  content: { paddingHorizontal: 14, paddingTop: 16, paddingBottom: 28 },
+  content: { paddingHorizontal: 12, paddingTop: 9, paddingBottom: 20 },
   greeting: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 24,
+    marginBottom: 8,
     paddingHorizontal: 2,
   },
-  greetingEyebrow: {
-    color: COLORS.interactive,
-    fontSize: 10,
-    lineHeight: 13,
-    fontWeight: '800',
-    letterSpacing: 0.9,
-  },
+  greetingLogo: { width: 116, height: 32, marginBottom: 2 },
   greetingTitle: {
     color: COLORS.text,
-    fontSize: 24,
-    lineHeight: 30,
+    fontSize: 20,
+    lineHeight: 24,
     fontWeight: '800',
     marginTop: 3,
   },
   avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: COLORS.surface },
-  section: { marginBottom: 22 },
+  searchCard: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+    padding: 10,
+    marginBottom: 10,
+    ...SHADOWS.soft,
+  },
+  searchIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.softBlue,
+  },
+  searchText: { flex: 1, minWidth: 0 },
+  searchTitle: { color: COLORS.bxBlue, fontSize: 13, lineHeight: 17, fontWeight: '900' },
+  searchSubtitle: { color: COLORS.muted, fontSize: 10, lineHeight: 13, marginTop: 1 },
+  section: { marginBottom: 10 },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 5,
     paddingHorizontal: 2,
   },
-  sectionTitle: { color: COLORS.text, fontSize: 16, lineHeight: 21, fontWeight: '800' },
+  sectionTitle: { color: COLORS.text, fontSize: 15, lineHeight: 19, fontWeight: '800' },
   sectionAction: { color: COLORS.interactive, fontSize: 12, fontWeight: '700' },
   featureCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
     borderRadius: 16,
-    padding: 14,
+    padding: 10,
     borderWidth: 1,
     borderColor: COLORS.border,
     ...SHADOWS.soft,
   },
   activityDate: {
-    width: 54,
-    height: 58,
+    width: 42,
+    height: 46,
     borderRadius: 14,
     backgroundColor: COLORS.softBlue,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 13,
   },
-  dateDay: { color: COLORS.bxBlue, fontSize: 20, lineHeight: 22, fontWeight: '900' },
+  dateDay: { color: COLORS.bxBlue, fontSize: 16, lineHeight: 18, fontWeight: '900' },
   dateMonth: { color: COLORS.interactive, fontSize: 9, lineHeight: 12, fontWeight: '800' },
   featureBody: { flex: 1, minWidth: 0, marginRight: 8 },
-  featureTitle: { color: COLORS.text, fontSize: 15, lineHeight: 20, fontWeight: '800' },
+  featureTitle: { color: COLORS.text, fontSize: 14, lineHeight: 18, fontWeight: '800' },
   secondaryText: { color: COLORS.muted, fontSize: 12, lineHeight: 17, marginTop: 3 },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 },
   metaText: { color: COLORS.muted, fontSize: 11, lineHeight: 14, flexShrink: 1 },
@@ -487,15 +527,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.surface,
     borderRadius: 16,
-    padding: 14,
+    padding: 10,
     borderWidth: 1,
     borderColor: COLORS.border,
     ...SHADOWS.soft,
   },
   roundIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.softGreen,
@@ -509,11 +549,11 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     ...SHADOWS.soft,
   },
-  row: { minHeight: 68, flexDirection: 'row', alignItems: 'center', paddingVertical: 11 },
+  row: { minHeight: 50, flexDirection: 'row', alignItems: 'center', paddingVertical: 7 },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.border },
   rowIcon: {
-    width: 38,
-    height: 38,
+    width: 34,
+    height: 34,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -537,7 +577,7 @@ const styles = StyleSheet.create({
   projectCard: {
     backgroundColor: COLORS.surface,
     borderRadius: 16,
-    padding: 15,
+    padding: 10,
     borderWidth: 1,
     borderColor: COLORS.border,
     ...SHADOWS.soft,
@@ -546,7 +586,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   projectIcon: {
     width: 42,
@@ -559,7 +599,7 @@ const styles = StyleSheet.create({
   projectTitle: { color: COLORS.text, fontSize: 16, lineHeight: 21, fontWeight: '800' },
   projectStats: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 8 },
   emptyCard: {
-    minHeight: 88,
+    minHeight: 68,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
@@ -569,7 +609,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     ...SHADOWS.soft,
   },
-  emptyImage: { width: 64, height: 64, borderRadius: 14, marginRight: 12 },
+  emptyImage: { width: 52, height: 52, borderRadius: 13, marginRight: 10 },
   emptyBody: { flex: 1, minWidth: 0, marginRight: 8 },
   emptyTitle: { flex: 1 },
 });

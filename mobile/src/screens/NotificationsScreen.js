@@ -139,9 +139,14 @@ export default function NotificationsScreen({ navigation }) {
           <Text style={[styles.notifTitle, !item.lue && styles.notifTitleUnread]} numberOfLines={2}>
             {item.titre || item.message || t('notifications.title')}
           </Text>
-          <Text style={[styles.readBadge, !item.lue && styles.unreadBadge]}>
-            {item.lue ? t('notifications.read') : t('notifications.unread')}
-          </Text>
+          <View style={styles.badgeRow}>
+            <Text style={[styles.typeBadge, { color: typeIconColor(item.type), backgroundColor: typeColor(item.type) }]}>
+              {formatType(item.type, t)}
+            </Text>
+            <Text style={[styles.readBadge, !item.lue && styles.unreadBadge]}>
+              {item.lue ? t('notifications.read') : t('notifications.unread')}
+            </Text>
+          </View>
         </View>
 
         {item.message && item.titre && (
@@ -153,6 +158,7 @@ export default function NotificationsScreen({ navigation }) {
             style={styles.actionButton}
             onPress={() => handleAction(item)}
           >
+            <AppIcon name="chevron-forward" size={14} color="#fff" />
             <Text style={styles.actionButtonText}>{t('notifications.openAction')}</Text>
           </TouchableOpacity>
         )}
@@ -280,6 +286,12 @@ function typeColor(type) {
   }
 }
 
+function formatType(type, t) {
+  return t(`notifications.types.${type}`, {
+    defaultValue: String(type || 'INFO').replaceAll('_', ' '),
+  });
+}
+
 function resolveActionTarget(lienAction, roles) {
   if (!lienAction) return null;
 
@@ -395,18 +407,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 10,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#eef2f7',
   },
-  headerTitle: { fontSize: 18, fontWeight: '900', color: '#1E3A8A' },
+  headerTitle: { fontSize: 16, fontWeight: '900', color: '#1E3A8A' },
   headerSub: { fontSize: 12, color: '#64748b', marginTop: 2 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   btnLight: {
     backgroundColor: '#f8fafc',
     paddingHorizontal: 9,
-    paddingVertical: 7,
+    paddingVertical: 6,
     borderRadius: 20,
   },
   btnLightText: { color: '#64748b', fontSize: 12, fontWeight: '800' },
@@ -447,9 +459,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     backgroundColor: '#fff',
-    borderRadius: 22,
-    padding: 14,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 9,
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.07,
@@ -463,11 +475,11 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: '#38BDF8',
   },
-  notifLeft: { position: 'relative', marginRight: 10 },
+  notifLeft: { position: 'relative', marginRight: 9 },
   notifIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 15,
+    width: 38,
+    height: 38,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -484,8 +496,19 @@ const styles = StyleSheet.create({
   },
   notifContent: { flex: 1 },
   titleRow: { marginBottom: 3 },
-  notifTitle: { fontSize: 14, fontWeight: '900', color: '#1E3A8A', marginBottom: 4, lineHeight: 19 },
+  notifTitle: { fontSize: 13, fontWeight: '900', color: '#1E3A8A', marginBottom: 4, lineHeight: 18 },
   notifTitleUnread: { fontWeight: '900', color: '#1E3A8A' },
+  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginBottom: 2 },
+  typeBadge: {
+    alignSelf: 'flex-start',
+    fontSize: 9,
+    fontWeight: '900',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 20,
+    overflow: 'hidden',
+    textTransform: 'uppercase',
+  },
   readBadge: {
     alignSelf: 'flex-start',
     backgroundColor: '#f1f5f9',
@@ -498,19 +521,22 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   unreadBadge: { backgroundColor: '#E0F2FE', color: '#38BDF8' },
-  notifMessage: { fontSize: 12, color: '#64748b', lineHeight: 16, marginBottom: 5 },
+  notifMessage: { fontSize: 12, color: '#64748b', lineHeight: 16, marginBottom: 7 },
   actionButton: {
     alignSelf: 'flex-start',
-    backgroundColor: '#F0F9FF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#2563EB',
     borderRadius: 20,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    marginBottom: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    marginBottom: 6,
   },
-  actionButtonText: { color: '#38BDF8', fontSize: 11, fontWeight: '900' },
+  actionButtonText: { color: '#fff', fontSize: 11, fontWeight: '900' },
   notifDate: { fontSize: 11, color: '#94a3b8' },
   deleteBtn: {
-    padding: 6,
+    padding: 5,
     marginLeft: 6,
     borderRadius: 18,
     backgroundColor: '#fef2f2',

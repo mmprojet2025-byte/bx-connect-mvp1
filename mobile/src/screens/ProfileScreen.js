@@ -256,10 +256,11 @@ export default function ProfileScreen({ navigation }) {
       <View style={styles.profileHero}>
         <View style={styles.heroAccent} />
         <View style={styles.heroBrand}>
-          <View style={styles.heroBrandIcon}>
-            <AppIcon name="group" size={15} color="#fff" />
-          </View>
-          <Text style={styles.heroBrandText}>BX-CONNECT</Text>
+          <Image
+            source={require('../../assets/images/logo-bx-connect.png')}
+            style={styles.heroBrandLogo}
+            resizeMode="contain"
+          />
         </View>
         <View style={styles.avatarFrame}>
           <Image
@@ -281,7 +282,6 @@ export default function ProfileScreen({ navigation }) {
           label={t(`roles.${profil?.role}`, { defaultValue: profil?.role })}
           color={COLORS.info}
         />
-        <Text style={styles.heroSlogan}>{t('brand.slogan')}</Text>
         <TouchableOpacity style={styles.photoLabelButton} onPress={handlePhotoSoon}>
           <AppIcon name="camera-outline" size={14} color="#fff" />
           <Text style={styles.photoLabel}>{t('profile.change_photo')}</Text>
@@ -583,7 +583,7 @@ function formatMonthYear(dateStr, language, t) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.page },
-  content: { padding: SPACING.md, paddingBottom: SPACING.xxl },
+  content: { padding: SPACING.sm, paddingBottom: SPACING.xl },
   noticeBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -592,8 +592,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
+    padding: SPACING.sm,
+    marginBottom: SPACING.sm,
   },
   noticeText: { flex: 1, color: COLORS.bxBlue, ...TYPOGRAPHY.caption },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, backgroundColor: COLORS.page },
@@ -634,10 +634,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.bxBlue,
     borderRadius: BORDER_RADIUS.xl,
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.lg,
-    marginBottom: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    paddingTop: 6,
+    paddingBottom: 9,
+    marginBottom: SPACING.xs,
     borderWidth: 1,
     borderColor: COLORS.info,
     ...SHADOWS.colored(COLORS.bxBlue),
@@ -656,51 +656,41 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
-  heroBrandIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: BORDER_RADIUS.sm,
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: SPACING.sm,
-  },
-  heroBrandText: { color: '#fff', fontSize: 12, fontWeight: '900' },
+  heroBrandLogo: { width: 108, height: 28 },
   avatarFrame: {
-    padding: 3,
+    padding: 2,
     borderRadius: BORDER_RADIUS.pill,
     backgroundColor: '#fff',
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   avatarImage: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   photoButton: {
     position: 'absolute',
     right: -3,
     bottom: -1,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: COLORS.softBlue,
   },
-  profileName: { color: '#fff', fontSize: 20, lineHeight: 24, fontWeight: '900', marginBottom: SPACING.xs },
-  heroSlogan: { color: '#BAE6FD', ...TYPOGRAPHY.caption, fontWeight: '700', marginTop: SPACING.sm },
+  profileName: { color: '#fff', fontSize: 16, lineHeight: 20, fontWeight: '900', marginBottom: 3 },
   photoLabelButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    marginTop: SPACING.sm,
+    marginTop: SPACING.xs,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 4,
     borderRadius: BORDER_RADIUS.pill,
     backgroundColor: 'rgba(255,255,255,0.12)',
   },
@@ -710,7 +700,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: SPACING.sm,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.sm,
   },
   infoChip: {
     minWidth: '48%',
@@ -723,7 +713,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.borderSoft,
     paddingHorizontal: 10,
-    paddingVertical: 9,
+    paddingVertical: 7,
     ...SHADOWS.soft,
   },
   infoChipIcon: {

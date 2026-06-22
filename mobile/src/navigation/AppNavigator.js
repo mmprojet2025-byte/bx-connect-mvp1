@@ -3,7 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { ActivityIndicator, View, TouchableOpacity, Text } from 'react-native';
+import { ActivityIndicator, View, TouchableOpacity, Text, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import AppIcon from '../components/AppIcon';
 import api from '../api/axios';
@@ -28,6 +28,14 @@ import PartnerSupportsScreen from '../screens/PartnerSupportsScreen';
 import ReferentRequestsScreen from '../screens/ReferentRequestsScreen';
 import ReferentMembersScreen from '../screens/ReferentMembersScreen';
 import AdminPendingGroupsScreen from '../screens/AdminPendingGroupsScreen';
+import AdminOpportunitiesScreen from '../screens/AdminOpportunitiesScreen';
+import AdminReferentsScreen from '../screens/AdminReferentsScreen';
+import AdminPartnerSupportsScreen from '../screens/AdminPartnerSupportsScreen';
+import AdminSubmittedProjectsScreen from '../screens/AdminSubmittedProjectsScreen';
+import SuperAdminLogsScreen from '../screens/SuperAdminLogsScreen';
+import PartnerProfileScreen from '../screens/PartnerProfileScreen';
+import AnnoncesScreen from '../screens/AnnoncesScreen';
+import GlobalSearchScreen from '../screens/GlobalSearchScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -99,6 +107,24 @@ function NotificationButton({ count, onPress, label }) {
   );
 }
 
+function SearchButton({ onPress, label }) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={{
+        width: 44,
+        height: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <AppIcon name="search" size={21} color="#374151" />
+    </TouchableOpacity>
+  );
+}
+
 // ─── Stack public ─────────────────────────────────────────────────────────────
 function PublicStack({ initialRouteName = 'Home' }) {
   const { t } = useTranslation();
@@ -118,18 +144,41 @@ function PublicStack({ initialRouteName = 'Home' }) {
 }
 
 // ─── Stacks privés (un par onglet) ───────────────────────────────────────────
-function privateScreenOptions({ title, roleLabel, unreadNotifications, notificationLabel, navigation }) {
+function privateScreenOptions({ title, roleLabel, unreadNotifications, notificationLabel, searchLabel, navigation }) {
   return {
     ...headerStyle,
     headerTitle: () => <HeaderTitle title={title} roleLabel={roleLabel} />,
     headerRight: () => (
-      <NotificationButton
-        count={unreadNotifications}
-        label={notificationLabel}
-        onPress={() => navigation.navigate('NotificationsAccess')}
-      />
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <SearchButton
+          label={searchLabel}
+          onPress={() => navigation.navigate('GlobalSearch')}
+        />
+        <NotificationButton
+          count={unreadNotifications}
+          label={notificationLabel}
+          onPress={() => navigation.navigate('NotificationsAccess')}
+        />
+      </View>
     ),
   };
+}
+
+function commonPrivateScreens(t) {
+  return [
+    <Stack.Screen
+      key="global-search"
+      name="GlobalSearch"
+      component={GlobalSearchScreen}
+      options={{ ...headerStyle, title: t('search.title', { defaultValue: 'Recherche' }) }}
+    />,
+    <Stack.Screen
+      key="annonces-access"
+      name="AnnoncesAccess"
+      component={AnnoncesScreen}
+      options={{ ...headerStyle, title: t('navigation.announcements', { defaultValue: 'Annonces' }) }}
+    />,
+  ];
 }
 
 function legalScreens(t) {
@@ -154,6 +203,7 @@ function makeStack(ScreenComponent, title, roleLabel, unreadNotifications) {
               roleLabel,
               unreadNotifications,
               notificationLabel: t('navigation.notifications'),
+              searchLabel: t('search.title', { defaultValue: 'Recherche' }),
               navigation,
             }),
             headerBackVisible: false,
@@ -164,6 +214,7 @@ function makeStack(ScreenComponent, title, roleLabel, unreadNotifications) {
           component={NotificationsScreen}
           options={{ ...headerStyle, title: t('navigation.notifications') }}
         />
+        {commonPrivateScreens(t)}
         {legalScreens(t)}
       </Stack.Navigator>
     );
@@ -183,12 +234,14 @@ function makeDashboardStack(t, roleLabel, unreadNotifications, access) {
               roleLabel,
               unreadNotifications,
               notificationLabel: t('navigation.notifications'),
+              searchLabel: t('search.title', { defaultValue: 'Recherche' }),
               navigation,
             }),
             headerBackVisible: false,
           })}
         />
         <Stack.Screen name="NotificationsAccess" component={NotificationsScreen} options={{ ...headerStyle, title: t('navigation.notifications') }} />
+        {commonPrivateScreens(t)}
         {legalScreens(t)}
         {access.groups ? (
           <Stack.Screen
@@ -208,7 +261,14 @@ function makeDashboardStack(t, roleLabel, unreadNotifications, access) {
           <Stack.Screen
             name="SupportsAccess"
             component={PartnerSupportsScreen}
-            options={{ ...headerStyle, title: t('partner.supports') }}
+            options={{ ...headerStyle, title: t('partner.supportsAndOpportunities', { defaultValue: 'Soutiens & Opportunités' }) }}
+          />
+        ) : null}
+        {access.partnerProfile ? (
+          <Stack.Screen
+            name="PartnerProfileAccess"
+            component={PartnerProfileScreen}
+            options={{ ...headerStyle, title: t('partnerInstitution.profileTitle', { defaultValue: 'Profil partenaire' }) }}
           />
         ) : null}
         {access.referentTools ? (
@@ -232,6 +292,41 @@ function makeDashboardStack(t, roleLabel, unreadNotifications, access) {
             options={{ ...headerStyle, title: t('adminMobile.pendingGroupsTitle', { defaultValue: 'Groupes en attente' }) }}
           />
         ) : null}
+        {access.opportunities ? (
+          <Stack.Screen
+            name="AdminOpportunitiesAccess"
+            component={AdminOpportunitiesScreen}
+            options={{ ...headerStyle, title: t('adminMobile.opportunitiesTitle', { defaultValue: 'Opportunités à modérer' }) }}
+          />
+        ) : null}
+        {access.referents ? (
+          <Stack.Screen
+            name="AdminReferentsAccess"
+            component={AdminReferentsScreen}
+            options={{ ...headerStyle, title: t('adminMobile.referentsTitle', { defaultValue: 'Référents' }) }}
+          />
+        ) : null}
+        {access.supportsAdmin ? (
+          <Stack.Screen
+            name="AdminPartnerSupportsAccess"
+            component={AdminPartnerSupportsScreen}
+            options={{ ...headerStyle, title: t('adminMobile.partnerSupportsTitle', { defaultValue: 'Soutiens partenaires' }) }}
+          />
+        ) : null}
+        {access.submittedProjects ? (
+          <Stack.Screen
+            name="AdminSubmittedProjectsAccess"
+            component={AdminSubmittedProjectsScreen}
+            options={{ ...headerStyle, title: t('adminMobile.submittedProjects', { defaultValue: 'Projets soumis' }) }}
+          />
+        ) : null}
+        {access.logs ? (
+          <Stack.Screen
+            name="SuperAdminLogsAccess"
+            component={SuperAdminLogsScreen}
+            options={{ ...headerStyle, title: t('superAdmin.logsTitle', { defaultValue: 'Journal d’activité' }) }}
+          />
+        ) : null}
       </Stack.Navigator>
     );
   };
@@ -251,6 +346,7 @@ function makeNetworkStack(title, roleLabel, unreadNotifications) {
               roleLabel,
               unreadNotifications,
               notificationLabel: t('navigation.notifications'),
+              searchLabel: t('search.title', { defaultValue: 'Recherche' }),
               navigation,
             }),
             headerBackVisible: false,
@@ -259,6 +355,7 @@ function makeNetworkStack(title, roleLabel, unreadNotifications) {
         <Stack.Screen name="GroupesAccess" component={GroupesScreen} options={{ ...headerStyle, title: t('navigation.groups') }} />
         <Stack.Screen name="ProjectsAccess" component={ProjectsScreen} options={{ ...headerStyle, title: t('navigation.projects') }} />
         <Stack.Screen name="NotificationsAccess" component={NotificationsScreen} options={{ ...headerStyle, title: t('navigation.notifications') }} />
+        {commonPrivateScreens(t)}
         {legalScreens(t)}
       </Stack.Navigator>
     );
@@ -268,6 +365,7 @@ function makeNetworkStack(title, roleLabel, unreadNotifications) {
 function makeManagementStack(title, roleLabel, unreadNotifications) {
   return function ManagementStackWrapper() {
     const { t } = useTranslation();
+    const { isAdmin, isSuperAdmin } = useAuth();
     return (
       <Stack.Navigator>
         <Stack.Screen
@@ -279,16 +377,29 @@ function makeManagementStack(title, roleLabel, unreadNotifications) {
               roleLabel,
               unreadNotifications,
               notificationLabel: t('navigation.notifications'),
+              searchLabel: t('search.title', { defaultValue: 'Recherche' }),
               navigation,
             }),
             headerBackVisible: false,
           })}
         />
         <Stack.Screen name="UsersAccess" component={AdminUsersScreen} options={{ ...headerStyle, title: t('navigation.users') }} />
+        {isSuperAdmin ? (
+          <Stack.Screen name="SuperAdminLogsAccess" component={SuperAdminLogsScreen} options={{ ...headerStyle, title: t('superAdmin.logsTitle', { defaultValue: 'Journal d’activité' }) }} />
+        ) : null}
         <Stack.Screen name="GroupesAccess" component={GroupesScreen} options={{ ...headerStyle, title: t('navigation.groups') }} />
         <Stack.Screen name="ProjectsAccess" component={ProjectsScreen} options={{ ...headerStyle, title: t('navigation.projects') }} />
         <Stack.Screen name="AdminPendingGroupsAccess" component={AdminPendingGroupsScreen} options={{ ...headerStyle, title: t('adminMobile.pendingGroupsTitle', { defaultValue: 'Groupes en attente' }) }} />
+        {isAdmin ? (
+          <>
+            <Stack.Screen name="AdminOpportunitiesAccess" component={AdminOpportunitiesScreen} options={{ ...headerStyle, title: t('adminMobile.opportunitiesTitle', { defaultValue: 'Opportunités à modérer' }) }} />
+            <Stack.Screen name="AdminReferentsAccess" component={AdminReferentsScreen} options={{ ...headerStyle, title: t('adminMobile.referentsTitle', { defaultValue: 'Référents' }) }} />
+            <Stack.Screen name="AdminPartnerSupportsAccess" component={AdminPartnerSupportsScreen} options={{ ...headerStyle, title: t('adminMobile.partnerSupportsTitle', { defaultValue: 'Soutiens partenaires' }) }} />
+            <Stack.Screen name="AdminSubmittedProjectsAccess" component={AdminSubmittedProjectsScreen} options={{ ...headerStyle, title: t('adminMobile.submittedProjects', { defaultValue: 'Projets soumis' }) }} />
+          </>
+        ) : null}
         <Stack.Screen name="NotificationsAccess" component={NotificationsScreen} options={{ ...headerStyle, title: t('navigation.notifications') }} />
+        {commonPrivateScreens(t)}
         {legalScreens(t)}
       </Stack.Navigator>
     );
@@ -297,9 +408,50 @@ function makeManagementStack(title, roleLabel, unreadNotifications) {
 
 function NetworkHome({ navigation }) {
   const { t } = useTranslation();
+  const { isAdmin, isReferent, isMembre } = useAuth();
+  const [groupes, setGroupes] = useState([]);
+  const [projets, setProjets] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadNetworkPreview() {
+      setLoading(true);
+      const [groupesRes, projetsRes] = await Promise.allSettled([
+        isAdmin
+          ? api.get('/admin/groupes')
+          : isReferent
+            ? api.get('/referent/groupes')
+            : api.get('/groupes'),
+        isAdmin
+          ? api.get('/projets/admin/tous')
+          : isReferent
+            ? api.get('/projets/referent/mes-groupes')
+            : api.get('/projets'),
+      ]);
+
+      if (!cancelled) {
+        setGroupes(groupesRes.status === 'fulfilled' ? (groupesRes.value.data || []) : []);
+        setProjets(projetsRes.status === 'fulfilled' ? (projetsRes.value.data || []) : []);
+        setLoading(false);
+      }
+    }
+
+    if (isMembre || isReferent || isAdmin) {
+      loadNetworkPreview();
+    } else {
+      setLoading(false);
+    }
+
+    return () => { cancelled = true; };
+  }, [isAdmin, isReferent, isMembre]);
+
+  const groupesActifs = groupes.filter((groupe) => ['VALIDE', 'ACTIF', undefined, null].includes(groupe.statut)).length;
+  const projetsActifs = projets.filter((projet) => !['REJETE', 'ARCHIVE'].includes(projet.statut)).length;
 
   return (
-    <View style={navigatorStyles.hubPage}>
+    <ScrollView style={navigatorStyles.hubPage} contentContainerStyle={navigatorStyles.hubContent}>
       <Text style={navigatorStyles.hubTitle}>
         {t('navigation.groups', { defaultValue: 'Réseau' })}
       </Text>
@@ -308,6 +460,16 @@ function NetworkHome({ navigation }) {
           defaultValue: 'Retrouvez vos groupes et les projets de la communauté.',
         })}
       </Text>
+
+      <View style={navigatorStyles.networkStats}>
+        <NetworkStat value={groupesActifs} label={t('navigation.groups', { defaultValue: 'Groupes' })} />
+        <NetworkStat value={projetsActifs} label={t('navigation.projects', { defaultValue: 'Projets' })} />
+        <NetworkStat
+          value={groupes.reduce((total, groupe) => total + Number(groupe.nombreMembres || 0), 0)}
+          label={t('groups.members', { defaultValue: 'Membres' })}
+        />
+      </View>
+
       <HubLink
         icon="group"
         title={t('navigation.groups')}
@@ -320,7 +482,89 @@ function NetworkHome({ navigation }) {
         description={t('projects.public_will_appear', { defaultValue: 'Découvrir les projets de la communauté.' })}
         onPress={() => navigation.navigate('ProjectsAccess')}
       />
+
+      <View style={navigatorStyles.previewSection}>
+        <View style={navigatorStyles.previewHeader}>
+          <Text style={navigatorStyles.previewTitle}>
+            {t('groups.business_groups', { defaultValue: 'Groupes actifs' })}
+          </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('GroupesAccess')}>
+            <Text style={navigatorStyles.previewAction}>{t('memberHome.seeAll', { defaultValue: 'Tout voir' })}</Text>
+          </TouchableOpacity>
+        </View>
+        {loading ? (
+          <ActivityIndicator color="#2563EB" style={navigatorStyles.previewLoader} />
+        ) : groupes.length === 0 ? (
+          <Text style={navigatorStyles.previewEmpty}>{t('groups.available_will_appear', { defaultValue: 'Les groupes apparaîtront ici.' })}</Text>
+        ) : (
+          groupes.slice(0, 3).map((groupe) => (
+            <NetworkPreviewCard
+              key={`groupe-${groupe.id}`}
+              icon="group"
+              title={groupe.nom}
+              subtitle={groupe.description || groupe.theme || t('groups.title', { defaultValue: 'Groupe' })}
+              badge={t('groups.members_count', { count: groupe.nombreMembres ?? 0 })}
+              color="#0f766e"
+              onPress={() => navigation.navigate('GroupesAccess')}
+            />
+          ))
+        )}
+      </View>
+
+      <View style={navigatorStyles.previewSection}>
+        <View style={navigatorStyles.previewHeader}>
+          <Text style={navigatorStyles.previewTitle}>
+            {t('projects.business_projects', { defaultValue: 'Projets' })}
+          </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('ProjectsAccess')}>
+            <Text style={navigatorStyles.previewAction}>{t('memberHome.discover', { defaultValue: 'Découvrir' })}</Text>
+          </TouchableOpacity>
+        </View>
+        {loading ? (
+          <ActivityIndicator color="#2563EB" style={navigatorStyles.previewLoader} />
+        ) : projets.length === 0 ? (
+          <Text style={navigatorStyles.previewEmpty}>{t('projects.public_will_appear', { defaultValue: 'Les projets apparaîtront ici.' })}</Text>
+        ) : (
+          projets.slice(0, 3).map((projet) => (
+            <NetworkPreviewCard
+              key={`projet-${projet.id}`}
+              icon="project"
+              title={projet.titre}
+              subtitle={projet.groupeNom || projet.description || t('navigation.projects', { defaultValue: 'Projet' })}
+              badge={projet.statut || 'PROJET'}
+              color="#F97316"
+              onPress={() => navigation.navigate('ProjectsAccess')}
+            />
+          ))
+        )}
+      </View>
+    </ScrollView>
+  );
+}
+
+function NetworkStat({ value, label }) {
+  return (
+    <View style={navigatorStyles.networkStat}>
+      <Text style={navigatorStyles.networkStatValue}>{value}</Text>
+      <Text style={navigatorStyles.networkStatLabel} numberOfLines={1}>{label}</Text>
     </View>
+  );
+}
+
+function NetworkPreviewCard({ icon, title, subtitle, badge, color, onPress }) {
+  return (
+    <TouchableOpacity style={navigatorStyles.previewCard} onPress={onPress} activeOpacity={0.82}>
+      <View style={[navigatorStyles.previewIcon, { backgroundColor: `${color}18` }]}>
+        <AppIcon name={icon} size={19} color={color} />
+      </View>
+      <View style={navigatorStyles.previewText}>
+        <Text style={navigatorStyles.previewCardTitle} numberOfLines={1}>{title}</Text>
+        <Text style={navigatorStyles.previewCardSubtitle} numberOfLines={1}>{subtitle}</Text>
+      </View>
+      <Text style={[navigatorStyles.previewBadge, { color, backgroundColor: `${color}14` }]} numberOfLines={1}>
+        {badge}
+      </Text>
+    </TouchableOpacity>
   );
 }
 
@@ -368,7 +612,39 @@ function ManagementHome({ navigation }) {
             description={t('adminMobile.pendingGroupsAction', { defaultValue: 'Valider ou refuser les groupes proposés.' })}
             onPress={() => navigation.navigate('AdminPendingGroupsAccess')}
           />
+          <HubLink
+            icon="profile"
+            title={t('adminMobile.referentsTitle', { defaultValue: 'Référents' })}
+            description={t('adminMobile.referentsAction', { defaultValue: 'Consulter les référents actifs et inactifs.' })}
+            onPress={() => navigation.navigate('AdminReferentsAccess')}
+          />
+          <HubLink
+            icon="wallet"
+            title={t('adminMobile.partnerSupportsTitle', { defaultValue: 'Soutiens partenaires' })}
+            description={t('adminMobile.partnerSupportsAction', { defaultValue: 'Valider ou refuser les soutiens en attente.' })}
+            onPress={() => navigation.navigate('AdminPartnerSupportsAccess')}
+          />
+          <HubLink
+            icon="project"
+            title={t('adminMobile.submittedProjects', { defaultValue: 'Projets soumis' })}
+            description={t('adminMobile.submittedProjectsAction', { defaultValue: 'Suivre les projets qui attendent une décision.' })}
+            onPress={() => navigation.navigate('AdminSubmittedProjectsAccess')}
+          />
+          <HubLink
+            icon="alert"
+            title={t('adminMobile.opportunitiesTitle', { defaultValue: 'Opportunités à modérer' })}
+            description={t('adminMobile.opportunitiesAction', { defaultValue: 'Publier ou refuser les opportunités partenaires.' })}
+            onPress={() => navigation.navigate('AdminOpportunitiesAccess')}
+          />
         </>
+      ) : null}
+      {isSuperAdmin ? (
+        <HubLink
+          icon="lock"
+          title={t('superAdmin.logsTitle', { defaultValue: 'Journal d’activité' })}
+          description={t('superAdmin.logsAction', { defaultValue: 'Consulter les actions auditées de la plateforme.' })}
+          onPress={() => navigation.navigate('SuperAdminLogsAccess')}
+        />
       ) : null}
     </View>
   );
@@ -421,12 +697,19 @@ function PrivateTabs() {
     groups: isAdmin || isReferent,
     projects: isAdmin || isReferent,
     supports: isPartenaire,
+    partnerProfile: isPartenaire,
+    referents: isAdmin,
+    supportsAdmin: isAdmin,
+    submittedProjects: isAdmin,
     referentTools: isReferent,
     pendingGroups: isAdmin,
+    opportunities: isAdmin,
+    logs: isSuperAdmin,
   });
   const MemberHomeStack    = makeStack(MemberHomeScreen, 'BX-CONNECT', roleLabel, unreadNotifications);
   const ActivitiesStack    = makeStack(ActivitiesScreen, t('navigation.activities'), roleLabel, unreadNotifications);
   const ProjectsStack      = makeStack(ProjectsScreen, t('navigation.projects'), roleLabel, unreadNotifications);
+  const SupportsStack      = makeStack(PartnerSupportsScreen, t('partner.supportsAndOpportunities', { defaultValue: 'Soutiens & Opportunités' }), roleLabel, unreadNotifications);
   const NetworkStack       = makeNetworkStack(communityLabels.network, roleLabel, unreadNotifications);
   const ManagementStack    = makeManagementStack(communityLabels.management, roleLabel, unreadNotifications);
   const MessagerieStack    = makeStack(MessagerieScreen, t('navigation.messaging'), roleLabel, unreadNotifications);
@@ -445,6 +728,7 @@ function PrivateTabs() {
       MemberHomeStack,
       ActivitiesStack,
       ProjectsStack,
+      SupportsStack,
       NetworkStack,
       ManagementStack,
       MessagerieStack,
@@ -549,6 +833,7 @@ function getTabsForRole({ isMembre, isReferent, isAdmin, isSuperAdmin, isPartena
       tab('TabActivities', t('navigation.activities'), 'activity', stacks.ActivitiesStack),
       tab('TabNotifications', t('navigation.notifications'), 'bell', stacks.NotificationsStack),
       tab('TabProfile', t('navigation.profile'), 'profile', stacks.ProfileStack),
+      tab('TabSupports', t('partner.supports', { defaultValue: 'Soutiens' }), 'wallet', stacks.SupportsStack, true),
     ];
   }
 
@@ -594,32 +879,35 @@ const navigatorStyles = {
   hubPage: {
     flex: 1,
     backgroundColor: '#F3F4F6',
-    padding: 16,
+  },
+  hubContent: {
+    padding: 12,
+    paddingBottom: 22,
   },
   hubTitle: {
     color: '#111827',
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 20,
+    lineHeight: 25,
     fontWeight: '700',
     marginTop: 4,
   },
   hubSubtitle: {
     color: '#64748B',
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 17,
     marginTop: 4,
-    marginBottom: 16,
+    marginBottom: 10,
   },
   hubLink: {
-    minHeight: 72,
+    minHeight: 58,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 10,
+    borderRadius: 11,
+    padding: 9,
+    marginBottom: 7,
     shadowColor: '#111827',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.035,
@@ -627,9 +915,9 @@ const navigatorStyles = {
     elevation: 1,
   },
   hubIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#EFF6FF',
@@ -642,15 +930,124 @@ const navigatorStyles = {
   },
   hubLinkTitle: {
     color: '#111827',
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 14,
+    lineHeight: 18,
     fontWeight: '700',
   },
   hubLinkDescription: {
     color: '#64748B',
-    fontSize: 14,
-    lineHeight: 19,
+    fontSize: 12,
+    lineHeight: 16,
     marginTop: 2,
+  },
+  networkStats: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  networkStat: {
+    flex: 1,
+    minHeight: 52,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  networkStatValue: {
+    color: '#2563EB',
+    fontSize: 17,
+    lineHeight: 21,
+    fontWeight: '900',
+  },
+  networkStatLabel: {
+    color: '#64748B',
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  previewSection: {
+    marginTop: 5,
+    marginBottom: 7,
+  },
+  previewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+    paddingHorizontal: 2,
+  },
+  previewTitle: {
+    color: '#111827',
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: '800',
+  },
+  previewAction: {
+    color: '#2563EB',
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '800',
+  },
+  previewLoader: { marginVertical: 8 },
+  previewEmpty: {
+    color: '#64748B',
+    fontSize: 12,
+    lineHeight: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 9,
+  },
+  previewCard: {
+    minHeight: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 11,
+    padding: 8,
+    marginBottom: 6,
+  },
+  previewIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  previewText: {
+    flex: 1,
+    minWidth: 0,
+    marginRight: 8,
+  },
+  previewCardTitle: {
+    color: '#111827',
+    fontSize: 13,
+    lineHeight: 16,
+    fontWeight: '800',
+  },
+  previewCardSubtitle: {
+    color: '#64748B',
+    fontSize: 11,
+    lineHeight: 14,
+    marginTop: 1,
+  },
+  previewBadge: {
+    maxWidth: 96,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    fontSize: 10,
+    lineHeight: 12,
+    fontWeight: '900',
+    overflow: 'hidden',
   },
 };
 
