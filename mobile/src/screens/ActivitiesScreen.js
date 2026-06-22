@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, ScrollView
+  TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, Linking
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
@@ -401,6 +401,11 @@ function ActivityCard({
   const alreadyRegistered = !!inscription && inscription.statut !== 'ANNULEE';
   const canRegister = isMembre && activite.statut === 'PUBLIEE' && !alreadyRegistered && !complete;
   const status = getActivityStatus({ activite, inscription, complete }, t);
+  const itineraryUrl = buildMapsUrl({
+    latitude: activite.latitude,
+    longitude: activite.longitude,
+    addressParts: [activite.adresse, activite.commune, activite.lieu],
+  });
 
   return (
     <View style={styles.card}>
@@ -415,12 +420,25 @@ function ActivityCard({
         <StatusBadge label={status.label} color={status.color} />
       </View>
 
-      {activite.description && (
-        <Text style={styles.cardDesc} numberOfLines={3}>{activite.description}</Text>
-      )}
+      {activite.description ? (
+        <Text style={styles.cardDesc} numberOfLines={2}>{activite.description}</Text>
+      ) : null}
+
+      {itineraryUrl ? (
+        <TouchableOpacity
+          style={styles.itineraryButton}
+          onPress={() => openItinerary(itineraryUrl, t)}
+        >
+          <AppIcon name="location-outline" size={14} color="#2563EB" />
+          <Text style={styles.itineraryButtonText}>
+            {t('geo.viewItinerary', { defaultValue: "Voir l’itinéraire" })}
+          </Text>
+        </TouchableOpacity>
+      ) : null}
 
       <View style={styles.chipList}>
         <InfoChip icon="location-outline" text={activite.lieu || t('activities.to_confirm')} />
+        {activite.commune ? <InfoChip icon="location-outline" text={activite.commune} /> : null}
         <InfoChip
           icon="wallet"
           text={activite.gratuite ? t('activities.free') : t('activities.price_value', { price: activite.prix ?? 0 })}
@@ -886,14 +904,39 @@ function getApiError(err, t, fallback) {
   return fallback;
 }
 
+function buildMapsUrl({ latitude, longitude, addressParts }) {
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+    return `https://maps.google.com/?q=${lat},${lng}`;
+  }
+
+  const query = (addressParts || [])
+    .filter((part) => part && String(part).trim())
+    .join(' ');
+
+  return query ? `https://maps.google.com/?q=${encodeURIComponent(query)}` : null;
+}
+
+async function openItinerary(url, t) {
+  try {
+    await Linking.openURL(url);
+  } catch {
+    Alert.alert(
+      t('geo.openErrorTitle', { defaultValue: 'Itinéraire indisponible' }),
+      t('geo.openErrorText', { defaultValue: "Impossible d’ouvrir l’application de cartographie." }),
+    );
+  }
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
 
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#eef2f7',
@@ -902,10 +945,10 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 14,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    fontSize: 13,
     color: '#1e293b',
     borderWidth: 1,
     borderColor: '#e2e8f0',
@@ -935,11 +978,11 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#38BDF8',
     marginHorizontal: 16,
-    marginTop: 10,
-    padding: 12,
+    marginTop: 7,
+    padding: 9,
     borderRadius: 10,
   },
-  infoBoxText: { color: '#1e40af', fontSize: 13, lineHeight: 18 },
+  infoBoxText: { color: '#1e40af', fontSize: 12, lineHeight: 16 },
   successBox: {
     backgroundColor: '#f0fdf4',
     borderLeftWidth: 4,
@@ -961,12 +1004,12 @@ const styles = StyleSheet.create({
   },
   errorText: { color: '#EF4444', fontSize: 13 },
 
-  listContent: { padding: 12, paddingBottom: 24 },
+  listContent: { padding: 9, paddingBottom: 20 },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 18,
-    padding: 13,
-    marginBottom: 9,
+    borderRadius: 15,
+    padding: 10,
+    marginBottom: 7,
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.07,
@@ -979,49 +1022,64 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 5,
   },
   cardIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 13,
+    width: 32,
+    height: 32,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
   },
   cardTitleWrap: { flex: 1, marginRight: 8 },
-  cardTitle: { fontSize: 15, fontWeight: '900', color: '#1E3A8A', marginBottom: 2, lineHeight: 19 },
-  cardSub: { color: '#2563EB', fontSize: 11, fontWeight: '800' },
-  cardDesc: { color: '#475569', fontSize: 11, lineHeight: 16, marginBottom: 8 },
-  statusBadge: { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
+  cardTitle: { fontSize: 14, fontWeight: '900', color: '#1E3A8A', marginBottom: 1, lineHeight: 18 },
+  cardSub: { color: '#2563EB', fontSize: 10, fontWeight: '800' },
+  cardDesc: { color: '#475569', fontSize: 11, lineHeight: 15, marginBottom: 6 },
+  statusBadge: { borderRadius: 20, paddingHorizontal: 7, paddingVertical: 3 },
   statusBadgeText: { color: '#fff', fontSize: 9, fontWeight: '900' },
 
   chipList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 8,
+    gap: 4,
+    marginBottom: 5,
   },
   infoChip: {
     maxWidth: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
     borderRadius: 999,
     backgroundColor: '#F0F9FF',
     borderWidth: 1,
     borderColor: '#E0F2FE',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
   },
   infoChipText: { color: '#334155', fontSize: 10, fontWeight: '700', flexShrink: 1 },
+  itineraryButton: {
+    alignSelf: 'flex-start',
+    minHeight: 30,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 5,
+    marginBottom: 6,
+  },
+  itineraryButtonText: { color: '#2563EB', fontSize: 11, fontWeight: '900' },
 
   visitorHint: { color: '#38BDF8', fontSize: 13, fontWeight: '700', marginTop: 2 },
   actions: { marginTop: 2 },
   btnPrimary: {
     backgroundColor: '#1E3A8A',
-    borderRadius: 16,
-    paddingVertical: 12,
+    borderRadius: 13,
+    paddingVertical: 9,
     alignItems: 'center',
     shadowColor: '#1E3A8A',
     shadowOffset: { width: 0, height: 4 },
@@ -1029,7 +1087,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 3,
   },
-  btnPrimaryText: { color: '#fff', fontSize: 13, fontWeight: '900' },
+  btnPrimaryText: { color: '#fff', fontSize: 12, fontWeight: '900' },
   btnDisabled: { backgroundColor: '#cbd5e1' },
   statusLine: { fontSize: 13, fontWeight: '800', marginTop: 2 },
   registeredRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
@@ -1041,8 +1099,8 @@ const styles = StyleSheet.create({
   },
   cancelRegistrationText: { color: '#EF4444', fontSize: 11, fontWeight: '900' },
   managementBlock: {
-    marginTop: 9,
-    paddingTop: 9,
+    marginTop: 6,
+    paddingTop: 7,
     borderTopWidth: 1,
     borderTopColor: '#eef2f7',
   },
@@ -1054,8 +1112,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#E0F2FE',
     paddingHorizontal: 10,
-    paddingVertical: 7,
-    marginBottom: 7,
+    paddingVertical: 6,
+    marginBottom: 6,
   },
   editButtonText: { color: '#1E3A8A', fontSize: 11, fontWeight: '900' },
   statusOptions: { gap: 6, paddingRight: 4 },

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, ActivityIndicator, Alert
+  TextInput, ActivityIndicator, Alert, Linking
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
@@ -301,6 +301,11 @@ function GroupeCard({
   const pendingHere = adhesion?.statut === 'EN_ATTENTE';
   const refusedHere = adhesion?.statut === 'REFUSE';
   const canRequest = isMembre && !hasActiveOrPendingAdhesion;
+  const itineraryUrl = buildMapsUrl({
+    latitude: groupe.latitude,
+    longitude: groupe.longitude,
+    addressParts: [groupe.adresseReunion, groupe.commune],
+  });
 
   return (
     <View style={styles.card}>
@@ -324,6 +329,12 @@ function GroupeCard({
       <View style={styles.metaBox}>
         {groupe.theme && <MetaRow label={t('groups.theme')} value={groupe.theme} />}
         {groupe.categorie && <MetaRow label={t('groups.category')} value={groupe.categorie} />}
+        {groupe.adresseReunion && (
+          <MetaRow label={t('geo.meetingAddress', { defaultValue: 'Lieu de réunion' })} value={groupe.adresseReunion} />
+        )}
+        {groupe.commune && (
+          <MetaRow label={t('geo.commune', { defaultValue: 'Commune' })} value={groupe.commune} />
+        )}
         <MetaRow
           label={t('groups.referent')}
           value={groupe.referentPrenom || groupe.referentNom
@@ -331,6 +342,18 @@ function GroupeCard({
             : t('groups.not_assigned')}
         />
       </View>
+
+      {itineraryUrl ? (
+        <TouchableOpacity
+          style={styles.itineraryButton}
+          onPress={() => openItinerary(itineraryUrl, t)}
+        >
+          <AppIcon name="location-outline" size={16} color="#2563EB" />
+          <Text style={styles.itineraryButtonText}>
+            {t('geo.viewItinerary', { defaultValue: "Voir l’itinéraire" })}
+          </Text>
+        </TouchableOpacity>
+      ) : null}
 
       {isReferent && (
         <View style={styles.notice}>
@@ -442,6 +465,31 @@ function getApiError(err, t, fallback) {
   return fallback;
 }
 
+function buildMapsUrl({ latitude, longitude, addressParts }) {
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+    return `https://maps.google.com/?q=${lat},${lng}`;
+  }
+
+  const query = (addressParts || [])
+    .filter((part) => part && String(part).trim())
+    .join(' ');
+
+  return query ? `https://maps.google.com/?q=${encodeURIComponent(query)}` : null;
+}
+
+async function openItinerary(url, t) {
+  try {
+    await Linking.openURL(url);
+  } catch {
+    Alert.alert(
+      t('geo.openErrorTitle', { defaultValue: 'Itinéraire indisponible' }),
+      t('geo.openErrorText', { defaultValue: "Impossible d’ouvrir l’application de cartographie." }),
+    );
+  }
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
 
@@ -521,12 +569,12 @@ const styles = StyleSheet.create({
   },
   errorText: { color: '#EF4444', fontSize: 13 },
 
-  listContent: { padding: 14, paddingBottom: 30 },
+  listContent: { padding: 9, paddingBottom: 22 },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 22,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 15,
+    padding: 10,
+    marginBottom: 7,
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.07,
@@ -539,34 +587,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 5,
   },
   cardIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 15,
+    width: 32,
+    height: 32,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
   },
   cardTitleWrap: { flex: 1, marginRight: 8 },
-  cardTitle: { fontSize: 16, fontWeight: '900', color: '#1E3A8A', marginBottom: 3, lineHeight: 21 },
-  cardSub: { color: '#64748b', fontSize: 12 },
-  cardDesc: { color: '#475569', fontSize: 12, lineHeight: 18, marginBottom: 10 },
-  statusBadge: { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
+  cardTitle: { fontSize: 14, fontWeight: '900', color: '#1E3A8A', marginBottom: 1, lineHeight: 18 },
+  cardSub: { color: '#64748b', fontSize: 10 },
+  cardDesc: { color: '#475569', fontSize: 11, lineHeight: 15, marginBottom: 6 },
+  statusBadge: { borderRadius: 20, paddingHorizontal: 7, paddingVertical: 3 },
   statusBadgeText: { color: '#fff', fontSize: 9, fontWeight: '900' },
 
   metaBox: {
     backgroundColor: '#f8fafc',
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    marginBottom: 10,
+    marginBottom: 6,
   },
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderBottomWidth: 1,
     borderBottomColor: '#eef2f7',
   },
@@ -578,6 +626,21 @@ const styles = StyleSheet.create({
     maxWidth: '58%',
     textAlign: 'right',
   },
+  itineraryButton: {
+    alignSelf: 'flex-start',
+    minHeight: 32,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 5,
+    marginBottom: 6,
+  },
+  itineraryButtonText: { color: '#2563EB', fontSize: 11, fontWeight: '900' },
 
   notice: { backgroundColor: '#f8fafc', borderRadius: 12, padding: 12, marginTop: 2 },
   noticeText: { color: '#64748b', fontSize: 12, lineHeight: 18 },
@@ -586,8 +649,8 @@ const styles = StyleSheet.create({
   actions: { marginTop: 4 },
   btnPrimary: {
     backgroundColor: '#1E3A8A',
-    borderRadius: 16,
-    paddingVertical: 12,
+    borderRadius: 13,
+    paddingVertical: 9,
     alignItems: 'center',
     shadowColor: '#1E3A8A',
     shadowOffset: { width: 0, height: 4 },
@@ -595,7 +658,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 3,
   },
-  btnPrimaryText: { color: '#fff', fontSize: 13, fontWeight: '900' },
+  btnPrimaryText: { color: '#fff', fontSize: 12, fontWeight: '900' },
   btnDanger: {
     backgroundColor: '#EF4444',
     borderRadius: 12,
