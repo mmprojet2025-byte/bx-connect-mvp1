@@ -8,6 +8,8 @@ import api from '../../api/axios'
 import AppIcon from '../../components/ui/AppIcons'
 import PageHeader from '../../components/ui/PageHeader'
 import MessageComposer from '../../components/messaging/MessageComposer'
+import ErrorState from '../../components/ui/ErrorState'
+import LoadingState from '../../components/ui/LoadingState'
 
 export default function ReferentMessagerie() {
   const { t, i18n } = useTranslation()
@@ -129,10 +131,17 @@ export default function ReferentMessagerie() {
           description={t('messaging.referentSubtitle')}
         />
 
-        {error && <Alert type="error">{error}</Alert>}
+        {error && groupes.length > 0 && <Alert type="error">{error}</Alert>}
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
+          <LoadingState label={t('common.loading')} />
+        ) : error && groupes.length === 0 ? (
+          <ErrorState
+            title={t('common.loadErrorTitle')}
+            description={error}
+            actionLabel={t('common.retry')}
+            action={fetchGroupes}
+          />
         ) : groupes.length === 0 ? (
           <EmptyState>{t('messaging.noAssignedGroups')}</EmptyState>
         ) : (

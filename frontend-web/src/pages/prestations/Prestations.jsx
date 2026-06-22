@@ -5,6 +5,9 @@ import api from '../../api/axios';
 import { userFriendlyError } from '../../utils/userFriendlyError';
 import AppIcon from '../../components/ui/AppIcons';
 import { useTranslation } from 'react-i18next';
+import EmptyState from '../../components/ui/EmptyState';
+import ErrorState from '../../components/ui/ErrorState';
+import LoadingState from '../../components/ui/LoadingState';
 
 const TYPES = ['ANIMATION', 'LOGISTIQUE', 'COMMUNICATION', 'FORMATION', 'AUTRE'];
 
@@ -106,7 +109,7 @@ export default function Prestations() {
         </div>
 
         {message && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>}
-        {error   && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>}
+        {error && prestations.length > 0 && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>}
 
         {/* Formulaire */}
         {showForm && (
@@ -161,12 +164,19 @@ export default function Prestations() {
 
         {/* Liste */}
         {loading ? (
-          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
+          <LoadingState label={t('common.loading')} />
+        ) : error && prestations.length === 0 ? (
+          <ErrorState
+            title={t('common.loadErrorTitle')}
+            description={error}
+            actionLabel={t('common.retry')}
+            action={fetchPrestations}
+          />
         ) : prestations.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-2xl shadow">
-            <AppIcon name="Handshake" className="mx-auto mb-3 h-10 w-10 text-blue-300" />
-            <p className="text-gray-400 text-sm">{t('prestations.empty')}</p>
-          </div>
+          <EmptyState
+            icon="Handshake"
+            title={t('prestations.empty')}
+          />
         ) : (
           <div className="space-y-2.5">
             {prestations.map(p => (

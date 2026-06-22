@@ -15,7 +15,7 @@ export default function CompactKpiRow({ items = [], accent = 'blue', className =
 
 function CompactKpi({ item, accent }) {
   return (
-    <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
+    <div className="rounded-lg border border-slate-100 bg-white px-4 py-3 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-[11px] font-black uppercase tracking-wide text-slate-400">{item.label}</p>

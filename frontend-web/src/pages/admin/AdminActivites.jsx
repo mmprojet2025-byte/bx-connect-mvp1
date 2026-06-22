@@ -10,6 +10,9 @@ import AppIcon from '../../components/ui/AppIcons';
 import PageHeader from '../../components/ui/PageHeader';
 import SectionCard from '../../components/ui/SectionCard';
 import LocationPicker from '../../components/location/LocationPicker';
+import EmptyState from '../../components/ui/EmptyState';
+import ErrorState from '../../components/ui/ErrorState';
+import LoadingState from '../../components/ui/LoadingState';
 
 const STATUTS = ['BROUILLON', 'PUBLIEE', 'ANNULEE', 'TERMINEE'];
 const emptyForm = {
@@ -196,7 +199,7 @@ export default function AdminActivites() {
         {message && (
           <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>
         )}
-        {error && (
+        {error && activites.length > 0 && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>
         )}
 
@@ -309,7 +312,20 @@ export default function AdminActivites() {
         </SectionCard>
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">{t('admin.loading')}</p>
+          <LoadingState label={t('admin.loading')} />
+        ) : error && activites.length === 0 ? (
+          <ErrorState
+            title={t('common.loadErrorTitle')}
+            description={error}
+            actionLabel={t('common.retry')}
+            action={fetchActivites}
+          />
+        ) : activites.length === 0 ? (
+          <EmptyState
+            icon="Calendar"
+            title={t('activities.no_activities', { defaultValue: t('activities.no_activities') })}
+            description={t('activities.empty_description')}
+          />
         ) : (
           <>
             <div className="md:hidden space-y-4">

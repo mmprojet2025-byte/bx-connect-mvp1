@@ -8,6 +8,8 @@ import GroupAvatar from '../../components/GroupAvatar'
 import AppIcon from '../../components/ui/AppIcons'
 import PageHeader from '../../components/ui/PageHeader'
 import SectionCard from '../../components/ui/SectionCard'
+import ErrorState from '../../components/ui/ErrorState'
+import LoadingState from '../../components/ui/LoadingState'
 
 export default function ReferentGroupes() {
   const { t } = useTranslation()
@@ -63,10 +65,17 @@ export default function ReferentGroupes() {
           title={t('nav.myGroups')}
           description={t('referent.groupsSubtitle', { defaultValue: 'Suivez vos groupes assignés, leurs membres et leurs demandes.' })}
         />
-        {error && <Alert type="error">{error}</Alert>}
+        {error && groupes.length > 0 && <Alert type="error">{error}</Alert>}
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
+          <LoadingState label={t('common.loading')} />
+        ) : error && groupes.length === 0 ? (
+          <ErrorState
+            title={t('common.loadErrorTitle')}
+            description={error}
+            actionLabel={t('common.retry')}
+            action={fetchGroupes}
+          />
         ) : groupes.length === 0 ? (
           <EmptyState>{t('referent.noAssignedGroups')}</EmptyState>
         ) : (

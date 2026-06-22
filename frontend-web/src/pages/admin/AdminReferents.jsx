@@ -8,6 +8,9 @@ import AppIcon from '../../components/ui/AppIcons'
 import PageHeader from '../../components/ui/PageHeader'
 import SectionCard from '../../components/ui/SectionCard'
 import StatusBadge from '../../components/StatusBadge'
+import EmptyState from '../../components/ui/EmptyState'
+import ErrorState from '../../components/ui/ErrorState'
+import LoadingState from '../../components/ui/LoadingState'
 
 const emptyForm = {
   prenom: '',
@@ -87,7 +90,7 @@ export default function AdminReferents() {
         </div>
 
         {message && <Alert>{message}</Alert>}
-        {error && <Alert type="error">{error}</Alert>}
+        {error && referents.length > 0 && <Alert type="error">{error}</Alert>}
 
         <form onSubmit={creerReferent} className="mb-6 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
           <h2 className="font-bold text-blue-900 mb-4">{t('referent.create')}</h2>
@@ -125,7 +128,24 @@ export default function AdminReferents() {
         </SectionCard>
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
+          <LoadingState label={t('common.loading')} />
+        ) : error && referents.length === 0 ? (
+          <ErrorState
+            title={t('common.loadErrorTitle')}
+            description={error}
+            actionLabel={t('common.retry')}
+            action={fetchReferents}
+          />
+        ) : referents.length === 0 ? (
+          <EmptyState
+            icon="User"
+            title={t('referent.none')}
+          />
+        ) : referentsFiltres.length === 0 ? (
+          <EmptyState
+            icon="Search"
+            title={t('common.noResults', { defaultValue: 'Aucun résultat trouvé.' })}
+          />
         ) : (
           <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
             <div className="overflow-x-auto">

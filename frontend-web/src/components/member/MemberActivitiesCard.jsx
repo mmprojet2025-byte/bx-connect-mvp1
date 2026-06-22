@@ -5,7 +5,7 @@ export default function MemberActivitiesCard({ inscriptions = [] }) {
   const { t, i18n } = useTranslation()
 
   return (
-    <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5">
+    <section className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-blue-900">{t('memberDashboard.activities.title')}</h2>
         <Link to="/activites" className="text-sm text-blue-700 font-semibold hover:underline">{t('memberDashboard.buttons.viewAll')}</Link>

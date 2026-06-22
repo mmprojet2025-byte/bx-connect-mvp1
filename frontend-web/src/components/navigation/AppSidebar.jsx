@@ -81,10 +81,10 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
         <div className={`flex gap-3 border-b border-slate-100 px-3 py-4 ${contextCollapsed ? 'flex-col items-center' : 'items-center justify-between'}`}>
           <Link
             to={homeRoute}
-            className={`flex min-w-0 items-center gap-3 rounded-2xl transition hover:bg-slate-50 ${contextCollapsed ? 'p-2' : 'px-2 py-2'}`}
+            className={`flex min-w-0 items-center gap-3 rounded-lg transition hover:bg-slate-50 ${contextCollapsed ? 'p-2' : 'px-2 py-2'}`}
             title="BX-Connect"
           >
-            <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100">
+            <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-slate-100">
               <img src={logoBxConnect} alt="BX-Connect" className="h-8 w-10 object-contain" />
             </span>
             {!contextCollapsed && (
@@ -100,7 +100,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
               onClick={onToggleContext}
               title={t('sidebar.open')}
               aria-label={t('sidebar.open')}
-              className="grid h-10 w-10 place-items-center rounded-2xl text-slate-500 transition hover:bg-blue-50 hover:text-blue-700"
+              className="grid h-10 w-10 place-items-center rounded-lg text-slate-500 transition hover:bg-blue-50 hover:text-blue-700"
             >
               <AppIcon name="PanelLeftOpen" className="h-5 w-5" />
             </button>
@@ -161,9 +161,9 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
             <div className="border-t border-slate-100 p-3">
               <Link
                 to="/profil#infos"
-                className="flex min-w-0 items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition hover:bg-slate-50"
+                className="flex min-w-0 items-center gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-slate-50"
               >
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-700">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-blue-50 text-blue-700">
                   <AppIcon name="User" className="h-5 w-5" />
                 </span>
                 <span className="min-w-0 flex-1">
@@ -187,7 +187,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
         title={t('nav.openMenu')}
         aria-label={t('nav.openMenu')}
         aria-expanded={mobileOpen}
-        className="fixed left-3 top-3 z-40 grid h-11 w-11 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-lg shadow-slate-950/10 transition hover:bg-blue-50 hover:text-blue-700 lg:hidden"
+        className="fixed left-3 top-3 z-40 grid h-11 w-11 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-lg shadow-slate-950/10 transition hover:bg-blue-50 hover:text-blue-700 lg:hidden"
       >
         <AppIcon name="Menu" className="h-5 w-5" />
       </button>
@@ -209,10 +209,10 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
             <Link
               to={homeRoute}
               onClick={() => setMobileOpen(false)}
-              className="flex min-w-0 items-center gap-3 rounded-2xl px-2 py-2 transition hover:bg-slate-50"
+              className="flex min-w-0 items-center gap-3 rounded-lg px-2 py-2 transition hover:bg-slate-50"
               title="BX-Connect"
             >
-              <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100">
+              <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-slate-100">
                 <img src={logoBxConnect} alt="BX-Connect" className="h-8 w-10 object-contain" />
               </span>
               <span className="min-w-0">
@@ -268,9 +268,9 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
             <Link
               to="/profil#infos"
               onClick={() => setMobileOpen(false)}
-              className="flex min-w-0 items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition hover:bg-slate-50"
+              className="flex min-w-0 items-center gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-slate-50"
             >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-700">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-blue-50 text-blue-700">
                 <AppIcon name="User" className="h-5 w-5" />
               </span>
               <span className="min-w-0 flex-1">
@@ -553,7 +553,7 @@ function CollapsedSidebarLink({ item, location }) {
       to={item.to}
       title={item.label}
       aria-current={active ? 'page' : undefined}
-      className={`relative grid h-11 w-11 place-items-center rounded-2xl transition ${
+      className={`relative grid h-11 w-11 place-items-center rounded-lg transition ${
         active
           ? 'bg-blue-700 text-white shadow-lg shadow-blue-700/20'
           : 'text-slate-500 hover:bg-blue-50 hover:text-blue-700'
@@ -576,7 +576,7 @@ function RecentSection({ items, location, onNavigate }) {
         Récents
       </p>
       {items.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3">
+        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-3">
           <p className="text-xs font-semibold leading-relaxed text-slate-500">
             Les groupes, projets et activités consultés apparaîtront ici.
           </p>
@@ -652,7 +652,7 @@ function recentItemFromLocation(location) {
 function ContextLink({ item, location, onNavigate }) {
   if (!item.to) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold text-slate-400">
+      <div className="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-sm font-bold text-slate-400">
         <span className="inline-flex min-w-0 items-center gap-2">
           <AppIcon name={item.icon} className="h-4 w-4 shrink-0" />
           <span className="truncate">{item.label}</span>

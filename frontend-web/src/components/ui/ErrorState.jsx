@@ -22,8 +22,8 @@ export default function ErrorState({
   const resolvedActionLabel = resolveText(actionLabel, fallbackActionLabel)
 
   return (
-    <div className="rounded-3xl border border-red-100 bg-white p-10 text-center shadow-sm">
-      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+    <div className="rounded-xl border border-red-100 bg-white p-10 text-center shadow-sm">
+      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-red-50 text-red-600">
         <AppIcon name="AlertTriangle" className="h-7 w-7" />
       </div>
       <h2 className="mb-2 font-semibold text-slate-950">{resolvedTitle}</h2>

@@ -9,6 +9,8 @@ import AppIcon from '../../components/ui/AppIcons'
 import PageHeader from '../../components/ui/PageHeader'
 import SectionCard from '../../components/ui/SectionCard'
 import LocationPicker from '../../components/location/LocationPicker'
+import ErrorState from '../../components/ui/ErrorState'
+import LoadingState from '../../components/ui/LoadingState'
 
 const emptyForm = {
   titre: '',
@@ -165,7 +167,7 @@ export default function ReferentActivites() {
         </div>
 
         {message && <Alert>{message}</Alert>}
-        {error && <Alert type="error">{error}</Alert>}
+        {error && activites.length > 0 && <Alert type="error">{error}</Alert>}
 
         {showForm && (
           <form onSubmit={handleSubmit} className="mb-6 grid rounded-3xl border border-slate-100 bg-white p-5 shadow-sm md:grid-cols-2 gap-4">
@@ -272,7 +274,14 @@ export default function ReferentActivites() {
         </SectionCard>
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
+          <LoadingState label={t('common.loading')} />
+        ) : error && activites.length === 0 ? (
+          <ErrorState
+            title={t('common.loadErrorTitle')}
+            description={error}
+            actionLabel={t('common.retry')}
+            action={fetchActivites}
+          />
         ) : activites.length === 0 ? (
           <EmptyState>{t('referent.noActivityCreated')}</EmptyState>
         ) : activitesFiltrees.length === 0 ? (

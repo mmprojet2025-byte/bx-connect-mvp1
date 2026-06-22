@@ -4,6 +4,8 @@ import api from '../../api/axios'
 import SuperAdminLayout from '../../layouts/SuperAdminLayout'
 import AppIcon from '../../components/ui/AppIcons'
 import SectionCard from '../../components/ui/SectionCard'
+import ErrorState from '../../components/ui/ErrorState'
+import LoadingState from '../../components/ui/LoadingState'
 
 const ACTION_LABELS = {
   PROJECT_APPROVED: 'Projet validé',
@@ -72,7 +74,7 @@ export default function SuperAdminLogs() {
       title={t('superAdmin.logsTitle')}
       subtitle={t('superAdmin.logsSubtitle')}
     >
-      {error && (
+      {error && logs.length > 0 && (
         <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
@@ -122,7 +124,12 @@ export default function SuperAdminLogs() {
       </SectionCard>
 
       {loading ? (
-        <p className="py-10 text-center text-gray-400">{t('common.loading')}</p>
+        <LoadingState label={t('common.loading')} />
+      ) : error && logs.length === 0 ? (
+        <ErrorState
+          title={t('common.loadErrorTitle')}
+          description={error}
+        />
       ) : (
         <>
           <div className="space-y-3 md:hidden">

@@ -7,7 +7,7 @@ export default function MemberNotificationsCard({ notifications = [] }) {
   const nonLues = notifications.filter(notification => !notification.lue).length
 
   return (
-    <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5">
+    <section className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-bold text-blue-900">{t('memberDashboard.notifications.title')}</h2>

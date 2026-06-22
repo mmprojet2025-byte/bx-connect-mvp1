@@ -6,7 +6,7 @@ export default function MemberNextActions({ groupe, messagerieDisponible }) {
   const actions = getActions(groupe, messagerieDisponible, t)
 
   return (
-    <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5">
+    <section className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
       <h2 className="text-lg font-bold text-blue-900 mb-4">{t('memberDashboard.nextActions.title')}</h2>
       <div className="space-y-3">
         {actions.map((action, index) => (

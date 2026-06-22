@@ -12,9 +12,9 @@ export default function QuickActionCard({ to, title, description, tone = 'blue',
   return (
     <Link
       to={to}
-      className={`group rounded-[1.35rem] border p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/10 ${styles}`}
+      className={`group rounded-xl border p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/10 ${styles}`}
     >
-      <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 shadow-sm">
+      <span className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-white/90 shadow-sm">
         <AppIcon name={icon} className="h-5 w-5" />
       </span>
       <h3 className="mt-3 text-sm font-black">{title}</h3>

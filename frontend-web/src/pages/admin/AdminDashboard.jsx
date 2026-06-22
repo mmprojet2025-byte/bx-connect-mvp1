@@ -15,6 +15,8 @@ import {
 import api from '../../api/axios'
 import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
+import ErrorState from '../../components/ui/ErrorState'
+import LoadingState from '../../components/ui/LoadingState'
 import AppIcon from '../../components/ui/AppIcons'
 import ActivityFeed from '../../components/dashboard/ActivityFeed'
 import CompactKpiRow from '../../components/dashboard/CompactKpiRow'
@@ -77,6 +79,11 @@ export default function AdminDashboard() {
     () => buildStatusData(soutiens, 'statutPaiement', t),
     [soutiens, t]
   )
+  const hasDashboardData = groupes.length > 0
+    || groupesEnAttente.length > 0
+    || projets.length > 0
+    || soutiens.length > 0
+    || activites.length > 0
 
   return (
     <CollaborativeDashboardLayout
@@ -87,10 +94,17 @@ export default function AdminDashboard() {
         defaultValue: `${pendingTotal} validation(s) en attente`,
       })}
     >
-        {error && <Alert type="error">{error}</Alert>}
+        {error && hasDashboardData && <Alert type="error">{error}</Alert>}
 
         {loading ? (
-          <p className="text-slate-400 text-center py-10">{t('admin.loading')}</p>
+          <LoadingState label={t('admin.loading')} />
+        ) : error && !hasDashboardData ? (
+          <ErrorState
+            title={t('common.loadErrorTitle')}
+            description={error}
+            actionLabel={t('common.retry')}
+            action={fetchDashboard}
+          />
         ) : (
           <>
             <CompactKpiRow

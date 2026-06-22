@@ -5,6 +5,9 @@ import Footer from '../../components/Footer';
 import api from '../../api/axios';
 import AppIcon from '../../components/ui/AppIcons';
 import { useTranslation } from 'react-i18next';
+import EmptyState from '../../components/ui/EmptyState';
+import ErrorState from '../../components/ui/ErrorState';
+import LoadingState from '../../components/ui/LoadingState';
 
 export default function HistoriquePaiements() {
   const { t, i18n } = useTranslation();
@@ -78,7 +81,7 @@ export default function HistoriquePaiements() {
         </div>
 
         {/* Erreur */}
-        {error && (
+        {error && paiements.length > 0 && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">
             {error}
           </div>
@@ -103,21 +106,21 @@ export default function HistoriquePaiements() {
 
         {/* Liste */}
         {loading ? (
-          <div className="text-center py-12 text-gray-400">
-            <AppIcon name="Clock" className="mx-auto mb-3 h-10 w-10 text-blue-300" />
-            <p>{t('common.loading')}</p>
-          </div>
+          <LoadingState label={t('common.loading')} />
+        ) : error && paiements.length === 0 ? (
+          <ErrorState
+            title={t('common.loadErrorTitle')}
+            description={error}
+            actionLabel={t('common.retry')}
+            action={fetchHistorique}
+          />
         ) : paiementsFiltres.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-2xl shadow">
-            <AppIcon name="CreditCard" className="mx-auto mb-3 h-12 w-12 text-blue-300" />
-            <p className="text-gray-500 text-sm mb-4">
-              {filtre === 'TOUS' ? t('payment.empty') : t('payment.emptyStatus', { status: filtre })}
-            </p>
-            <Link to="/activites" className="inline-flex items-center justify-center gap-1.5 text-blue-700 text-sm hover:underline">
-              {t('payment.discoverActivitiesToSupport')}
-              <AppIcon name="Calendar" className="h-4 w-4" />
-            </Link>
-          </div>
+          <EmptyState
+            icon={paiements.length === 0 ? 'CreditCard' : 'Search'}
+            title={filtre === 'TOUS' ? t('payment.empty') : t('payment.emptyStatus', { status: filtre })}
+            actionLabel={t('payment.discoverActivitiesToSupport')}
+            actionTo="/activites"
+          />
         ) : (
           <div className="space-y-3">
             {paiementsFiltres.map(p => (

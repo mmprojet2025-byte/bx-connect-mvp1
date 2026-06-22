@@ -1196,7 +1196,20 @@
     "nextStepApproved": "Validé par l’administration. Le soutien est pris en compte dans votre impact partenaire.",
     "nextStepRejected": "Refusé par l’administration. Consultez la réponse admin pour comprendre le motif.",
     "nextStepFollow": "Statut à suivre dans votre historique de contributions.",
-    "supportNotEditable": "Cette proposition ne peut plus être modifiée ou annulée. Elle a peut-être déjà été traitée par l’administration."
+    "supportNotEditable": "Cette proposition ne peut plus être modifiée ou annulée. Elle a peut-être déjà été traitée par l’administration.",
+    "chartsEyebrow": "Données partenaire",
+    "chartsTitle": "Lecture graphique",
+    "chartsSubtitle": "Répartition calculée à partir de vos soutiens, projets et activités déjà chargés.",
+    "chartsEmptyTitle": "Pas encore de données à représenter",
+    "chartsEmptyDescription": "Les graphiques apparaîtront dès qu’un soutien, projet ou activité sera disponible.",
+    "chartsSupportsByStatus": "Soutiens par statut",
+    "chartsSupportTargets": "Soutiens par cible",
+    "chartsProjectsByStatus": "Projets ouverts par statut",
+    "chartsSupportedProjectsByStatus": "Projets soutenus par statut",
+    "chartsActivitiesByStatus": "Activités ouvertes par statut",
+    "chartsProjects": "Projets",
+    "chartsActivities": "Activités",
+    "chartsOtherTargets": "Autres"
   },
   "partnerSupport": {
     "financial": "Soutien financier",

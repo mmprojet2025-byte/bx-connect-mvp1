@@ -7,6 +7,8 @@ import StatusBadge from '../../components/StatusBadge'
 import AppIcon from '../../components/ui/AppIcons'
 import PageHeader from '../../components/ui/PageHeader'
 import SectionCard from '../../components/ui/SectionCard'
+import ErrorState from '../../components/ui/ErrorState'
+import LoadingState from '../../components/ui/LoadingState'
 
 export default function ReferentMembres() {
   const { t, i18n } = useTranslation()
@@ -83,10 +85,17 @@ export default function ReferentMembres() {
           </div>
         </SectionCard>
 
-        {error && <Alert type="error">{error}</Alert>}
+        {error && membres.length > 0 && <Alert type="error">{error}</Alert>}
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
+          <LoadingState label={t('common.loading')} />
+        ) : error && membres.length === 0 ? (
+          <ErrorState
+            title={t('common.loadErrorTitle')}
+            description={error}
+            actionLabel={t('common.retry')}
+            action={fetchMembres}
+          />
         ) : membresFiltres.length === 0 ? (
           <EmptyState>{t('referent.noAcceptedMembers')}</EmptyState>
         ) : (

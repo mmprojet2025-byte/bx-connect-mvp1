@@ -10,6 +10,9 @@ import api from '../../api/axios'
 import AppIcon from '../../components/ui/AppIcons'
 import ActivityFeed from '../../components/dashboard/ActivityFeed'
 import CompactKpiRow from '../../components/dashboard/CompactKpiRow'
+import EmptyState from '../../components/ui/EmptyState'
+import ErrorState from '../../components/ui/ErrorState'
+import LoadingState from '../../components/ui/LoadingState'
 import {
   CollaborativeDashboardLayout,
   WorkspaceEmpty,
@@ -50,14 +53,21 @@ export default function Dashboard() {
       title={t('memberDashboard.hello', { name: user?.prenom || t('memberDashboard.memberFallback') })}
       subtitle={groupe?.nom ? t('memberDashboard.group.currentWithName', { group: groupe.nom, defaultValue: `Espace de travail : ${groupe.nom}` }) : t('memberDashboard.group.noGroupDescription')}
     >
-        {error && (
+        {error && dashboard && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 text-sm">
             {error}
           </div>
         )}
 
         {loading ? (
-          <p className="text-slate-400 text-center py-10">{t('memberDashboard.loading')}</p>
+          <LoadingState label={t('memberDashboard.loading')} />
+        ) : error && !dashboard ? (
+          <ErrorState
+            title={t('common.loadErrorTitle')}
+            description={error}
+            actionLabel={t('common.retry')}
+            action={fetchDashboard}
+          />
         ) : dashboard ? (
           <>
             <CompactKpiRow
@@ -143,12 +153,11 @@ export default function Dashboard() {
             )}
           </>
         ) : (
-          <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-10 text-center">
-            <p className="text-slate-500 text-sm mb-4">{t('memberDashboard.unavailable')}</p>
-            <Link to="/activites" className="text-blue-600 text-sm font-semibold hover:underline">
-              {t('memberDashboard.buttons.viewActivities')}
-            </Link>
-          </div>
+          <EmptyState
+            title={t('memberDashboard.unavailable')}
+            actionLabel={t('memberDashboard.buttons.viewActivities')}
+            actionTo="/activites"
+          />
         )}
     </CollaborativeDashboardLayout>
   )

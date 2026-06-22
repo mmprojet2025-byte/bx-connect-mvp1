@@ -8,6 +8,8 @@ import ImageUpload from '../../components/ImageUpload';
 import AppIcon from '../../components/ui/AppIcons';
 import StatusBadge from '../../components/StatusBadge';
 import defaultAvatar from '../../assets/images/avatars/default-avatar.png';
+import ErrorState from '../../components/ui/ErrorState';
+import LoadingState from '../../components/ui/LoadingState';
 
 export default function Profil() {
   const { t, i18n } = useTranslation();
@@ -79,8 +81,23 @@ export default function Profil() {
   if (loading) return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
-      <main className="flex-1 flex items-center justify-center">
-        <p className="text-slate-400">{t('common.loading')}</p>
+      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
+        <LoadingState label={t('common.loading')} />
+      </main>
+      <Footer />
+    </div>
+  );
+
+  if (error && !profil) return (
+    <div className="min-h-screen flex flex-col bg-slate-50">
+      <Navbar />
+      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
+        <ErrorState
+          title={t('common.loadErrorTitle')}
+          description={error}
+          actionLabel={t('common.retry')}
+          action={fetchProfil}
+        />
       </main>
       <Footer />
     </div>

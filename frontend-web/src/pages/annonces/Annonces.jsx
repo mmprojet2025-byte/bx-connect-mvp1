@@ -5,6 +5,9 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
 import AppIcon from '../../components/ui/AppIcons';
+import EmptyState from '../../components/ui/EmptyState';
+import ErrorState from '../../components/ui/ErrorState';
+import LoadingState from '../../components/ui/LoadingState';
 
 const OPPORTUNITY_CATEGORIES = ['EMPLOI', 'STAGE', 'FORMATION', 'EVENEMENT', 'APPEL_PROJET', 'PUBLICITE'];
 
@@ -174,7 +177,7 @@ export default function Annonces() {
         </div>
 
         {message && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>}
-        {error   && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>}
+        {error && annonces.length > 0 && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>}
 
         {isAdmin && (
           <section className="mb-5 rounded-2xl border border-amber-100 bg-white p-4 shadow-sm">
@@ -337,12 +340,21 @@ export default function Annonces() {
 
         {/* Liste */}
         {loading ? (
-          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
+          <LoadingState label={t('common.loading')} />
+        ) : error && annonces.length === 0 ? (
+          <ErrorState
+            title={t('common.loadErrorTitle')}
+            description={error}
+            actionLabel={t('common.retry')}
+            action={fetchAnnonces}
+          />
         ) : filteredAnnonces.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-2xl shadow">
-            <AppIcon name="Megaphone" className="mx-auto mb-3 h-10 w-10 text-blue-300" />
-            <p className="text-gray-400 text-sm">{t('announcements.empty')}</p>
-          </div>
+          <EmptyState
+            icon={annonces.length === 0 ? 'Megaphone' : 'Search'}
+            title={annonces.length === 0
+              ? t('announcements.empty')
+              : t('common.noResults', { defaultValue: 'Aucun résultat trouvé.' })}
+          />
         ) : (
           <div className="space-y-2.5">
             {filteredAnnonces.map(a => (

@@ -10,7 +10,7 @@ export function CollaborativeDashboardLayout({ title, subtitle, emoji = '🏠', 
       <main className="flex-1">
         <div className="mx-auto max-w-[1440px] px-3 py-4 lg:px-5 lg:py-5">
           <section className="min-w-0">
-            <header className="collab-reveal mb-4 rounded-[1.5rem] border border-white bg-white p-5 shadow-lg shadow-blue-950/5">
+            <header className="collab-reveal mb-4 rounded-xl border border-white bg-white p-5 shadow-lg shadow-blue-950/5">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <p className="mb-2 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-700">
@@ -37,7 +37,7 @@ export function CollaborativeDashboardLayout({ title, subtitle, emoji = '🏠', 
 
 export function WorkspaceSection({ eyebrow, title, emoji = '🏠', action, children, className = '' }) {
   return (
-    <section className={`collab-reveal rounded-[1.5rem] border border-white bg-white p-4 shadow-lg shadow-blue-950/5 ${className}`}>
+    <section className={`collab-reveal rounded-xl border border-white bg-white p-4 shadow-lg shadow-blue-950/5 ${className}`}>
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           {eyebrow && <p className="text-xs font-black uppercase tracking-wide text-blue-700">{eyebrow}</p>}
@@ -55,7 +55,7 @@ export function WorkspaceSection({ eyebrow, title, emoji = '🏠', action, child
 
 export function WorkspaceCard({ emoji = '🏠', title, description, to, value, highlight = false, children }) {
   const content = (
-    <article className={`h-full rounded-2xl border p-3.5 transition hover:-translate-y-0.5 hover:shadow-md ${
+    <article className={`h-full rounded-lg border p-3.5 transition hover:-translate-y-0.5 hover:shadow-md ${
       highlight ? 'border-amber-200 bg-amber-50' : 'border-slate-100 bg-slate-50 hover:bg-white'
     }`}>
       <div className="mb-3 flex items-start justify-between gap-3">
@@ -74,7 +74,7 @@ export function WorkspaceCard({ emoji = '🏠', title, description, to, value, h
 }
 
 export function QuickWorkspaceAction({ to, onClick, emoji = '⚡', label, description }) {
-  const className = "inline-flex min-h-12 items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2 text-left text-sm font-black text-blue-800 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
+  const className = "inline-flex min-h-12 items-center gap-3 rounded-lg border border-blue-100 bg-blue-50 px-4 py-2 text-left text-sm font-black text-blue-800 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
   const content = (
     <>
       <IconMarker icon={emoji} className="h-5 w-5" />
@@ -91,8 +91,8 @@ export function QuickWorkspaceAction({ to, onClick, emoji = '⚡', label, descri
 
 export function WorkspaceEmpty({ emoji = '📭', title, description, actionTo, actionLabel }) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-center">
-      <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-white text-blue-700 shadow-sm">
+    <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-center">
+      <div className="mx-auto grid h-12 w-12 place-items-center rounded-lg bg-white text-blue-700 shadow-sm">
         <IconMarker icon={emoji} className="h-6 w-6" />
       </div>
       <p className="mt-2 text-sm font-black text-slate-700">{title}</p>

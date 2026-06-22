@@ -5,6 +5,8 @@ import { useAuth } from '../../context/AuthContext'
 import api from '../../api/axios'
 import Alert from '../../components/ui/Alert'
 import AppIcon from '../../components/ui/AppIcons'
+import ErrorState from '../../components/ui/ErrorState'
+import LoadingState from '../../components/ui/LoadingState'
 import { CollaborativeDashboardLayout } from '../../components/dashboard/CollaborativeDashboard'
 import ActivityFeed from '../../components/dashboard/ActivityFeed'
 import CompactKpiRow from '../../components/dashboard/CompactKpiRow'
@@ -67,6 +69,7 @@ export default function ReferentDashboard() {
   const activitesAPublier = activites.filter(activite => activite.statut === 'BROUILLON')
   const projetsASuivre = projets.filter(projet => ['SOUMIS', 'EN_COURS'].includes(projet.statut)).slice(0, 3)
   const activityItems = buildReferentActivityItems({ demandes: demandesRecentes, membres: membresRecents, activites, projets, t })
+  const hasDashboardData = detailsGroupes.length > 0 || activites.length > 0 || projets.length > 0
 
   return (
     <CollaborativeDashboardLayout
@@ -78,10 +81,17 @@ export default function ReferentDashboard() {
         defaultValue: `${stats.groupes} groupe(s) encadré(s) · ${stats.demandes} demande(s) à traiter`,
       })}
     >
-        {error && <Alert type="error">{error}</Alert>}
+        {error && hasDashboardData && <Alert type="error">{error}</Alert>}
 
         {loading ? (
-          <p className="text-slate-400 text-center py-10">{t('common.loading')}</p>
+          <LoadingState label={t('common.loading')} />
+        ) : error && !hasDashboardData ? (
+          <ErrorState
+            title={t('common.loadErrorTitle')}
+            description={error}
+            actionLabel={t('common.retry')}
+            action={fetchDashboard}
+          />
         ) : (
           <>
             <CompactKpiRow

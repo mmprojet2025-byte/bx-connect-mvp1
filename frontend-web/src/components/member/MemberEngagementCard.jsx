@@ -13,7 +13,7 @@ export default function MemberEngagementCard({ implication }) {
   })
 
   return (
-    <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5">
+    <section className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
       <h2 className="text-lg font-bold text-blue-900 mb-4">{t('memberDashboard.engagement.title')}</h2>
       <div className="bg-teal-50 text-teal-800 rounded-xl px-4 py-3 text-sm font-semibold">
         {t('memberDashboard.engagement.statusLine', { status: label })}

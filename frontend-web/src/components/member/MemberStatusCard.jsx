@@ -6,7 +6,7 @@ export default function MemberStatusCard({ groupe, messagerieDisponible }) {
   const config = getStatusConfig(groupe, messagerieDisponible, t)
 
   return (
-    <section className={`rounded-2xl border p-5 ${config.wrapper}`}>
+    <section className={`rounded-lg border p-5 ${config.wrapper}`}>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide opacity-75">{t('memberDashboard.status.title')}</p>

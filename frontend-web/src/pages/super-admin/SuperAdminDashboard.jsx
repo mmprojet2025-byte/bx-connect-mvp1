@@ -15,6 +15,8 @@ import api from '../../api/axios'
 import { CollaborativeDashboardLayout } from '../../components/dashboard/CollaborativeDashboard'
 import ActivityFeed from '../../components/dashboard/ActivityFeed'
 import CompactKpiRow from '../../components/dashboard/CompactKpiRow'
+import ErrorState from '../../components/ui/ErrorState'
+import LoadingState from '../../components/ui/LoadingState'
 
 export default function SuperAdminDashboard() {
   const { t, i18n } = useTranslation()
@@ -35,10 +37,15 @@ export default function SuperAdminDashboard() {
       title={t('superAdmin.dashboardTitle')}
       subtitle={t('superAdmin.platformWatch', { defaultValue: 'Plateforme sous surveillance' })}
     >
-      {error && <Alert type="error">{error}</Alert>}
+      {error && dashboard && <Alert type="error">{error}</Alert>}
 
       {loading ? (
-        <p className="text-slate-400 text-center py-10">{t('common.loading')}</p>
+        <LoadingState label={t('common.loading')} />
+      ) : error && !dashboard ? (
+        <ErrorState
+          title={t('common.loadErrorTitle')}
+          description={error}
+        />
       ) : dashboard && (
         <>
           <CompactKpiRow

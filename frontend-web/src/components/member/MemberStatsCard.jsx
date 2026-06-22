@@ -6,7 +6,7 @@ export default function MemberStatsCard({ implication, notifications = [] }) {
   const nonLues = notifications.filter(notification => !notification.lue).length
 
   return (
-    <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5">
+    <section className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
       <h2 className="text-lg font-bold text-blue-900 mb-4">{t('memberDashboard.stats.title')}</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Metric label={t('memberDashboard.stats.activitiesJoined')} value={data.activitesRejointes ?? 0} />

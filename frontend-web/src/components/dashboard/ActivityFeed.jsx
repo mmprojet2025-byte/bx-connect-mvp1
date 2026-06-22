@@ -15,7 +15,7 @@ export default function ActivityFeed({
   const accentClass = getAccentClass(accent)
 
   return (
-    <section className="rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-lg shadow-slate-900/5">
+    <section className="rounded-xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-900/5">
       <div className="mb-4">
         <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
           <AppIcon name="Activity" className={`h-5 w-5 ${accentClass}`} />
@@ -25,7 +25,7 @@ export default function ActivityFeed({
       </div>
 
       {visibleItems.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-center">
+        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-center">
           <AppIcon name="CheckCircle" className="mx-auto mb-2 h-8 w-8 text-emerald-500" />
           <p className="text-sm font-black text-slate-700">{emptyLabel}</p>
         </div>
@@ -34,7 +34,7 @@ export default function ActivityFeed({
           {groupedItems.map(group => (
             <div key={group.label}>
               <p className="mb-2 text-[11px] font-black uppercase tracking-wide text-slate-400">{group.label}</p>
-              <div className="divide-y divide-slate-100 rounded-2xl border border-slate-100 bg-slate-50/60">
+              <div className="divide-y divide-slate-100 rounded-lg border border-slate-100 bg-slate-50/60">
                 {group.items.map(item => <ActivityItem key={item.key} item={item} language={language} accent={accent} />)}
               </div>
             </div>

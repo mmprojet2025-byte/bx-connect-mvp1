@@ -2,10 +2,22 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import {
+  Bar,
+  BarChart,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import { userFriendlyError } from '../../utils/userFriendlyError';
 import AppIcon from '../../components/ui/AppIcons';
+import EmptyState from '../../components/ui/EmptyState';
 import ProjectVisibilityBadge from '../../components/ProjectVisibilityBadge';
 import { SUPPORT_STATUS_STYLES, supportStatusLabel } from '../../utils/supportStatus';
 import PartnerLogo from '../../components/PartnerLogo';
@@ -258,6 +270,10 @@ export default function PartenaireSpace() {
     () => buildPartnerActivityItems({ mesSoutiens, projetsOuverts, activitesOuvertes, t }),
     [activitesOuvertes, mesSoutiens, projetsOuverts, t]
   );
+  const partnerChartData = useMemo(
+    () => buildPartnerChartData({ mesSoutiens, activitesOuvertes, t }),
+    [activitesOuvertes, mesSoutiens, t]
+  );
 
   const displayedPartnerSupports = useMemo(() => {
     if (!focusedSupportId) return mesSoutiens;
@@ -274,7 +290,7 @@ export default function PartenaireSpace() {
       title={t('partnerSpace.title')}
       subtitle={t('partnerSpace.loading')}
     >
-      <p className="rounded-3xl bg-white p-10 text-center text-gray-400 shadow-sm">{t('partnerSpace.loading')}</p>
+      <p className="rounded-xl bg-white p-10 text-center text-gray-400 shadow-sm">{t('partnerSpace.loading')}</p>
     </CollaborativeDashboardLayout>
   );
 
@@ -285,7 +301,7 @@ export default function PartenaireSpace() {
       subtitle={t('partnerSpace.dashboardSubtitle', { defaultValue: `${projetsOuverts.length} projet(s) ouvert(s) · ${mesSoutiens.length} soutien(s) suivi(s)` })}
     >
         {/* En-tête */}
-        <div className="mb-6 flex flex-col gap-4 rounded-[1.5rem] border border-orange-100 bg-white p-5 shadow-lg shadow-orange-950/5 md:flex-row md:items-center md:justify-between">
+        <div className="mb-6 flex flex-col gap-4 rounded-xl border border-orange-100 bg-white p-5 shadow-lg shadow-orange-950/5 md:flex-row md:items-center md:justify-between">
           <div className="flex min-w-0 items-center gap-4">
             <PartnerLogo
               logoUrl={profilInstitutionnel?.logoUrl}
@@ -309,14 +325,14 @@ export default function PartenaireSpace() {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setShowProfileForm(true)}
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
             >
               <AppIcon name="Edit" className="h-4 w-4" />
               {t('partnerInstitution.editProfile')}
             </button>
             <button
               onClick={() => setShowSoutienForm(true)}
-              className="inline-flex items-center gap-2 rounded-2xl bg-orange-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-500"
+              className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-500"
             >
               <AppIcon name="PlusCircle" className="h-4 w-4" />
               {t('partnerSpace.financialSupport')}
@@ -372,6 +388,8 @@ export default function PartenaireSpace() {
 
             {impact.totalSoutiens > 0 && <PartnerImpactSummary impact={impact} t={t} />}
 
+            <PartnerCharts data={partnerChartData} t={t} />
+
             {partnerActivityItems.length > 0 && (
             <div>
               {sectionErrors.soutiens && <SectionLoadError message={sectionErrors.soutiens} />}
@@ -398,14 +416,14 @@ export default function PartenaireSpace() {
             </h2>
             {sectionErrors.projets && <SectionLoadError message={sectionErrors.projets} />}
             {projetsOuverts.length === 0 ? (
-              <div className="text-center py-12 text-gray-400 bg-white rounded-2xl shadow">
+              <div className="text-center py-12 text-gray-400 bg-white rounded-lg shadow">
                 <AppIcon name="Rocket" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
                 <p>{t('partnerSpace.noOpenProjects')}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {projetsOuverts.map(p => (
-                  <div key={p.id} className="bg-white rounded-2xl shadow p-5">
+                  <div key={p.id} className="bg-white rounded-lg shadow p-5">
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <ProjectVisibilityBadge visibility={p.visibilite} className="mb-2" />
@@ -446,14 +464,14 @@ export default function PartenaireSpace() {
             </h2>
             {sectionErrors.activites && <SectionLoadError message={sectionErrors.activites} />}
             {activitesOuvertes.length === 0 ? (
-              <div className="text-center py-12 text-gray-400 bg-white rounded-2xl shadow">
+              <div className="text-center py-12 text-gray-400 bg-white rounded-lg shadow">
                 <AppIcon name="Folder" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
                 <p>{t('partnerSpace.noOpenActivities')}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {activitesOuvertes.map(a => (
-                  <div key={a.id} className="bg-white rounded-2xl shadow p-5">
+                  <div key={a.id} className="bg-white rounded-lg shadow p-5">
                     <h3 className="font-bold text-blue-900 mb-1">{a.titre}</h3>
                     {a.description && <p className="text-gray-500 text-sm mb-2 line-clamp-2">{a.description}</p>}
                     <div className="text-xs text-gray-400 mb-3 space-y-1">
@@ -487,7 +505,7 @@ export default function PartenaireSpace() {
             </h2>
             {sectionErrors.soutiens && <SectionLoadError message={sectionErrors.soutiens} />}
             {mesSoutiens.length === 0 ? (
-              <div className="text-center py-12 text-gray-400 bg-white rounded-2xl shadow">
+              <div className="text-center py-12 text-gray-400 bg-white rounded-lg shadow">
                 <AppIcon name="Wallet" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
                 <p>{t('partnerSpace.noDeclarations')}</p>
               </div>
@@ -526,7 +544,7 @@ export default function PartenaireSpace() {
               <button
                 type="button"
                 onClick={() => setShowOpportunityForm(current => !current)}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-orange-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-500"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-500"
               >
                 <AppIcon name={showOpportunityForm ? 'XCircle' : 'PlusCircle'} className="h-4 w-4" />
                 {showOpportunityForm
@@ -538,7 +556,7 @@ export default function PartenaireSpace() {
             {sectionErrors.opportunites && <SectionLoadError message={sectionErrors.opportunites} />}
 
             {showOpportunityForm && (
-              <form onSubmit={handleCreateOpportunity} className="mb-5 rounded-2xl border border-orange-100 bg-white p-5 shadow-sm">
+              <form onSubmit={handleCreateOpportunity} className="mb-5 rounded-lg border border-orange-100 bg-white p-5 shadow-sm">
                 <div className="grid gap-4 md:grid-cols-2">
                   <ProfileInput
                     label={t('partnerSpace.opportunityTitle', { defaultValue: 'Titre' })}
@@ -621,7 +639,7 @@ export default function PartenaireSpace() {
             )}
 
             {mesOpportunites.length === 0 ? (
-              <div className="text-center py-12 text-gray-400 bg-white rounded-2xl shadow">
+              <div className="text-center py-12 text-gray-400 bg-white rounded-lg shadow">
                 <AppIcon name="Megaphone" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
                 <p>{t('partnerSpace.noOpportunities', { defaultValue: 'Aucune opportunité publiée pour le moment.' })}</p>
               </div>
@@ -638,13 +656,13 @@ export default function PartenaireSpace() {
         {/* ── Modal formulaire soutien ── */}
         {showSoutienForm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900">
                   <AppIcon name="Wallet" className="h-5 w-5 text-orange-600" />
                   {t('partnerSpace.declareSupport')}
                 </h2>
-                <button onClick={() => setShowSoutienForm(false)} className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600" aria-label={t('common.close')}>
+                <button onClick={() => setShowSoutienForm(false)} className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600" aria-label={t('common.close')}>
                   <AppIcon name="XCircle" className="h-5 w-5" />
                 </button>
               </div>
@@ -749,7 +767,7 @@ export default function PartenaireSpace() {
 
         {editingSupport && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-black uppercase tracking-wide text-orange-600">
@@ -765,7 +783,7 @@ export default function PartenaireSpace() {
                 <button
                   type="button"
                   onClick={closeEditSupport}
-                  className="rounded-full p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+                  className="rounded-lg p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
                   aria-label={t('common.close')}
                 >
                   <AppIcon name="XCircle" className="h-5 w-5" />
@@ -773,7 +791,7 @@ export default function PartenaireSpace() {
               </div>
 
               <form onSubmit={handleModifierSoutien} className="space-y-4">
-                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+                <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
                   <p className="text-xs font-black uppercase tracking-wide text-slate-400">
                     {t('partnerSpace.lockedTarget', { defaultValue: 'Cible non modifiable' })}
                   </p>
@@ -834,13 +852,13 @@ export default function PartenaireSpace() {
 
         {showProfileForm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <form onSubmit={handleSaveProfile} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6">
+            <form onSubmit={handleSaveProfile} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6">
               <div className="mb-5 flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-black text-slate-950">{t('partnerInstitution.editTitle')}</h2>
                   <p className="mt-1 text-sm text-slate-500">{t('partnerInstitution.editDescription')}</p>
                 </div>
-                <button type="button" onClick={() => setShowProfileForm(false)} className="rounded-full p-2 text-slate-400 hover:bg-slate-100">
+                <button type="button" onClick={() => setShowProfileForm(false)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100">
                   <AppIcon name="XCircle" className="h-5 w-5" />
                 </button>
               </div>
@@ -880,13 +898,120 @@ export default function PartenaireSpace() {
   );
 }
 
+function PartnerCharts({ data, t }) {
+  const panels = [
+    data.supportsByStatus.length > 0 && {
+      key: 'supports-status',
+      title: t('partnerSpace.chartsSupportsByStatus'),
+      kind: 'pie',
+      data: data.supportsByStatus,
+    },
+    data.supportedProjectsByStatus.length > 0 && {
+      key: 'supported-projects-status',
+      title: t('partnerSpace.chartsSupportedProjectsByStatus'),
+      kind: 'bar',
+      data: data.supportedProjectsByStatus,
+    },
+    data.activitiesByStatus.length > 0 && {
+      key: 'activities-status',
+      title: t('partnerSpace.chartsActivitiesByStatus'),
+      kind: 'bar',
+      data: data.activitiesByStatus,
+    },
+  ].filter(Boolean);
+
+  return (
+    <section className="mb-6 rounded-xl border border-orange-100 bg-white p-5 shadow-sm">
+      <div className="mb-4">
+        <p className="text-xs font-black uppercase tracking-wide text-orange-600">
+          {t('partnerSpace.chartsEyebrow')}
+        </p>
+        <h2 className="text-xl font-black text-slate-950">
+          {t('partnerSpace.chartsTitle')}
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">
+          {t('partnerSpace.chartsSubtitle')}
+        </p>
+      </div>
+
+      {panels.length === 0 ? (
+        <EmptyState
+          icon="BarChart"
+          title={t('partnerSpace.chartsEmptyTitle')}
+          description={t('partnerSpace.chartsEmptyDescription')}
+        />
+      ) : (
+        <div className="grid gap-4 xl:grid-cols-2">
+          {panels.map(panel => (
+            <ChartPanel key={panel.key} title={panel.title}>
+              {panel.kind === 'pie' ? (
+                <PartnerPieChart data={panel.data} />
+              ) : (
+                <PartnerBarChart data={panel.data} />
+              )}
+            </ChartPanel>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ChartPanel({ title, children }) {
+  return (
+    <article className="rounded-lg border border-slate-100 bg-slate-50 p-4">
+      <h3 className="mb-3 text-sm font-black text-slate-800">{title}</h3>
+      <div className="h-56">{children}</div>
+    </article>
+  );
+}
+
+function PartnerPieChart({ data }) {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <PieChart>
+        <Pie
+          data={data}
+          dataKey="value"
+          nameKey="label"
+          innerRadius={52}
+          outerRadius={82}
+          paddingAngle={3}
+        >
+          {data.map((entry, index) => (
+            <Cell key={entry.key} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+          ))}
+        </Pie>
+        <Tooltip formatter={(value, name) => [value, name]} />
+      </PieChart>
+    </ResponsiveContainer>
+  );
+}
+
+function PartnerBarChart({ data }) {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data} margin={{ top: 8, right: 8, left: -24, bottom: 8 }}>
+        <XAxis dataKey="label" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+        <YAxis allowDecimals={false} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+        <Tooltip formatter={value => [value, '']} cursor={{ fill: 'rgba(249, 115, 22, 0.08)' }} />
+        <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+          {data.map((entry, index) => (
+            <Cell key={entry.key} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
 function PartnerActions({ mesSoutiens, onSupport, t }) {
   const pending = mesSoutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE').length;
   const paid = mesSoutiens.filter(soutien => soutien.statutPaiement === 'PAYE').length;
   const rejected = mesSoutiens.filter(soutien => soutien.statutPaiement === 'REMBOURSE').length;
 
   return (
-    <section className="mb-6 rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">
+    <section className="mb-6 rounded-xl border border-orange-100 bg-white p-5 shadow-sm">
       <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-wide text-orange-600">
@@ -899,14 +1024,14 @@ function PartnerActions({ mesSoutiens, onSupport, t }) {
         <button
           type="button"
           onClick={onSupport}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-orange-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-500"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-500"
         >
           <AppIcon name="Wallet" className="h-4 w-4" />
           {t('partnerSpace.proposeSupport')}
         </button>
       </div>
 
-      <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+      <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
         <p className="text-sm font-black text-slate-950">
           {mesSoutiens.length > 0
             ? t('partnerSpace.supportStatusSummary', { pending, paid, rejected, defaultValue: `${pending} en attente · ${paid} payé(s) · ${rejected} refusé(s)` })
@@ -924,7 +1049,7 @@ function PartnerImpactSummary({ impact, t }) {
   const hasImpact = impact.totalSoutiens > 0;
 
   return (
-    <section className="mb-6 rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">
+    <section className="mb-6 rounded-xl border border-orange-100 bg-white p-5 shadow-sm">
       <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-wide text-orange-600">
@@ -940,7 +1065,7 @@ function PartnerImpactSummary({ impact, t }) {
       </div>
 
       {!hasImpact ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5">
+        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-5">
           <p className="text-sm font-semibold text-slate-600">
             {t('partnerSpace.noImpactYet', { defaultValue: 'Aucun soutien enregistré pour le moment. Les projets ouverts vous permettent de créer votre premier impact.' })}
           </p>
@@ -955,7 +1080,7 @@ function PartnerImpactSummary({ impact, t }) {
       )}
 
       {impact.recentSupports.length > 0 && (
-        <div className="mt-4 rounded-2xl bg-slate-50 p-3">
+        <div className="mt-4 rounded-lg bg-slate-50 p-3">
           <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">
             {t('partnerSpace.recentSupports', { defaultValue: 'Derniers soutiens' })}
           </p>
@@ -979,7 +1104,7 @@ function PartnerImpactSummary({ impact, t }) {
 
 function OpportunityCard({ opportunite, language }) {
   return (
-    <article className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+    <article className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-wide text-orange-600">
@@ -1028,7 +1153,7 @@ function PartnerSupportCard({ soutien, language, focused, processingKey, onEdit,
   const editable = soutien.statutPaiement === 'EN_ATTENTE'
 
   return (
-    <article className={`rounded-2xl border bg-white p-5 shadow-sm ${focused ? 'border-orange-300 ring-2 ring-orange-100' : 'border-slate-100'}`}>
+    <article className={`rounded-lg border bg-white p-5 shadow-sm ${focused ? 'border-orange-300 ring-2 ring-orange-100' : 'border-slate-100'}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-wide text-orange-600">
@@ -1042,7 +1167,7 @@ function PartnerSupportCard({ soutien, language, focused, processingKey, onEdit,
         </span>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-orange-100 bg-orange-50 px-4 py-3">
+      <div className="mt-4 rounded-lg border border-orange-100 bg-orange-50 px-4 py-3">
         <p className="text-xs font-black uppercase tracking-wide text-orange-700">
           {t('partnerSpace.nextStep', { defaultValue: 'Prochaine étape' })}
         </p>
@@ -1074,7 +1199,7 @@ function PartnerSupportCard({ soutien, language, focused, processingKey, onEdit,
         </div>
       )}
 
-      <div className="mt-4 rounded-2xl bg-slate-50 p-3">
+      <div className="mt-4 rounded-lg bg-slate-50 p-3">
         <p className="text-xs font-black uppercase tracking-wide text-slate-400">
           {t('partnerSupport.admin.exchangeHistory', { defaultValue: 'Historique des échanges' })}
         </p>
@@ -1122,12 +1247,57 @@ function SupportExchange({ icon, title, date, text, language }) {
 
 function ImpactMetric({ icon, label, value }) {
   return (
-    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+    <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
       <AppIcon name={icon} className="mb-3 h-5 w-5 text-orange-600" />
       <p className="text-2xl font-black text-slate-950">{value}</p>
       <p className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-400">{label}</p>
     </div>
   );
+}
+
+const CHART_COLORS = ['#f97316', '#2563eb', '#0f766e', '#d97706', '#7c3aed', '#dc2626', '#64748b'];
+
+function buildPartnerChartData({ mesSoutiens, activitesOuvertes, t }) {
+  return {
+    supportsByStatus: buildStatusChartData(
+      mesSoutiens,
+      soutien => soutien.statutPaiement || 'UNKNOWN',
+      status => supportStatusLabel(status, t)
+    ),
+    supportedProjectsByStatus: buildStatusChartData(
+      mesSoutiens.filter(soutien => soutien.projetId || soutien.projetTitre),
+      getSupportedProjectStatus,
+      status => t(`statuses.${status}`, { defaultValue: status })
+    ),
+    activitiesByStatus: buildStatusChartData(
+      activitesOuvertes,
+      activite => activite.statut || 'UNKNOWN',
+      status => t(`statuses.${status}`, { defaultValue: status })
+    ),
+  };
+}
+
+function buildStatusChartData(items, getKey, getLabel) {
+  const counts = new Map();
+  items.forEach(item => {
+    const key = getKey(item);
+    if (!key) return;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  });
+
+  return Array.from(counts.entries()).map(([key, value]) => ({
+    key,
+    label: getLabel(key),
+    value,
+  }));
+}
+
+function getSupportedProjectStatus(soutien) {
+  return soutien.projetStatut
+    || soutien.statutProjet
+    || soutien.projectStatus
+    || soutien.projet?.statut
+    || null;
 }
 
 function buildPartnerImpact({ statistiques, mesSoutiens }) {
