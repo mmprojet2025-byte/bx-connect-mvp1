@@ -47,9 +47,7 @@ export default function PartnerProfileScreen() {
       setProfile(nextProfile);
       setForm(profileToForm(nextProfile));
     } catch (err) {
-      setError(getApiError(err, t, t('partnerInstitution.profileLoadError', {
-        defaultValue: 'Impossible de charger le profil partenaire.',
-      })));
+      setError(getApiError(err, t, t('partnerInstitution.profileLoadError')));
     } finally {
       setLoading(false);
     }
@@ -72,11 +70,9 @@ export default function PartnerProfileScreen() {
       const nextProfile = res.data || {};
       setProfile(nextProfile);
       setForm(profileToForm(nextProfile));
-      setMessage(t('partnerInstitution.profileSaved', { defaultValue: 'Profil partenaire enregistré.' }));
+      setMessage(t('partnerInstitution.profileSaved'));
     } catch (err) {
-      setError(getApiError(err, t, t('partnerInstitution.profileError', {
-        defaultValue: 'Impossible d’enregistrer le profil partenaire.',
-      })));
+      setError(getApiError(err, t, t('partnerInstitution.profileError')));
     } finally {
       setSaving(false);
     }
@@ -86,7 +82,7 @@ export default function PartnerProfileScreen() {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={COLORS.bxBlue} />
-        <Text style={styles.loadingText}>{t('common.loading', { defaultValue: 'Chargement...' })}</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -101,10 +97,8 @@ export default function PartnerProfileScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <SectionHeader
-            title={t('partnerInstitution.profileTitle', { defaultValue: 'Profil partenaire' })}
-            subtitle={t('partnerInstitution.profileSubtitle', {
-              defaultValue: 'Présentez votre organisation aux membres et à l’administration.',
-            })}
+            title={t('partnerInstitution.profileTitle')}
+            subtitle={t('partnerInstitution.profileSubtitle')}
             icon="building"
           />
           {profile?.logoUrl ? (
@@ -116,16 +110,14 @@ export default function PartnerProfileScreen() {
             <View style={styles.noticeBox}>
               <AppIcon name="warning" size={18} color={COLORS.warning} />
               <Text style={styles.noticeText}>
-                {t('partnerInstitution.incompleteProfile', {
-                  defaultValue: 'Profil incomplet : ajoutez au moins le nom de l’organisation et une description.',
-                })}
+                {t('partnerInstitution.incompleteProfile')}
               </Text>
             </View>
           ) : (
             <View style={styles.completeBox}>
               <AppIcon name="check" size={18} color={COLORS.success} />
               <Text style={styles.completeText}>
-                {t('partnerInstitution.completeProfile', { defaultValue: 'Profil partenaire renseigné.' })}
+                {t('partnerInstitution.completeProfile')}
               </Text>
             </View>
           )}
@@ -136,13 +128,13 @@ export default function PartnerProfileScreen() {
 
         <View style={styles.formCard}>
           <Input
-            label={t('partnerInstitution.organization', { defaultValue: 'Organisation' })}
+            label={t('partnerInstitution.organization')}
             value={form.nomOrganisation}
             onChangeText={(value) => updateField('nomOrganisation', value)}
-            placeholder={t('partnerInstitution.organizationPlaceholder', { defaultValue: 'Nom de l’organisation' })}
+            placeholder={t('partnerInstitution.organizationPlaceholder')}
           />
 
-          <Text style={styles.label}>{t('partnerInstitution.type', { defaultValue: 'Type de partenaire' })}</Text>
+          <Text style={styles.label}>{t('partnerInstitution.type')}</Text>
           <View style={styles.typeGrid}>
             {PARTNER_TYPES.map((type) => (
               <TouchableOpacity
@@ -151,54 +143,54 @@ export default function PartnerProfileScreen() {
                 onPress={() => updateField('typePartenaire', type)}
               >
                 <Text style={[styles.typeText, form.typePartenaire === type && styles.typeTextActive]}>
-                  {t(`partnerInstitution.types.${type}`, { defaultValue: type })}
+                  {t(`partnerInstitution.types.${type}`)}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
           <Input
-            label={t('partnerInstitution.description', { defaultValue: 'Description' })}
+            label={t('partnerInstitution.description')}
             value={form.description}
             onChangeText={(value) => updateField('description', value)}
-            placeholder={t('partnerInstitution.descriptionPlaceholder', { defaultValue: 'Décrivez brièvement votre organisation' })}
+            placeholder={t('partnerInstitution.descriptionPlaceholder')}
             multiline
           />
           <Input
-            label={t('partnerInstitution.website', { defaultValue: 'Site web' })}
+            label={t('partnerInstitution.website')}
             value={form.siteWeb}
             onChangeText={(value) => updateField('siteWeb', value)}
-            placeholder="https://..."
+            placeholder={t('common.urlPlaceholder')}
             autoCapitalize="none"
             keyboardType="url"
           />
           <Input
-            label={t('partnerInstitution.logoUrl', { defaultValue: 'URL du logo' })}
+            label={t('partnerInstitution.logoUrl')}
             value={form.logoUrl}
             onChangeText={(value) => updateField('logoUrl', value)}
-            placeholder="https://..."
+            placeholder={t('common.urlPlaceholder')}
             autoCapitalize="none"
             keyboardType="url"
           />
           <Input
-            label={t('partnerInstitution.contactPerson', { defaultValue: 'Personne de contact' })}
+            label={t('partnerInstitution.contactPerson')}
             value={form.personneContact}
             onChangeText={(value) => updateField('personneContact', value)}
-            placeholder={t('common.notAvailable', { defaultValue: 'Non renseigné' })}
+            placeholder={t('common.notAvailable')}
           />
           <Input
-            label={t('partnerInstitution.contactEmail', { defaultValue: 'Email de contact' })}
+            label={t('partnerInstitution.contactEmail')}
             value={form.emailContact}
             onChangeText={(value) => updateField('emailContact', value)}
-            placeholder="contact@example.org"
+            placeholder={t('partnerInstitution.contactEmailPlaceholder')}
             autoCapitalize="none"
             keyboardType="email-address"
           />
           <Input
-            label={t('partnerInstitution.phone', { defaultValue: 'Téléphone' })}
+            label={t('partnerInstitution.phone')}
             value={form.telephone}
             onChangeText={(value) => updateField('telephone', value)}
-            placeholder="+32..."
+            placeholder={t('partnerInstitution.phonePlaceholder')}
             keyboardType="phone-pad"
           />
 
@@ -214,24 +206,24 @@ export default function PartnerProfileScreen() {
             )}
             <Text style={styles.saveText}>
               {saving
-                ? t('common.saving', { defaultValue: 'Enregistrement...' })
-                : t('common.save', { defaultValue: 'Enregistrer' })}
+                ? t('common.saving')
+                : t('common.save')}
             </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.summaryCard}>
           <View style={styles.summaryTitleRow}>
-            <Text style={styles.summaryTitle}>{t('partnerInstitution.publicPreview', { defaultValue: 'Aperçu' })}</Text>
+            <Text style={styles.summaryTitle}>{t('partnerInstitution.publicPreview')}</Text>
             <Badge
-              label={t(`partnerInstitution.types.${form.typePartenaire}`, { defaultValue: form.typePartenaire })}
+              label={t(`partnerInstitution.types.${form.typePartenaire}`)}
               color={COLORS.impactOrange}
               soft
             />
           </View>
-          <Text style={styles.summaryName}>{form.nomOrganisation || t('partnerInstitution.organization', { defaultValue: 'Organisation' })}</Text>
+          <Text style={styles.summaryName}>{form.nomOrganisation || t('partnerInstitution.organization')}</Text>
           <Text style={styles.summaryText} numberOfLines={4}>
-            {form.description || t('partnerInstitution.noDescription', { defaultValue: 'Aucune description renseignée.' })}
+            {form.description || t('partnerInstitution.noDescription')}
           </Text>
           {form.siteWeb ? <Text style={styles.summaryLink} numberOfLines={1}>{form.siteWeb}</Text> : null}
         </View>
@@ -284,8 +276,8 @@ function cleanPayload(form) {
 }
 
 function getApiError(err, t, fallback) {
-  if (err.response?.status === 401) return t('errors.session_expired', { defaultValue: 'Session expirée.' });
-  if (err.response?.status === 403) return t('errors.forbidden', { defaultValue: 'Accès refusé.' });
+  if (err.response?.status === 401) return t('errors.session_expired');
+  if (err.response?.status === 403) return t('errors.forbidden');
   return fallback;
 }
 

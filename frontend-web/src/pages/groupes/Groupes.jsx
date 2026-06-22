@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
+import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../api/axios'
 import Navbar from '../../components/Navbar'
@@ -20,34 +21,30 @@ export default function Groupes() {
   const { isAuthenticated, isMembre } = useAuth()
   const { t } = useTranslation()
 
-  const [groupes, setGroupes] = useState([])
   const [adhesions, setAdhesions] = useState([])
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [recherche, setRecherche] = useState('')
   const [actionLoading, setActionLoading] = useState(null)
 
-  useEffect(() => {
-    fetchGroupes()
-  }, [])
+  const {
+    data: groupes = [],
+    isLoading: loading,
+    isError: groupesEnErreur,
+    refetch: refetchGroupes,
+  } = useQuery({
+    queryKey: ['groupes', 'public'],
+    queryFn: async () => {
+      const res = await api.get('/groupes')
+      return res.data || []
+    },
+    retry: 1,
+    staleTime: 60_000,
+  })
 
   useEffect(() => {
     if (isAuthenticated && isMembre) fetchAdhesions()
   }, [isAuthenticated, isMembre])
-
-  const fetchGroupes = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const res = await api.get('/groupes')
-      setGroupes(res.data)
-    } catch {
-      setError(t('groups.error_load'))
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const fetchAdhesions = async () => {
     try {
@@ -67,7 +64,7 @@ export default function Groupes() {
       const feedback = t('ux.groups.requestSent')
       setMessage(feedback)
       toast.success(feedback)
-      await Promise.all([fetchGroupes(), fetchAdhesions()])
+      await Promise.all([refetchGroupes(), fetchAdhesions()])
     } catch (err) {
       const feedback = userFriendlyError(err, t('groups.error_load'))
       setError(feedback)
@@ -87,7 +84,7 @@ export default function Groupes() {
       const feedback = t('groups.success_leave')
       setMessage(feedback)
       toast.success(feedback)
-      await Promise.all([fetchGroupes(), fetchAdhesions()])
+      await Promise.all([refetchGroupes(), fetchAdhesions()])
     } catch (err) {
       const feedback = userFriendlyError(err, t('groups.error_load'))
       setError(feedback)
@@ -113,8 +110,10 @@ export default function Groupes() {
   )
   const groupLife = useMemo(() => {
     const totalMembers = groupes.reduce((sum, groupe) => sum + Number(groupe.nombreMembres || 0), 0)
+    const totalProjects = groupes.reduce((sum, groupe) => sum + Number(groupe.nombreProjets || groupe.projetsCount || 0), 0)
+    const totalActivities = groupes.reduce((sum, groupe) => sum + Number(groupe.nombreActivites || groupe.activitesCount || 0), 0)
     const groupsWithReferent = groupes.filter(groupe => groupe.referentPrenom || groupe.referentNom).length
-    return { totalMembers, groupsWithReferent }
+    return { totalMembers, totalProjects, totalActivities, groupsWithReferent }
   }, [groupes])
 
   const intro = isAuthenticated && isMembre
@@ -125,7 +124,7 @@ export default function Groupes() {
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
         <PageHeader
           eyebrow={t('ux.groups.community')}
           title={t('groups.title')}
@@ -147,7 +146,7 @@ export default function Groupes() {
         {message && <Alert type="success">{message}</Alert>}
         {error && groupes.length > 0 && <Alert type="error">{error}</Alert>}
 
-        <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-4 mb-6">
+        <div className="bg-white rounded-[1.25rem] border border-slate-100 shadow-sm p-3 mb-5">
           <input
             type="text"
             placeholder={t('groups.search')}
@@ -159,12 +158,12 @@ export default function Groupes() {
 
         {loading ? (
           <LoadingState label={t('common.loading')} />
-        ) : error && groupes.length === 0 ? (
+        ) : groupesEnErreur && groupes.length === 0 ? (
           <ErrorState
             title={t('common.loadErrorTitle')}
-            description={error || t('common.loadErrorDescription')}
+            description={t('groups.error_load') || t('common.loadErrorDescription')}
             actionLabel={t('common.retry')}
-            action={fetchGroupes}
+            action={refetchGroupes}
           />
         ) : groupesFiltres.length === 0 ? (
           <EmptyState
@@ -175,7 +174,7 @@ export default function Groupes() {
             actionTo="/activites"
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {groupesFiltres.map((groupe) => {
               const adhesion = adhesionParGroupe[groupe.id]
               return (
@@ -233,16 +232,24 @@ function MemberGroupSummary({ adhesionActive, adhesionEnAttente }) {
 function GroupLifeSummary({ groupLife, isAuthenticated }) {
   const { t } = useTranslation()
   return (
-    <section className="mb-5 grid gap-3 md:grid-cols-3">
-      <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-lg shadow-slate-900/5">
+    <section className="mb-5 grid gap-3 md:grid-cols-4">
+      <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
         <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">{t('groups.lifeMembers', { defaultValue: 'Membres visibles' })}</p>
         <p className="mt-1 text-xl font-black text-slate-950">{groupLife.totalMembers}</p>
       </div>
-      <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-lg shadow-slate-900/5">
+      <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
+        <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">{t('nav.projects', { defaultValue: 'Projets' })}</p>
+        <p className="mt-1 text-xl font-black text-slate-950">{groupLife.totalProjects}</p>
+      </div>
+      <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
+        <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">{t('nav.activities', { defaultValue: 'Activités' })}</p>
+        <p className="mt-1 text-xl font-black text-slate-950">{groupLife.totalActivities}</p>
+      </div>
+      <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
         <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">{t('groups.lifeReferents', { defaultValue: 'Groupes encadrés' })}</p>
         <p className="mt-1 text-xl font-black text-slate-950">{groupLife.groupsWithReferent}</p>
       </div>
-      <Link to={isAuthenticated ? '/messagerie' : '/login'} className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 shadow-lg shadow-blue-950/5 transition hover:border-blue-300">
+      <Link to={isAuthenticated ? '/messagerie' : '/login'} className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 shadow-sm transition hover:border-blue-300 md:col-span-4">
         <p className="text-[11px] font-black uppercase tracking-wide text-blue-500">{t('nav.messaging')}</p>
         <p className="mt-1 text-sm font-black text-blue-900">{t('groups.lifeMessaging', { defaultValue: 'Échanger avec son groupe après adhésion' })}</p>
       </Link>
@@ -260,7 +267,7 @@ function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelle
     : t('groups.members_count', { count: groupe.nombreMembres ?? 0 })
 
   return (
-    <article className={`bg-white rounded-[1.5rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-5 flex flex-col gap-4 border hover:-translate-y-0.5 hover:shadow-lg transition ${isAccepted ? 'border-green-300' : 'border-transparent'}`}>
+    <article className={`bg-white rounded-[1.25rem] border border-slate-100 shadow-sm p-4 flex flex-col gap-3 border hover:-translate-y-0.5 hover:shadow-lg transition ${isAccepted ? 'border-green-300' : 'border-transparent'}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
           <GroupAvatar name={groupe.nom} />
@@ -272,7 +279,7 @@ function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelle
         {adhesion?.statut && <GroupStatusBadge statut={adhesion.statut} />}
       </div>
 
-      <p className="text-slate-500 text-sm leading-relaxed min-h-[44px]">
+      <p className="text-slate-500 text-sm leading-relaxed line-clamp-2">
         {groupe.description || t('groups.description_soon')}
       </p>
 
@@ -372,7 +379,7 @@ function WorkspacePreview({ groupeId, isAccepted, isAuthenticated }) {
   ]
 
   return (
-    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-2.5">
       <p className="mb-2 text-[11px] font-black uppercase tracking-wide text-slate-400">
         {t('groups.workspace', { defaultValue: 'Espace collaboratif' })}
       </p>

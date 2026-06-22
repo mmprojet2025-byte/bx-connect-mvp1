@@ -4,8 +4,10 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
 import AppIcon from '../../components/ui/AppIcons';
+import { useTranslation } from 'react-i18next';
 
 export default function GestionPrestations() {
+  const { t } = useTranslation();
   const { isAdmin } = useAuth();
   const [prestations, setPrestations] = useState([]);
   const [mesGroupes, setMesGroupes] = useState([]);
@@ -34,7 +36,7 @@ export default function GestionPrestations() {
       const gRes = await api.get('/groupes/referent/mes-groupes');
       setMesGroupes(gRes.data);
       if (gRes.data.length > 0) setGroupeSelectionne(gRes.data[0].id);
-    } catch { setError('Impossible de charger vos groupes.'); }
+    } catch { setError(t('prestations.errorLoadGroups')); }
     finally { setLoading(false); }
   };
 
@@ -43,7 +45,7 @@ export default function GestionPrestations() {
     try {
       const res = await api.get(`/prestations/groupe/${groupeId}`);
       setPrestations(res.data);
-    } catch { setError('Impossible de charger les prestations.'); }
+    } catch { setError(t('prestations.errorLoad')); }
     finally { setLoading(false); }
   };
 
@@ -51,29 +53,29 @@ export default function GestionPrestations() {
     try {
       const res = await api.get('/prestations/admin/toutes');
       setPrestations(res.data);
-    } catch { setError('Impossible de charger les prestations.'); }
+    } catch { setError(t('prestations.errorLoad')); }
     finally { setLoading(false); }
   };
 
   const handleValider = async (id) => {
     try {
-      await api.patch(`/prestations/${id}/valider`, { commentaire: 'Validée par le référent' });
-      setMessage('Prestation validée !');
+      await api.patch(`/prestations/${id}/valider`, { commentaire: t('prestations.validatedByReferent') });
+      setMessage(t('prestations.validated'));
       if (isAdmin) fetchToutesPrestations();
       else if (groupeSelectionne) fetchPrestationsGroupe(groupeSelectionne);
       setTimeout(() => setMessage(''), 3000);
-    } catch { setError('Erreur lors de la validation.'); }
+    } catch { setError(t('prestations.errorValidate')); }
   };
 
   const handleRefuser = async (id) => {
-    const commentaire = prompt('Motif du refus :') || 'Non précisé';
+    const commentaire = prompt(t('prestations.refusalReason')) || t('common.notSpecified');
     try {
       await api.patch(`/prestations/${id}/refuser`, { commentaire });
-      setMessage('Prestation refusée.');
+      setMessage(t('prestations.refused'));
       if (isAdmin) fetchToutesPrestations();
       else if (groupeSelectionne) fetchPrestationsGroupe(groupeSelectionne);
       setTimeout(() => setMessage(''), 3000);
-    } catch { setError('Erreur lors du refus.'); }
+    } catch { setError(t('prestations.errorRefuse')); }
   };
 
   const prestationsFiltrees = prestations.filter(p =>
@@ -96,7 +98,7 @@ export default function GestionPrestations() {
         <h1 className="text-2xl font-bold text-blue-900 mb-6">
           <span className="inline-flex items-center gap-2">
             <AppIcon name="Handshake" className="h-6 w-6" />
-            {isAdmin ? 'Toutes les prestations' : 'Validation des prestations'}
+            {isAdmin ? t('prestations.allTitle') : t('prestations.validationTitle')}
           </span>
         </h1>
 
@@ -126,11 +128,13 @@ export default function GestionPrestations() {
         </div>
 
         {loading ? (
-          <p className="text-gray-400 text-center py-10">Chargement...</p>
+          <p className="text-gray-400 text-center py-10">{t('common.loading')}</p>
         ) : prestationsFiltrees.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-2xl shadow">
             <AppIcon name="Handshake" className="mx-auto mb-3 h-10 w-10 text-blue-300" />
-            <p className="text-gray-400 text-sm">Aucune prestation {filtre !== 'TOUS' ? `avec le statut "${filtre}"` : ''}.</p>
+            <p className="text-gray-400 text-sm">
+              {filtre !== 'TOUS' ? t('prestations.emptyStatus', { status: filtre }) : t('prestations.empty')}
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -165,12 +169,12 @@ export default function GestionPrestations() {
                     <button onClick={() => handleValider(p.id)}
                       className="inline-flex flex-1 items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white text-sm font-semibold py-2 rounded-xl transition">
                       <AppIcon name="CheckCircle" className="h-4 w-4" />
-                      Valider
+                      {t('common.validate', { defaultValue: 'Valider' })}
                     </button>
                     <button onClick={() => handleRefuser(p.id)}
                       className="inline-flex flex-1 items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold py-2 rounded-xl transition">
                       <AppIcon name="XCircle" className="h-4 w-4" />
-                      Refuser
+                      {t('common.reject')}
                     </button>
                   </div>
                 )}

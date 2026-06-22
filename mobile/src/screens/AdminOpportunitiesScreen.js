@@ -26,9 +26,7 @@ export default function AdminOpportunitiesScreen() {
       const res = await api.get('/annonces/admin/opportunites');
       setOpportunities(res.data || []);
     } catch (err) {
-      setError(getApiError(err, t, t('adminMobile.opportunitiesLoadError', {
-        defaultValue: 'Impossible de charger les opportunités.',
-      })));
+      setError(getApiError(err, t, t('adminMobile.opportunitiesLoadError')));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -39,17 +37,17 @@ export default function AdminOpportunitiesScreen() {
     const accepted = action === 'publier';
     Alert.alert(
       accepted
-        ? t('adminMobile.publishOpportunity', { defaultValue: 'Publier l’opportunité' })
-        : t('adminMobile.refuseOpportunity', { defaultValue: 'Refuser l’opportunité' }),
+        ? t('adminMobile.publishOpportunity')
+        : t('adminMobile.refuseOpportunity'),
       accepted
-        ? t('adminMobile.confirmPublishOpportunity', { defaultValue: 'Cette opportunité deviendra visible publiquement.' })
-        : t('adminMobile.confirmRefuseOpportunity', { defaultValue: 'Cette opportunité sera refusée et ne sera pas publiée.' }),
+        ? t('adminMobile.confirmPublishOpportunity')
+        : t('adminMobile.confirmRefuseOpportunity'),
       [
-        { text: t('common.cancel', { defaultValue: 'Annuler' }), style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
           text: accepted
-            ? t('adminMobile.publish', { defaultValue: 'Publier' })
-            : t('adminMobile.refuse', { defaultValue: 'Refuser' }),
+            ? t('adminMobile.publish')
+            : t('adminMobile.refuse'),
           style: accepted ? 'default' : 'destructive',
           onPress: () => processOpportunity(opportunity, action),
         },
@@ -64,13 +62,11 @@ export default function AdminOpportunitiesScreen() {
     try {
       await api.patch(`/annonces/admin/${opportunity.id}/${action}`);
       setMessage(action === 'publier'
-        ? t('adminMobile.opportunityPublished', { defaultValue: 'Opportunité publiée.' })
-        : t('adminMobile.opportunityRefused', { defaultValue: 'Opportunité refusée.' }));
+        ? t('adminMobile.opportunityPublished')
+        : t('adminMobile.opportunityRefused'));
       await loadOpportunities();
     } catch (err) {
-      setError(getApiError(err, t, t('adminMobile.opportunityProcessError', {
-        defaultValue: 'Impossible de traiter cette opportunité.',
-      })));
+      setError(getApiError(err, t, t('adminMobile.opportunityProcessError')));
     } finally {
       setProcessingId(null);
     }
@@ -91,11 +87,9 @@ export default function AdminOpportunitiesScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <SectionHeader
-          title={t('adminMobile.opportunitiesTitle', { defaultValue: 'Opportunités à modérer' })}
-          subtitle={t('adminMobile.opportunitiesSubtitle', {
-            count: pendingCount,
-            defaultValue: `${pendingCount} en attente`,
-          })}
+          title={t('adminMobile.opportunitiesTitle')}
+          subtitle={t('adminMobile.opportunitiesSubtitle',{
+            count: pendingCount})}
           icon="warning"
         />
       </View>
@@ -106,8 +100,8 @@ export default function AdminOpportunitiesScreen() {
       {opportunities.length === 0 ? (
         <EmptyState
           icon="check"
-          title={t('adminMobile.noOpportunities', { defaultValue: 'Aucune opportunité' })}
-          text={t('adminMobile.noOpportunitiesText', { defaultValue: 'Les publications partenaires à modérer apparaîtront ici.' })}
+          title={t('adminMobile.noOpportunities')}
+          text={t('adminMobile.noOpportunitiesText')}
           actionLabel={t('common.retry')}
           onAction={() => loadOpportunities()}
         />
@@ -153,27 +147,25 @@ function OpportunityCard({ opportunity, language, processing, onPublish, onRefus
       </View>
 
       <View style={styles.metaBox}>
-        <Meta label={t('partner.category', { defaultValue: 'Catégorie' })} value={formatCategory(opportunity.categorieOpportunite, t)} />
-        <Meta label={t('roles.PARTENAIRE', { defaultValue: 'Partenaire' })} value={authorName(opportunity, t)} />
-        <Meta label={t('partner.date', { defaultValue: 'Date' })} value={formatDate(opportunity.dateCreation, language, t)} />
+        <Meta label={t('partner.category')} value={formatCategory(opportunity.categorieOpportunite, t)} />
+        <Meta label={t('roles.PARTENAIRE')} value={authorName(opportunity, t)} />
+        <Meta label={t('partner.date')} value={formatDate(opportunity.dateCreation, language, t)} />
       </View>
 
       {pending ? (
         <View style={styles.actions}>
           <TouchableOpacity style={[styles.publishButton, processing && styles.disabled]} disabled={processing} onPress={onPublish}>
             <AppIcon name="check" size={16} color="#fff" />
-            <Text style={styles.actionText}>{t('adminMobile.publish', { defaultValue: 'Publier' })}</Text>
+            <Text style={styles.actionText}>{t('adminMobile.publish')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.refuseButton, processing && styles.disabled]} disabled={processing} onPress={onRefuse}>
             <AppIcon name="close" size={16} color="#fff" />
-            <Text style={styles.actionText}>{t('adminMobile.refuse', { defaultValue: 'Refuser' })}</Text>
+            <Text style={styles.actionText}>{t('adminMobile.refuse')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <Text style={styles.unavailableHint}>
-          {t('adminMobile.opportunityActionUnavailable', {
-            defaultValue: "Cette action n'est plus disponible car l'opportunité n'est plus en attente.",
-          })}
+          {t('adminMobile.opportunityActionUnavailable')}
         </Text>
       )}
     </Card>
@@ -209,11 +201,11 @@ function formatDate(value, language, t) {
 }
 
 function formatCategory(category, t) {
-  return t(`partner.opportunityCategories.${category}`, { defaultValue: String(category || '').replaceAll('_', ' ') });
+  return t(`partner.opportunityCategories.${category}`);
 }
 
 function formatStatus(status, t) {
-  return t(`partner.opportunityStatuses.${status}`, { defaultValue: String(status || '').replaceAll('_', ' ') });
+  return t(`partner.opportunityStatuses.${status}`);
 }
 
 function statusColor(status) {

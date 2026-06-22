@@ -6,8 +6,10 @@ import {
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import AppIcon from '../components/AppIcon';
+import { useTranslation } from 'react-i18next';
 
 export default function AnnoncesScreen() {
+  const { t, i18n } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [annonces, setAnnonces] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +24,7 @@ export default function AnnoncesScreen() {
       const res = await api.get(endpoint);
       setAnnonces(res.data);
     } catch {
-      setError('Impossible de charger les annonces.');
+      setError(t('announcements.loadError'));
     } finally {
       setLoading(false);
     }
@@ -45,15 +47,17 @@ export default function AnnoncesScreen() {
           </View>
           <View style={[styles.typeBadge, { backgroundColor: ts.bg }]}>
             <Text style={[styles.typeBadgeText, { color: ts.color }]}>
-              {item.type === 'GLOBALE' ? 'Global' :
-               item.type === 'GROUPE' ? item.groupeNom || 'Groupe' : 'Système'}
+              {item.type === 'GLOBALE' ? t('announcements.types.GLOBALE') :
+               item.type === 'GROUPE' ? item.groupeNom || t('announcements.types.GROUPE') : t('announcements.types.SYSTEME')}
             </Text>
           </View>
         </View>
         <Text style={styles.cardContenu}>{item.contenu}</Text>
         <Text style={styles.cardMeta}>
-          Par {item.auteurPrenom} {item.auteurNom} ·{' '}
-          {item.dateCreation ? new Date(item.dateCreation).toLocaleDateString('fr-BE') : ''}
+          {t('announcements.byAuthor', {
+            author: `${item.auteurPrenom || ''} ${item.auteurNom || ''}`.trim() || t('common.notAvailable'),
+          })} ·{' '}
+          {item.dateCreation ? new Date(item.dateCreation).toLocaleDateString(i18n.language || 'fr-BE') : ''}
         </Text>
       </View>
     );
@@ -64,7 +68,7 @@ export default function AnnoncesScreen() {
       <View style={styles.header}>
         <View style={styles.headerTitleRow}>
           <AppIcon name="alert" size={20} color="#1E3A8A" />
-          <Text style={styles.headerTitle}>Annonces</Text>
+          <Text style={styles.headerTitle}>{t('navigation.announcements')}</Text>
         </View>
         <TouchableOpacity style={styles.refreshBtn} onPress={fetchAnnonces}>
           <AppIcon name="refresh" size={19} color="#1E3A8A" />
@@ -80,14 +84,14 @@ export default function AnnoncesScreen() {
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#1E3A8A" />
-          <Text style={styles.loadingText}>Chargement...</Text>
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
         </View>
       ) : annonces.length === 0 ? (
         <View style={styles.centered}>
           <View style={styles.emptyIcon}>
             <AppIcon name="alert" size={32} color="#38BDF8" />
           </View>
-          <Text style={styles.emptyText}>Aucune annonce pour le moment.</Text>
+          <Text style={styles.emptyText}>{t('announcements.empty')}</Text>
         </View>
       ) : (
         <FlatList

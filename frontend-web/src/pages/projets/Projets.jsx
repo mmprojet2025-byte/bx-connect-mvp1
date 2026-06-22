@@ -114,6 +114,7 @@ export default function Projets() {
       .sort((a, b) => new Date(b.dateSoumission || b.dateCreation || 0) - new Date(a.dateSoumission || a.dateCreation || 0))
       .slice(0, 3)
   }, [projets])
+  const projetsEnAction = (projetsParStatut.SOUMIS || 0) + (projetsParStatut.APPROUVE || 0) + (projetsParStatut.EN_COURS || 0)
   const projetsFiltres = useMemo(() => {
     return projets.filter(projet => {
       if (focusedProjectId && String(projet.id) !== String(focusedProjectId)) return false
@@ -261,7 +262,7 @@ export default function Projets() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
         <PageHeader
           eyebrow={t('ux.projects.eyebrow')}
           title={t('ux.projects.title')}
@@ -281,7 +282,14 @@ export default function Projets() {
         {message && <Alert>{message}</Alert>}
         {error && projets.length > 0 && <Alert type="error">{error}</Alert>}
 
-        <section className="bg-white rounded-[1.25rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-4 mb-5">
+        <section className="mb-5 grid gap-3 sm:grid-cols-4">
+          <ProjectStat icon="Rocket" label={t('nav.projects', { defaultValue: 'Projets' })} value={projets.length} />
+          <ProjectStat icon="Clock" label={t('statuses.SOUMIS', { defaultValue: 'Soumis' })} value={projetsParStatut.SOUMIS || 0} tone="amber" />
+          <ProjectStat icon="CheckCircle" label={t('statuses.APPROUVE', { defaultValue: 'Approuvés' })} value={projetsParStatut.APPROUVE || 0} tone="green" />
+          <ProjectStat icon="Activity" label={t('projects.activeProjects', { defaultValue: 'En action' })} value={projetsEnAction} tone="blue" />
+        </section>
+
+        <section className="bg-white rounded-[1.25rem] border border-slate-100 shadow-sm p-4 mb-5">
           <div>
             <h2 className="font-semibold text-slate-950">{t('projects.workspaceTitle', { defaultValue: 'Projets à suivre' })}</h2>
             <p className="text-sm text-slate-500 mt-1">
@@ -332,7 +340,7 @@ export default function Projets() {
           t={t}
         />
 
-        <section className="mb-6 rounded-[1.5rem] border border-slate-100 bg-white p-4 shadow-lg shadow-slate-900/5">
+        <section className="mb-5 rounded-[1.25rem] border border-slate-100 bg-white p-4 shadow-sm">
           <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-sm font-black text-slate-950">{t('common.filters', { defaultValue: 'Filtres' })}</h2>
@@ -429,7 +437,7 @@ export default function Projets() {
             action={resetFilters}
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {projetsFiltres.map(projet => (
               <ProjectCard
                 key={projet.id}
@@ -464,17 +472,17 @@ export default function Projets() {
 
 function WorkflowStepper({ counts, activeStatus, onSelectStatus, t }) {
   const steps = [
-    { label: 'Créé', status: 'BROUILLON', icon: 'PlusCircle' },
-    { label: 'Soumis', status: 'SOUMIS', icon: 'Clock' },
-    { label: 'Validation', status: 'SOUMIS', icon: 'Shield' },
-    { label: 'Approuvé', status: 'APPROUVE', icon: 'CheckCircle' },
-    { label: 'Visible', status: 'EN_COURS', icon: 'Eye' },
-    { label: 'Soutenu', status: 'EN_COURS', icon: 'Handshake' },
-    { label: 'Terminé', status: 'TERMINE', icon: 'Rocket' },
+    { label: t('projects.workflowSteps.created'), status: 'BROUILLON', icon: 'PlusCircle' },
+    { label: t('projects.workflowSteps.submitted'), status: 'SOUMIS', icon: 'Clock' },
+    { label: t('projects.workflowSteps.validation'), status: 'SOUMIS', icon: 'Shield' },
+    { label: t('projects.workflowSteps.approved'), status: 'APPROUVE', icon: 'CheckCircle' },
+    { label: t('projects.workflowSteps.visible'), status: 'EN_COURS', icon: 'Eye' },
+    { label: t('projects.workflowSteps.supported'), status: 'EN_COURS', icon: 'Handshake' },
+    { label: t('projects.workflowSteps.done'), status: 'TERMINE', icon: 'Rocket' },
   ]
 
   return (
-    <section className="mb-5 rounded-[1.25rem] border border-blue-100 bg-white p-4 shadow-lg shadow-blue-950/5">
+    <section className="mb-5 rounded-[1.25rem] border border-blue-100 bg-white p-4 shadow-sm">
       <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-sm font-black text-slate-950">{t('ux.projects.workflow')}</h2>
@@ -492,13 +500,13 @@ function WorkflowStepper({ counts, activeStatus, onSelectStatus, t }) {
             key={`${step.label}-${index}`}
             type="button"
             onClick={() => onSelectStatus(step.status)}
-            className={`flex min-w-[128px] items-center gap-2 rounded-2xl border px-2.5 py-2 text-left transition ${
+            className={`flex min-w-[118px] items-center gap-2 rounded-2xl border px-2.5 py-2 text-left transition ${
               activeStatus === step.status
                 ? 'border-blue-300 bg-blue-50 shadow-sm'
                 : 'border-slate-100 bg-white hover:border-blue-200 hover:bg-slate-50'
             }`}
           >
-            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
               <AppIcon name={step.icon} className="h-4 w-4" />
             </span>
             <span className="min-w-0">
@@ -540,9 +548,9 @@ function ProjectCard({
   const nextStep = projectNextStep(projet, isAdmin, isPartenaire, isMembre, isParticipant, t)
 
   return (
-    <article className="bg-white rounded-[1.25rem] border border-slate-100 shadow-lg shadow-slate-900/5 overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition flex flex-col">
+    <article className="bg-white rounded-[1.25rem] border border-slate-100 shadow-sm overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition flex flex-col">
       <div className="relative">
-        <ProjectCover imageUrl={projet.imageUrl} title={projet.titre} className="h-36" />
+        <ProjectCover imageUrl={projet.imageUrl} title={projet.titre} className="h-32" />
         <div className="absolute left-4 top-4">
           <StatusBadge status={projet.statut}>
             {t(`statuses.${projet.statut}`, { defaultValue: projet.statut })}
@@ -690,6 +698,28 @@ function ProjectAlivePanel({ projet, nextStep, comments, commentsLoading, commen
             </button>
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+function ProjectStat({ icon, label, value, tone = 'slate' }) {
+  const tones = {
+    slate: 'bg-slate-50 text-slate-700',
+    blue: 'bg-blue-50 text-blue-700',
+    green: 'bg-green-50 text-green-700',
+    amber: 'bg-amber-50 text-amber-700',
+  }
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</p>
+          <p className="mt-1 text-xl font-black text-slate-950">{value}</p>
+        </div>
+        <span className={`grid h-9 w-9 place-items-center rounded-xl ${tones[tone] || tones.slate}`}>
+          <AppIcon name={icon} className="h-4 w-4" />
+        </span>
       </div>
     </div>
   )

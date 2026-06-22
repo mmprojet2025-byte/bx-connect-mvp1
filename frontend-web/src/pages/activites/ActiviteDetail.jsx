@@ -228,11 +228,11 @@ export default function ActiviteDetail() {
                     <div
                       ref={mapContainerRef}
                       className="h-48 overflow-hidden rounded-xl border border-slate-100"
-                      aria-label="Carte de localisation de l’activité"
+                      aria-label={t('activities.locationMapAria')}
                     />
                   ) : (
                     <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm font-semibold text-slate-500">
-                      Adresse disponible. Les coordonnées exactes pourront être ajoutées plus tard.
+                      {t('groups.addressWithoutCoordinates')}
                     </div>
                   )}
                   <a

@@ -22,30 +22,30 @@ export default function Footer() {
             />
           </Link>
           <p className="mt-5 max-w-sm leading-6 text-blue-100">
-            La plateforme qui connecte les jeunes, les associations et les projets à Bruxelles.
+            {t('footer.description')}
           </p>
         </div>
 
         <FooterColumn
-          title="Plateforme"
+          title={t('footer.platform')}
           links={[
-            { to: '/activites', label: 'Activités' },
-            { to: '/groupes', label: 'Groupes' },
-            { to: '/projets', label: 'Projets' },
+            { to: '/activites', label: t('nav.activities') },
+            { to: '/groupes', label: t('nav.groups') },
+            { to: '/projets', label: t('nav.projects') },
           ]}
         />
 
         <FooterColumn
-          title="Compte"
+          title={t('footer.account')}
           links={[
-            { to: '/login', label: 'Connexion' },
-            { to: '/register', label: 'Inscription' },
-            { to: '/a-propos', label: 'À propos' },
+            { to: '/login', label: t('nav.login') },
+            { to: '/register', label: t('nav.register') },
+            { to: '/a-propos', label: t('nav.about') },
           ]}
         />
 
         <div>
-          <h2 className="font-bold text-white">Cadre légal</h2>
+          <h2 className="font-bold text-white">{t('footer.legal')}</h2>
           <nav className="mt-4 grid gap-3 text-blue-200">
             <Link to="/conditions-utilisation" className="transition hover:text-white">{t('legal.links.terms')}</Link>
             <Link to="/politique-confidentialite" className="transition hover:text-white">{t('legal.links.privacy')}</Link>
@@ -55,8 +55,8 @@ export default function Footer() {
       </div>
 
       <div className="mx-auto mt-10 flex max-w-7xl flex-col gap-3 border-t border-white/10 pt-6 text-xs text-blue-200 sm:flex-row sm:items-center sm:justify-between lg:px-8">
-        <p>© 2026 BX-CONNECT — Plateforme numérique Bx-Jeunes Impact ASBL</p>
-        <p>Connecter • Inspirer • Impacter</p>
+        <p>{t('footer.copyright')}</p>
+        <p>{t('footer.tagline')}</p>
       </div>
     </footer>
   )

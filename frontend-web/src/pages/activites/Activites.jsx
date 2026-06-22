@@ -76,6 +76,11 @@ export default function Activites() {
   const inscriptionsVisibles = useMemo(() => {
     return activites.filter(activite => activite.inscrit || activite.dejaInscrit || activite.inscriptionId || activite.statutInscription).length;
   }, [activites]);
+  const activityStats = useMemo(() => {
+    const ouvertes = activites.filter(activite => getActivitySituation(activite, t).key === 'open').length;
+    const gratuites = activites.filter(activite => activite.gratuite).length;
+    return { total: activites.length, ouvertes, gratuites };
+  }, [activites, t]);
 
   const activitesAffichees = useMemo(() => {
     const filtered = activites
@@ -122,7 +127,7 @@ export default function Activites() {
     if (!navigator.geolocation) {
       setNearbyMode(false);
       setGeoStatus('error');
-      setGeoMessage('La géolocalisation navigateur n’est pas disponible. Les activités restent triées normalement.');
+      setGeoMessage(t('activities.geoUnavailable'));
       return;
     }
 
@@ -135,12 +140,12 @@ export default function Activites() {
         });
         setNearbyMode(true);
         setGeoStatus('success');
-        setGeoMessage('Votre position est utilisée uniquement dans ce navigateur pour trier les activités proches. Elle n’est pas enregistrée.');
+        setGeoMessage(t('activities.geoSuccess'));
       },
       geoError => {
         setNearbyMode(false);
         setGeoStatus('error');
-        setGeoMessage(getGeolocationErrorMessage(geoError));
+        setGeoMessage(getGeolocationErrorMessage(geoError, t));
       },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
     );
@@ -185,7 +190,7 @@ export default function Activites() {
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
 
         <PageHeader
           eyebrow={t('nav.activities')}
@@ -206,6 +211,13 @@ export default function Activites() {
         {message && <Alert>{message}</Alert>}
         {error && activites.length > 0 && <Alert type="error">{error}</Alert>}
 
+        <section className="mb-5 grid gap-3 sm:grid-cols-4">
+          <ActivityStat icon="Calendar" label={t('nav.activities', { defaultValue: 'Activités' })} value={activityStats.total} />
+          <ActivityStat icon="CheckCircle" label={t('activities.registrationOpen', { defaultValue: 'Inscriptions ouvertes' })} value={activityStats.ouvertes} tone="green" />
+          <ActivityStat icon="Star" label={t('activities.free_only', { defaultValue: 'Gratuites' })} value={activityStats.gratuites} tone="blue" />
+          <ActivityStat icon="Users" label={t('activities.myRegistrations', { defaultValue: 'Mes inscriptions' })} value={inscriptionsVisibles} tone="amber" />
+        </section>
+
         <UpcomingActivitiesStrip
           activities={prochainesActivites}
           registrationsCount={inscriptionsVisibles}
@@ -218,10 +230,10 @@ export default function Activites() {
             <div className="min-w-0">
               <h2 className="inline-flex items-center gap-2 text-sm font-black text-slate-950">
                 <AppIcon name="MapPin" className="h-4 w-4 text-blue-700" />
-                Activités proches de moi
+                {t('activities.nearbyTitle')}
               </h2>
               <p className="mt-0.5 text-xs leading-5 text-slate-500">
-                Position utilisée seulement dans ce navigateur pour trier par distance.
+                {t('activities.nearbyPrivacy')}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -232,7 +244,7 @@ export default function Activites() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 py-2 text-xs font-black text-white transition hover:bg-blue-600 disabled:opacity-60"
               >
                 <AppIcon name="MapPin" className="h-3.5 w-3.5" />
-                {geoStatus === 'loading' ? 'Localisation...' : 'Plus proches'}
+                {geoStatus === 'loading' ? t('activities.locating') : t('activities.nearbyButton')}
               </button>
               {nearbyMode && (
                 <button
@@ -240,7 +252,7 @@ export default function Activites() {
                   onClick={handleStopNearbyMode}
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-200"
                 >
-                  Tri normal
+                  {t('activities.normalSort')}
                 </button>
               )}
             </div>
@@ -254,7 +266,7 @@ export default function Activites() {
           )}
         </section>
 
-        <div className="bg-white rounded-[1.25rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-4 mb-5">
+        <div className="bg-white rounded-[1.25rem] border border-slate-100 shadow-sm p-4 mb-5">
           <h2 className="text-sm font-bold text-slate-950 mb-3">{t('activities.filters_title')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
             <input
@@ -327,7 +339,7 @@ export default function Activites() {
             action={handleReset}
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {activitesAffichees.map(a => (
               <ActivityCard
                 key={a.id}
@@ -350,7 +362,7 @@ export default function Activites() {
 
 function UpcomingActivitiesStrip({ activities, registrationsCount, t, language }) {
   return (
-    <section className="mb-5 rounded-[1.25rem] border border-slate-100 bg-white p-4 shadow-lg shadow-slate-900/5">
+    <section className="mb-5 rounded-[1.25rem] border border-slate-100 bg-white p-4 shadow-sm">
       <div className="mb-3">
         <div>
           <h2 className="text-sm font-black text-slate-950">
@@ -392,14 +404,14 @@ function UpcomingActivitiesStrip({ activities, registrationsCount, t, language }
 function ActivityCard({ activity, isAuthenticated, actionLoading, onRegister, t, language }) {
   const situation = getActivitySituation(activity, t)
   return (
-    <article className="bg-white rounded-[1.25rem] border border-slate-100 shadow-lg shadow-slate-900/5 overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition flex flex-col">
+    <article className="bg-white rounded-[1.25rem] border border-slate-100 shadow-sm overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition flex flex-col">
       <div className="relative">
         <ActivityCover
           imageUrl={activity.imageUrl}
           title={activity.titre}
           categorie={activity.categorie}
           theme={activity.theme}
-          className="h-36"
+          className="h-32"
         />
         <div className="absolute left-4 top-4">
           <StatusBadge status={activity.statut}>
@@ -428,7 +440,7 @@ function ActivityCard({ activity, isAuthenticated, actionLoading, onRegister, t,
           <p className="text-slate-500 text-sm mb-3 line-clamp-2 leading-relaxed">{activity.description}</p>
         )}
 
-        <div className="grid grid-cols-2 gap-2 mb-4 text-xs">
+        <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
           <InfoPill label={t('activities.form_place')} value={formatActivityLocation(activity)} />
           <InfoPill
             label={t('activities.start_date')}
@@ -436,7 +448,7 @@ function ActivityCard({ activity, isAuthenticated, actionLoading, onRegister, t,
           />
           {Number.isFinite(activity.distanceKm) && (
             <InfoPill
-              label="Distance"
+              label={t('activities.distance')}
               value={`${activity.distanceKm.toFixed(activity.distanceKm < 10 ? 1 : 0)} km`}
               highlight
             />
@@ -572,17 +584,17 @@ function toRadians(value) {
   return (value * Math.PI) / 180;
 }
 
-function getGeolocationErrorMessage(error) {
+function getGeolocationErrorMessage(error, t) {
   if (error?.code === 1) {
-    return 'Permission refusée. Vous pouvez continuer à parcourir les activités sans tri par distance.';
+    return t('activities.geoPermissionDenied');
   }
   if (error?.code === 2) {
-    return 'Votre position est indisponible pour le moment. Les activités restent triées normalement.';
+    return t('activities.geoPositionUnavailable');
   }
   if (error?.code === 3) {
-    return 'La localisation prend trop de temps. Réessayez ou utilisez les filtres classiques.';
+    return t('activities.geoTimeout');
   }
-  return 'Impossible de récupérer votre position. Les activités restent triées normalement.';
+  return t('activities.geoGenericError');
 }
 
 function InfoPill({ label, value, highlight = false }) {
@@ -590,6 +602,28 @@ function InfoPill({ label, value, highlight = false }) {
     <div className={`rounded-xl px-3 py-2 ${highlight ? 'bg-red-50' : 'bg-slate-50'}`}>
       <p className={`text-[10px] font-semibold uppercase ${highlight ? 'text-red-500' : 'text-slate-400'}`}>{label}</p>
       <p className={`mt-0.5 font-semibold truncate ${highlight ? 'text-red-700' : 'text-slate-700'}`}>{value}</p>
+    </div>
+  );
+}
+
+function ActivityStat({ icon, label, value, tone = 'slate' }) {
+  const tones = {
+    slate: 'bg-slate-50 text-slate-700',
+    blue: 'bg-blue-50 text-blue-700',
+    green: 'bg-green-50 text-green-700',
+    amber: 'bg-amber-50 text-amber-700',
+  };
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</p>
+          <p className="mt-1 text-xl font-black text-slate-950">{value}</p>
+        </div>
+        <span className={`grid h-9 w-9 place-items-center rounded-xl ${tones[tone] || tones.slate}`}>
+          <AppIcon name={icon} className="h-4 w-4" />
+        </span>
+      </div>
     </div>
   );
 }

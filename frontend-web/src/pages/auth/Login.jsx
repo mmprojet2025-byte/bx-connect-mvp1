@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTranslation } from 'react-i18next'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
 import api from '../../api/axios'
 import { getDefaultRouteForRole } from '../../routes/roleRoutes'
 import AppIcon from '../../components/ui/AppIcons'
@@ -12,25 +15,36 @@ export default function Login() {
   const navigate = useNavigate()
   const { t } = useTranslation()
 
-  const [form, setForm] = useState({ email: '', motDePasse: '' })
   const [erreur, setErreur] = useState(null)
   const [googleNotice, setGoogleNotice] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const loginSchema = z.object({
+    email: z
+      .string()
+      .trim()
+      .min(1, t('auth.error_email_required'))
+      .email(t('auth.error_email_invalid')),
+    motDePasse: z.string().min(1, t('auth.error_password_required')),
+  })
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', motDePasse: '' },
+  })
+
+  const onSubmit = async (formData) => {
     setErreur(null)
     setGoogleNotice(null)
-    setLoading(true)
     try {
-      const res = await api.post('/auth/login', form)
+      const res = await api.post('/auth/login', formData)
       const { token, prenom, nom, email, role } = res.data
       login(token, { prenom, nom, email, role })
       navigate(getDefaultRouteForRole(role))
     } catch (err) {
       setErreur(formatAuthError(err, t('auth.error_login'), t))
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -38,7 +52,7 @@ export default function Login() {
     <div className="min-h-screen bg-white px-5 py-6 text-slate-900">
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-6xl flex-col">
         <div className="flex justify-center text-sm text-slate-600 sm:justify-end">
-          <span>Pas encore inscrit ?</span>
+          <span>{t('auth.no_account')}</span>
           <Link
             to="/register"
             className="ml-2 font-semibold text-blue-700 hover:text-blue-800 hover:underline"
@@ -58,10 +72,10 @@ export default function Login() {
                 />
               </Link>
               <h1 className="mt-10 text-4xl font-bold leading-tight text-slate-950 sm:text-5xl">
-                Bienvenue sur BX-Connect
+                {t('auth.welcomeTitle')}
               </h1>
               <p className="mt-4 text-base leading-7 text-slate-600 sm:text-lg">
-                Rejoins les activités, groupes et projets de ta communauté.
+                {t('auth.welcomeSubtitle')}
               </p>
             </div>
 
@@ -72,25 +86,31 @@ export default function Login() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-800">
+                <label htmlFor="login-email" className="mb-2 block text-sm font-semibold text-slate-800">
                   {t('auth.email')}
                 </label>
                 <input
+                  id="login-email"
                   type="email"
-                  required
                   autoComplete="email"
-                  value={form.email}
-                  onChange={e => setForm({ ...form, email: e.target.value })}
+                  aria-invalid={Boolean(errors.email)}
+                  aria-describedby={errors.email ? 'login-email-error' : undefined}
+                  {...register('email')}
                   className="h-13 w-full rounded-xl border border-slate-300 px-4 text-base text-slate-900 transition placeholder:text-slate-400 focus:border-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
                   placeholder={t('auth.email_placeholder')}
                 />
+                {errors.email && (
+                  <p id="login-email-error" className="mt-2 text-sm font-medium text-red-600">
+                    {errors.email.message}
+                  </p>
+                )}
               </div>
 
               <div>
                 <div className="mb-2 flex items-center justify-between gap-4">
-                  <label className="block text-sm font-semibold text-slate-800">
+                  <label htmlFor="login-password" className="block text-sm font-semibold text-slate-800">
                     {t('auth.password')}
                   </label>
                   <Link
@@ -101,36 +121,42 @@ export default function Login() {
                   </Link>
                 </div>
                 <input
+                  id="login-password"
                   type="password"
-                  required
                   autoComplete="current-password"
-                  value={form.motDePasse}
-                  onChange={e => setForm({ ...form, motDePasse: e.target.value })}
+                  aria-invalid={Boolean(errors.motDePasse)}
+                  aria-describedby={errors.motDePasse ? 'login-password-error' : undefined}
+                  {...register('motDePasse')}
                   className="h-13 w-full rounded-xl border border-slate-300 px-4 text-base text-slate-900 transition placeholder:text-slate-400 focus:border-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
                   placeholder={t('auth.password_placeholder')}
                 />
+                {errors.motDePasse && (
+                  <p id="login-password-error" className="mt-2 text-sm font-medium text-red-600">
+                    {errors.motDePasse.message}
+                  </p>
+                )}
               </div>
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={isSubmitting}
                 className="h-13 w-full rounded-xl bg-blue-700 px-5 text-base font-bold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading ? t('common.loading') : t('auth.login_btn')}
+                {isSubmitting ? t('common.loading') : t('auth.login_btn')}
               </button>
             </form>
 
             <div className="my-7 flex items-center gap-4">
               <div className="h-px flex-1 bg-slate-200" />
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                OU SE CONNECTER AVEC
+                {t('auth.loginWith')}
               </span>
               <div className="h-px flex-1 bg-slate-200" />
             </div>
 
             <button
               type="button"
-              onClick={() => setGoogleNotice('Connexion Google bientôt disponible.')}
+              onClick={() => setGoogleNotice(t('auth.googleSoon'))}
               className="flex h-12 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-base font-semibold text-slate-800 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
             >
               Google

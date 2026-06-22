@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import AppIcon from '../components/AppIcon';
 import { ActionCard, Avatar, COLORS, StatCard } from '../components/MobileUI';
+import { trackDashboardView } from '../services/analytics';
 
 const PARTNER_CONTACT_EMAIL = 'contact@bxconnect.be';
 
@@ -22,6 +23,10 @@ export default function DashboardScreen({ navigation }) {
   const [notice, setNotice] = useState('');
 
   useEffect(() => {
+    if (role) {
+      trackDashboardView(role);
+    }
+
     if (isMembre) {
       chargerDashboard();
     } else if (isReferent) {
@@ -35,7 +40,7 @@ export default function DashboardScreen({ navigation }) {
     } else {
       setLoading(false);
     }
-  }, [isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire]);
+  }, [isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire, role]);
 
   const chargerDashboard = async () => {
     setLoading(true);
@@ -91,7 +96,7 @@ export default function DashboardScreen({ navigation }) {
         setReferentDashboard({ groupes: [], notifications: [] });
         setNotice(t('dashboard.partialData'));
       } else {
-        setError(t('referentDashboard.errorLoad', { defaultValue: 'Impossible de charger le dashboard référent.' }));
+        setError(t('referentDashboard.errorLoad'));
       }
     } finally {
       setLoading(false);
@@ -137,7 +142,7 @@ export default function DashboardScreen({ navigation }) {
         setRoleDashboard({ type: 'ADMIN', stats: {}, groupes: [], groupesEnAttente: [], referents: [], opportunites: [], soutiens: [], projetsSoumis: [] });
         setNotice(t('dashboard.partialData'));
       } else {
-        setError(t('adminMobile.dashboardLoadError', { defaultValue: 'Impossible de charger le dashboard administrateur.' }));
+        setError(t('adminMobile.dashboardLoadError'));
       }
     } finally {
       setLoading(false);
@@ -189,7 +194,7 @@ export default function DashboardScreen({ navigation }) {
         });
         setNotice(t('dashboard.partialData'));
       } else {
-        setError(t('partner.dashboardLoadError', { defaultValue: 'Impossible de charger le dashboard partenaire.' }));
+        setError(t('partner.dashboardLoadError'));
       }
     } finally {
       setLoading(false);
@@ -213,9 +218,7 @@ export default function DashboardScreen({ navigation }) {
         setRoleDashboard({ type: 'SUPER_ADMIN', stats: {} });
         setNotice(t('dashboard.partialData'));
       } else {
-        setError(t('superAdmin.mobile.dashboardLoadError', {
-          defaultValue: 'Impossible de charger la synthèse de la plateforme.',
-        }));
+        setError(t('superAdmin.mobile.dashboardLoadError'));
       }
     } finally {
       setLoading(false);
@@ -228,7 +231,7 @@ export default function DashboardScreen({ navigation }) {
         return (
           <View style={styles.centered}>
             <ActivityIndicator size="large" color="#1E3A8A" />
-            <Text style={styles.loadingText}>Chargement de l’espace référent...</Text>
+            <Text style={styles.loadingText}>{t('referentDashboard.loading')}</Text>
           </View>
         );
       }
@@ -375,10 +378,8 @@ function ReferentDashboard({ dashboard, navigation, t, language, notice }) {
       <GlobalSearchAccess navigation={navigation} t={t} />
 
       <DashboardSectionTitle
-        title={t('referentDashboard.mobileTitle', { defaultValue: 'Mon espace référent' })}
-        subtitle={t('referentDashboard.mobileDescription', {
-          defaultValue: 'Suivez vos groupes, activités et projets en un coup d’œil.',
-        })}
+        title={t('referentDashboard.mobileTitle')}
+        subtitle={t('referentDashboard.mobileDescription')}
       />
 
       <ReferentPriorityActions
@@ -390,10 +391,10 @@ function ReferentDashboard({ dashboard, navigation, t, language, notice }) {
       />
 
       <View style={styles.metricGrid}>
-        <MetricCard label={t('referentDashboard.assignedGroups', { defaultValue: 'Groupes assignés' })} value={groupes.length} color="#38BDF8" icon="group" />
-        <MetricCard label={t('navigation.activities', { defaultValue: 'Activités' })} value={dashboard?.totalActivites ?? activites.length} color="#0f766e" icon="activity" />
-        <MetricCard label={t('navigation.projects', { defaultValue: 'Projets' })} value={dashboard?.projetsSoumis ?? projets.length} color="#7c3aed" icon="project" />
-        <MetricCard label={t('referentDashboard.unreadNotifications', { defaultValue: 'Notifications non lues' })} value={nonLues} color="#d97706" icon="bell" />
+        <MetricCard label={t('referentDashboard.assignedGroups')} value={groupes.length} color="#38BDF8" icon="group" />
+        <MetricCard label={t('navigation.activities')} value={dashboard?.totalActivites ?? activites.length} color="#0f766e" icon="activity" />
+        <MetricCard label={t('navigation.projects')} value={dashboard?.projetsSoumis ?? projets.length} color="#7c3aed" icon="project" />
+        <MetricCard label={t('referentDashboard.unreadNotifications')} value={nonLues} color="#d97706" icon="bell" />
       </View>
 
       <ReferentGroupsCard groupes={groupes} navigation={navigation} t={t} />
@@ -409,25 +410,25 @@ function ReferentPriorityActions({ demandesCount, projetsCount, activitesCount, 
   return (
     <View style={styles.priorityCard}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>{t('referentDashboard.priorityTitle', { defaultValue: 'À traiter' })}</Text>
+        <Text style={styles.cardTitle}>{t('referentDashboard.priorityTitle')}</Text>
       </View>
       <View style={styles.priorityGrid}>
         <PriorityButton
-          label={t('referentMobile.requestsTitle', { defaultValue: 'Demandes d’adhésion' })}
+          label={t('referentMobile.requestsTitle')}
           count={demandesCount}
           icon="warning"
           color="#d97706"
           onPress={() => navigation.navigate('ReferentRequestsAccess')}
         />
         <PriorityButton
-          label={t('referentDashboard.projectsToFollow', { defaultValue: 'Projets à suivre' })}
+          label={t('referentDashboard.projectsToFollow')}
           count={projetsCount}
           icon="project"
           color={COLORS.impactOrange}
           onPress={() => navigateAccess(navigation, 'TabProjects', 'ProjectsAccess')}
         />
         <PriorityButton
-          label={t('referentDashboard.activitiesToPublish', { defaultValue: 'Activités à publier' })}
+          label={t('referentDashboard.activitiesToPublish')}
           count={activitesCount}
           icon="activity"
           color="#0f766e"
@@ -467,32 +468,32 @@ function AdminModerationCard({ dashboard, navigation, t }) {
   return (
     <View style={styles.priorityCard}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>{t('adminMobile.toModerate', { defaultValue: 'À modérer' })}</Text>
+        <Text style={styles.cardTitle}>{t('adminMobile.toModerate')}</Text>
       </View>
       <View style={styles.priorityGrid}>
         <PriorityButton
-          label={t('adminMobile.opportunitiesShort', { defaultValue: 'Opportunités' })}
+          label={t('adminMobile.opportunitiesShort')}
           count={opportunitesEnAttente}
           icon="alert"
           color="#d97706"
           onPress={() => navigation.navigate('AdminOpportunitiesAccess')}
         />
         <PriorityButton
-          label={t('partner.supports', { defaultValue: 'Soutiens' })}
+          label={t('partner.supports')}
           count={soutiensEnAttente}
           icon="wallet"
           color={COLORS.info}
           onPress={() => navigation.navigate('AdminPartnerSupportsAccess')}
         />
         <PriorityButton
-          label={t('navigation.projects', { defaultValue: 'Projets' })}
+          label={t('navigation.projects')}
           count={projetsSoumis}
           icon="project"
           color={COLORS.impactOrange}
           onPress={() => navigation.navigate('AdminSubmittedProjectsAccess')}
         />
         <PriorityButton
-          label={t('navigation.groups', { defaultValue: 'Groupes' })}
+          label={t('navigation.groups')}
           count={groupesEnAttente}
           icon="group"
           color="#0f766e"
@@ -516,39 +517,39 @@ function PartnerQuickAccess({ dashboard, navigation, t }) {
   return (
     <View style={styles.priorityCard}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>{t('partner.mobile.quickAccess', { defaultValue: 'Accès partenaire' })}</Text>
+        <Text style={styles.cardTitle}>{t('partner.mobile.quickAccess')}</Text>
       </View>
       <View style={styles.priorityGrid}>
         <PriorityButton
-          label={t('partnerInstitution.profileTitle', { defaultValue: 'Profil partenaire' })}
+          label={t('partnerInstitution.profileTitle')}
           count={profileComplete ? 1 : 0}
           icon="building"
           color={profileComplete ? COLORS.success : COLORS.warning}
           onPress={() => navigation.navigate('PartnerProfileAccess')}
         />
         <PriorityButton
-          label={t('partner.supports', { defaultValue: 'Mes soutiens' })}
+          label={t('partner.supports')}
           count={soutiensEnAttente}
           icon="wallet"
           color={COLORS.info}
           onPress={() => navigateAccess(navigation, 'TabSupports', 'SupportsAccess')}
         />
         <PriorityButton
-          label={t('partner.opportunities', { defaultValue: 'Mes opportunités' })}
+          label={t('partner.opportunities')}
           count={opportunitesEnAttente}
           icon="alert"
           color={COLORS.impactOrange}
           onPress={() => navigateAccess(navigation, 'TabSupports', 'SupportsAccess', { tab: 'opportunities' })}
         />
         <PriorityButton
-          label={t('partner.openProjects', { defaultValue: 'Projets ouverts' })}
+          label={t('partner.openProjects')}
           count={projets.length}
           icon="project"
           color={COLORS.impactOrange}
           onPress={() => navigateAccess(navigation, 'TabProjects')}
         />
         <PriorityButton
-          label={t('partner.openActivities', { defaultValue: 'Activités ouvertes' })}
+          label={t('partner.openActivities')}
           count={activites.length}
           icon="activity"
           color={COLORS.success}
@@ -567,17 +568,17 @@ function ReferentGroupsCard({ groupes, navigation, t }) {
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>{t('referentDashboard.assignedGroups', { defaultValue: 'Groupes assignés' })}</Text>
+        <Text style={styles.cardTitle}>{t('referentDashboard.assignedGroups')}</Text>
         <Text style={styles.counter}>{groupes.length}</Text>
       </View>
       {groupes.length === 0 ? (
-        <EmptyText text={t('referentDashboard.noAssignedGroups', { defaultValue: 'Aucun groupe assigné pour le moment.' })} />
+        <EmptyText text={t('referentDashboard.noAssignedGroups')} />
       ) : (
         groupes.slice(0, 3).map((groupe) => (
           <ListItem
             key={groupe.id}
-            title={groupe.nom || t('groups.title', { defaultValue: 'Groupe' })}
-            subtitle={groupe.description || t('common.notAvailable', { defaultValue: 'Description non disponible' })}
+            title={groupe.nom || t('groups.title')}
+            subtitle={groupe.description || t('common.notAvailable')}
             badge={groupe.statut || 'GROUPE'}
             color="#38BDF8"
           />
@@ -587,7 +588,7 @@ function ReferentGroupsCard({ groupes, navigation, t }) {
         style={styles.secondaryButton}
         onPress={() => navigateAccess(navigation, 'TabGroupes', 'GroupesAccess')}
       >
-        <Text style={styles.secondaryButtonText}>{t('referentDashboard.viewMyGroups', { defaultValue: 'Voir mes groupes' })}</Text>
+        <Text style={styles.secondaryButtonText}>{t('referentDashboard.viewMyGroups')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -597,16 +598,16 @@ function ReferentActivitiesCard({ activites, navigation, language, t }) {
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>{t('navigation.activities', { defaultValue: 'Activités' })}</Text>
+        <Text style={styles.cardTitle}>{t('navigation.activities')}</Text>
         <Text style={styles.counter}>{activites.length}</Text>
       </View>
       {activites.length === 0 ? (
-        <EmptyText text={t('referentDashboard.noActivities', { defaultValue: 'Aucune activité à afficher pour le moment.' })} />
+        <EmptyText text={t('referentDashboard.noActivities')} />
       ) : (
         activites.slice(0, 3).map((activite) => (
           <ListItem
             key={activite.id}
-            title={activite.titre || t('navigation.activities', { defaultValue: 'Activité' })}
+            title={activite.titre || t('navigation.activities')}
             subtitle={formatReferentDate(activite.dateDebut, activite.lieu, language, t)}
             badge={activite.statut || 'ACTIVITE'}
             color={statusColor(activite.statut)}
@@ -617,7 +618,7 @@ function ReferentActivitiesCard({ activites, navigation, language, t }) {
         style={styles.secondaryButton}
         onPress={() => navigateAccess(navigation, 'TabActivities')}
       >
-        <Text style={styles.secondaryButtonText}>{t('referentDashboard.viewMyActivities', { defaultValue: 'Voir mes activités' })}</Text>
+        <Text style={styles.secondaryButtonText}>{t('referentDashboard.viewMyActivities')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -627,17 +628,17 @@ function ReferentProjectsCard({ projets, navigation, t }) {
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>{t('navigation.projects', { defaultValue: 'Projets' })}</Text>
+        <Text style={styles.cardTitle}>{t('navigation.projects')}</Text>
         <Text style={styles.counter}>{projets.length}</Text>
       </View>
       {projets.length === 0 ? (
-        <EmptyText text={t('referentDashboard.noProjects', { defaultValue: 'Aucun projet dans vos groupes pour le moment.' })} />
+        <EmptyText text={t('referentDashboard.noProjects')} />
       ) : (
         projets.slice(0, 3).map((projet) => (
           <ListItem
             key={projet.id}
-            title={projet.titre || t('navigation.projects', { defaultValue: 'Projet' })}
-            subtitle={projet.groupeNom || t('referentDashboard.groupNotSpecified', { defaultValue: 'Groupe non précisé' })}
+            title={projet.titre || t('navigation.projects')}
+            subtitle={projet.groupeNom || t('referentDashboard.groupNotSpecified')}
             badge={projet.statut || 'PROJET'}
             color={statusColor(projet.statut)}
           />
@@ -647,7 +648,7 @@ function ReferentProjectsCard({ projets, navigation, t }) {
         style={styles.secondaryButton}
         onPress={() => navigateAccess(navigation, 'TabProjects', 'ProjectsAccess')}
       >
-        <Text style={styles.secondaryButtonText}>{t('referentDashboard.viewProjects', { defaultValue: 'Voir les projets' })}</Text>
+        <Text style={styles.secondaryButtonText}>{t('referentDashboard.viewProjects')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -659,18 +660,18 @@ function ReferentNotificationsCard({ notifications, navigation, t }) {
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>{t('navigation.notifications', { defaultValue: 'Notifications' })}</Text>
+        <Text style={styles.cardTitle}>{t('navigation.notifications')}</Text>
         <Text style={styles.counter}>{t('notifications.unreadCount', { count: nonLues })}</Text>
       </View>
       {notifications.length === 0 ? (
-        <EmptyText text={t('referentDashboard.noNotifications', { defaultValue: 'Aucune notification pour le moment.' })} />
+        <EmptyText text={t('referentDashboard.noNotifications')} />
       ) : (
         notifications.slice(0, 3).map((notification) => (
           <ListItem
             key={notification.id}
-            title={notification.titre || t('navigation.notifications', { defaultValue: 'Notification' })}
+            title={notification.titre || t('navigation.notifications')}
             subtitle={notification.message || ''}
-            badge={notification.lue ? t('notifications.read', { defaultValue: 'Lue' }) : t('notifications.unread', { defaultValue: 'Nouvelle' })}
+            badge={notification.lue ? t('notifications.read') : t('notifications.unread')}
             color={notification.lue ? '#64748b' : '#38BDF8'}
           />
         ))
@@ -679,7 +680,7 @@ function ReferentNotificationsCard({ notifications, navigation, t }) {
         style={styles.secondaryButton}
         onPress={() => navigateAccess(navigation, 'TabNotifications')}
       >
-        <Text style={styles.secondaryButtonText}>{t('referentDashboard.viewNotifications', { defaultValue: 'Voir les notifications' })}</Text>
+        <Text style={styles.secondaryButtonText}>{t('referentDashboard.viewNotifications')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -689,39 +690,37 @@ function ReferentQuickActions({ navigation, t }) {
   return (
     <View style={styles.dashboardSection}>
       <DashboardSectionTitle
-        title={t('referentDashboard.quickActions', { defaultValue: 'Accès rapides' })}
-        subtitle={t('referentDashboard.mobileDescription', {
-          defaultValue: 'Les outils essentiels de vos groupes.',
-        })}
+        title={t('referentDashboard.quickActions')}
+        subtitle={t('referentDashboard.mobileDescription')}
       />
       <View style={styles.actionGrid}>
       <ActionCard
-        label={t('referentMobile.requestsTitle', { defaultValue: 'Demandes d’adhésion' })}
-        description={t('referentMobile.requestsAction', { defaultValue: 'Accepter ou refuser les demandes de vos groupes.' })}
+        label={t('referentMobile.requestsTitle')}
+        description={t('referentMobile.requestsAction')}
         icon="warning"
         color="#d97706"
         onPress={() => navigation.navigate('ReferentRequestsAccess')}
         compact
       />
       <ActionCard
-        label={t('referentMobile.membersTitle', { defaultValue: 'Membres des groupes' })}
-        description={t('referentMobile.membersAction', { defaultValue: 'Consulter les membres acceptés de vos groupes.' })}
+        label={t('referentMobile.membersTitle')}
+        description={t('referentMobile.membersAction')}
         icon="group"
         color="#0f766e"
         onPress={() => navigation.navigate('ReferentMembersAccess')}
         compact
       />
       <ActionCard
-        label={t('referentDashboard.openMessaging', { defaultValue: 'Ouvrir la messagerie' })}
-        description={t('referentMobile.messagingAction', { defaultValue: 'Échanger avec les groupes que vous encadrez.' })}
+        label={t('referentDashboard.openMessaging')}
+        description={t('referentMobile.messagingAction')}
         icon="message"
         color={COLORS.info}
         onPress={() => navigateAccess(navigation, 'TabMessagerie')}
         compact
       />
       <ActionCard
-        label={t('referentMobile.myGroupProjects', { defaultValue: 'Projets de mes groupes' })}
-        description={t('referentMobile.projectsAction', { defaultValue: 'Voir et modifier les projets liés à vos groupes.' })}
+        label={t('referentMobile.myGroupProjects')}
+        description={t('referentMobile.projectsAction')}
         icon="project"
         color={COLORS.impactOrange}
         onPress={() => navigateAccess(navigation, 'TabProjects', 'ProjectsAccess')}
@@ -733,7 +732,7 @@ function ReferentQuickActions({ navigation, t }) {
 }
 
 function RoleDashboard({ user, role, isAdmin, isSuperAdmin, isPartenaire, dashboard, navigation, t, notice }) {
-  const roleLabel = role ? t(`roles.${role}`, { defaultValue: role }) : t('memberDashboard.userFallback');
+  const roleLabel = role ? t(`roles.${role}`) : t('memberDashboard.userFallback');
   const config = roleDashboardConfig({
     roleLabel,
     isAdmin,
@@ -819,20 +818,20 @@ function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, d
   if (isSuperAdmin) {
     const stats = dashboard?.stats || {};
     return {
-      title: t('superAdmin.mobile.title', { defaultValue: 'Vue d’ensemble de la plateforme' }),
-      subtitle: t('superAdmin.mobile.subtitle', { defaultValue: 'Indicateurs essentiels et suivi de la sécurité BX-Connect.' }),
-      sectionTitle: t('superAdmin.mobile.sectionTitle', { defaultValue: 'Vue synthétique' }),
-      sectionText: t('superAdmin.mobile.sectionText', { defaultValue: 'Suivez les comptes clés, les administrateurs et les signaux importants de la plateforme.' }),
+      title: t('superAdmin.mobile.title'),
+      subtitle: t('superAdmin.mobile.subtitle'),
+      sectionTitle: t('superAdmin.mobile.sectionTitle'),
+      sectionText: t('superAdmin.mobile.sectionText'),
       stats: [
-        stat(t('superAdmin.mobile.activeAdmins', { defaultValue: 'Administrateurs actifs' }), stats.adminsActifs ?? '—', 'shield', COLORS.success),
-        stat(t('superAdmin.mobile.inactiveAdmins', { defaultValue: 'Administrateurs inactifs' }), stats.adminsInactifs ?? '—', 'group', COLORS.info),
-        stat(t('superAdmin.mobile.criticalActions', { defaultValue: 'Actions auditées' }), stats.totalActionsCritiques ?? '—', 'lock', COLORS.impactOrange),
+        stat(t('superAdmin.mobile.activeAdmins'), stats.adminsActifs ?? '—', 'shield', COLORS.success),
+        stat(t('superAdmin.mobile.inactiveAdmins'), stats.adminsInactifs ?? '—', 'group', COLORS.info),
+        stat(t('superAdmin.mobile.criticalActions'), stats.totalActionsCritiques ?? '—', 'lock', COLORS.impactOrange),
       ],
       actions: [
-        action(t('navigation.users', { defaultValue: 'Utilisateurs' }), t('superAdmin.mobile.usersAction', { defaultValue: 'Consulter les administrateurs plateforme.' }), 'group', COLORS.info, () => navigateAccess(navigation, 'TabUsers')),
-        action(t('superAdmin.logsTitle', { defaultValue: 'Journal d’activité' }), t('superAdmin.logsAction', { defaultValue: 'Consulter les actions auditées de la plateforme.' }), 'lock', COLORS.impactOrange, () => navigation.navigate('SuperAdminLogsAccess')),
-        action(t('navigation.notifications', { defaultValue: 'Notifications' }), t('superAdmin.mobile.notificationsAction', { defaultValue: 'Consulter les alertes importantes.' }), 'bell', COLORS.impactOrange, () => navigateAccess(navigation, 'TabNotifications')),
-        action(t('navigation.profile', { defaultValue: 'Profil' }), t('superAdmin.mobile.profileAction', { defaultValue: 'Gérer vos informations et votre sécurité.' }), 'profile', COLORS.info, () => navigateAccess(navigation, 'TabProfile')),
+        action(t('navigation.users'), t('superAdmin.mobile.usersAction'), 'group', COLORS.info, () => navigateAccess(navigation, 'TabUsers')),
+        action(t('superAdmin.logsTitle'), t('superAdmin.logsAction'), 'lock', COLORS.impactOrange, () => navigation.navigate('SuperAdminLogsAccess')),
+        action(t('navigation.notifications'), t('superAdmin.mobile.notificationsAction'), 'bell', COLORS.impactOrange, () => navigateAccess(navigation, 'TabNotifications')),
+        action(t('navigation.profile'), t('superAdmin.mobile.profileAction'), 'profile', COLORS.info, () => navigateAccess(navigation, 'TabProfile')),
       ],
     };
   }
@@ -844,29 +843,29 @@ function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, d
     const referents = dashboard?.referents || [];
 
     return {
-      title: t('admin.mobile.title', { defaultValue: 'Tableau de bord administrateur' }),
-      subtitle: t('admin.mobile.subtitle', { defaultValue: 'Pilotage mobile : consultez les indicateurs essentiels et suivez l’activité de la plateforme.' }),
-      sectionTitle: t('admin.mobile.sectionTitle', { defaultValue: 'Pilotage rapide' }),
-      sectionText: t('admin.mobile.sectionText', { defaultValue: 'Gardez une vue claire sur les utilisateurs, groupes, activités et projets de BX-Jeunes Impact.' }),
+      title: t('admin.mobile.title'),
+      subtitle: t('admin.mobile.subtitle'),
+      sectionTitle: t('admin.mobile.sectionTitle'),
+      sectionText: t('admin.mobile.sectionText'),
       stats: [
-        stat(t('navigation.users', { defaultValue: 'Utilisateurs' }), pickNumber(stats, ['utilisateurs', 'totalUtilisateurs', 'users', 'totalUsers']), 'group', COLORS.info),
-        stat(t('navigation.activities', { defaultValue: 'Activités' }), pickNumber(stats, ['activites', 'totalActivites', 'activities', 'totalActivities']), 'activity', COLORS.success),
-        stat(t('navigation.groups', { defaultValue: 'Groupes' }), pickNumber(stats, ['groupes', 'totalGroupes', 'groups', 'totalGroups'], groupes.length), 'group', COLORS.bxBlue),
-        stat(t('adminMobile.pendingGroups', { defaultValue: 'Groupes en attente' }), groupesEnAttente.length, 'warning', '#d97706'),
-        stat(t('navigation.mentors', { defaultValue: 'Référents' }), referents.length, 'profile', '#0f766e'),
+        stat(t('navigation.users'), pickNumber(stats, ['utilisateurs', 'totalUtilisateurs', 'users', 'totalUsers']), 'group', COLORS.info),
+        stat(t('navigation.activities'), pickNumber(stats, ['activites', 'totalActivites', 'activities', 'totalActivities']), 'activity', COLORS.success),
+        stat(t('navigation.groups'), pickNumber(stats, ['groupes', 'totalGroupes', 'groups', 'totalGroups'], groupes.length), 'group', COLORS.bxBlue),
+        stat(t('adminMobile.pendingGroups'), groupesEnAttente.length, 'warning', '#d97706'),
+        stat(t('navigation.mentors'), referents.length, 'profile', '#0f766e'),
       ],
       actions: [
-        action(t('adminMobile.referentsTitle', { defaultValue: 'Référents' }), t('adminMobile.referentsAction', { defaultValue: 'Consulter les référents actifs et inactifs.' }), 'profile', '#0f766e', () => navigation.navigate('AdminReferentsAccess')),
-        action(t('adminMobile.partnerSupportsTitle', { defaultValue: 'Soutiens partenaires' }), t('adminMobile.partnerSupportsAction', { defaultValue: 'Valider ou refuser les soutiens en attente.' }), 'wallet', COLORS.info, () => navigation.navigate('AdminPartnerSupportsAccess')),
-        action(t('adminMobile.submittedProjects', { defaultValue: 'Projets soumis' }), t('adminMobile.submittedProjectsAction', { defaultValue: 'Suivre les projets qui attendent une décision.' }), 'project', COLORS.impactOrange, () => navigation.navigate('AdminSubmittedProjectsAccess')),
-        action(t('adminMobile.opportunitiesTitle', { defaultValue: 'Opportunités à modérer' }), t('adminMobile.opportunitiesAction', { defaultValue: 'Publier ou refuser les opportunités partenaires.' }), 'alert', '#d97706', () => navigation.navigate('AdminOpportunitiesAccess')),
-        action(t('adminMobile.pendingGroupsTitle', { defaultValue: 'Groupes en attente' }), t('adminMobile.pendingGroupsAction', { defaultValue: 'Valider ou refuser les groupes proposés.' }), 'warning', '#d97706', () => navigation.navigate('AdminPendingGroupsAccess')),
-        action(t('navigation.users', { defaultValue: 'Utilisateurs' }), t('adminMobile.usersAction', { defaultValue: 'Consulter les comptes utilisateurs.' }), 'group', COLORS.info, () => navigateAccess(navigation, 'TabUsers')),
-        action(t('navigation.groups', { defaultValue: 'Groupes' }), t('adminMobile.groupsAction', { defaultValue: 'Suivre les groupes et leurs référents.' }), 'group', COLORS.bxBlue, () => navigateAccess(navigation, 'TabUsers', 'GroupesAccess')),
-        action(t('navigation.activities', { defaultValue: 'Activités' }), t('adminMobile.activitiesAction', { defaultValue: 'Voir les activités de l’association.' }), 'activity', COLORS.success, () => navigateAccess(navigation, 'TabActivities')),
-        action(t('navigation.projects', { defaultValue: 'Projets' }), t('adminMobile.projectsAction', { defaultValue: 'Voir les projets suivis par l’association.' }), 'project', COLORS.impactOrange, () => navigateAccess(navigation, 'TabUsers', 'ProjectsAccess')),
-        action(t('navigation.notifications', { defaultValue: 'Notifications' }), t('admin.mobile.notificationsAction', { defaultValue: 'Suivre les alertes et demandes importantes.' }), 'bell', COLORS.impactOrange, () => navigateAccess(navigation, 'TabNotifications')),
-        action(t('navigation.profile', { defaultValue: 'Profil' }), t('admin.mobile.profileAction', { defaultValue: 'Mettre à jour vos informations et préférences.' }), 'profile', COLORS.info, () => navigateAccess(navigation, 'TabProfile')),
+        action(t('adminMobile.referentsTitle'), t('adminMobile.referentsAction'), 'profile', '#0f766e', () => navigation.navigate('AdminReferentsAccess')),
+        action(t('adminMobile.partnerSupportsTitle'), t('adminMobile.partnerSupportsAction'), 'wallet', COLORS.info, () => navigation.navigate('AdminPartnerSupportsAccess')),
+        action(t('adminMobile.submittedProjects'), t('adminMobile.submittedProjectsAction'), 'project', COLORS.impactOrange, () => navigation.navigate('AdminSubmittedProjectsAccess')),
+        action(t('adminMobile.opportunitiesTitle'), t('adminMobile.opportunitiesAction'), 'alert', '#d97706', () => navigation.navigate('AdminOpportunitiesAccess')),
+        action(t('adminMobile.pendingGroupsTitle'), t('adminMobile.pendingGroupsAction'), 'warning', '#d97706', () => navigation.navigate('AdminPendingGroupsAccess')),
+        action(t('navigation.users'), t('adminMobile.usersAction'), 'group', COLORS.info, () => navigateAccess(navigation, 'TabUsers')),
+        action(t('navigation.groups'), t('adminMobile.groupsAction'), 'group', COLORS.bxBlue, () => navigateAccess(navigation, 'TabUsers', 'GroupesAccess')),
+        action(t('navigation.activities'), t('adminMobile.activitiesAction'), 'activity', COLORS.success, () => navigateAccess(navigation, 'TabActivities')),
+        action(t('navigation.projects'), t('adminMobile.projectsAction'), 'project', COLORS.impactOrange, () => navigateAccess(navigation, 'TabUsers', 'ProjectsAccess')),
+        action(t('navigation.notifications'), t('admin.mobile.notificationsAction'), 'bell', COLORS.impactOrange, () => navigateAccess(navigation, 'TabNotifications')),
+        action(t('navigation.profile'), t('admin.mobile.profileAction'), 'profile', COLORS.info, () => navigateAccess(navigation, 'TabProfile')),
       ],
     };
   }
@@ -876,25 +875,25 @@ function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, d
     const soutiens = dashboard?.soutiens || [];
 
     return {
-      title: t('partner.mobile.title', { defaultValue: 'Espace partenaire' }),
-      subtitle: t('partner.mobile.subtitle', { defaultValue: 'Découvrez les initiatives, suivez les projets et restez connecté à la communauté.' }),
-      sectionTitle: t('partner.mobile.sectionTitle', { defaultValue: 'Initiatives à suivre' }),
-      sectionText: t('partner.mobile.sectionText', { defaultValue: 'Une vue claire pour soutenir les projets, suivre les activités et collaborer avec BX-Jeunes Impact.' }),
+      title: t('partner.mobile.title'),
+      subtitle: t('partner.mobile.subtitle'),
+      sectionTitle: t('partner.mobile.sectionTitle'),
+      sectionText: t('partner.mobile.sectionText'),
       stats: [
-        stat(t('partner.projectsSupported', { defaultValue: 'Projets soutenus' }), pickNumber(stats, ['projetsSoutenus'], 0), 'project', COLORS.impactOrange),
-        stat(t('partner.activitiesSupported', { defaultValue: 'Activités soutenues' }), pickNumber(stats, ['activitesSoutenues'], 0), 'activity', COLORS.success),
-        stat(t('partner.totalSupports', { defaultValue: 'Soutiens' }), pickNumber(stats, ['totalSoutiens', 'soutiens'], soutiens.length), 'wallet', COLORS.info),
-        stat(t('partner.totalAmount', { defaultValue: 'Montant total' }), `${pickNumber(stats, ['totalMontant', 'montantTotal'], 0)} €`, 'payment', COLORS.bxBlue),
+        stat(t('partner.projectsSupported'), pickNumber(stats, ['projetsSoutenus'], 0), 'project', COLORS.impactOrange),
+        stat(t('partner.activitiesSupported'), pickNumber(stats, ['activitesSoutenues'], 0), 'activity', COLORS.success),
+        stat(t('partner.totalSupports'), pickNumber(stats, ['totalSoutiens', 'soutiens'], soutiens.length), 'wallet', COLORS.info),
+        stat(t('partner.totalAmount'), `${pickNumber(stats, ['totalMontant', 'montantTotal'], 0)} €`, 'payment', COLORS.bxBlue),
       ],
       actions: [
-        action(t('partnerInstitution.profileTitle', { defaultValue: 'Profil partenaire' }), t('partnerInstitution.profileAction', { defaultValue: 'Mettre à jour les informations de votre organisation.' }), 'building', COLORS.bxBlue, () => navigation.navigate('PartnerProfileAccess')),
-        action(t('partner.supports', { defaultValue: 'Mes soutiens' }), t('partner.supportsAction', { defaultValue: 'Consulter vos soutiens financiers.' }), 'wallet', COLORS.info, () => navigateAccess(navigation, 'TabSupports', 'SupportsAccess')),
-        action(t('partner.opportunities', { defaultValue: 'Mes opportunités' }), t('partner.opportunitiesAction', { defaultValue: 'Créer et suivre vos publications partenaires.' }), 'alert', COLORS.impactOrange, () => navigateAccess(navigation, 'TabSupports', 'SupportsAccess', { tab: 'opportunities' })),
-        action(t('partner.mobile.discoverProjects', { defaultValue: 'Découvrir les projets' }), t('partner.mobile.discoverProjectsText', { defaultValue: 'Explorer les initiatives portées par les jeunes.' }), 'project', COLORS.impactOrange, () => navigateAccess(navigation, 'TabProjects', 'ProjectsAccess')),
-        action(t('partner.mobile.followInitiatives', { defaultValue: 'Suivre les initiatives' }), t('partner.mobile.followInitiativesText', { defaultValue: 'Voir les activités et temps forts de la communauté.' }), 'activity', COLORS.success, () => navigateAccess(navigation, 'TabActivities')),
+        action(t('partnerInstitution.profileTitle'), t('partnerInstitution.profileAction'), 'building', COLORS.bxBlue, () => navigation.navigate('PartnerProfileAccess')),
+        action(t('partner.supports'), t('partner.supportsAction'), 'wallet', COLORS.info, () => navigateAccess(navigation, 'TabSupports', 'SupportsAccess')),
+        action(t('partner.opportunities'), t('partner.opportunitiesAction'), 'alert', COLORS.impactOrange, () => navigateAccess(navigation, 'TabSupports', 'SupportsAccess', { tab: 'opportunities' })),
+        action(t('partner.mobile.discoverProjects'), t('partner.mobile.discoverProjectsText'), 'project', COLORS.impactOrange, () => navigateAccess(navigation, 'TabProjects', 'ProjectsAccess')),
+        action(t('partner.mobile.followInitiatives'), t('partner.mobile.followInitiativesText'), 'activity', COLORS.success, () => navigateAccess(navigation, 'TabActivities')),
         action(
-          t('partner.mobile.contactTeam', { defaultValue: 'Contacter l’équipe' }),
-          t('partner.mobile.contactTeamText', { defaultValue: `Écrire à ${PARTNER_CONTACT_EMAIL}.` }),
+          t('partner.mobile.contactTeam'),
+          t('partner.mobile.contactTeamText'),
           'message',
           COLORS.info,
           () => Linking.openURL(`mailto:${PARTNER_CONTACT_EMAIL}?subject=Contact%20partenaire%20BX-Connect`).catch(() => {}),
@@ -904,16 +903,16 @@ function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, d
   }
 
   return {
-    title: t('memberDashboard.mobileSpace', { defaultValue: 'Espace mobile' }),
-    subtitle: t('memberDashboard.mobileOverview', { defaultValue: 'Vue synthétique de votre espace BX-Connect.' }),
-    sectionTitle: t('memberDashboard.status.title', { defaultValue: 'Indicateurs essentiels' }),
+    title: t('memberDashboard.mobileSpace'),
+    subtitle: t('memberDashboard.mobileOverview'),
+    sectionTitle: t('memberDashboard.status.title'),
     sectionText: roleLabel,
     stats: [
-      stat(t('navigation.notifications', { defaultValue: 'Notifications' }), 'Infos', 'bell', COLORS.info),
-      stat(t('navigation.profile', { defaultValue: 'Profil' }), 'Compte', 'profile', COLORS.bxBlue),
+      stat(t('navigation.notifications'), 'Infos', 'bell', COLORS.info),
+      stat(t('navigation.profile'), 'Compte', 'profile', COLORS.bxBlue),
     ],
     actions: [
-      action(t('navigation.profile', { defaultValue: 'Profil' }), t('memberDashboard.openProfile', { defaultValue: 'Ouvrir mon profil' }), 'profile', COLORS.info, () => navigateAccess(navigation, 'TabProfile')),
+      action(t('navigation.profile'), t('memberDashboard.openProfile'), 'profile', COLORS.info, () => navigateAccess(navigation, 'TabProfile')),
     ],
   };
 }
@@ -971,9 +970,9 @@ function GlobalSearchAccess({ navigation, t }) {
         <AppIcon name="search" size={20} color={COLORS.info} />
       </View>
       <View style={styles.searchAccessText}>
-        <Text style={styles.searchAccessTitle}>{t('search.title', { defaultValue: 'Recherche globale' })}</Text>
+        <Text style={styles.searchAccessTitle}>{t('search.title')}</Text>
         <Text style={styles.searchAccessSubtitle} numberOfLines={1}>
-          {t('search.startText', { defaultValue: 'Rechercher dans BX-Connect.' })}
+          {t('search.startText')}
         </Text>
       </View>
       <AppIcon name="chevron-forward" size={18} color="#64748b" />
@@ -996,11 +995,11 @@ function PartnerInstitutionCard({ profile, t }) {
           {profile.nomOrganisation}
         </Text>
         <Text style={styles.partnerInstitutionType}>
-          {t(`partner.types.${profile.typePartenaire || 'AUTRE'}`, { defaultValue: profile.typePartenaire || 'Partenaire' })}
+          {t(`partner.types.${profile.typePartenaire || 'AUTRE'}`)}
         </Text>
         {profile.personneContact ? (
           <Text style={styles.partnerInstitutionContact} numberOfLines={1}>
-            {t('partner.contactPerson', { defaultValue: 'Contact' })} : {profile.personneContact}
+            {t('partner.contactPerson')} : {profile.personneContact}
           </Text>
         ) : null}
       </View>
@@ -1044,7 +1043,7 @@ function navigateAccess(navigation, tabName, stackRoute, params) {
 }
 
 function WelcomeCard({ user, role, t }) {
-  const roleLabel = t(`roles.${role}`, { defaultValue: role });
+  const roleLabel = t(`roles.${role}`);
 
   return (
     <View style={styles.welcomeCard}>
@@ -1397,15 +1396,11 @@ function translateAdhesion(statut, t) {
 }
 
 function translateInscription(statut, t) {
-  return t(`memberDashboard.statuses.subscription.${statut}`, {
-    defaultValue: statut || t('memberDashboard.statuses.unknown'),
-  });
+  return t(`memberDashboard.statuses.subscription.${statut}`);
 }
 
 function translateProjet(statut, t) {
-  return t(`memberDashboard.statuses.project.${statut}`, {
-    defaultValue: statut || t('memberDashboard.statuses.unknown'),
-  });
+  return t(`memberDashboard.statuses.project.${statut}`);
 }
 
 function statusColor(statut) {
@@ -1454,7 +1449,7 @@ function formatReferentDate(dateStr, lieu, language, t) {
     }));
   }
   if (lieu) fragments.push(lieu);
-  return fragments.length > 0 ? fragments.join(' · ') : t('activities.to_confirm', { defaultValue: 'Date à confirmer' });
+  return fragments.length > 0 ? fragments.join(' · ') : t('activities.to_confirm');
 }
 
 const styles = StyleSheet.create({

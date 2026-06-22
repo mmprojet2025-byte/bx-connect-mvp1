@@ -70,7 +70,6 @@ export default function ReferentDashboard() {
 
   return (
     <CollaborativeDashboardLayout
-      role="REFERENT"
       emoji="User"
       title={t('referent.hello', { name: user?.prenom || '', defaultValue: `Bonjour ${user?.prenom || ''} 👋` })}
       subtitle={t('referent.dashboardSummary', {

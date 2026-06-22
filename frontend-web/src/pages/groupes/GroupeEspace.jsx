@@ -180,19 +180,19 @@ function DiscussionPanel({ isMember, t }) {
       <div>
         <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
           <AppIcon name="MessageCircle" className="h-5 w-5 text-blue-700" />
-          Discussion du groupe
+          {t('groups.groupDiscussion')}
         </h2>
         <p className="mt-2 text-sm leading-6 text-slate-500">
           {isMember
-            ? 'Accède à la conversation du groupe pour suivre les échanges et les informations importantes.'
-            : 'La discussion est réservée aux membres acceptés du groupe.'}
+            ? t('groups.discussionMemberDesc')
+            : t('groups.discussionLockedDesc')}
         </p>
       </div>
       <Link to={isMember ? '/messagerie' : '/groupes'} className={`inline-flex h-fit items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black ${
         isMember ? 'bg-blue-700 text-white hover:bg-blue-600' : 'bg-slate-100 text-slate-500'
       }`}>
         <AppIcon name={isMember ? 'MessageCircle' : 'Lock'} className="h-4 w-4" />
-        {isMember ? t('common.open') : 'Rejoindre pour discuter'}
+        {isMember ? t('common.open') : t('groups.joinToDiscuss')}
       </Link>
     </div>
   )
@@ -202,7 +202,7 @@ function MembersPanel({ groupe, referent, t }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <InfoTile icon="Users" title={t('groups.members')} value={t('groups.members_count', { count: groupe.nombreMembres ?? 0 })} />
-      <InfoTile icon="User" title="Référent" value={referent || 'Référent à confirmer'} />
+      <InfoTile icon="User" title={t('groups.referent')} value={referent || t('groups.referentToConfirm')} />
     </div>
   )
 }
@@ -213,8 +213,8 @@ function LinkedItemsPanel({ type, items, language, t }) {
     return (
       <EmptyState
         icon={isActivity ? 'Calendar' : 'Rocket'}
-        title={isActivity ? 'Aucune activité liée à ce groupe.' : 'Aucun projet lié à ce groupe.'}
-        description="Les éléments apparaîtront ici lorsque le backend les associera clairement à ce groupe."
+        title={isActivity ? t('groups.noLinkedActivities') : t('groups.noLinkedProjects')}
+        description={t('groups.linkedItemsHint')}
         actionLabel={isActivity ? t('activities.viewActivities') : t('nav.projects')}
         actionTo={isActivity ? '/activites' : '/projets'}
       />
@@ -226,9 +226,9 @@ function LinkedItemsPanel({ type, items, language, t }) {
       {items.map(item => (
         <Link key={item.id} to={isActivity ? `/activites/${item.id}` : `/projets/${item.id}`} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:bg-white hover:shadow-md">
           <h3 className="font-black text-slate-950">{item.titre}</h3>
-          <p className="mt-1 line-clamp-2 text-sm text-slate-500">{item.description || 'Description à compléter.'}</p>
+          <p className="mt-1 line-clamp-2 text-sm text-slate-500">{item.description || t('common.descriptionToComplete')}</p>
           <p className="mt-3 text-xs font-bold text-blue-700">
-            {isActivity && item.dateDebut ? new Date(item.dateDebut).toLocaleDateString(language || 'fr-BE') : item.statut || 'À suivre'}
+            {isActivity && item.dateDebut ? new Date(item.dateDebut).toLocaleDateString(language || 'fr-BE') : item.statut || t('common.toFollow')}
           </p>
         </Link>
       ))}
@@ -239,17 +239,17 @@ function LinkedItemsPanel({ type, items, language, t }) {
 function InfoPanel({ groupe, referent, locationDetails, mapContainerRef, t }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <InfoTile icon="BookOpen" title="Description" value={groupe.description || t('groups.description_soon')} />
-      <InfoTile icon="User" title="Référent" value={referent || 'Non assigné'} />
-      <InfoTile icon="Users" title="Membres" value={t('groups.members_count', { count: groupe.nombreMembres ?? 0 })} />
-      <InfoTile icon="Folder" title="Catégorie" value={groupe.categorie || groupe.theme || 'Non renseignée'} />
+      <InfoTile icon="BookOpen" title={t('activities.form_description')} value={groupe.description || t('groups.description_soon')} />
+      <InfoTile icon="User" title={t('groups.referent')} value={referent || t('common.unassigned')} />
+      <InfoTile icon="Users" title={t('groups.members')} value={t('groups.members_count', { count: groupe.nombreMembres ?? 0 })} />
+      <InfoTile icon="Folder" title={t('activities.form_category')} value={groupe.categorie || groupe.theme || t('common.notProvided')} />
       {locationDetails && (
         <div className="rounded-2xl border border-blue-100 bg-slate-50 p-4 md:col-span-2">
           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-wide text-blue-700">
                 <AppIcon name="MapPin" className="h-4 w-4" />
-                Lieu de réunion
+                {t('groups.meetingPlace')}
               </p>
               <p className="mt-1 text-sm font-bold text-slate-800">{locationDetails.label}</p>
             </div>
@@ -260,18 +260,18 @@ function InfoPanel({ groupe, referent, locationDetails, mapContainerRef, t }) {
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 py-2 text-xs font-black text-white transition hover:bg-blue-600"
             >
               <AppIcon name="MapPin" className="h-3.5 w-3.5" />
-              Voir l’itinéraire
+              {t('location.openRoute')}
             </a>
           </div>
           {locationDetails.hasCoordinates ? (
             <div
               ref={mapContainerRef}
               className="h-56 overflow-hidden rounded-xl border border-slate-100"
-              aria-label="Carte du lieu de réunion du groupe"
+              aria-label={t('groups.meetingMapAria')}
             />
           ) : (
             <div className="rounded-xl border border-dashed border-slate-200 bg-white px-4 py-5 text-sm font-semibold text-slate-500">
-              Adresse disponible. Les coordonnées exactes pourront être ajoutées plus tard.
+              {t('groups.addressWithoutCoordinates')}
             </div>
           )}
         </div>

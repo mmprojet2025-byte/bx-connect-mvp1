@@ -87,11 +87,13 @@ export default function Notifications() {
   };
 
   const nonLues = notifications.filter(n => !n.lue).length;
+  const importantes = notifications.filter(n => !n.lue && ['VALIDATION_GROUPE', 'VALIDATION_PROJET', 'ADHESION', 'PAIEMENT'].includes(n.type)).length;
+  const lues = notifications.length - nonLues;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
-      <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-10">
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
 
         <PageHeader
           eyebrow={t('nav.notifications')}
@@ -134,16 +136,30 @@ export default function Notifications() {
             actionTo={dashboardRouteForRole(user?.role)}
           />
         ) : (
-          <div className="space-y-3">
+          <>
+            <section className="mb-5 grid gap-3 sm:grid-cols-3">
+              <NotificationStat icon="Bell" label={t('notifications.title')} value={notifications.length} />
+              <NotificationStat icon="AlertTriangle" label={t('notifications.unread', { defaultValue: 'Non lues' })} value={nonLues} tone="blue" />
+              <NotificationStat icon="CheckCircle" label={t('notifications.read', { defaultValue: 'Lues' })} value={lues} hint={importantes > 0 ? t('notifications.importantCount', { count: importantes }) : undefined} tone="green" />
+            </section>
+            <div className="space-y-2.5">
             {notifications.map(n => (
               <div
                 key={n.id}
                 onClick={() => !n.lue && handleMarquerLue(n.id)}
-                className={`rounded-3xl border p-4 flex items-start gap-3 cursor-pointer transition hover:-translate-y-0.5 hover:shadow-lg ${
+                onKeyDown={event => {
+                  if ((event.key === 'Enter' || event.key === ' ') && !n.lue) {
+                    event.preventDefault();
+                    handleMarquerLue(n.id);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                className={`rounded-2xl border p-3.5 flex items-start gap-3 cursor-pointer transition hover:-translate-y-0.5 hover:shadow-lg ${
                   !n.lue ? 'border-indigo-200 bg-gradient-to-r from-indigo-50 to-white shadow-sm' : 'border-slate-100 bg-white shadow-sm'
                 }`}
               >
-                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm ${n.lue ? 'bg-slate-50 text-slate-500' : 'bg-white text-indigo-700'}`}>
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm ${n.lue ? 'bg-slate-50 text-slate-500' : 'bg-white text-indigo-700'}`}>
                   <AppIcon name={typeIcon(n.type)} className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -155,7 +171,7 @@ export default function Notifications() {
                     <button
                       type="button"
                       onClick={e => { e.stopPropagation(); handleOpenNotification(n); }}
-                      className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
+                      className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
                     >
                       <AppIcon name="Eye" className="h-3.5 w-3.5" />
                       {t('common.open')}
@@ -183,10 +199,33 @@ export default function Notifications() {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          </>
         )}
       </main>
       <Footer />
+    </div>
+  );
+}
+
+function NotificationStat({ icon, label, value, hint, tone = 'slate' }) {
+  const tones = {
+    slate: 'bg-slate-50 text-slate-700',
+    blue: 'bg-blue-50 text-blue-700',
+    green: 'bg-green-50 text-green-700',
+  };
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</p>
+          <p className="mt-1 text-xl font-black text-slate-950">{value}</p>
+          {hint && <p className="mt-0.5 text-xs font-semibold text-slate-500">{hint}</p>}
+        </div>
+        <span className={`grid h-9 w-9 place-items-center rounded-xl ${tones[tone] || tones.slate}`}>
+          <AppIcon name={icon} className="h-4 w-4" />
+        </span>
+      </div>
     </div>
   );
 }

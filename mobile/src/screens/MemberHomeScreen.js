@@ -144,9 +144,9 @@ export default function MemberHomeScreen({ navigation }) {
           <AppIcon name="search" size={20} color={COLORS.interactive} />
         </View>
         <View style={styles.searchText}>
-          <Text style={styles.searchTitle}>{t('search.title', { defaultValue: 'Recherche globale' })}</Text>
+          <Text style={styles.searchTitle}>{t('search.title')}</Text>
           <Text style={styles.searchSubtitle} numberOfLines={1}>
-            {t('search.startText', { defaultValue: 'Rechercher activités, groupes et projets.' })}
+            {t('search.startText')}
           </Text>
         </View>
         <AppIcon name="chevron-forward" size={18} color={COLORS.muted} />
@@ -322,9 +322,7 @@ function ProjectCard({ project, t, onPress }) {
           <AppIcon name="project" size={22} color={COLORS.impactOrange} />
         </View>
         <Badge
-          label={t(`statuses.${project.statut}`, {
-            defaultValue: project.statut || t('statuses.UNKNOWN'),
-          })}
+          label={t(`statuses.${project.statut}`)}
           color={projectStatusColor(project.statut)}
           soft
         />

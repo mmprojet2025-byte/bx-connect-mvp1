@@ -48,7 +48,7 @@ export default function PrestationsMobileScreen() {
         setPrestations(res.data);
       }
     } catch {
-      setError('Impossible de charger les prestations.');
+      setError(t('prestations.loadError'));
     } finally {
       setLoading(false);
     }
@@ -64,7 +64,7 @@ export default function PrestationsMobileScreen() {
 
   const handleEncoder = async () => {
     if (!form.titre || !form.datePrestation || !form.dureeHeures) {
-      setError('Veuillez remplir tous les champs obligatoires.');
+      setError(t('prestations.requiredFields'));
       return;
     }
     try {
@@ -74,7 +74,7 @@ export default function PrestationsMobileScreen() {
         dureeHeures: parseFloat(form.dureeHeures),
         groupeId: form.groupeId,
       });
-      setMessage('Prestation encodée.');
+      setMessage(t('prestations.created'));
       setShowForm(false);
       fetchPrestations();
       setTimeout(() => setMessage(''), 3000);
@@ -85,20 +85,20 @@ export default function PrestationsMobileScreen() {
 
   const handleValider = async (id) => {
     try {
-      await api.patch(`/prestations/${id}/valider`, { commentaire: 'Validée' });
-      setMessage('Prestation validée.');
+      await api.patch(`/prestations/${id}/valider`, { commentaire: t('prestations.approvedComment') });
+      setMessage(t('prestations.approved'));
       fetchPrestations();
       setTimeout(() => setMessage(''), 3000);
-    } catch { setError('Erreur lors de la validation.'); }
+    } catch { setError(t('prestations.approveError')); }
   };
 
   const handleRefuser = async (id) => {
     try {
-      await api.patch(`/prestations/${id}/refuser`, { commentaire: 'Refusée par le référent' });
-      setMessage('Prestation refusée.');
+      await api.patch(`/prestations/${id}/refuser`, { commentaire: t('prestations.rejectedComment') });
+      setMessage(t('prestations.rejected'));
       fetchPrestations();
       setTimeout(() => setMessage(''), 3000);
-    } catch { setError('Erreur lors du refus.'); }
+    } catch { setError(t('prestations.rejectError')); }
   };
 
   const statutColor = (s) => ({
@@ -136,11 +136,11 @@ export default function PrestationsMobileScreen() {
           <View style={styles.actions}>
             <TouchableOpacity style={styles.btnValider} onPress={() => handleValider(item.id)}>
               <AppIcon name="check" size={15} color="#22C55E" />
-              <Text style={styles.btnValiderText}>Valider</Text>
+              <Text style={styles.btnValiderText}>{t('prestations.approve')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.btnRefuser} onPress={() => handleRefuser(item.id)}>
               <AppIcon name="close" size={15} color="#EF4444" />
-              <Text style={styles.btnRefuserText}>Refuser</Text>
+              <Text style={styles.btnRefuserText}>{t('prestations.reject')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -154,7 +154,7 @@ export default function PrestationsMobileScreen() {
         <View style={styles.emptyIcon}>
           <AppIcon name="lock" size={32} color="#38BDF8" />
         </View>
-        <Text style={styles.emptyText}>Connectez-vous pour accéder aux prestations.</Text>
+        <Text style={styles.emptyText}>{t('prestations.loginRequired')}</Text>
       </View>
     );
   }
@@ -164,8 +164,8 @@ export default function PrestationsMobileScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>🤝 Bénévolat</Text>
-          <Text style={styles.headerSub}>Total validé : {totalHeures.toFixed(1)}h</Text>
+          <Text style={styles.headerTitle}>{t('prestations.volunteeringTitle')}</Text>
+          <Text style={styles.headerSub}>{t('prestations.totalApproved', { hours: totalHeures.toFixed(1) })}</Text>
         </View>
         <TouchableOpacity style={styles.btnNew} onPress={() => setShowForm(true)}>
           <Text style={styles.btnNewText}>+</Text>
@@ -176,8 +176,8 @@ export default function PrestationsMobileScreen() {
       {peutValider && (
         <View style={styles.onglets}>
           {[
-            { id: 'mes',    label: 'Mes prestations' },
-            { id: 'valider', label: 'À valider' },
+            { id: 'mes',    label: t('prestations.myServices') },
+            { id: 'valider', label: t('prestations.toApprove') },
           ].map(o => (
             <TouchableOpacity key={o.id} style={[styles.onglet, onglet === o.id && styles.ongletActive]}
               onPress={() => setOnglet(o.id)}>
@@ -203,7 +203,7 @@ export default function PrestationsMobileScreen() {
       ) : prestations.length === 0 ? (
         <View style={styles.centered}>
           <Text style={styles.emptyIcon}>🤝</Text>
-          <Text style={styles.emptyText}>Aucune prestation pour le moment.</Text>
+          <Text style={styles.emptyText}>{t('prestations.empty')}</Text>
         </View>
       ) : (
         <FlatList
@@ -225,18 +225,18 @@ export default function PrestationsMobileScreen() {
         >
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Encoder une prestation</Text>
+              <Text style={styles.modalTitle}>{t('prestations.encodeTitle')}</Text>
               <TouchableOpacity onPress={() => setShowForm(false)}>
                 <AppIcon name="close" size={22} color="#94a3b8" />
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.label}>Titre *</Text>
+              <Text style={styles.label}>{t('prestations.titleRequired')}</Text>
               <TextInput style={styles.input} value={form.titre}
-                onChangeText={v => setForm({...form, titre: v})} placeholder="Titre de la prestation"
+                onChangeText={v => setForm({...form, titre: v})} placeholder={t('prestations.titlePlaceholder')}
                 placeholderTextColor="#94a3b8" />
 
-              <Text style={styles.label}>Type *</Text>
+              <Text style={styles.label}>{t('prestations.typeRequired')}</Text>
               <View style={styles.typesRow}>
                 {TYPES.map(t => (
                   <TouchableOpacity key={t} style={[styles.typeBtn, form.type === t && styles.typeBtnActive]}
@@ -246,23 +246,23 @@ export default function PrestationsMobileScreen() {
                 ))}
               </View>
 
-              <Text style={styles.label}>Date (YYYY-MM-DD) *</Text>
+              <Text style={styles.label}>{t('prestations.dateRequired')}</Text>
               <TextInput style={styles.input} value={form.datePrestation}
                 onChangeText={v => setForm({...form, datePrestation: v})}
-                placeholder="2026-05-21" placeholderTextColor="#94a3b8" />
+                placeholder={t('prestations.datePlaceholder')} placeholderTextColor="#94a3b8" />
 
-              <Text style={styles.label}>Durée (heures) *</Text>
+              <Text style={styles.label}>{t('prestations.durationRequired')}</Text>
               <TextInput style={styles.input} value={form.dureeHeures}
                 onChangeText={v => setForm({...form, dureeHeures: v})}
-                keyboardType="numeric" placeholder="Ex: 2.5" placeholderTextColor="#94a3b8" />
+                keyboardType="numeric" placeholder={t('prestations.durationPlaceholder')} placeholderTextColor="#94a3b8" />
 
-              <Text style={styles.label}>Description</Text>
+              <Text style={styles.label}>{t('common.description')}</Text>
               <TextInput style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
                 value={form.description} onChangeText={v => setForm({...form, description: v})}
-                multiline placeholder="Description..." placeholderTextColor="#94a3b8" />
+                multiline placeholder={t('prestations.descriptionPlaceholder')} placeholderTextColor="#94a3b8" />
 
               <TouchableOpacity style={styles.btnCreate} onPress={handleEncoder}>
-                <Text style={styles.btnCreateText}>Encoder la prestation</Text>
+                <Text style={styles.btnCreateText}>{t('prestations.encodeButton')}</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>

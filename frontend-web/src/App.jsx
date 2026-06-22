@@ -57,6 +57,7 @@ import SuperAdminDashboard  from './pages/super-admin/SuperAdminDashboard'
 import SuperAdminAdmins     from './pages/super-admin/SuperAdminAdmins'
 import SuperAdminLogs       from './pages/super-admin/SuperAdminLogs'
 import { getDefaultRouteForRole } from './routes/roleRoutes'
+import { trackDashboardView } from './monitoring/analytics'
 
 // ─── Guards ───────────────────────────────────────────────────────────────────
 function PrivateRoute({ children }) {
@@ -120,7 +121,7 @@ const PUBLIC_ONLY_PATHS = new Set([
 ])
 
 export default function App() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const location = useLocation()
   const showAppShell = isAuthenticated && !PUBLIC_ONLY_PATHS.has(location.pathname)
   const [contextSidebarCollapsed, setContextSidebarCollapsed] = useState(() => {
@@ -133,6 +134,22 @@ export default function App() {
   useEffect(() => {
     window.localStorage.setItem('bx-app-sidebar-collapsed', String(contextSidebarCollapsed))
   }, [contextSidebarCollapsed])
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+
+    const dashboardRoutes = new Set([
+      '/dashboard',
+      '/referent/dashboard',
+      '/admin/dashboard',
+      '/super-admin/dashboard',
+      '/partenaire',
+    ])
+
+    if (dashboardRoutes.has(location.pathname)) {
+      trackDashboardView(user?.role, location.pathname)
+    }
+  }, [isAuthenticated, location.pathname, user?.role])
 
   return (
     <>

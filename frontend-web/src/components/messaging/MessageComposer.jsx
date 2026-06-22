@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import EmojiPicker from 'emoji-picker-react'
 import AppIcon from '../ui/AppIcons'
+import { useTranslation } from 'react-i18next'
 
 export default function MessageComposer({
   value,
@@ -10,6 +11,7 @@ export default function MessageComposer({
   sendLabel,
   accent = 'indigo',
 }) {
+  const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
   const wrapperRef = useRef(null)
   const inputRef = useRef(null)
@@ -70,7 +72,7 @@ export default function MessageComposer({
           type="button"
           onClick={() => setPickerOpen(open => !open)}
           className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-xl transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
-          aria-label="Ajouter un emoji"
+          aria-label={t('messaging.addEmoji')}
           aria-expanded={pickerOpen}
         >
           😊

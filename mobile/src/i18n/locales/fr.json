@@ -75,12 +75,15 @@
     "noNotificationsText": "Tes prochaines notifications apparaîtront ici.",
     "newsEvent": "Événement",
     "newsGroup": "Groupe",
-    "newsInfo": "Information"
+    "newsInfo": "Information",
+    "registeredCount": "{{count}} inscrit(s)"
   },
   "common": {
     "loading": "Chargement en cours...",
     "loadErrorTitle": "Impossible de charger les données",
     "loadErrorDescription": "Vérifiez votre connexion, puis réessayez.",
+    "cache_notice": "Données affichées depuis le cache.",
+    "cache_read_only": "Actions indisponibles hors ligne.",
     "retry": "Réessayer",
     "cancel": "Annuler",
     "send": "Envoyer",
@@ -93,7 +96,18 @@
     "inactive": "Inactif",
     "language_fr": "Français",
     "language_nl": "Nederlands",
-    "language_en": "English"
+    "language_en": "English",
+    "all": "Tous",
+    "clear": "Effacer",
+    "content": "Contenu",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "saving": "Enregistrement...",
+    "search": "Rechercher",
+    "title": "Titre",
+    "description": "Description",
+    "urlPlaceholder": "https://...",
+    "datePlaceholder": "AAAA-MM-JJ"
   },
   "navigation": {
     "home": "Accueil",
@@ -117,7 +131,8 @@
     "createAccount": "Créer un compte",
     "logout": "Déconnexion",
     "menu": "Menu",
-    "close": "Fermer"
+    "close": "Fermer",
+    "announcements": "Annonces"
   },
   "buttons": {
     "save": "Enregistrer",
@@ -185,7 +200,8 @@
     "previous_refused": "Votre précédente demande a été refusée.",
     "request_to_join": "Demander à rejoindre",
     "already_in_group": "Déjà inscrit dans un groupe",
-    "confirm_leave": "Voulez-vous vraiment quitter ce groupe ? Vous perdrez l’accès à sa messagerie."
+    "confirm_leave": "Voulez-vous vraiment quitter ce groupe ? Vous perdrez l’accès à sa messagerie.",
+    "members": "Membres"
   },
   "activities": {
     "title": "Activités",
@@ -265,7 +281,12 @@
     "full_status": "Complète",
     "available": "Disponible",
     "fallback_activity": "Activité",
-    "date_to_confirm": "Date à confirmer"
+    "date_to_confirm": "Date à confirmer",
+    "date_placeholder": "2026-06-12",
+    "start_time_placeholder": "09:00",
+    "end_time_placeholder": "12:00",
+    "capacity_placeholder": "20",
+    "price_placeholder": "15"
   },
   "projects": {
     "title": "Projets",
@@ -318,7 +339,12 @@
     "type": "Type de projet",
     "type_group": "Projet de groupe",
     "type_institutional": "Projet institutionnel",
-    "created_at": "Date de création"
+    "created_at": "Date de création",
+    "carrier": "Porteur",
+    "edit_project": "Modifier le projet",
+    "error_update_referent": "Vous ne pouvez modifier que les projets des groupes que vous encadrez.",
+    "project_updated_referent": "Le projet a été modifié.",
+    "budget_placeholder": "Ex. : 500"
   },
   "projectVisibility": {
     "GROUPE": "Groupe",
@@ -376,7 +402,8 @@
     "emptyDescriptionMobile": "Vos notifications apparaîtront ici dès qu’une action importante concerne votre compte.",
     "loading": "Chargement des notifications...",
     "dateNotProvided": "Date non renseignée",
-    "confirmDelete": "Voulez-vous vraiment supprimer cette notification ?"
+    "confirmDelete": "Voulez-vous vraiment supprimer cette notification ?",
+    "unreadCount": "{{count}} non lue(s)"
   },
   "auth": {
     "login_hero_title": "Connecte-toi à la communauté BX-Connect",
@@ -543,7 +570,8 @@
       "fallbackTitle": "Notification",
       "fallbackMessage": "Nouvelle information disponible.",
       "read": "Lue",
-      "new": "Nouvelle"
+      "new": "Nouvelle",
+      "unreadCount": "{{count}} non lue(s)"
     },
     "projects": {
       "title": "Mes projets",
@@ -646,7 +674,11 @@
     "noNotifications": "Aucune notification pour le moment.",
     "viewNotifications": "Voir les notifications",
     "quickActions": "Accès rapides",
-    "openMessaging": "Ouvrir la messagerie"
+    "openMessaging": "Ouvrir la messagerie",
+    "activitiesToPublish": "Activités à publier",
+    "priorityTitle": "À traiter",
+    "projectsToFollow": "Projets à suivre",
+    "loading": "Chargement de l’espace référent..."
   },
   "superAdmin": {
     "dashboard": "Tableau de bord de la plateforme",
@@ -667,7 +699,23 @@
       "usersAction": "Consulter les administrateurs de la plateforme.",
       "notificationsAction": "Consulter les alertes importantes.",
       "profileAction": "Gérer vos informations et votre sécurité."
-    }
+    },
+    "actor": "Acteur",
+    "filterAction": "Action",
+    "filterRole": "Rôle",
+    "filterTarget": "Cible",
+    "hideDetails": "Masquer les détails",
+    "logsAction": "Consulter les actions auditées de la plateforme.",
+    "logsLoadError": "Impossible de charger les logs.",
+    "logsSubtitle": "Journal des actions importantes de BX-Connect.",
+    "logsTitle": "Journal d’activité",
+    "newStatus": "Nouveau statut",
+    "noLogs": "Aucun log",
+    "noLogsText": "Aucune action ne correspond aux filtres.",
+    "oldStatus": "Ancien statut",
+    "showDetails": "Voir les détails",
+    "target": "Cible",
+    "targetType": "Type de cible"
   },
   "audit": {
     "date": "Date",
@@ -687,7 +735,8 @@
     "email": "Email",
     "role": "Rôle",
     "status": "Statut",
-    "actions": "Actions"
+    "actions": "Actions",
+    "registration": "Inscription"
   },
   "adminMobile": {
     "dashboardLoadError": "Impossible de charger le tableau de bord administrateur.",
@@ -725,7 +774,58 @@
     "projectsAction": "Voir les projets suivis par l’association.",
     "groupsReadOnly": "Vue mobile de suivi des groupes, référents et statuts.",
     "activitiesReadOnly": "Vue mobile de suivi des activités. Les actions de gestion restent protégées.",
-    "projectsReadOnly": "Vue mobile de suivi des projets. Les actions de gestion restent protégées."
+    "projectsReadOnly": "Vue mobile de suivi des projets. Les actions de gestion restent protégées.",
+    "approveProject": "Valider le projet",
+    "approveSupport": "Valider le soutien",
+    "confirmApproveProject": "Ce projet sera validé.",
+    "confirmApproveSupport": "Ce soutien sera validé.",
+    "confirmPublishOpportunity": "Cette opportunité deviendra visible publiquement.",
+    "confirmRefuseOpportunity": "Cette opportunité sera refusée et ne sera pas publiée.",
+    "confirmRejectProject": "Ce projet sera refusé.",
+    "confirmRejectSupport": "Ce soutien sera refusé.",
+    "noOpportunities": "Aucune opportunité",
+    "noOpportunitiesText": "Les publications partenaires à modérer apparaîtront ici.",
+    "noReferents": "Aucun référent",
+    "noReferentsText": "Les référents apparaîtront ici.",
+    "noSubmittedProjects": "Aucun projet soumis",
+    "noSubmittedProjectsText": "Les projets en attente de décision apparaîtront ici.",
+    "noSupports": "Aucun soutien",
+    "noSupportsText": "Les soutiens partenaires apparaîtront ici.",
+    "opportunitiesAction": "Publier ou refuser les opportunités partenaires.",
+    "opportunitiesLoadError": "Impossible de charger les opportunités.",
+    "opportunitiesShort": "Opportunités",
+    "opportunitiesSubtitle": "Modérez les publications envoyées par les partenaires.",
+    "opportunitiesTitle": "Opportunités à modérer",
+    "opportunityActionUnavailable": "Cette action n’est plus disponible car l’opportunité n’est plus en attente.",
+    "opportunityProcessError": "Impossible de traiter cette opportunité.",
+    "opportunityPublished": "Opportunité publiée.",
+    "opportunityRefused": "Opportunité refusée.",
+    "partnerSupportsAction": "Valider ou refuser les soutiens en attente.",
+    "partnerSupportsSubtitle": "Suivez les propositions de soutien partenaires.",
+    "partnerSupportsTitle": "Soutiens partenaires",
+    "projectApproved": "Projet validé.",
+    "projectProcessError": "Impossible de traiter ce projet.",
+    "projectRejected": "Projet refusé.",
+    "publish": "Publier",
+    "publishOpportunity": "Publier l’opportunité",
+    "referentsAction": "Consulter les référents actifs et inactifs.",
+    "referentsLoadError": "Impossible de charger les référents.",
+    "referentsReadOnlyHint": "Création et modifications avancées disponibles sur le web.",
+    "referentsSubtitle": "Vue mobile des référents de la plateforme.",
+    "referentsTitle": "Référents",
+    "refuseOpportunity": "Refuser l’opportunité",
+    "rejectProject": "Refuser le projet",
+    "rejectSupport": "Refuser le soutien",
+    "submittedProjects": "Projets soumis",
+    "submittedProjectsAction": "Suivre les projets qui attendent une décision.",
+    "submittedProjectsLoadError": "Impossible de charger les projets soumis.",
+    "submittedProjectsSubtitle": "Projets en attente de validation admin.",
+    "supportActionUnavailable": "Cette action n’est plus disponible car le soutien n’est plus en attente.",
+    "supportApproved": "Soutien validé.",
+    "supportProcessError": "Impossible de traiter ce soutien.",
+    "supportRejected": "Soutien refusé.",
+    "supportsLoadError": "Impossible de charger les soutiens partenaires.",
+    "toModerate": "À modérer"
   },
   "referentMobile": {
     "requestsTitle": "Demandes d’adhésion",
@@ -755,7 +855,8 @@
     "memberSince": "Membre depuis",
     "unknownMember": "Membre",
     "messagingAction": "Échanger avec les groupes que vous encadrez.",
-    "projectsAction": "Voir les projets liés à vos groupes."
+    "projectsAction": "Voir les projets liés à vos groupes.",
+    "myGroupProjects": "Projets de mes groupes"
   },
   "partner": {
     "supports": "Soutiens financiers",
@@ -798,7 +899,8 @@
       "followInitiatives": "Suivre les initiatives",
       "followInitiativesText": "Voir les activités et les temps forts de la communauté.",
       "contactTeam": "Contacter l’équipe",
-      "contactTeamText": "Écrire à contact@bxconnect.be."
+      "contactTeamText": "Écrire à contact@bxconnect.be.",
+      "quickAccess": "Accès partenaire"
     },
     "types": {
       "COMMUNE": "Commune",
@@ -811,7 +913,42 @@
       "ONG": "ONG",
       "FONDATION": "Fondation",
       "AUTRE": "Autre"
-    }
+    },
+    "cancelSupport": "Annuler le soutien",
+    "category": "Catégorie",
+    "confirmCancelSupport": "Voulez-vous annuler cette proposition de soutien ?",
+    "createOpportunity": "Créer une opportunité",
+    "editSupport": "Modifier le soutien",
+    "expiration": "Expiration",
+    "expirationDate": "Date expiration",
+    "externalLink": "Lien externe",
+    "message": "Message",
+    "messagePlaceholder": "Votre message...",
+    "mobilePartnerSpaceSubtitle": "Deux espaces pour suivre vos soutiens et publier vos opportunités.",
+    "noOpportunities": "Aucune opportunité",
+    "noOpportunitiesText": "Publiez une offre, un stage, une formation ou un appel à projet.",
+    "opportunities": "Opportunités",
+    "opportunitiesAction": "Suivre vos publications partenaires.",
+    "opportunitiesLoadError": "Impossible de charger vos opportunités.",
+    "opportunityCategoryRequired": "La catégorie est obligatoire.",
+    "opportunityContentPlaceholder": "Détail de l’offre ou de la publication",
+    "opportunityContentRequired": "Le contenu est obligatoire.",
+    "opportunityCreateError": "Impossible de créer cette opportunité.",
+    "opportunityCreated": "Votre opportunité a été envoyée à l’administration pour validation.",
+    "opportunityDateFormat": "La date doit être au format AAAA-MM-JJ.",
+    "opportunityModerationHint": "Elle sera envoyée à l’administration pour validation avant publication.",
+    "opportunityTitlePlaceholder": "Titre de l’opportunité",
+    "opportunityTitleRequired": "Le titre est obligatoire.",
+    "shortDescription": "Description courte",
+    "shortDescriptionPlaceholder": "Résumé visible dans les annonces",
+    "supportActionUnavailable": "Cette action n’est plus disponible car le soutien n’est plus en attente.",
+    "supportAmountError": "Le montant minimum est de 1 €.",
+    "supportCancelError": "Ce soutien ne peut plus être annulé.",
+    "supportCancelled": "Votre soutien a été annulé.",
+    "supportUpdateError": "Ce soutien n’est plus modifiable.",
+    "supportUpdated": "Votre soutien a été modifié.",
+    "supportsAndOpportunities": "Soutiens & Opportunités",
+    "amountPlaceholder": "100"
   },
   "legal": {
     "eyebrow": "Cadre légal BX-Connect",
@@ -910,5 +1047,127 @@
     "REFERENT": "Référent",
     "MEMBRE": "Membre",
     "PARTENAIRE": "Partenaire"
+  },
+  "announcements": {
+    "loadError": "Impossible de charger les annonces.",
+    "empty": "Aucune annonce pour le moment.",
+    "byAuthor": "Par {{author}}",
+    "types": {
+      "GLOBALE": "Global",
+      "GROUPE": "Groupe",
+      "SYSTEME": "Système"
+    }
+  },
+  "geo": {
+    "commune": "Commune",
+    "meetingAddress": "Lieu de réunion",
+    "openErrorText": "Impossible d’ouvrir l’application de cartographie.",
+    "openErrorTitle": "Itinéraire indisponible",
+    "viewItinerary": "Voir l’itinéraire"
+  },
+  "search": {
+    "title": "Recherche globale",
+    "placeholder": "Rechercher dans BX-Connect...",
+    "helper": "Activités, groupes, projets, partenaires, opportunités et membres selon vos droits.",
+    "startTitle": "Que cherchez-vous ?",
+    "startText": "Saisissez au moins 2 caractères pour lancer la recherche globale.",
+    "noResults": "Aucun résultat",
+    "noResultsText": "Essayez avec un autre mot-clé ou une orthographe différente.",
+    "error": "Impossible de charger les résultats de recherche.",
+    "opportunities": "Opportunités",
+    "mobileUnavailableTitle": "Ouverture indisponible",
+    "mobileUnavailableText": "Ce résultat existe bien, mais son écran mobile dédié n’est pas encore disponible."
+  },
+  "payment": {
+    "loginRequired": "Vous devez être connecté pour effectuer un paiement.",
+    "minimumAmount": "Le montant minimum est de 1 €.",
+    "redirectingStripe": "Redirection vers Stripe...",
+    "openCheckoutError": "Impossible d’ouvrir la page de paiement.",
+    "redirectingTitle": "Redirection en cours",
+    "completeInBrowser": "Complétez votre paiement dans le navigateur qui vient de s’ouvrir.",
+    "returnAfterPayment": "Après le paiement, revenez dans l’application.",
+    "supportViaStripe": "Soutenir via Stripe",
+    "projectTarget": "Projet",
+    "activityTarget": "Activité",
+    "chooseAmount": "Choisir un montant",
+    "customAmount": "Ou saisir un montant",
+    "amountPlaceholder": "Montant",
+    "optionalMessage": "Message (optionnel)",
+    "messagePlaceholder": "Laissez un message de soutien...",
+    "amount": "Montant",
+    "provider": "Fournisseur",
+    "target": "Cible",
+    "payWithStripe": "Payer {{amount}} € avec Stripe",
+    "securityNote": "Paiement sécurisé par Stripe · Données bancaires jamais stockées"
+  },
+  "paymentHistory": {
+    "loadError": "Impossible de charger l’historique.",
+    "supportFallback": "Soutien BX-CONNECT",
+    "loginTitle": "Connexion requise",
+    "loginText": "Connectez-vous pour voir votre historique.",
+    "title": "Historique des paiements",
+    "totalPaid": "Total payé :",
+    "emptyTitle": "Aucun paiement",
+    "emptyAll": "Vous n’avez pas encore effectué de paiement.",
+    "emptyForStatus": "Aucun paiement avec le statut \"{{status}}\"."
+  },
+  "prestations": {
+    "loadError": "Impossible de charger les prestations.",
+    "requiredFields": "Veuillez remplir tous les champs obligatoires.",
+    "created": "Prestation encodée.",
+    "approvedComment": "Validée",
+    "rejectedComment": "Refusée par le référent",
+    "approved": "Prestation validée.",
+    "rejected": "Prestation refusée.",
+    "approveError": "Erreur lors de la validation.",
+    "rejectError": "Erreur lors du refus.",
+    "approve": "Valider",
+    "reject": "Refuser",
+    "loginRequired": "Connectez-vous pour accéder aux prestations.",
+    "volunteeringTitle": "🤝 Bénévolat",
+    "totalApproved": "Total validé : {{hours}}h",
+    "myServices": "Mes prestations",
+    "toApprove": "À valider",
+    "empty": "Aucune prestation pour le moment.",
+    "encodeTitle": "Encoder une prestation",
+    "titleRequired": "Titre *",
+    "titlePlaceholder": "Titre de la prestation",
+    "typeRequired": "Type *",
+    "dateRequired": "Date (AAAA-MM-JJ) *",
+    "durationRequired": "Durée (heures) *",
+    "durationPlaceholder": "Ex. : 2.5",
+    "descriptionPlaceholder": "Description...",
+    "encodeButton": "Encoder la prestation",
+    "datePlaceholder": "2026-05-21"
+  },
+  "partnerInstitution": {
+    "completeProfile": "Compléter le profil",
+    "contactEmail": "Email de contact",
+    "contactEmailPlaceholder": "contact@example.org",
+    "contactPerson": "Personne de contact",
+    "description": "Description",
+    "descriptionPlaceholder": "Décrivez brièvement votre organisation",
+    "incompleteProfile": "Profil incomplet",
+    "logoUrl": "URL du logo",
+    "noDescription": "Aucune description renseignée",
+    "organization": "Organisation",
+    "organizationPlaceholder": "Nom de l’organisation",
+    "phone": "Téléphone",
+    "phonePlaceholder": "+32...",
+    "profileAction": "Gérer le profil partenaire",
+    "profileError": "Impossible d’enregistrer le profil.",
+    "profileLoadError": "Impossible de charger le profil partenaire.",
+    "profileSaved": "Profil partenaire enregistré.",
+    "profileSubtitle": "Gardez les informations publiques de votre organisation à jour.",
+    "profileTitle": "Profil partenaire",
+    "publicPreview": "Aperçu public",
+    "type": "Type de partenaire",
+    "website": "Site web"
+  },
+  "partnerSupport": {
+    "activity": "Activité",
+    "adminReply": "Réponse admin",
+    "project": "Projet",
+    "target": "Cible"
   }
 }

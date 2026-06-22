@@ -1,7 +1,7 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { clearStoredAuth, getStoredToken } from '../services/secureAuthStorage';
 
 function getApiBaseUrl() {
   if (process.env.EXPO_PUBLIC_API_BASE_URL) {
@@ -33,16 +33,12 @@ export function onUnauthorized(listener) {
   return () => unauthorizedListeners.delete(listener);
 }
 
-async function clearStoredAuth() {
-  await AsyncStorage.multiRemove(['token', 'user']);
-}
-
 api.interceptors.request.use(
   async (config) => {
     const isPublic = PUBLIC_ROUTES.some(route => config.url?.includes(route));
     if (!isPublic && !config.skipAuth) {
       try {
-        const token = await AsyncStorage.getItem('token');
+        const token = await getStoredToken();
         if (token) config.headers.Authorization = `Bearer ${token}`;
       } catch { /* continuer sans token */ }
     }

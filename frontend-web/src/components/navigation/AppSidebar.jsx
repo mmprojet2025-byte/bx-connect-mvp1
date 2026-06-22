@@ -5,6 +5,7 @@ import { getDefaultRouteForRole } from '../../routes/roleRoutes'
 import api from '../../api/axios'
 import AppIcon from '../ui/AppIcons'
 import logoBxConnect from '../../assets/images/logo-bx-connect.png'
+import { useTranslation } from 'react-i18next'
 
 const ROLE_ROUTES = {
   MEMBRE: {
@@ -38,6 +39,7 @@ const ROLE_ROUTES = {
 }
 
 export default function AppSidebar({ contextCollapsed = false, onToggleContext }) {
+  const { t } = useTranslation()
   const { isAuthenticated, user } = useAuth()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -96,8 +98,8 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
             <button
               type="button"
               onClick={onToggleContext}
-              title="Ouvrir la sidebar"
-              aria-label="Ouvrir la sidebar"
+              title={t('sidebar.open')}
+              aria-label={t('sidebar.open')}
               className="grid h-10 w-10 place-items-center rounded-2xl text-slate-500 transition hover:bg-blue-50 hover:text-blue-700"
             >
               <AppIcon name="PanelLeftOpen" className="h-5 w-5" />
@@ -107,8 +109,8 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
             <button
               type="button"
               onClick={onToggleContext}
-              title="Réduire la sidebar"
-              aria-label="Réduire la sidebar"
+              title={t('sidebar.collapse')}
+              aria-label={t('sidebar.collapse')}
               className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-blue-700"
             >
               <AppIcon name="PanelLeftClose" className="h-4 w-4" />
@@ -169,7 +171,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                     {fullName(user) || roleLabel(role)}
                   </span>
                   <span className="block truncate text-xs font-semibold text-slate-500">
-                    {user?.email || 'Profil utilisateur'}
+                    {user?.email || t('profile.userProfile', { defaultValue: 'Profil utilisateur' })}
                   </span>
                 </span>
                 <AppIcon name="Settings" className="h-4 w-4 text-slate-400" />
@@ -182,8 +184,8 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
       <button
         type="button"
         onClick={() => setMobileOpen(true)}
-        title="Ouvrir le menu"
-        aria-label="Ouvrir le menu"
+        title={t('nav.openMenu')}
+        aria-label={t('nav.openMenu')}
         aria-expanded={mobileOpen}
         className="fixed left-3 top-3 z-40 grid h-11 w-11 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-lg shadow-slate-950/10 transition hover:bg-blue-50 hover:text-blue-700 lg:hidden"
       >
@@ -193,7 +195,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
       <div className={`fixed inset-0 z-50 lg:hidden ${mobileOpen ? '' : 'pointer-events-none'}`}>
         <button
           type="button"
-          aria-label="Fermer le menu"
+          aria-label={t('nav.close')}
           onClick={() => setMobileOpen(false)}
           className={`absolute inset-0 bg-slate-950/35 transition-opacity duration-200 ${mobileOpen ? 'opacity-100' : 'opacity-0'}`}
         />
@@ -201,7 +203,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
           className={`absolute inset-y-0 left-0 flex w-[260px] max-w-[86vw] flex-col border-r border-slate-200 bg-white text-slate-900 shadow-2xl shadow-slate-950/20 transition-transform duration-200 ${
             mobileOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
-          aria-label="Menu BX-Connect"
+          aria-label={t('sidebar.mobileMenu')}
         >
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-3 py-4">
             <Link
@@ -221,8 +223,8 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
             <button
               type="button"
               onClick={() => setMobileOpen(false)}
-              title="Fermer le menu"
-              aria-label="Fermer le menu"
+              title={t('nav.close')}
+              aria-label={t('nav.close')}
               className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-blue-700"
             >
               <AppIcon name="X" className="h-4 w-4" />

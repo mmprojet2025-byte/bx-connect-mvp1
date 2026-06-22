@@ -39,9 +39,7 @@ export default function SuperAdminLogsScreen() {
       setLogs(response.data || []);
     } catch (err) {
       setLogs([]);
-      setError(getApiError(err, t, t('superAdmin.logsLoadError', {
-        defaultValue: 'Impossible de charger le journal d’activité.',
-      })));
+      setError(getApiError(err, t, t('superAdmin.logsLoadError')));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -64,11 +62,9 @@ export default function SuperAdminLogsScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <SectionHeader
-          title={t('superAdmin.logsTitle', { defaultValue: 'Journal d’activité' })}
-          subtitle={t('superAdmin.logsSubtitle', {
-            count: logs.length,
-            defaultValue: `${logs.length} actions récentes`,
-          })}
+          title={t('superAdmin.logsTitle')}
+          subtitle={t('superAdmin.logsSubtitle',{
+            count: logs.length})}
           icon="lock"
         />
         <FilterBlock
@@ -91,8 +87,8 @@ export default function SuperAdminLogsScreen() {
       ) : logs.length === 0 ? (
         <EmptyState
           icon="lock"
-          title={t('superAdmin.noLogs', { defaultValue: 'Aucun log' })}
-          text={t('superAdmin.noLogsText', { defaultValue: 'Aucune action ne correspond aux filtres sélectionnés.' })}
+          title={t('superAdmin.noLogs')}
+          text={t('superAdmin.noLogsText')}
           actionLabel={t('common.retry')}
           onAction={() => loadLogs()}
         />
@@ -122,25 +118,25 @@ function FilterBlock({ filters, setFilters, actionOptions, cibleOptions, t }) {
   return (
     <View style={styles.filters}>
       <FilterRow
-        label={t('superAdmin.filterAction', { defaultValue: 'Action' })}
+        label={t('superAdmin.filterAction')}
         options={['', ...actionOptions]}
         value={filters.action}
         onChange={(action) => setFilters((current) => ({ ...current, action }))}
-        formatter={(value) => value ? humanAction(value) : t('common.all', { defaultValue: 'Tous' })}
+        formatter={(value) => value ? humanAction(value) : t('common.all')}
       />
       <FilterRow
-        label={t('superAdmin.filterTarget', { defaultValue: 'Cible' })}
+        label={t('superAdmin.filterTarget')}
         options={['', ...cibleOptions]}
         value={filters.cibleType}
         onChange={(cibleType) => setFilters((current) => ({ ...current, cibleType }))}
-        formatter={(value) => value || t('common.all', { defaultValue: 'Tous' })}
+        formatter={(value) => value || t('common.all')}
       />
       <FilterRow
-        label={t('superAdmin.filterRole', { defaultValue: 'Rôle' })}
+        label={t('superAdmin.filterRole')}
         options={ROLE_FILTERS}
         value={filters.acteurRole}
         onChange={(acteurRole) => setFilters((current) => ({ ...current, acteurRole }))}
-        formatter={(value) => value || t('common.all', { defaultValue: 'Tous' })}
+        formatter={(value) => value || t('common.all')}
       />
     </View>
   );
@@ -187,11 +183,11 @@ function LogCard({ log, expanded, onToggle, language, t }) {
       </View>
 
       <View style={styles.metaBox}>
-        <Meta label={t('superAdmin.actor', { defaultValue: 'Acteur' })} value={log.acteurEmail || t('common.notAvailable')} />
-        <Meta label={t('superAdmin.target', { defaultValue: 'Cible' })} value={target} />
-        <Meta label={t('superAdmin.targetType', { defaultValue: 'Type cible' })} value={log.cibleType || t('common.notAvailable')} />
-        <Meta label={t('superAdmin.oldStatus', { defaultValue: 'Ancien statut' })} value={log.ancienStatut || '—'} />
-        <Meta label={t('superAdmin.newStatus', { defaultValue: 'Nouveau statut' })} value={log.nouveauStatut || '—'} />
+        <Meta label={t('superAdmin.actor')} value={log.acteurEmail || t('common.notAvailable')} />
+        <Meta label={t('superAdmin.target')} value={target} />
+        <Meta label={t('superAdmin.targetType')} value={log.cibleType || t('common.notAvailable')} />
+        <Meta label={t('superAdmin.oldStatus')} value={log.ancienStatut || '—'} />
+        <Meta label={t('superAdmin.newStatus')} value={log.nouveauStatut || '—'} />
       </View>
 
       {log.metadataJson || log.details ? (
@@ -199,8 +195,8 @@ function LogCard({ log, expanded, onToggle, language, t }) {
           <TouchableOpacity style={styles.detailsButton} onPress={onToggle}>
             <Text style={styles.detailsButtonText}>
               {expanded
-                ? t('superAdmin.hideDetails', { defaultValue: 'Masquer les détails' })
-                : t('superAdmin.showDetails', { defaultValue: 'Voir les détails' })}
+                ? t('superAdmin.hideDetails')
+                : t('superAdmin.showDetails')}
             </Text>
             <AppIcon name={expanded ? 'chevron-up-outline' : 'chevron-down-outline'} size={17} color={COLORS.bxBlueLight} />
           </TouchableOpacity>

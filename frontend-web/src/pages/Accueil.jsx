@@ -220,9 +220,9 @@ export default function Accueil() {
         </section>
 
         <SectionHeader
-          eyebrow="Objectif"
-          title="Une plateforme pensée pour"
-          description="BX-Connect structure les informations essentielles pour rendre la vie communautaire plus simple à suivre."
+          eyebrow={t('home.objectiveEyebrow')}
+          title={t('home.platformDesignedFor')}
+          description={t('home.platformDesignedDescription')}
         />
         <section className="mx-auto grid max-w-7xl gap-5 px-5 pb-16 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
           {PLATFORM_CARDS.map((card, index) => (
@@ -257,9 +257,9 @@ export default function Accueil() {
         )}
 
         <SectionHeader
-          eyebrow="Actions principales"
-          title="Ce que tu peux faire"
-          description="Le parcours public permet de comprendre rapidement comment découvrir, rejoindre et participer."
+          eyebrow={t('home.mainActionsEyebrow')}
+          title={t('home.features_title')}
+          description={t('home.mainActionsDescription')}
         />
         <section className="mx-auto grid max-w-7xl gap-5 px-5 pb-16 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
           {FEATURES.map((feature, index) => (

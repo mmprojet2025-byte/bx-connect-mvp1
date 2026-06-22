@@ -57,7 +57,12 @@
     "feature_community_desc": "Sluit je aan bij groepen, wissel uit met andere leden en partners.",
     "recent_activities": "Recente activiteiten",
     "see_all": "Alles bekijken",
-    "no_activities": "Momenteel geen activiteiten beschikbaar."
+    "no_activities": "Momenteel geen activiteiten beschikbaar.",
+    "objectiveEyebrow": "Doel",
+    "platformDesignedFor": "Een platform ontworpen voor",
+    "platformDesignedDescription": "BX-Connect structureert essentiële informatie om het gemeenschapsleven eenvoudiger op te volgen.",
+    "mainActionsEyebrow": "Belangrijkste acties",
+    "mainActionsDescription": "Het publieke traject toont snel hoe je kunt ontdekken, aansluiten en deelnemen."
   },
   "auth": {
     "login_title": "Inloggen",
@@ -110,7 +115,11 @@
     "password_strength_medium": "Gemiddeld wachtwoord",
     "password_strength_strong": "Sterk wachtwoord",
     "show_password": "Wachtwoord tonen",
-    "hide_password": "Wachtwoord verbergen"
+    "hide_password": "Wachtwoord verbergen",
+    "welcomeTitle": "Welkom bij BX-Connect",
+    "welcomeSubtitle": "Sluit je aan bij activiteiten, groepen en projecten van je gemeenschap.",
+    "loginWith": "Of aanmelden met",
+    "googleSoon": "Google-login binnenkort beschikbaar."
   },
   "dashboard": {
     "title": "Mijn dashboard",
@@ -182,7 +191,34 @@
     "organizer": "Organisator",
     "register_this": "Inschrijven voor deze activiteit",
     "login_to_register": "Log in om je in te schrijven",
-    "already_registered": "Je bent ingeschreven voor deze activiteit"
+    "already_registered": "Je bent ingeschreven voor deze activiteit",
+    "geoUnavailable": "Geolocatie is niet beschikbaar in deze browser. Activiteiten blijven normaal gesorteerd.",
+    "geoSuccess": "Je locatie wordt alleen in deze browser gebruikt om nabije activiteiten te sorteren. Ze wordt niet opgeslagen.",
+    "nearbyTitle": "Activiteiten in mijn buurt",
+    "nearbyPrivacy": "Locatie wordt alleen in deze browser gebruikt om op afstand te sorteren.",
+    "locating": "Locatie ophalen...",
+    "nearbyButton": "Dichtstbij",
+    "normalSort": "Normale sortering",
+    "distance": "Afstand",
+    "geoPermissionDenied": "Toestemming geweigerd. Je kunt activiteiten blijven bekijken zonder sortering op afstand.",
+    "geoPositionUnavailable": "Je locatie is momenteel niet beschikbaar. Activiteiten blijven normaal gesorteerd.",
+    "geoTimeout": "Locatie ophalen duurt te lang. Probeer opnieuw of gebruik de gewone filters.",
+    "geoGenericError": "Kan je locatie niet ophalen. Activiteiten blijven normaal gesorteerd.",
+    "manageActivities": "Gérer les activités",
+    "manageMyActivities": "Gérer mes activités",
+    "registrationOpen": "Inscriptions ouvertes",
+    "myRegistrations": "Mes inscriptions",
+    "noFilteredActivities": "Aucune activité ne correspond aux filtres.",
+    "noFilteredActivitiesDesc": "Modifie le statut, la catégorie ou le groupe pour élargir les résultats.",
+    "upcomingTitle": "Prochaines activités",
+    "myRegistrationsCount": "My Registrations Count",
+    "upcomingHint": "Les prochaines dates publiées apparaissent ici dès qu’elles sont disponibles.",
+    "noUpcoming": "Aucune activité à venir pour le moment.",
+    "done": "Terminé",
+    "full": "Complet",
+    "draftsToPublish": "Activités à publier",
+    "draftsToPublishDesc": "Brouillons prêts à vérifier.",
+    "locationMapAria": "Kaart van de activiteitlocatie"
   },
   "projects": {
     "title": "Samenwerkingsprojecten",
@@ -218,7 +254,62 @@
     "typeGroup": "Groepsproject",
     "typeInstitutional": "Verenigingsproject",
     "owner": "Indiener",
-    "createdAt": "Aangemaakt op"
+    "createdAt": "Aangemaakt op",
+    "activeProjects": "In actie",
+    "workflowSteps": {
+      "created": "Aangemaakt",
+      "submitted": "Ingediend",
+      "validation": "Validatie",
+      "approved": "Goedgekeurd",
+      "visible": "Zichtbaar",
+      "supported": "Ondersteund",
+      "done": "Afgerond"
+    },
+    "followUnavailable": "Vous participez déjà à ce projet. Les nouvelles interactions apparaîtront dans vos notifications.",
+    "joined": "Vous participez maintenant à ce projet.",
+    "joinError": "Impossible de rejoindre ce projet.",
+    "commentAdded": "Commentaire ajouté.",
+    "commentError": "Impossible d’ajouter le commentaire.",
+    "workspaceTitle": "Projets à suivre",
+    "workspaceDesc": "Workspace Desc",
+    "focusedProject": "Focused Project",
+    "filteredCount": "Filtered Count",
+    "searchPlaceholder": "Rechercher un projet...",
+    "allGroups": "Tous les groupes",
+    "allVisibilities": "Toutes les visibilités",
+    "noFilteredProjects": "Aucun projet ne correspond aux filtres.",
+    "noFilteredProjectsDesc": "Modifie la recherche, le statut, le groupe ou la visibilité pour retrouver des projets.",
+    "workflowFilterHint": "Clique sur une étape pour filtrer les projets par statut.",
+    "comments": "Commentaires",
+    "currentState": "État actuel",
+    "nextStep": "Prochaine étape",
+    "discussion": "Discussion du projet",
+    "noComments": "Aucun commentaire pour le moment.",
+    "commentPlaceholder": "Ajouter une note de suivi...",
+    "joinedLabel": "Participant",
+    "join": "Rejoindre",
+    "workflowDraft": "Ce projet est encore en préparation.",
+    "workflowSubmitted": "Ce projet attend une validation administrative.",
+    "workflowApproved": "Ce projet est approuvé et peut être visible ou soutenu selon sa visibilité.",
+    "workflowRunning": "Ce projet est en cours de réalisation.",
+    "workflowDone": "Ce projet est terminé.",
+    "workflowRejected": "Ce projet a été refusé.",
+    "workflowUnknown": "Statut du projet à vérifier.",
+    "nextAdminValidation": "Relire le projet puis approuver ou refuser.",
+    "nextPartnerSupport": "Évaluer le besoin et proposer un soutien si le projet correspond à vos priorités.",
+    "nextMemberJoin": "Rejoindre le projet pour suivre son avancement.",
+    "nextParticipant": "Suivre la discussion et contribuer aux prochaines étapes.",
+    "nextDraft": "Compléter le projet avant soumission.",
+    "nextSubmitted": "Attendre la validation administrative.",
+    "nextDone": "Consulter le bilan et les contributions.",
+    "nextRejected": "Consulter le motif ou revoir la proposition.",
+    "nextDefault": "Suivre l’évolution du projet.",
+    "eventCreated": "Projet créé",
+    "eventSubmitted": "Soumis pour validation",
+    "eventRejected": "Projet refusé",
+    "eventValidated": "Projet validé",
+    "eventClosed": "Projet clôturé",
+    "eventComment": "Event Comment"
   },
   "projectVisibility": {
     "GROUPE": "Groep",
@@ -250,7 +341,26 @@
     "members_count": "{{count}} lid/leden",
     "description_soon": "Deze groep krijgt binnenkort een volledige beschrijving.",
     "sending": "Verzenden...",
-    "confirm_leave": "Wil je deze groep echt verlaten? Je verliest de toegang tot de groepsberichten."
+    "confirm_leave": "Wil je deze groep echt verlaten? Je verliest de toegang tot de groepsberichten.",
+    "notFound": "Groupe introuvable.",
+    "workspace": "Espace collaboratif",
+    "publicCount": "Public Count",
+    "lifeMembers": "Membres visibles",
+    "lifeReferents": "Groupes encadrés",
+    "lifeMessaging": "Échanger avec son groupe après adhésion",
+    "joinRequired": "Après adhésion",
+    "groupDiscussion": "Groepsgesprek",
+    "discussionMemberDesc": "Open het groepsgesprek om uitwisselingen en belangrijke informatie te volgen.",
+    "discussionLockedDesc": "Het gesprek is voorbehouden aan aanvaarde groepsleden.",
+    "joinToDiscuss": "Word lid om te praten",
+    "referent": "Referent",
+    "referentToConfirm": "Referent te bevestigen",
+    "noLinkedActivities": "Geen activiteiten gekoppeld aan deze groep.",
+    "noLinkedProjects": "Geen projecten gekoppeld aan deze groep.",
+    "linkedItemsHint": "Elementen verschijnen hier wanneer ze duidelijk aan deze groep gekoppeld zijn.",
+    "meetingPlace": "Vergaderplaats",
+    "meetingMapAria": "Kaart van de vergaderplaats",
+    "addressWithoutCoordinates": "Adres beschikbaar. Exacte coördinaten kunnen later worden toegevoegd."
   },
   "messaging": {
     "title": "Berichten",
@@ -292,7 +402,10 @@
     "noThread": "Geen discussiethread",
     "discussionForGroup": "Discussie - {{group}}",
     "noGroupPendingHint": "Je hebt nog geen actieve groep. Als je aanvraag in behandeling is, worden berichten beschikbaar na aanvaarding.",
-    "errorActiveGroup": "Kan je actieve groep niet laden."
+    "errorActiveGroup": "Kan je actieve groep niet laden.",
+    "openMessaging": "Ouvrir la messagerie",
+    "messageSent": "Message envoyé.",
+    "addEmoji": "Emoji toevoegen"
   },
   "notifications": {
     "title": "Meldingen",
@@ -320,7 +433,9 @@
     "emptyDescriptionMobile": "Je meldingen verschijnen hier zodra een belangrijke actie je account betreft.",
     "loading": "Meldingen laden...",
     "dateNotProvided": "Datum niet ingevuld",
-    "confirmDelete": "Wil je deze melding echt verwijderen?"
+    "confirmDelete": "Wil je deze melding echt verwijderen?",
+    "importantCount": "{{count}} belangrijk",
+    "smartFallback": "Destination exacte indisponible : ouverture de la meilleure page liée."
   },
   "profile": {
     "title": "Mijn profiel",
@@ -355,7 +470,13 @@
     "unknown_date": "onbekende datum",
     "photo": "Profielfoto",
     "confirm": "Bevestigen",
-    "logout": "Afmelden"
+    "logout": "Afmelden",
+    "accountSettings": "Paramètres du compte",
+    "accountSettingsDesc": "Gérez vos informations, votre sécurité et vos préférences.",
+    "securityDesc": "Mot de passe et accès au compte.",
+    "preferences": "Préférences",
+    "notificationPreferencesDesc": "Les préférences détaillées seront disponibles prochainement.",
+    "userProfile": "Gebruikersprofiel"
   },
   "errors": {
     "session_expired": "Je sessie is verlopen. Meld je opnieuw aan.",
@@ -454,7 +575,14 @@
     "searchProjectPlaceholder": "Zoeken op titel...",
     "noProjectFound": "Geen project gevonden.",
     "budgetLabel": "Budget:",
-    "ownerLabel": "Indiener:"
+    "ownerLabel": "Indiener:",
+    "dashboardSummary": "Dashboard Summary",
+    "noRecentActivity": "Aucune activité récente à afficher.",
+    "submittedProjectsDesc": "Projets à relire ou orienter.",
+    "noPendingValidation": "Aucune validation en attente.",
+    "groupsDescription": "Créez les groupes, attribuez un référent et suivez leur statut.",
+    "approve": "Approuver",
+    "reject": "Refuser"
   },
   "ux": {
     "nav": {
@@ -532,6 +660,9 @@
       "openMessaging": "Berichten openen",
       "recentMembers": "Recente leden",
       "upcomingActivities": "Komende activiteiten"
+    },
+    "activities": {
+      "intro": "Découvre les activités, ateliers et événements de la communauté BX-Connect."
     }
   },
   "memberDashboard": {
@@ -573,7 +704,9 @@
       "upcomingActivities": "Komende activiteiten",
       "noActiveGroup": "Je hebt nog geen actieve groep.",
       "messagingAvailable": "Berichten zijn beschikbaar voor je groep.",
-      "messagingUnavailable": "Berichten zijn beschikbaar zodra je in een groep bent aanvaard."
+      "messagingUnavailable": "Berichten zijn beschikbaar zodra je in een groep bent aanvaard.",
+      "currentWithName": "Current With Name",
+      "noGroup": "Rejoindre un groupe"
     },
     "referent": {
       "title": "Mijn begeleider",
@@ -590,7 +723,8 @@
       "empty": "Nog geen inschrijvingen.",
       "fallbackTitle": "Activiteit",
       "upcomingDate": "Komende datum",
-      "dateToConfirm": "Datum nog te bevestigen"
+      "dateToConfirm": "Datum nog te bevestigen",
+      "next": "Prochaine activité"
     },
     "messaging": {
       "title": "Berichten",
@@ -698,7 +832,16 @@
         "MEMBRE_ACTIF": "Actief lid",
         "MEMBRE_ENGAGE": "Betrokken lid"
       }
-    }
+    },
+    "workspaceEyebrow": "Travail en cours",
+    "workspaceTitle": "Mon espace de travail",
+    "unreadNotifications": "Unread Notifications",
+    "projectToFollow": "Projet à suivre",
+    "today": {
+      "eyebrow": "Priorités",
+      "title": "Ce que je dois faire maintenant"
+    },
+    "noPriorityToday": "Aucune action urgente aujourd’hui"
   },
   "statuses": {
     "BROUILLON": "Concept",
@@ -749,7 +892,8 @@
     "errorTemporaryPassword": "Het tijdelijke wachtwoord moet minstens 8 tekens bevatten.",
     "checkFields": "Controleer de velden van het formulier.",
     "firstnameRequired": "Voornaam is verplicht.",
-    "lastnameRequired": "Achternaam is verplicht."
+    "lastnameRequired": "Achternaam is verplicht.",
+    "user": "Utilisateur"
   },
   "referent": {
     "title": "Begeleiders",
@@ -807,7 +951,16 @@
     "projectOwnerUnknown": "Indiener niet ingevuld",
     "projectDate": "Datum",
     "linkedActivities": "Gekoppelde activiteiten",
-    "noLinkedActivities": "Geen activiteit gekoppeld aan deze groep."
+    "noLinkedActivities": "Geen activiteit gekoppeld aan deze groep.",
+    "hello": "Hello",
+    "dashboardSummary": "Dashboard Summary",
+    "requestToReview": "Demande à valider",
+    "memberToWelcome": "Nouveau membre à accueillir",
+    "projectToFollow": "Projet à suivre",
+    "todayActions": "À traiter aujourd’hui",
+    "todayActionsSubtitle": "Uniquement les éléments qui nécessitent une action.",
+    "noActionToday": "Aucune action en attente aujourd’hui",
+    "groupsSubtitle": "Suivez vos groupes assignés, leurs membres et leurs demandes."
   },
   "legal": {
     "eyebrow": "Juridisch kader BX-Connect",
@@ -1000,8 +1153,50 @@
       "dashboard": "Dashboard",
       "projects": "Projecten",
       "activities": "Activiteiten",
-      "supports": "Financiële steun"
-    }
+      "supports": "Financiële steun",
+      "opportunities": "Opportunités"
+    },
+    "opportunities": "Opportunities",
+    "opportunity": "Opportunité",
+    "supportUpdated": "Proposition de soutien mise à jour.",
+    "confirmCancelSupport": "Annuler cette proposition de soutien ? Elle restera visible dans votre historique.",
+    "supportCanceled": "Proposition de soutien annulée.",
+    "opportunitySubmitted": "Opportunité envoyée à l’administration pour validation.",
+    "dashboardSubtitle": "Dashboard Subtitle",
+    "pendingSupports": "En attente",
+    "opportunitiesHint": "Vos publications restent en attente jusqu’à validation par un administrateur.",
+    "newOpportunity": "Nouvelle opportunité",
+    "opportunityTitle": "Titre",
+    "opportunityCategory": "Catégorie",
+    "externalLink": "Lien externe",
+    "expirationDate": "Date d’expiration",
+    "shortDescription": "Description courte",
+    "opportunityContent": "Contenu",
+    "submitForReview": "Envoyer pour validation",
+    "noOpportunities": "Aucune opportunité publiée pour le moment.",
+    "editSupportEyebrow": "Soutien en attente",
+    "editSupportTitle": "Modifier la proposition",
+    "lockedTarget": "Cible non modifiable",
+    "actionsEyebrow": "Priorités partenaire",
+    "myActions": "Mes actions",
+    "supportStatusSummary": "Support Status Summary",
+    "actionHint": "Choisissez “Projets ouverts” ou “Activités ouvertes” dans les onglets pour cibler votre soutien.",
+    "impactEyebrow": "Impact visible",
+    "impactTitle": "À quoi servent vos soutiens",
+    "noImpactYet": "Aucun soutien enregistré pour le moment. Les projets ouverts vous permettent de créer votre premier impact.",
+    "totalSupported": "Montant engagé",
+    "supportedProjects": "Projets soutenus",
+    "supportedActivities": "Activités soutenues",
+    "validatedSupports": "Soutiens validés",
+    "recentSupports": "Derniers soutiens",
+    "nextStep": "Prochaine étape",
+    "noMessage": "Aucun message ajouté.",
+    "waitingAdminReply": "En attente d’une réponse admin.",
+    "nextStepPending": "En attente de réponse admin. Vous pourrez suivre ici la décision et le commentaire.",
+    "nextStepApproved": "Validé par l’administration. Le soutien est pris en compte dans votre impact partenaire.",
+    "nextStepRejected": "Refusé par l’administration. Consultez la réponse admin pour comprendre le motif.",
+    "nextStepFollow": "Statut à suivre dans votre historique de contributions.",
+    "supportNotEditable": "Cette proposition ne peut plus être modifiée ou annulée. Elle a peut-être déjà été traitée par l’administration."
   },
   "partnerSupport": {
     "financial": "Financiële steun",
@@ -1039,7 +1234,24 @@
       "confirmApprove": "De steun van {{name}} goedkeuren?",
       "confirmReject": "De steun van {{name}} weigeren?",
       "approved": "Steun goedgekeurd.",
-      "rejected": "Steun geweigerd."
+      "rejected": "Steun geweigerd.",
+      "searchPlaceholder": "Projet, activité, partenaire, message...",
+      "partnerFilter": "Partenaire",
+      "allPartners": "Tous les partenaires",
+      "targetType": "Type cible",
+      "allTargets": "Projets et activités",
+      "toProcessTitle": "À traiter",
+      "historyTitle": "Historique",
+      "toProcessDescription": "Soutiens en attente de réponse, validation ou refus.",
+      "historyDescription": "Soutiens déjà validés ou refusés avec la réponse admin.",
+      "adminReply": "Réponse admin",
+      "detailTitle": "Fiche soutien partenaire",
+      "exchangeHistory": "Historique des échanges",
+      "partnerProposal": "Proposition partenaire",
+      "noPartnerMessage": "Aucun message ajouté par le partenaire.",
+      "noAdminReply": "Aucune réponse admin pour le moment.",
+      "respondTitle": "Répondre au partenaire",
+      "responsePlaceholder": "Expliquez la décision, les prochaines étapes ou le motif du refus..."
     }
   },
   "superAdmin": {
@@ -1073,7 +1285,8 @@
     "newTemporaryPassword": "Nieuw tijdelijk wachtwoord",
     "reservedAction": "Actie voorbehouden aan SUPER_ADMIN.",
     "logsSubtitle": "Logboek van gevoelige acties op het platform.",
-    "errorLogsLoad": "Kan logs niet laden."
+    "errorLogsLoad": "Kan logs niet laden.",
+    "platformWatch": "Plateforme sous surveillance"
   },
   "audit": {
     "date": "Datum",
@@ -1081,7 +1294,13 @@
     "actor": "Actor",
     "target": "Doel",
     "details": "Details",
-    "noCriticalLog": "Geen kritieke logs."
+    "noCriticalLog": "Geen kritieke logs.",
+    "role": "Rol",
+    "oldStatus": "Oude status",
+    "newStatus": "Nieuwe status",
+    "statusChanges": "Statuswijzigingen",
+    "targetType": "Doeltype",
+    "actorRole": "Actorrol"
   },
   "statistics": {
     "activitiesTotal": "{{count}} activiteit(en) in totaal",
@@ -1116,6 +1335,247 @@
     "all_statuses": "Alle statussen",
     "language_fr": "Français",
     "language_nl": "Nederlands",
-    "language_en": "English"
+    "language_en": "English",
+    "title": "Titel",
+    "type": "Type",
+    "date": "Datum",
+    "by": "Door",
+    "unknownDate": "Onbekende datum",
+    "publish": "Publiceren",
+    "reject": "Weigeren",
+    "all": "Alle",
+    "total": "Total",
+    "filters": "Filtres",
+    "showAll": "Voir tous",
+    "noResults": "Aucun résultat trouvé.",
+    "results": "Résultats",
+    "validate": "Valideren",
+    "notSpecified": "Niet gespecificeerd",
+    "descriptionToComplete": "Beschrijving aan te vullen.",
+    "toFollow": "Te volgen",
+    "unassigned": "Niet toegewezen",
+    "notProvided": "Niet ingevuld"
+  },
+  "footer": {
+    "description": "Het platform dat jongeren, verenigingen en projecten in Brussel verbindt.",
+    "platform": "Platform",
+    "account": "Account",
+    "legal": "Juridisch kader",
+    "copyright": "© 2026 BX-CONNECT — Digitaal platform Bx-Jeunes Impact ASBL",
+    "tagline": "Verbinden • Inspireren • Impact maken",
+    "version": "Versie Alpha 1.0",
+    "appLinks": "Applicatielinks"
+  },
+  "about": {
+    "title": "Over BX-CONNECT",
+    "subtitle": "Het digitale platform voor jongeren en verenigingen in Brussel, geïnspireerd door Bx-Jeunes Impact.",
+    "missionTitle": "Onze missie",
+    "missionP1": "BX-CONNECT is een digitaal platform dat jongeren en actieve verenigingen in Brussel met elkaar verbindt. Het doel is de toegang tot sociale, educatieve en culturele activiteiten te vergemakkelijken en leden projecten te laten voorstellen en vervoegen.",
+    "missionP2": "Geïnspireerd door de reële context van Bx-Jeunes Impact ondersteunt het platform burgerengagement en gemeenschapsontwikkeling voor Brusselse jongeren.",
+    "valuesTitle": "Onze waarden",
+    "values": {
+      "solidarity": {
+        "title": "Solidariteit",
+        "desc": "Jongeren en verenigingen met elkaar verbinden voor collectieve impact."
+      },
+      "innovation": {
+        "title": "Innovatie",
+        "desc": "Digitale middelen gebruiken om kansen toegankelijker te maken."
+      },
+      "inclusion": {
+        "title": "Inclusie",
+        "desc": "Een platform beschikbaar in het Frans, Nederlands en Engels."
+      }
+    },
+    "features": {
+      "activities": "Activiteiten ontdekken, filteren en inschrijven.",
+      "projects": "Samenwerkingsprojecten voorstellen of vervoegen.",
+      "groups": "Thematische groepen vervoegen en met de gemeenschap uitwisselen.",
+      "messaging": "Communiceren met leden van je groep via gesprekken.",
+      "partnershipsTitle": "Partnerschappen",
+      "partnerships": "Partners kunnen projecten en activiteiten financieel ondersteunen."
+    },
+    "actorsTitle": "De gebruikers van het platform",
+    "actors": {
+      "visitor": {
+        "title": "Bezoeker",
+        "desc": "Bekijk publieke activiteiten en informatie zonder registratie."
+      },
+      "member": {
+        "title": "Lid",
+        "desc": "Schrijft zich in voor activiteiten, stelt projecten voor en vervoegt groepen."
+      },
+      "referent": {
+        "title": "Referent",
+        "desc": "Beheert activiteiten en projecten van zijn groep en valideert aanvragen."
+      },
+      "partner": {
+        "title": "Partner",
+        "desc": "Ondersteunt projecten en activiteiten financieel."
+      },
+      "admin": {
+        "title": "Beheerder",
+        "desc": "Beheert het platform, gebruikers en inhoud."
+      }
+    },
+    "contactTitle": "Contact",
+    "contactDesc": "Neem contact op met het BX-CONNECT-team voor vragen of partnerschappen."
+  },
+  "prestations": {
+    "myTitle": "Mijn vrijwilligersprestaties",
+    "validatedTotal": "Goedgekeurd totaal:",
+    "add": "Prestatie invoeren",
+    "validatedHours": "Goedgekeurde uren",
+    "pendingHours": "Uren in afwachting",
+    "pendingCount": "{{count}} in afwachting",
+    "new": "Nieuwe prestatie",
+    "durationHours": "Duur (uren)",
+    "submit": "Prestatie invoeren",
+    "empty": "Nog geen prestaties ingevoerd.",
+    "errorLoad": "Kan prestaties niet laden.",
+    "successCreate": "Prestatie succesvol ingevoerd!",
+    "errorLoadGroups": "Kan je groepen niet laden.",
+    "validatedByReferent": "Gevalideerd door de referent",
+    "validated": "Prestatie gevalideerd!",
+    "errorValidate": "Fout bij validatie.",
+    "refusalReason": "Reden van weigering:",
+    "refused": "Prestatie geweigerd.",
+    "errorRefuse": "Fout bij weigering.",
+    "allTitle": "Alle prestaties",
+    "validationTitle": "Prestaties valideren",
+    "emptyStatus": "Geen prestatie met status \"{{status}}\"."
+  },
+  "announcements": {
+    "errorLoad": "Kan aankondigingen niet laden.",
+    "errorLoadOpportunities": "Kan partneropportuniteiten niet laden.",
+    "noReferentGroup": "Geen referentgroep beschikbaar om deze aankondiging te publiceren.",
+    "published": "Aankondiging gepubliceerd!",
+    "errorPublish": "Fout bij publicatie.",
+    "errorPin": "Fout bij vastpinnen.",
+    "confirmDelete": "Deze aankondiging verwijderen?",
+    "errorDelete": "Fout bij verwijderen.",
+    "opportunityPublished": "Opportuniteit gepubliceerd.",
+    "opportunityRejected": "Opportuniteit geweigerd.",
+    "errorOpportunityPublish": "Fout bij publicatie van de opportuniteit.",
+    "errorOpportunityReject": "Fout bij weigering van de opportuniteit.",
+    "globalPlural": "Globaal",
+    "moderationDescription": "Partnerpublicaties in afwachting van validatie of al behandeld.",
+    "pendingCount": "{{count}} in afwachting",
+    "loadingOpportunities": "Opportuniteiten laden...",
+    "noOpportunitiesToModerate": "Geen partneropportuniteiten om te modereren.",
+    "new": "Nieuwe aankondiging",
+    "content": "Inhoud",
+    "globalOption": "Globaal (alle leden)",
+    "groupOption": "Specifieke groep",
+    "pinThis": "Deze aankondiging vastpinnen",
+    "publish": "Aankondiging publiceren",
+    "empty": "Nog geen aankondigingen.",
+    "global": "Globaal",
+    "system": "Systeem",
+    "pin": "Vastpinnen",
+    "unpin": "Losmaken",
+    "openLink": "Link openen"
+  },
+  "opportunityCategories": {
+    "EMPLOI": "Job",
+    "STAGE": "Stage",
+    "FORMATION": "Opleiding",
+    "EVENEMENT": "Evenement",
+    "APPEL_PROJET": "Projectoproep",
+    "PUBLICITE": "Advertentie"
+  },
+  "opportunityModeration": {
+    "EN_ATTENTE": "In afwachting",
+    "PUBLIEE": "Gepubliceerd",
+    "REFUSEE": "Geweigerd"
+  },
+  "location": {
+    "title": "Locatie",
+    "helper": "Zoek coördinaten op basis van het adres of klik rechtstreeks op de kaart.",
+    "coordinatesSelected": "Coördinaten geselecteerd op de kaart.",
+    "enterAddressOrCommune": "Voer een adres of gemeente in.",
+    "searchingCoordinates": "Coördinaten zoeken...",
+    "addressNotFound": "Adres niet gevonden.",
+    "coordinatesFound": "Coördinaten gevonden.",
+    "serviceUnavailable": "Kan de geolocatiedienst niet bereiken.",
+    "searching": "Zoeken...",
+    "findCoordinates": "Coördinaten zoeken",
+    "mapAria": "Kaart om coördinaten te selecteren",
+    "openRoute": "Route bekijken"
+  },
+  "payment": {
+    "verifyError": "Kan betaling niet verifiëren.",
+    "verifying": "Betaling controleren...",
+    "verifyImpossible": "Verificatie onmogelijk",
+    "backDashboard": "Terug naar dashboard",
+    "successTitle": "Betaling geslaagd!",
+    "successMessage": "Bedankt voor je steun aan BX-CONNECT. Je bijdrage maakt het verschil!",
+    "amount": "Bedrag",
+    "paid": "Betaald",
+    "viewHistory": "Betaalgeschiedenis bekijken",
+    "cancelTitle": "Betaling geannuleerd",
+    "cancelMessage": "Je hebt de betaling geannuleerd. Er werd geen bedrag aangerekend. Je kunt later opnieuw proberen.",
+    "checkoutUrlMissing": "Betalings-URL niet ontvangen.",
+    "stripeTitle": "Steunen via Stripe",
+    "chooseAmount": "Kies een bedrag",
+    "customAmount": "Aangepast bedrag",
+    "optionalMessage": "Bericht (optioneel)",
+    "supportMessagePlaceholder": "Laat een steunbericht achter...",
+    "provider": "Provider",
+    "stripeSecure": "Stripe (beveiligd)",
+    "target": "Doel",
+    "redirecting": "Doorverwijzen...",
+    "payWithStripe": "Betaal {{amount}} € met Stripe",
+    "securityNote": "Beveiligde betaling via Stripe — Je bankgegevens worden nooit opgeslagen",
+    "historyLoadError": "Kan geschiedenis niet laden.",
+    "historyTitle": "Betaalgeschiedenis",
+    "totalPaid": "Totaal betaald:",
+    "newSupport": "Nieuwe steun",
+    "empty": "Nog geen betalingen.",
+    "emptyStatus": "Geen betaling met status \"{{status}}\".",
+    "discoverActivitiesToSupport": "Ontdek activiteiten om te steunen",
+    "bxSupport": "BX-CONNECT-steun"
+  },
+  "activityFeed": {
+    "title": "Mon fil d’activité",
+    "adminSubtitle": "Validations, créations et changements de statut à surveiller.",
+    "memberSubtitle": "Messages, activités, projets et notifications importantes.",
+    "empty": "Aucune activité récente pour le moment.",
+    "activityDate": "Activity Date",
+    "projectTracked": "Projet suivi",
+    "currentGroup": "Groupe actuel",
+    "partnerSubtitle": "Soutiens, projets ouverts et activités disponibles.",
+    "referentSubtitle": "Demandes, membres, activités et projets liés à vos groupes.",
+    "superAdminSubtitle": "Actions sensibles, sécurité et activité administrative."
+  },
+  "adminMobile": {
+    "opportunitiesTitle": "Opportunités à modérer"
+  },
+  "search": {
+    "global": "Globale zoekopdracht",
+    "placeholder": "Zoeken in BX-Connect",
+    "clear": "Zoekopdracht wissen",
+    "loading": "Zoeken...",
+    "noResults": "Geen resultaten",
+    "unavailable": "Zoeken is niet beschikbaar."
+  },
+  "upload": {
+    "invalidType": "Niet toegestaan bestandstype. Gebruik JPEG, PNG, WEBP of GIF.",
+    "fileTooLarge": "Bestand te groot (max. 5 MB)."
+  },
+  "sidebar": {
+    "open": "Sidebar openen",
+    "collapse": "Sidebar verkleinen",
+    "mobileMenu": "BX-Connect-menu"
+  },
+  "dashboardCharts": {
+    "title": "Visuele indicatoren",
+    "adminSubtitle": "Verdelingen berekend op basis van de gegevens die in dit dashboard zijn geladen.",
+    "superAdminSubtitle": "Samenvatting van beheerdersaccounts en geauditeerde activiteit.",
+    "projectsByStatus": "Projecten per status",
+    "activitiesByStatus": "Activiteiten per status",
+    "supportsByStatus": "Steun per status",
+    "adminsByStatus": "Beheerders per status",
+    "auditOverview": "Auditoverzicht"
   }
 }

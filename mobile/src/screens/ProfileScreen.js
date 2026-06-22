@@ -15,6 +15,7 @@ import {
   getPushPreferences,
   unregisterCurrentPushDevice,
 } from '../services/pushNotifications';
+import { getStoredToken } from '../services/secureAuthStorage';
 import {
   ActionCard,
   Badge,
@@ -135,7 +136,7 @@ export default function ProfileScreen({ navigation }) {
   };
 
   const getToken = async () => {
-    return await AsyncStorage.getItem('token');
+    return await getStoredToken();
   };
 
   const handleChangePassword = async () => {
@@ -279,7 +280,7 @@ export default function ProfileScreen({ navigation }) {
         </View>
         <Text style={styles.profileName}>{profil?.prenom} {profil?.nom}</Text>
         <Badge
-          label={t(`roles.${profil?.role}`, { defaultValue: profil?.role })}
+          label={t(`roles.${profil?.role}`)}
           color={COLORS.info}
         />
         <TouchableOpacity style={styles.photoLabelButton} onPress={handlePhotoSoon}>

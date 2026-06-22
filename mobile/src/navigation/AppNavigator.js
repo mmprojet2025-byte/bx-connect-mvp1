@@ -170,13 +170,13 @@ function commonPrivateScreens(t) {
       key="global-search"
       name="GlobalSearch"
       component={GlobalSearchScreen}
-      options={{ ...headerStyle, title: t('search.title', { defaultValue: 'Recherche' }) }}
+      options={{ ...headerStyle, title: t('search.title') }}
     />,
     <Stack.Screen
       key="annonces-access"
       name="AnnoncesAccess"
       component={AnnoncesScreen}
-      options={{ ...headerStyle, title: t('navigation.announcements', { defaultValue: 'Annonces' }) }}
+      options={{ ...headerStyle, title: t('navigation.announcements') }}
     />,
   ];
 }
@@ -203,7 +203,7 @@ function makeStack(ScreenComponent, title, roleLabel, unreadNotifications) {
               roleLabel,
               unreadNotifications,
               notificationLabel: t('navigation.notifications'),
-              searchLabel: t('search.title', { defaultValue: 'Recherche' }),
+              searchLabel: t('search.title'),
               navigation,
             }),
             headerBackVisible: false,
@@ -234,7 +234,7 @@ function makeDashboardStack(t, roleLabel, unreadNotifications, access) {
               roleLabel,
               unreadNotifications,
               notificationLabel: t('navigation.notifications'),
-              searchLabel: t('search.title', { defaultValue: 'Recherche' }),
+              searchLabel: t('search.title'),
               navigation,
             }),
             headerBackVisible: false,
@@ -261,14 +261,14 @@ function makeDashboardStack(t, roleLabel, unreadNotifications, access) {
           <Stack.Screen
             name="SupportsAccess"
             component={PartnerSupportsScreen}
-            options={{ ...headerStyle, title: t('partner.supportsAndOpportunities', { defaultValue: 'Soutiens & Opportunités' }) }}
+            options={{ ...headerStyle, title: t('partner.supportsAndOpportunities') }}
           />
         ) : null}
         {access.partnerProfile ? (
           <Stack.Screen
             name="PartnerProfileAccess"
             component={PartnerProfileScreen}
-            options={{ ...headerStyle, title: t('partnerInstitution.profileTitle', { defaultValue: 'Profil partenaire' }) }}
+            options={{ ...headerStyle, title: t('partnerInstitution.profileTitle') }}
           />
         ) : null}
         {access.referentTools ? (
@@ -276,12 +276,12 @@ function makeDashboardStack(t, roleLabel, unreadNotifications, access) {
             <Stack.Screen
               name="ReferentRequestsAccess"
               component={ReferentRequestsScreen}
-              options={{ ...headerStyle, title: t('referentMobile.requestsTitle', { defaultValue: 'Demandes' }) }}
+              options={{ ...headerStyle, title: t('referentMobile.requestsTitle') }}
             />
             <Stack.Screen
               name="ReferentMembersAccess"
               component={ReferentMembersScreen}
-              options={{ ...headerStyle, title: t('referentMobile.membersTitle', { defaultValue: 'Membres' }) }}
+              options={{ ...headerStyle, title: t('referentMobile.membersTitle') }}
             />
           </>
         ) : null}
@@ -289,42 +289,42 @@ function makeDashboardStack(t, roleLabel, unreadNotifications, access) {
           <Stack.Screen
             name="AdminPendingGroupsAccess"
             component={AdminPendingGroupsScreen}
-            options={{ ...headerStyle, title: t('adminMobile.pendingGroupsTitle', { defaultValue: 'Groupes en attente' }) }}
+            options={{ ...headerStyle, title: t('adminMobile.pendingGroupsTitle') }}
           />
         ) : null}
         {access.opportunities ? (
           <Stack.Screen
             name="AdminOpportunitiesAccess"
             component={AdminOpportunitiesScreen}
-            options={{ ...headerStyle, title: t('adminMobile.opportunitiesTitle', { defaultValue: 'Opportunités à modérer' }) }}
+            options={{ ...headerStyle, title: t('adminMobile.opportunitiesTitle') }}
           />
         ) : null}
         {access.referents ? (
           <Stack.Screen
             name="AdminReferentsAccess"
             component={AdminReferentsScreen}
-            options={{ ...headerStyle, title: t('adminMobile.referentsTitle', { defaultValue: 'Référents' }) }}
+            options={{ ...headerStyle, title: t('adminMobile.referentsTitle') }}
           />
         ) : null}
         {access.supportsAdmin ? (
           <Stack.Screen
             name="AdminPartnerSupportsAccess"
             component={AdminPartnerSupportsScreen}
-            options={{ ...headerStyle, title: t('adminMobile.partnerSupportsTitle', { defaultValue: 'Soutiens partenaires' }) }}
+            options={{ ...headerStyle, title: t('adminMobile.partnerSupportsTitle') }}
           />
         ) : null}
         {access.submittedProjects ? (
           <Stack.Screen
             name="AdminSubmittedProjectsAccess"
             component={AdminSubmittedProjectsScreen}
-            options={{ ...headerStyle, title: t('adminMobile.submittedProjects', { defaultValue: 'Projets soumis' }) }}
+            options={{ ...headerStyle, title: t('adminMobile.submittedProjects') }}
           />
         ) : null}
         {access.logs ? (
           <Stack.Screen
             name="SuperAdminLogsAccess"
             component={SuperAdminLogsScreen}
-            options={{ ...headerStyle, title: t('superAdmin.logsTitle', { defaultValue: 'Journal d’activité' }) }}
+            options={{ ...headerStyle, title: t('superAdmin.logsTitle') }}
           />
         ) : null}
       </Stack.Navigator>
@@ -346,7 +346,7 @@ function makeNetworkStack(title, roleLabel, unreadNotifications) {
               roleLabel,
               unreadNotifications,
               notificationLabel: t('navigation.notifications'),
-              searchLabel: t('search.title', { defaultValue: 'Recherche' }),
+              searchLabel: t('search.title'),
               navigation,
             }),
             headerBackVisible: false,
@@ -377,7 +377,7 @@ function makeManagementStack(title, roleLabel, unreadNotifications) {
               roleLabel,
               unreadNotifications,
               notificationLabel: t('navigation.notifications'),
-              searchLabel: t('search.title', { defaultValue: 'Recherche' }),
+              searchLabel: t('search.title'),
               navigation,
             }),
             headerBackVisible: false,
@@ -385,17 +385,17 @@ function makeManagementStack(title, roleLabel, unreadNotifications) {
         />
         <Stack.Screen name="UsersAccess" component={AdminUsersScreen} options={{ ...headerStyle, title: t('navigation.users') }} />
         {isSuperAdmin ? (
-          <Stack.Screen name="SuperAdminLogsAccess" component={SuperAdminLogsScreen} options={{ ...headerStyle, title: t('superAdmin.logsTitle', { defaultValue: 'Journal d’activité' }) }} />
+          <Stack.Screen name="SuperAdminLogsAccess" component={SuperAdminLogsScreen} options={{ ...headerStyle, title: t('superAdmin.logsTitle') }} />
         ) : null}
         <Stack.Screen name="GroupesAccess" component={GroupesScreen} options={{ ...headerStyle, title: t('navigation.groups') }} />
         <Stack.Screen name="ProjectsAccess" component={ProjectsScreen} options={{ ...headerStyle, title: t('navigation.projects') }} />
-        <Stack.Screen name="AdminPendingGroupsAccess" component={AdminPendingGroupsScreen} options={{ ...headerStyle, title: t('adminMobile.pendingGroupsTitle', { defaultValue: 'Groupes en attente' }) }} />
+        <Stack.Screen name="AdminPendingGroupsAccess" component={AdminPendingGroupsScreen} options={{ ...headerStyle, title: t('adminMobile.pendingGroupsTitle') }} />
         {isAdmin ? (
           <>
-            <Stack.Screen name="AdminOpportunitiesAccess" component={AdminOpportunitiesScreen} options={{ ...headerStyle, title: t('adminMobile.opportunitiesTitle', { defaultValue: 'Opportunités à modérer' }) }} />
-            <Stack.Screen name="AdminReferentsAccess" component={AdminReferentsScreen} options={{ ...headerStyle, title: t('adminMobile.referentsTitle', { defaultValue: 'Référents' }) }} />
-            <Stack.Screen name="AdminPartnerSupportsAccess" component={AdminPartnerSupportsScreen} options={{ ...headerStyle, title: t('adminMobile.partnerSupportsTitle', { defaultValue: 'Soutiens partenaires' }) }} />
-            <Stack.Screen name="AdminSubmittedProjectsAccess" component={AdminSubmittedProjectsScreen} options={{ ...headerStyle, title: t('adminMobile.submittedProjects', { defaultValue: 'Projets soumis' }) }} />
+            <Stack.Screen name="AdminOpportunitiesAccess" component={AdminOpportunitiesScreen} options={{ ...headerStyle, title: t('adminMobile.opportunitiesTitle') }} />
+            <Stack.Screen name="AdminReferentsAccess" component={AdminReferentsScreen} options={{ ...headerStyle, title: t('adminMobile.referentsTitle') }} />
+            <Stack.Screen name="AdminPartnerSupportsAccess" component={AdminPartnerSupportsScreen} options={{ ...headerStyle, title: t('adminMobile.partnerSupportsTitle') }} />
+            <Stack.Screen name="AdminSubmittedProjectsAccess" component={AdminSubmittedProjectsScreen} options={{ ...headerStyle, title: t('adminMobile.submittedProjects') }} />
           </>
         ) : null}
         <Stack.Screen name="NotificationsAccess" component={NotificationsScreen} options={{ ...headerStyle, title: t('navigation.notifications') }} />
@@ -453,56 +453,54 @@ function NetworkHome({ navigation }) {
   return (
     <ScrollView style={navigatorStyles.hubPage} contentContainerStyle={navigatorStyles.hubContent}>
       <Text style={navigatorStyles.hubTitle}>
-        {t('navigation.groups', { defaultValue: 'Réseau' })}
+        {t('navigation.groups')}
       </Text>
       <Text style={navigatorStyles.hubSubtitle}>
-        {t('memberDashboard.mobileOverview', {
-          defaultValue: 'Retrouvez vos groupes et les projets de la communauté.',
-        })}
+        {t('memberDashboard.mobileOverview')}
       </Text>
 
       <View style={navigatorStyles.networkStats}>
-        <NetworkStat value={groupesActifs} label={t('navigation.groups', { defaultValue: 'Groupes' })} />
-        <NetworkStat value={projetsActifs} label={t('navigation.projects', { defaultValue: 'Projets' })} />
+        <NetworkStat value={groupesActifs} label={t('navigation.groups')} />
+        <NetworkStat value={projetsActifs} label={t('navigation.projects')} />
         <NetworkStat
           value={groupes.reduce((total, groupe) => total + Number(groupe.nombreMembres || 0), 0)}
-          label={t('groups.members', { defaultValue: 'Membres' })}
+          label={t('groups.members')}
         />
       </View>
 
       <HubLink
         icon="group"
         title={t('navigation.groups')}
-        description={t('groups.available_will_appear', { defaultValue: 'Découvrir et suivre les groupes.' })}
+        description={t('groups.available_will_appear')}
         onPress={() => navigation.navigate('GroupesAccess')}
       />
       <HubLink
         icon="project"
         title={t('navigation.projects')}
-        description={t('projects.public_will_appear', { defaultValue: 'Découvrir les projets de la communauté.' })}
+        description={t('projects.public_will_appear')}
         onPress={() => navigation.navigate('ProjectsAccess')}
       />
 
       <View style={navigatorStyles.previewSection}>
         <View style={navigatorStyles.previewHeader}>
           <Text style={navigatorStyles.previewTitle}>
-            {t('groups.business_groups', { defaultValue: 'Groupes actifs' })}
+            {t('groups.business_groups')}
           </Text>
           <TouchableOpacity onPress={() => navigation.navigate('GroupesAccess')}>
-            <Text style={navigatorStyles.previewAction}>{t('memberHome.seeAll', { defaultValue: 'Tout voir' })}</Text>
+            <Text style={navigatorStyles.previewAction}>{t('memberHome.seeAll')}</Text>
           </TouchableOpacity>
         </View>
         {loading ? (
           <ActivityIndicator color="#2563EB" style={navigatorStyles.previewLoader} />
         ) : groupes.length === 0 ? (
-          <Text style={navigatorStyles.previewEmpty}>{t('groups.available_will_appear', { defaultValue: 'Les groupes apparaîtront ici.' })}</Text>
+          <Text style={navigatorStyles.previewEmpty}>{t('groups.available_will_appear')}</Text>
         ) : (
           groupes.slice(0, 3).map((groupe) => (
             <NetworkPreviewCard
               key={`groupe-${groupe.id}`}
               icon="group"
               title={groupe.nom}
-              subtitle={groupe.description || groupe.theme || t('groups.title', { defaultValue: 'Groupe' })}
+              subtitle={groupe.description || groupe.theme || t('groups.title')}
               badge={t('groups.members_count', { count: groupe.nombreMembres ?? 0 })}
               color="#0f766e"
               onPress={() => navigation.navigate('GroupesAccess')}
@@ -514,23 +512,23 @@ function NetworkHome({ navigation }) {
       <View style={navigatorStyles.previewSection}>
         <View style={navigatorStyles.previewHeader}>
           <Text style={navigatorStyles.previewTitle}>
-            {t('projects.business_projects', { defaultValue: 'Projets' })}
+            {t('projects.business_projects')}
           </Text>
           <TouchableOpacity onPress={() => navigation.navigate('ProjectsAccess')}>
-            <Text style={navigatorStyles.previewAction}>{t('memberHome.discover', { defaultValue: 'Découvrir' })}</Text>
+            <Text style={navigatorStyles.previewAction}>{t('memberHome.discover')}</Text>
           </TouchableOpacity>
         </View>
         {loading ? (
           <ActivityIndicator color="#2563EB" style={navigatorStyles.previewLoader} />
         ) : projets.length === 0 ? (
-          <Text style={navigatorStyles.previewEmpty}>{t('projects.public_will_appear', { defaultValue: 'Les projets apparaîtront ici.' })}</Text>
+          <Text style={navigatorStyles.previewEmpty}>{t('projects.public_will_appear')}</Text>
         ) : (
           projets.slice(0, 3).map((projet) => (
             <NetworkPreviewCard
               key={`projet-${projet.id}`}
               icon="project"
               title={projet.titre}
-              subtitle={projet.groupeNom || projet.description || t('navigation.projects', { defaultValue: 'Projet' })}
+              subtitle={projet.groupeNom || projet.description || t('navigation.projects')}
               badge={projet.statut || 'PROJET'}
               color="#F97316"
               onPress={() => navigation.navigate('ProjectsAccess')}
@@ -597,43 +595,43 @@ function ManagementHome({ navigation }) {
           <HubLink
             icon="group"
             title={t('navigation.groups')}
-            description={t('adminMobile.groupsAction', { defaultValue: 'Suivre les groupes et leurs référents.' })}
+            description={t('adminMobile.groupsAction')}
             onPress={() => navigation.navigate('GroupesAccess')}
           />
           <HubLink
             icon="project"
             title={t('navigation.projects')}
-            description={t('adminMobile.projectsAction', { defaultValue: 'Voir les projets suivis par l’association.' })}
+            description={t('adminMobile.projectsAction')}
             onPress={() => navigation.navigate('ProjectsAccess')}
           />
           <HubLink
             icon="warning"
-            title={t('adminMobile.pendingGroupsTitle', { defaultValue: 'Groupes en attente' })}
-            description={t('adminMobile.pendingGroupsAction', { defaultValue: 'Valider ou refuser les groupes proposés.' })}
+            title={t('adminMobile.pendingGroupsTitle')}
+            description={t('adminMobile.pendingGroupsAction')}
             onPress={() => navigation.navigate('AdminPendingGroupsAccess')}
           />
           <HubLink
             icon="profile"
-            title={t('adminMobile.referentsTitle', { defaultValue: 'Référents' })}
-            description={t('adminMobile.referentsAction', { defaultValue: 'Consulter les référents actifs et inactifs.' })}
+            title={t('adminMobile.referentsTitle')}
+            description={t('adminMobile.referentsAction')}
             onPress={() => navigation.navigate('AdminReferentsAccess')}
           />
           <HubLink
             icon="wallet"
-            title={t('adminMobile.partnerSupportsTitle', { defaultValue: 'Soutiens partenaires' })}
-            description={t('adminMobile.partnerSupportsAction', { defaultValue: 'Valider ou refuser les soutiens en attente.' })}
+            title={t('adminMobile.partnerSupportsTitle')}
+            description={t('adminMobile.partnerSupportsAction')}
             onPress={() => navigation.navigate('AdminPartnerSupportsAccess')}
           />
           <HubLink
             icon="project"
-            title={t('adminMobile.submittedProjects', { defaultValue: 'Projets soumis' })}
-            description={t('adminMobile.submittedProjectsAction', { defaultValue: 'Suivre les projets qui attendent une décision.' })}
+            title={t('adminMobile.submittedProjects')}
+            description={t('adminMobile.submittedProjectsAction')}
             onPress={() => navigation.navigate('AdminSubmittedProjectsAccess')}
           />
           <HubLink
             icon="alert"
-            title={t('adminMobile.opportunitiesTitle', { defaultValue: 'Opportunités à modérer' })}
-            description={t('adminMobile.opportunitiesAction', { defaultValue: 'Publier ou refuser les opportunités partenaires.' })}
+            title={t('adminMobile.opportunitiesTitle')}
+            description={t('adminMobile.opportunitiesAction')}
             onPress={() => navigation.navigate('AdminOpportunitiesAccess')}
           />
         </>
@@ -641,8 +639,8 @@ function ManagementHome({ navigation }) {
       {isSuperAdmin ? (
         <HubLink
           icon="lock"
-          title={t('superAdmin.logsTitle', { defaultValue: 'Journal d’activité' })}
-          description={t('superAdmin.logsAction', { defaultValue: 'Consulter les actions auditées de la plateforme.' })}
+          title={t('superAdmin.logsTitle')}
+          description={t('superAdmin.logsAction')}
           onPress={() => navigation.navigate('SuperAdminLogsAccess')}
         />
       ) : null}
@@ -691,7 +689,7 @@ function PrivateTabs() {
     return () => { cancelled = true; };
   }, [isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire]);
 
-  const roleLabel = role ? t(`roles.${role}`, { defaultValue: role }) : '';
+  const roleLabel = role ? t(`roles.${role}`) : '';
   const communityLabels = getCommunityLabels(i18n.language);
   const DashboardStack = makeDashboardStack(t, roleLabel, unreadNotifications, {
     groups: isAdmin || isReferent,
@@ -709,7 +707,7 @@ function PrivateTabs() {
   const MemberHomeStack    = makeStack(MemberHomeScreen, 'BX-CONNECT', roleLabel, unreadNotifications);
   const ActivitiesStack    = makeStack(ActivitiesScreen, t('navigation.activities'), roleLabel, unreadNotifications);
   const ProjectsStack      = makeStack(ProjectsScreen, t('navigation.projects'), roleLabel, unreadNotifications);
-  const SupportsStack      = makeStack(PartnerSupportsScreen, t('partner.supportsAndOpportunities', { defaultValue: 'Soutiens & Opportunités' }), roleLabel, unreadNotifications);
+  const SupportsStack      = makeStack(PartnerSupportsScreen, t('partner.supportsAndOpportunities'), roleLabel, unreadNotifications);
   const NetworkStack       = makeNetworkStack(communityLabels.network, roleLabel, unreadNotifications);
   const ManagementStack    = makeManagementStack(communityLabels.management, roleLabel, unreadNotifications);
   const MessagerieStack    = makeStack(MessagerieScreen, t('navigation.messaging'), roleLabel, unreadNotifications);
@@ -833,7 +831,7 @@ function getTabsForRole({ isMembre, isReferent, isAdmin, isSuperAdmin, isPartena
       tab('TabActivities', t('navigation.activities'), 'activity', stacks.ActivitiesStack),
       tab('TabNotifications', t('navigation.notifications'), 'bell', stacks.NotificationsStack),
       tab('TabProfile', t('navigation.profile'), 'profile', stacks.ProfileStack),
-      tab('TabSupports', t('partner.supports', { defaultValue: 'Soutiens' }), 'wallet', stacks.SupportsStack, true),
+      tab('TabSupports', t('partner.supports'), 'wallet', stacks.SupportsStack, true),
     ];
   }
 

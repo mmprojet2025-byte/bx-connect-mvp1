@@ -4,8 +4,10 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
 import AppIcon from '../../components/ui/AppIcons';
+import { useTranslation } from 'react-i18next';
 
 export default function HistoriquePaiements() {
+  const { t, i18n } = useTranslation();
   const [paiements, setPaiements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -20,7 +22,7 @@ export default function HistoriquePaiements() {
       const res = await api.get('/stripe/historique');
       setPaiements(res.data);
     } catch {
-      setError('Impossible de charger l\'historique.');
+      setError(t('payment.historyLoadError'));
     } finally {
       setLoading(false);
     }
@@ -60,10 +62,10 @@ export default function HistoriquePaiements() {
           <div>
             <h1 className="flex items-center gap-2 text-2xl font-bold text-blue-900">
               <AppIcon name="Folder" className="h-6 w-6" />
-              Historique des paiements
+              {t('payment.historyTitle')}
             </h1>
             <p className="text-gray-500 text-sm mt-1">
-              Total payé : <strong className="text-green-700">{totalPaye.toFixed(2)} €</strong>
+              {t('payment.totalPaid')} <strong className="text-green-700">{totalPaye.toFixed(2)} €</strong>
             </p>
           </div>
           <Link
@@ -71,7 +73,7 @@ export default function HistoriquePaiements() {
             className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600"
           >
             <AppIcon name="PlusCircle" className="h-4 w-4" />
-            Nouveau soutien
+            {t('payment.newSupport')}
           </Link>
         </div>
 
@@ -103,16 +105,16 @@ export default function HistoriquePaiements() {
         {loading ? (
           <div className="text-center py-12 text-gray-400">
             <AppIcon name="Clock" className="mx-auto mb-3 h-10 w-10 text-blue-300" />
-            <p>Chargement...</p>
+            <p>{t('common.loading')}</p>
           </div>
         ) : paiementsFiltres.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-2xl shadow">
             <AppIcon name="CreditCard" className="mx-auto mb-3 h-12 w-12 text-blue-300" />
             <p className="text-gray-500 text-sm mb-4">
-              {filtre === 'TOUS' ? 'Aucun paiement pour le moment.' : `Aucun paiement avec le statut "${filtre}".`}
+              {filtre === 'TOUS' ? t('payment.empty') : t('payment.emptyStatus', { status: filtre })}
             </p>
             <Link to="/activites" className="inline-flex items-center justify-center gap-1.5 text-blue-700 text-sm hover:underline">
-              Découvrir les activités à soutenir
+              {t('payment.discoverActivitiesToSupport')}
               <AppIcon name="Calendar" className="h-4 w-4" />
             </Link>
           </div>
@@ -133,11 +135,11 @@ export default function HistoriquePaiements() {
                       <span className="inline-flex items-center gap-1.5"><AppIcon name="Folder" className="h-4 w-4" />{p.activiteTitre}</span>
                     ) : p.projetTitre ? (
                       <span className="inline-flex items-center gap-1.5"><AppIcon name="Rocket" className="h-4 w-4" />{p.projetTitre}</span>
-                    ) : 'Soutien BX-CONNECT'}
+                    ) : t('payment.bxSupport')}
                   </p>
                   <p className="text-xs text-gray-400 mt-0.5">
                     {p.fournisseur || 'STRIPE'} ·{' '}
-                    {p.dateCreation ? new Date(p.dateCreation).toLocaleDateString('fr-BE', {
+                    {p.dateCreation ? new Date(p.dateCreation).toLocaleDateString(i18n.language || 'fr-BE', {
                       day: '2-digit', month: '2-digit', year: 'numeric'
                     }) : '—'}
                   </p>

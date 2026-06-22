@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import api from '../api/axios';
 import { userFriendlyError } from '../utils/userFriendlyError';
 import AppIcon from './ui/AppIcons';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Composant réutilisable pour l'upload d'images
@@ -19,6 +20,7 @@ export default function ImageUpload({
   shape = 'rectangle',
   label = 'Changer l\'image',
 }) {
+  const { t } = useTranslation();
   const [preview, setPreview] = useState(currentUrl);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -31,11 +33,11 @@ export default function ImageUpload({
     // Validation côté client
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowedTypes.includes(file.type)) {
-      setError('Type non autorisé. Utilisez JPEG, PNG, WEBP ou GIF.');
+      setError(t('upload.invalidType'));
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setError('Fichier trop volumineux (max 5 Mo).');
+      setError(t('upload.fileTooLarge'));
       return;
     }
 
@@ -59,7 +61,7 @@ export default function ImageUpload({
       setPreview(url);
       if (onUploadSuccess) onUploadSuccess(url);
     } catch (err) {
-      setError(userFriendlyError(err, 'Action impossible.'));
+      setError(userFriendlyError(err, t('common.error')));
       setPreview(currentUrl); // Revenir à l'image précédente
     } finally {
       setLoading(false);
@@ -98,7 +100,12 @@ export default function ImageUpload({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
       {/* Zone de prévisualisation cliquable */}
-      <div style={containerStyle} onClick={() => fileInputRef.current?.click()}>
+      <button
+        type="button"
+        style={{ ...containerStyle, padding: 0 }}
+        onClick={() => fileInputRef.current?.click()}
+        aria-label={label}
+      >
         {preview ? (
           <img
             src={preview}
@@ -132,7 +139,7 @@ export default function ImageUpload({
             </span>
           </div>
         )}
-      </div>
+      </button>
 
       {/* Input fichier caché */}
       <input

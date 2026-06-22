@@ -27,11 +27,11 @@ export default function PaymentScreen({ route }) {
 
   const handlePayer = async () => {
     if (!isAuthenticated) {
-      setError('Vous devez être connecté pour effectuer un paiement.');
+      setError(t('payment.loginRequired'));
       return;
     }
     if (!montant || parseFloat(montant) < 1) {
-      setError('Le montant minimum est de 1 €.');
+      setError(t('payment.minimumAmount'));
       return;
     }
 
@@ -59,11 +59,11 @@ export default function PaymentScreen({ route }) {
           if (supported) {
             await Linking.openURL(res.data.checkoutUrl);
             setSuccess({
-              message: 'Redirection vers Stripe...',
+              message: t('payment.redirectingStripe'),
               sessionId: res.data.stripeSessionId,
             });
           } else {
-            setError('Impossible d\'ouvrir la page de paiement.');
+            setError(t('payment.openCheckoutError'));
           }
         }
       }
@@ -80,12 +80,12 @@ export default function PaymentScreen({ route }) {
         <View style={styles.successIcon}>
           <AppIcon name="checkmark-circle" size={42} color="#22C55E" />
         </View>
-        <Text style={styles.successTitle}>Redirection en cours</Text>
+        <Text style={styles.successTitle}>{t('payment.redirectingTitle')}</Text>
         <Text style={styles.successText}>
-          {"Complétez votre paiement dans le navigateur qui vient de s'ouvrir."}
+          {t('payment.completeInBrowser')}
         </Text>
         <Text style={styles.successHint}>
-          {"Après le paiement, revenez dans l'application."}
+          {t('payment.returnAfterPayment')}
         </Text>
       </View>
     );
@@ -98,9 +98,9 @@ export default function PaymentScreen({ route }) {
       {/* En-tête */}
       <View style={styles.header}>
         <AppIcon name="payment" size={34} color="#38BDF8" />
-        <Text style={styles.headerTitle}>Soutenir via Stripe</Text>
+        <Text style={styles.headerTitle}>{t('payment.supportViaStripe')}</Text>
         <Text style={styles.headerSubtitle}>
-          {projetId ? 'Projet' : 'Activité'} : {titre}
+          {projetId ? t('payment.projectTarget') : t('payment.activityTarget')} : {titre}
         </Text>
       </View>
 
@@ -113,7 +113,7 @@ export default function PaymentScreen({ route }) {
       )}
 
       {/* Montants rapides */}
-      <Text style={styles.label}>Choisir un montant</Text>
+      <Text style={styles.label}>{t('payment.chooseAmount')}</Text>
       <View style={styles.montantsGrid}>
         {MONTANTS_RAPIDES.map(m => (
           <TouchableOpacity
@@ -129,7 +129,7 @@ export default function PaymentScreen({ route }) {
       </View>
 
       {/* Montant personnalisé */}
-      <Text style={styles.label}>Ou saisir un montant</Text>
+      <Text style={styles.label}>{t('payment.customAmount')}</Text>
       <View style={styles.inputRow}>
         <Text style={styles.euroSign}>€</Text>
         <TextInput
@@ -137,18 +137,18 @@ export default function PaymentScreen({ route }) {
           value={montant}
           onChangeText={setMontant}
           keyboardType="numeric"
-          placeholder="Montant"
+          placeholder={t('payment.amountPlaceholder')}
           placeholderTextColor="#94a3b8"
         />
       </View>
 
       {/* Message */}
-      <Text style={styles.label}>Message (optionnel)</Text>
+      <Text style={styles.label}>{t('payment.optionalMessage')}</Text>
       <TextInput
         style={styles.messageInput}
         value={message}
         onChangeText={setMessage}
-        placeholder="Laissez un message de soutien..."
+        placeholder={t('payment.messagePlaceholder')}
         placeholderTextColor="#94a3b8"
         multiline
         numberOfLines={3}
@@ -157,15 +157,15 @@ export default function PaymentScreen({ route }) {
       {/* Récapitulatif */}
       <View style={styles.recap}>
         <View style={styles.recapRow}>
-          <Text style={styles.recapLabel}>Montant</Text>
+          <Text style={styles.recapLabel}>{t('payment.amount')}</Text>
           <Text style={styles.recapValue}>{montant} €</Text>
         </View>
         <View style={styles.recapRow}>
-          <Text style={styles.recapLabel}>Fournisseur</Text>
+          <Text style={styles.recapLabel}>{t('payment.provider')}</Text>
           <Text style={styles.recapValue}>Stripe</Text>
         </View>
         <View style={styles.recapRow}>
-          <Text style={styles.recapLabel}>Cible</Text>
+          <Text style={styles.recapLabel}>{t('payment.target')}</Text>
           <Text style={styles.recapValue} numberOfLines={1}>{titre}</Text>
         </View>
       </View>
@@ -182,7 +182,7 @@ export default function PaymentScreen({ route }) {
           : (
             <>
               <AppIcon name="payment" size={18} color="#fff" />
-              <Text style={styles.btnPayerText}>Payer {montant} € avec Stripe</Text>
+              <Text style={styles.btnPayerText}>{t('payment.payWithStripe', { amount: montant })}</Text>
             </>
           )
         }
@@ -191,7 +191,7 @@ export default function PaymentScreen({ route }) {
       <View style={styles.securityNoteRow}>
         <AppIcon name="lock" size={14} color="#94a3b8" />
         <Text style={styles.securityNote}>
-          Paiement sécurisé par Stripe · Données bancaires jamais stockées
+          {t('payment.securityNote')}
         </Text>
       </View>
 

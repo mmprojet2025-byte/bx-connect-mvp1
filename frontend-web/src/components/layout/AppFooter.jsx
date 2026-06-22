@@ -10,14 +10,14 @@ export default function AppFooter() {
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="font-semibold text-slate-600">© 2026 BX-Connect</span>
           <span className="hidden text-slate-300 sm:inline">|</span>
-          <span>Version Alpha 1.0</span>
+          <span>{t('footer.version')}</span>
         </div>
-        <nav className="flex flex-wrap items-center gap-x-4 gap-y-1" aria-label="Liens applicatifs">
+        <nav className="flex flex-wrap items-center gap-x-4 gap-y-1" aria-label={t('footer.appLinks')}>
           <Link to="/conditions-utilisation" className="transition hover:text-blue-700">
             {t('legal.links.terms')}
           </Link>
           <Link to="/politique-confidentialite" className="transition hover:text-blue-700">
-            Confidentialité
+            {t('legal.links.privacy')}
           </Link>
         </nav>
       </div>

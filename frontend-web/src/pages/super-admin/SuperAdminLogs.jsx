@@ -81,7 +81,7 @@ export default function SuperAdminLogs() {
       <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatCard icon="ClipboardList" label={t('common.total', { defaultValue: 'Total' })} value={stats.total} tone="blue" />
         <StatCard icon="Shield" label={t('audit.action')} value={stats.actions} tone="violet" />
-        <StatCard icon="Activity" label="Changements d'état" value={stats.statuts} tone="green" />
+        <StatCard icon="Activity" label={t('audit.statusChanges')} value={stats.statuts} tone="green" />
       </div>
 
       <SectionCard className="mb-5" title={t('common.filters', { defaultValue: 'Filtres' })}>
@@ -92,18 +92,21 @@ export default function SuperAdminLogs() {
             options={filterOptions.actions}
             formatOption={formatAction}
             onChange={value => setFilters(current => ({ ...current, action: value }))}
+            t={t}
           />
           <FilterSelect
-            label="Type de cible"
+            label={t('audit.targetType')}
             value={filters.cibleType}
             options={filterOptions.cibleTypes}
             onChange={value => setFilters(current => ({ ...current, cibleType: value }))}
+            t={t}
           />
           <FilterSelect
-            label="Rôle acteur"
+            label={t('audit.actorRole')}
             value={filters.acteurRole}
             options={filterOptions.roles}
             onChange={value => setFilters(current => ({ ...current, acteurRole: value }))}
+            t={t}
           />
           <div className="flex items-end">
             <button
@@ -137,11 +140,11 @@ export default function SuperAdminLogs() {
                   <tr className="border-b border-gray-100 bg-gray-50">
                     <HeaderCell>{t('audit.date')}</HeaderCell>
                     <HeaderCell>{t('audit.actor')}</HeaderCell>
-                    <HeaderCell>Rôle</HeaderCell>
+                    <HeaderCell>{t('audit.role')}</HeaderCell>
                     <HeaderCell>{t('audit.action')}</HeaderCell>
                     <HeaderCell>{t('audit.target')}</HeaderCell>
-                    <HeaderCell>Ancien statut</HeaderCell>
-                    <HeaderCell>Nouveau statut</HeaderCell>
+                    <HeaderCell>{t('audit.oldStatus')}</HeaderCell>
+                    <HeaderCell>{t('audit.newStatus')}</HeaderCell>
                     <HeaderCell>{t('audit.details')}</HeaderCell>
                   </tr>
                 </thead>
@@ -193,7 +196,7 @@ function HeaderCell({ children }) {
   )
 }
 
-function FilterSelect({ label, value, options, onChange, formatOption = value => value }) {
+function FilterSelect({ label, value, options, onChange, formatOption = value => value, t }) {
   return (
     <label className="block">
       <span className="mb-1.5 block text-xs font-semibold uppercase text-slate-500">{label}</span>
@@ -202,7 +205,7 @@ function FilterSelect({ label, value, options, onChange, formatOption = value =>
         onChange={event => onChange(event.target.value)}
         className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
       >
-        <option value="">Tous</option>
+        <option value="">{t('common.all')}</option>
         {options.map(option => (
           <option key={option} value={option}>{formatOption(option)}</option>
         ))}

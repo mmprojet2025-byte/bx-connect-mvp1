@@ -5,6 +5,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import fr from './locales/fr.json';
 import nl from './locales/nl.json';
 import en from './locales/en.json';
+import { trackLanguageChange } from '../monitoring/analytics';
 
 i18n
   .use(LanguageDetector)
@@ -27,5 +28,9 @@ i18n
       escapeValue: false, // React gère déjà l'échappement XSS
     },
   });
+
+i18n.on('languageChanged', (language) => {
+  trackLanguageChange(language);
+});
 
 export default i18n;

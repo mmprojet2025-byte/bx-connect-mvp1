@@ -50,7 +50,7 @@ export default function ReferentRequestsScreen() {
       accepted ? t('referentMobile.acceptRequest') : t('referentMobile.refuseRequest'),
       accepted ? t('referentMobile.confirmAccept') : t('referentMobile.confirmRefuse'),
       [
-        { text: t('common.cancel', { defaultValue: 'Annuler' }), style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
           text: accepted ? t('referentMobile.accept') : t('referentMobile.refuse'),
           style: accepted ? 'default' : 'destructive',

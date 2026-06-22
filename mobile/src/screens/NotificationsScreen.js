@@ -287,9 +287,7 @@ function typeColor(type) {
 }
 
 function formatType(type, t) {
-  return t(`notifications.types.${type}`, {
-    defaultValue: String(type || 'INFO').replaceAll('_', ' '),
-  });
+  return t(`notifications.types.${type}`);
 }
 
 function resolveActionTarget(lienAction, roles) {

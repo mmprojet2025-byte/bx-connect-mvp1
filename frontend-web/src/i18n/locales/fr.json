@@ -57,7 +57,12 @@
     "feature_community_desc": "Rejoins des groupes, échange avec d'autres membres et partenaires.",
     "recent_activities": "Activités récentes",
     "see_all": "Voir tout",
-    "no_activities": "Aucune activité disponible pour le moment."
+    "no_activities": "Aucune activité disponible pour le moment.",
+    "objectiveEyebrow": "Objectif",
+    "platformDesignedFor": "Une plateforme pensée pour",
+    "platformDesignedDescription": "BX-Connect structure les informations essentielles pour rendre la vie communautaire plus simple à suivre.",
+    "mainActionsEyebrow": "Actions principales",
+    "mainActionsDescription": "Le parcours public permet de comprendre rapidement comment découvrir, rejoindre et participer."
   },
   "auth": {
     "login_title": "Connexion",
@@ -110,7 +115,11 @@
     "password_strength_medium": "Mot de passe moyen",
     "password_strength_strong": "Mot de passe fort",
     "show_password": "Afficher le mot de passe",
-    "hide_password": "Masquer le mot de passe"
+    "hide_password": "Masquer le mot de passe",
+    "welcomeTitle": "Bienvenue sur BX-Connect",
+    "welcomeSubtitle": "Rejoins les activités, groupes et projets de ta communauté.",
+    "loginWith": "Ou se connecter avec",
+    "googleSoon": "Connexion Google bientôt disponible."
   },
   "dashboard": {
     "title": "Mon tableau de bord",
@@ -182,7 +191,34 @@
     "organizer": "Organisateur",
     "register_this": "S'inscrire à cette activité",
     "login_to_register": "Se connecter pour s'inscrire",
-    "already_registered": "Vous êtes inscrit à cette activité"
+    "already_registered": "Vous êtes inscrit à cette activité",
+    "geoUnavailable": "La géolocalisation navigateur n’est pas disponible. Les activités restent triées normalement.",
+    "geoSuccess": "Votre position est utilisée uniquement dans ce navigateur pour trier les activités proches. Elle n’est pas enregistrée.",
+    "nearbyTitle": "Activités proches de moi",
+    "nearbyPrivacy": "Position utilisée seulement dans ce navigateur pour trier par distance.",
+    "locating": "Localisation...",
+    "nearbyButton": "Plus proches",
+    "normalSort": "Tri normal",
+    "distance": "Distance",
+    "geoPermissionDenied": "Permission refusée. Vous pouvez continuer à parcourir les activités sans tri par distance.",
+    "geoPositionUnavailable": "Votre position est indisponible pour le moment. Les activités restent triées normalement.",
+    "geoTimeout": "La localisation prend trop de temps. Réessayez ou utilisez les filtres classiques.",
+    "geoGenericError": "Impossible de récupérer votre position. Les activités restent triées normalement.",
+    "manageActivities": "Gérer les activités",
+    "manageMyActivities": "Gérer mes activités",
+    "registrationOpen": "Inscriptions ouvertes",
+    "myRegistrations": "Mes inscriptions",
+    "noFilteredActivities": "Aucune activité ne correspond aux filtres.",
+    "noFilteredActivitiesDesc": "Modifie le statut, la catégorie ou le groupe pour élargir les résultats.",
+    "upcomingTitle": "Prochaines activités",
+    "myRegistrationsCount": "My Registrations Count",
+    "upcomingHint": "Les prochaines dates publiées apparaissent ici dès qu’elles sont disponibles.",
+    "noUpcoming": "Aucune activité à venir pour le moment.",
+    "done": "Terminé",
+    "full": "Complet",
+    "draftsToPublish": "Activités à publier",
+    "draftsToPublishDesc": "Brouillons prêts à vérifier.",
+    "locationMapAria": "Carte de localisation de l’activité"
   },
   "projects": {
     "title": "Projets collaboratifs",
@@ -218,7 +254,62 @@
     "typeGroup": "Projet de groupe",
     "typeInstitutional": "Projet institutionnel",
     "owner": "Porteur",
-    "createdAt": "Date de création"
+    "createdAt": "Date de création",
+    "activeProjects": "En action",
+    "workflowSteps": {
+      "created": "Créé",
+      "submitted": "Soumis",
+      "validation": "Validation",
+      "approved": "Approuvé",
+      "visible": "Visible",
+      "supported": "Soutenu",
+      "done": "Terminé"
+    },
+    "followUnavailable": "Vous participez déjà à ce projet. Les nouvelles interactions apparaîtront dans vos notifications.",
+    "joined": "Vous participez maintenant à ce projet.",
+    "joinError": "Impossible de rejoindre ce projet.",
+    "commentAdded": "Commentaire ajouté.",
+    "commentError": "Impossible d’ajouter le commentaire.",
+    "workspaceTitle": "Projets à suivre",
+    "workspaceDesc": "Workspace Desc",
+    "focusedProject": "Focused Project",
+    "filteredCount": "Filtered Count",
+    "searchPlaceholder": "Rechercher un projet...",
+    "allGroups": "Tous les groupes",
+    "allVisibilities": "Toutes les visibilités",
+    "noFilteredProjects": "Aucun projet ne correspond aux filtres.",
+    "noFilteredProjectsDesc": "Modifie la recherche, le statut, le groupe ou la visibilité pour retrouver des projets.",
+    "workflowFilterHint": "Clique sur une étape pour filtrer les projets par statut.",
+    "comments": "Commentaires",
+    "currentState": "État actuel",
+    "nextStep": "Prochaine étape",
+    "discussion": "Discussion du projet",
+    "noComments": "Aucun commentaire pour le moment.",
+    "commentPlaceholder": "Ajouter une note de suivi...",
+    "joinedLabel": "Participant",
+    "join": "Rejoindre",
+    "workflowDraft": "Ce projet est encore en préparation.",
+    "workflowSubmitted": "Ce projet attend une validation administrative.",
+    "workflowApproved": "Ce projet est approuvé et peut être visible ou soutenu selon sa visibilité.",
+    "workflowRunning": "Ce projet est en cours de réalisation.",
+    "workflowDone": "Ce projet est terminé.",
+    "workflowRejected": "Ce projet a été refusé.",
+    "workflowUnknown": "Statut du projet à vérifier.",
+    "nextAdminValidation": "Relire le projet puis approuver ou refuser.",
+    "nextPartnerSupport": "Évaluer le besoin et proposer un soutien si le projet correspond à vos priorités.",
+    "nextMemberJoin": "Rejoindre le projet pour suivre son avancement.",
+    "nextParticipant": "Suivre la discussion et contribuer aux prochaines étapes.",
+    "nextDraft": "Compléter le projet avant soumission.",
+    "nextSubmitted": "Attendre la validation administrative.",
+    "nextDone": "Consulter le bilan et les contributions.",
+    "nextRejected": "Consulter le motif ou revoir la proposition.",
+    "nextDefault": "Suivre l’évolution du projet.",
+    "eventCreated": "Projet créé",
+    "eventSubmitted": "Soumis pour validation",
+    "eventRejected": "Projet refusé",
+    "eventValidated": "Projet validé",
+    "eventClosed": "Projet clôturé",
+    "eventComment": "Event Comment"
   },
   "projectVisibility": {
     "GROUPE": "Groupe",
@@ -250,7 +341,26 @@
     "members_count": "{{count}} membre(s)",
     "description_soon": "Ce groupe accueillera bientôt une description complète.",
     "sending": "Envoi...",
-    "confirm_leave": "Voulez-vous vraiment quitter ce groupe ? Vous perdrez l’accès à sa messagerie."
+    "confirm_leave": "Voulez-vous vraiment quitter ce groupe ? Vous perdrez l’accès à sa messagerie.",
+    "notFound": "Groupe introuvable.",
+    "workspace": "Espace collaboratif",
+    "publicCount": "Public Count",
+    "lifeMembers": "Membres visibles",
+    "lifeReferents": "Groupes encadrés",
+    "lifeMessaging": "Échanger avec son groupe après adhésion",
+    "joinRequired": "Après adhésion",
+    "groupDiscussion": "Discussion du groupe",
+    "discussionMemberDesc": "Accède à la conversation du groupe pour suivre les échanges et les informations importantes.",
+    "discussionLockedDesc": "La discussion est réservée aux membres acceptés du groupe.",
+    "joinToDiscuss": "Rejoindre pour discuter",
+    "referent": "Référent",
+    "referentToConfirm": "Référent à confirmer",
+    "noLinkedActivities": "Aucune activité liée à ce groupe.",
+    "noLinkedProjects": "Aucun projet lié à ce groupe.",
+    "linkedItemsHint": "Les éléments apparaîtront ici lorsque le backend les associera clairement à ce groupe.",
+    "meetingPlace": "Lieu de réunion",
+    "meetingMapAria": "Carte du lieu de réunion du groupe",
+    "addressWithoutCoordinates": "Adresse disponible. Les coordonnées exactes pourront être ajoutées plus tard."
   },
   "messaging": {
     "title": "Messagerie",
@@ -292,7 +402,10 @@
     "noThread": "Aucun fil de discussion",
     "discussionForGroup": "Discussion - {{group}}",
     "noGroupPendingHint": "Vous n'avez pas encore de groupe actif. Si une demande est en attente, la messagerie sera disponible après acceptation.",
-    "errorActiveGroup": "Impossible de charger votre groupe actif."
+    "errorActiveGroup": "Impossible de charger votre groupe actif.",
+    "openMessaging": "Ouvrir la messagerie",
+    "messageSent": "Message envoyé.",
+    "addEmoji": "Ajouter un emoji"
   },
   "notifications": {
     "title": "Notifications",
@@ -320,7 +433,9 @@
     "emptyDescriptionMobile": "Vos notifications apparaîtront ici dès qu’une action importante concerne votre compte.",
     "loading": "Chargement des notifications...",
     "dateNotProvided": "Date non renseignée",
-    "confirmDelete": "Voulez-vous vraiment supprimer cette notification ?"
+    "confirmDelete": "Voulez-vous vraiment supprimer cette notification ?",
+    "importantCount": "{{count}} importante(s)",
+    "smartFallback": "Destination exacte indisponible : ouverture de la meilleure page liée."
   },
   "profile": {
     "title": "Mon profil",
@@ -355,7 +470,13 @@
     "unknown_date": "date inconnue",
     "photo": "Photo de profil",
     "confirm": "Confirmer",
-    "logout": "Se déconnecter"
+    "logout": "Se déconnecter",
+    "accountSettings": "Paramètres du compte",
+    "accountSettingsDesc": "Gérez vos informations, votre sécurité et vos préférences.",
+    "securityDesc": "Mot de passe et accès au compte.",
+    "preferences": "Préférences",
+    "notificationPreferencesDesc": "Les préférences détaillées seront disponibles prochainement.",
+    "userProfile": "Profil utilisateur"
   },
   "errors": {
     "session_expired": "Session expirée. Reconnectez-vous.",
@@ -454,7 +575,14 @@
     "searchProjectPlaceholder": "Rechercher par titre...",
     "noProjectFound": "Aucun projet trouvé.",
     "budgetLabel": "Budget :",
-    "ownerLabel": "Porteur :"
+    "ownerLabel": "Porteur :",
+    "dashboardSummary": "Dashboard Summary",
+    "noRecentActivity": "Aucune activité récente à afficher.",
+    "submittedProjectsDesc": "Projets à relire ou orienter.",
+    "noPendingValidation": "Aucune validation en attente.",
+    "groupsDescription": "Créez les groupes, attribuez un référent et suivez leur statut.",
+    "approve": "Approuver",
+    "reject": "Refuser"
   },
   "ux": {
     "nav": {
@@ -532,6 +660,9 @@
       "openMessaging": "Ouvrir la messagerie",
       "recentMembers": "Membres récents",
       "upcomingActivities": "Activités à venir"
+    },
+    "activities": {
+      "intro": "Découvre les activités, ateliers et événements de la communauté BX-Connect."
     }
   },
   "memberDashboard": {
@@ -573,7 +704,9 @@
       "upcomingActivities": "Activités à venir",
       "noActiveGroup": "Vous n'avez pas encore de groupe actif.",
       "messagingAvailable": "Messagerie disponible pour votre groupe.",
-      "messagingUnavailable": "Messagerie disponible après acceptation dans un groupe."
+      "messagingUnavailable": "Messagerie disponible après acceptation dans un groupe.",
+      "currentWithName": "Current With Name",
+      "noGroup": "Rejoindre un groupe"
     },
     "referent": {
       "title": "Mon référent",
@@ -590,7 +723,8 @@
       "empty": "Aucune inscription pour le moment.",
       "fallbackTitle": "Activité",
       "upcomingDate": "Date à venir",
-      "dateToConfirm": "Date à confirmer"
+      "dateToConfirm": "Date à confirmer",
+      "next": "Prochaine activité"
     },
     "messaging": {
       "title": "Messagerie",
@@ -698,7 +832,16 @@
         "MEMBRE_ACTIF": "Membre actif",
         "MEMBRE_ENGAGE": "Membre engagé"
       }
-    }
+    },
+    "workspaceEyebrow": "Travail en cours",
+    "workspaceTitle": "Mon espace de travail",
+    "unreadNotifications": "Unread Notifications",
+    "projectToFollow": "Projet à suivre",
+    "today": {
+      "eyebrow": "Priorités",
+      "title": "Ce que je dois faire maintenant"
+    },
+    "noPriorityToday": "Aucune action urgente aujourd’hui"
   },
   "statuses": {
     "BROUILLON": "Brouillon",
@@ -749,7 +892,8 @@
     "errorTemporaryPassword": "Le mot de passe temporaire doit contenir au moins 8 caractères.",
     "checkFields": "Vérifiez les champs du formulaire.",
     "firstnameRequired": "Le prénom est obligatoire.",
-    "lastnameRequired": "Le nom est obligatoire."
+    "lastnameRequired": "Le nom est obligatoire.",
+    "user": "Utilisateur"
   },
   "referent": {
     "title": "Référents",
@@ -807,7 +951,16 @@
     "projectOwnerUnknown": "Porteur non renseigné",
     "projectDate": "Date",
     "linkedActivities": "Activités liées",
-    "noLinkedActivities": "Aucune activité liée à ce groupe."
+    "noLinkedActivities": "Aucune activité liée à ce groupe.",
+    "hello": "Hello",
+    "dashboardSummary": "Dashboard Summary",
+    "requestToReview": "Demande à valider",
+    "memberToWelcome": "Nouveau membre à accueillir",
+    "projectToFollow": "Projet à suivre",
+    "todayActions": "À traiter aujourd’hui",
+    "todayActionsSubtitle": "Uniquement les éléments qui nécessitent une action.",
+    "noActionToday": "Aucune action en attente aujourd’hui",
+    "groupsSubtitle": "Suivez vos groupes assignés, leurs membres et leurs demandes."
   },
   "legal": {
     "eyebrow": "Cadre légal BX-Connect",
@@ -1000,8 +1153,50 @@
       "dashboard": "Tableau de bord",
       "projects": "Projets",
       "activities": "Activités",
-      "supports": "Soutiens financiers"
-    }
+      "supports": "Soutiens financiers",
+      "opportunities": "Opportunités"
+    },
+    "opportunities": "Opportunities",
+    "opportunity": "Opportunité",
+    "supportUpdated": "Proposition de soutien mise à jour.",
+    "confirmCancelSupport": "Annuler cette proposition de soutien ? Elle restera visible dans votre historique.",
+    "supportCanceled": "Proposition de soutien annulée.",
+    "opportunitySubmitted": "Opportunité envoyée à l’administration pour validation.",
+    "dashboardSubtitle": "Dashboard Subtitle",
+    "pendingSupports": "En attente",
+    "opportunitiesHint": "Vos publications restent en attente jusqu’à validation par un administrateur.",
+    "newOpportunity": "Nouvelle opportunité",
+    "opportunityTitle": "Titre",
+    "opportunityCategory": "Catégorie",
+    "externalLink": "Lien externe",
+    "expirationDate": "Date d’expiration",
+    "shortDescription": "Description courte",
+    "opportunityContent": "Contenu",
+    "submitForReview": "Envoyer pour validation",
+    "noOpportunities": "Aucune opportunité publiée pour le moment.",
+    "editSupportEyebrow": "Soutien en attente",
+    "editSupportTitle": "Modifier la proposition",
+    "lockedTarget": "Cible non modifiable",
+    "actionsEyebrow": "Priorités partenaire",
+    "myActions": "Mes actions",
+    "supportStatusSummary": "Support Status Summary",
+    "actionHint": "Choisissez “Projets ouverts” ou “Activités ouvertes” dans les onglets pour cibler votre soutien.",
+    "impactEyebrow": "Impact visible",
+    "impactTitle": "À quoi servent vos soutiens",
+    "noImpactYet": "Aucun soutien enregistré pour le moment. Les projets ouverts vous permettent de créer votre premier impact.",
+    "totalSupported": "Montant engagé",
+    "supportedProjects": "Projets soutenus",
+    "supportedActivities": "Activités soutenues",
+    "validatedSupports": "Soutiens validés",
+    "recentSupports": "Derniers soutiens",
+    "nextStep": "Prochaine étape",
+    "noMessage": "Aucun message ajouté.",
+    "waitingAdminReply": "En attente d’une réponse admin.",
+    "nextStepPending": "En attente de réponse admin. Vous pourrez suivre ici la décision et le commentaire.",
+    "nextStepApproved": "Validé par l’administration. Le soutien est pris en compte dans votre impact partenaire.",
+    "nextStepRejected": "Refusé par l’administration. Consultez la réponse admin pour comprendre le motif.",
+    "nextStepFollow": "Statut à suivre dans votre historique de contributions.",
+    "supportNotEditable": "Cette proposition ne peut plus être modifiée ou annulée. Elle a peut-être déjà été traitée par l’administration."
   },
   "partnerSupport": {
     "financial": "Soutien financier",
@@ -1039,7 +1234,24 @@
       "confirmApprove": "Valider le soutien proposé par {{name}} ?",
       "confirmReject": "Refuser le soutien proposé par {{name}} ?",
       "approved": "Soutien accepté.",
-      "rejected": "Soutien refusé."
+      "rejected": "Soutien refusé.",
+      "searchPlaceholder": "Projet, activité, partenaire, message...",
+      "partnerFilter": "Partenaire",
+      "allPartners": "Tous les partenaires",
+      "targetType": "Type cible",
+      "allTargets": "Projets et activités",
+      "toProcessTitle": "À traiter",
+      "historyTitle": "Historique",
+      "toProcessDescription": "Soutiens en attente de réponse, validation ou refus.",
+      "historyDescription": "Soutiens déjà validés ou refusés avec la réponse admin.",
+      "adminReply": "Réponse admin",
+      "detailTitle": "Fiche soutien partenaire",
+      "exchangeHistory": "Historique des échanges",
+      "partnerProposal": "Proposition partenaire",
+      "noPartnerMessage": "Aucun message ajouté par le partenaire.",
+      "noAdminReply": "Aucune réponse admin pour le moment.",
+      "respondTitle": "Répondre au partenaire",
+      "responsePlaceholder": "Expliquez la décision, les prochaines étapes ou le motif du refus..."
     }
   },
   "superAdmin": {
@@ -1073,7 +1285,8 @@
     "newTemporaryPassword": "Nouveau mot de passe temporaire",
     "reservedAction": "Action réservée au SUPER_ADMIN.",
     "logsSubtitle": "Journal des actions sensibles réalisées sur la plateforme.",
-    "errorLogsLoad": "Impossible de charger les logs."
+    "errorLogsLoad": "Impossible de charger les logs.",
+    "platformWatch": "Plateforme sous surveillance"
   },
   "audit": {
     "date": "Date",
@@ -1081,7 +1294,13 @@
     "actor": "Acteur",
     "target": "Cible",
     "details": "Détails",
-    "noCriticalLog": "Aucun log critique."
+    "noCriticalLog": "Aucun log critique.",
+    "role": "Rôle",
+    "oldStatus": "Ancien statut",
+    "newStatus": "Nouveau statut",
+    "statusChanges": "Changements d’état",
+    "targetType": "Type de cible",
+    "actorRole": "Rôle acteur"
   },
   "statistics": {
     "activitiesTotal": "{{count}} activité(s) au total",
@@ -1116,6 +1335,247 @@
     "all_statuses": "Tous les statuts",
     "language_fr": "Français",
     "language_nl": "Nederlands",
-    "language_en": "English"
+    "language_en": "English",
+    "title": "Titre",
+    "type": "Type",
+    "date": "Date",
+    "by": "Par",
+    "unknownDate": "Date inconnue",
+    "publish": "Publier",
+    "reject": "Refuser",
+    "all": "Toutes",
+    "total": "Total",
+    "filters": "Filtres",
+    "showAll": "Voir tous",
+    "noResults": "Aucun résultat trouvé.",
+    "results": "Résultats",
+    "validate": "Valider",
+    "notSpecified": "Non précisé",
+    "descriptionToComplete": "Description à compléter.",
+    "toFollow": "À suivre",
+    "unassigned": "Non assigné",
+    "notProvided": "Non renseigné"
+  },
+  "footer": {
+    "description": "La plateforme qui connecte les jeunes, les associations et les projets à Bruxelles.",
+    "platform": "Plateforme",
+    "account": "Compte",
+    "legal": "Cadre légal",
+    "copyright": "© 2026 BX-CONNECT — Plateforme numérique Bx-Jeunes Impact ASBL",
+    "tagline": "Connecter • Inspirer • Impacter",
+    "version": "Version Alpha 1.0",
+    "appLinks": "Liens applicatifs"
+  },
+  "about": {
+    "title": "À propos de BX-CONNECT",
+    "subtitle": "La plateforme numérique des jeunes et associations de Bruxelles, inspirée de Bx-Jeunes Impact.",
+    "missionTitle": "Notre mission",
+    "missionP1": "BX-CONNECT est une plateforme numérique développée pour connecter les jeunes et les associations actives à Bruxelles. Notre objectif est de faciliter l’accès aux activités sociales, éducatives et culturelles, tout en permettant aux membres de proposer et rejoindre des projets collaboratifs.",
+    "missionP2": "Inspirée du contexte réel de l’association Bx-Jeunes Impact, cette plateforme s’inscrit dans une démarche d’engagement citoyen et de développement communautaire pour les jeunes bruxellois.",
+    "valuesTitle": "Nos valeurs",
+    "values": {
+      "solidarity": {
+        "title": "Solidarité",
+        "desc": "Créer des liens entre les jeunes et les associations pour un impact collectif."
+      },
+      "innovation": {
+        "title": "Innovation",
+        "desc": "Utiliser le numérique pour faciliter l’accès aux opportunités pour tous."
+      },
+      "inclusion": {
+        "title": "Inclusion",
+        "desc": "Une plateforme accessible en français, néerlandais et anglais pour tous."
+      }
+    },
+    "features": {
+      "activities": "Découvrir, filtrer et s’inscrire aux activités organisées par Bx-Jeunes Impact.",
+      "projects": "Proposer ou rejoindre des projets collaboratifs avec d’autres membres.",
+      "groups": "Rejoindre des groupes thématiques et échanger avec la communauté.",
+      "messaging": "Communiquer avec les membres de ton groupe via des fils de discussion.",
+      "partnershipsTitle": "Partenariats",
+      "partnerships": "Les partenaires peuvent soutenir financièrement des projets et activités."
+    },
+    "actorsTitle": "Les acteurs de la plateforme",
+    "actors": {
+      "visitor": {
+        "title": "Visiteur",
+        "desc": "Consulte les activités et informations publiques sans inscription."
+      },
+      "member": {
+        "title": "Membre",
+        "desc": "S’inscrit aux activités, propose des projets, rejoint des groupes."
+      },
+      "referent": {
+        "title": "Référent",
+        "desc": "Gère les activités et projets de son groupe, valide les demandes."
+      },
+      "partner": {
+        "title": "Partenaire",
+        "desc": "Soutient financièrement des projets et activités de l’association."
+      },
+      "admin": {
+        "title": "Administrateur",
+        "desc": "Gère l’ensemble de la plateforme, les utilisateurs et les contenus."
+      }
+    },
+    "contactTitle": "Contact",
+    "contactDesc": "Pour toute question ou partenariat, contactez l’équipe BX-CONNECT."
+  },
+  "prestations": {
+    "myTitle": "Mes prestations bénévoles",
+    "validatedTotal": "Total validé :",
+    "add": "Encoder une prestation",
+    "validatedHours": "Heures validées",
+    "pendingHours": "Heures en attente",
+    "pendingCount": "{{count}} en attente",
+    "new": "Nouvelle prestation",
+    "durationHours": "Durée (heures)",
+    "submit": "Encoder la prestation",
+    "empty": "Aucune prestation encodée pour le moment.",
+    "errorLoad": "Impossible de charger les prestations.",
+    "successCreate": "Prestation encodée avec succès !",
+    "errorLoadGroups": "Impossible de charger vos groupes.",
+    "validatedByReferent": "Validée par le référent",
+    "validated": "Prestation validée !",
+    "errorValidate": "Erreur lors de la validation.",
+    "refusalReason": "Motif du refus :",
+    "refused": "Prestation refusée.",
+    "errorRefuse": "Erreur lors du refus.",
+    "allTitle": "Toutes les prestations",
+    "validationTitle": "Validation des prestations",
+    "emptyStatus": "Aucune prestation avec le statut \"{{status}}\"."
+  },
+  "announcements": {
+    "errorLoad": "Impossible de charger les annonces.",
+    "errorLoadOpportunities": "Impossible de charger les opportunités partenaires.",
+    "noReferentGroup": "Aucun groupe référent disponible pour publier cette annonce.",
+    "published": "Annonce publiée !",
+    "errorPublish": "Erreur lors de la publication.",
+    "errorPin": "Erreur lors de l’épinglage.",
+    "confirmDelete": "Supprimer cette annonce ?",
+    "errorDelete": "Erreur lors de la suppression.",
+    "opportunityPublished": "Opportunité publiée.",
+    "opportunityRejected": "Opportunité refusée.",
+    "errorOpportunityPublish": "Erreur lors de la publication de l’opportunité.",
+    "errorOpportunityReject": "Erreur lors du refus de l’opportunité.",
+    "globalPlural": "Globales",
+    "moderationDescription": "Publications partenaires en attente de validation ou déjà traitées.",
+    "pendingCount": "{{count}} en attente",
+    "loadingOpportunities": "Chargement des opportunités...",
+    "noOpportunitiesToModerate": "Aucune opportunité partenaire à modérer.",
+    "new": "Nouvelle annonce",
+    "content": "Contenu",
+    "globalOption": "Globale (tous les membres)",
+    "groupOption": "Groupe spécifique",
+    "pinThis": "Épingler cette annonce",
+    "publish": "Publier l’annonce",
+    "empty": "Aucune annonce pour le moment.",
+    "global": "Global",
+    "system": "Système",
+    "pin": "Épingler",
+    "unpin": "Désépingler",
+    "openLink": "Voir le lien"
+  },
+  "opportunityCategories": {
+    "EMPLOI": "Emploi",
+    "STAGE": "Stage",
+    "FORMATION": "Formation",
+    "EVENEMENT": "Événement",
+    "APPEL_PROJET": "Appel à projet",
+    "PUBLICITE": "Publicité"
+  },
+  "opportunityModeration": {
+    "EN_ATTENTE": "En attente",
+    "PUBLIEE": "Publiée",
+    "REFUSEE": "Refusée"
+  },
+  "location": {
+    "title": "Localisation",
+    "helper": "Recherchez les coordonnées à partir de l’adresse, ou cliquez directement sur la carte.",
+    "coordinatesSelected": "Coordonnées sélectionnées sur la carte.",
+    "enterAddressOrCommune": "Veuillez saisir une adresse ou une commune.",
+    "searchingCoordinates": "Recherche des coordonnées...",
+    "addressNotFound": "Adresse introuvable.",
+    "coordinatesFound": "Coordonnées trouvées.",
+    "serviceUnavailable": "Impossible de contacter le service de géolocalisation.",
+    "searching": "Recherche...",
+    "findCoordinates": "Trouver les coordonnées",
+    "mapAria": "Carte de sélection des coordonnées",
+    "openRoute": "Voir l’itinéraire"
+  },
+  "payment": {
+    "verifyError": "Impossible de vérifier le paiement.",
+    "verifying": "Vérification du paiement...",
+    "verifyImpossible": "Vérification impossible",
+    "backDashboard": "Retour au dashboard",
+    "successTitle": "Paiement réussi !",
+    "successMessage": "Merci pour votre soutien à BX-CONNECT. Votre contribution fait la différence !",
+    "amount": "Montant",
+    "paid": "Payé",
+    "viewHistory": "Voir l’historique des paiements",
+    "cancelTitle": "Paiement annulé",
+    "cancelMessage": "Vous avez annulé le paiement. Aucun montant n’a été débité. Vous pouvez réessayer à tout moment.",
+    "checkoutUrlMissing": "URL de paiement non reçue.",
+    "stripeTitle": "Soutenir via Stripe",
+    "chooseAmount": "Choisir un montant",
+    "customAmount": "Montant personnalisé",
+    "optionalMessage": "Message (optionnel)",
+    "supportMessagePlaceholder": "Laissez un message de soutien...",
+    "provider": "Fournisseur",
+    "stripeSecure": "Stripe (sécurisé)",
+    "target": "Cible",
+    "redirecting": "Redirection...",
+    "payWithStripe": "Payer {{amount}} € avec Stripe",
+    "securityNote": "Paiement sécurisé par Stripe — Vos données bancaires ne sont jamais stockées",
+    "historyLoadError": "Impossible de charger l’historique.",
+    "historyTitle": "Historique des paiements",
+    "totalPaid": "Total payé :",
+    "newSupport": "Nouveau soutien",
+    "empty": "Aucun paiement pour le moment.",
+    "emptyStatus": "Aucun paiement avec le statut \"{{status}}\".",
+    "discoverActivitiesToSupport": "Découvrir les activités à soutenir",
+    "bxSupport": "Soutien BX-CONNECT"
+  },
+  "activityFeed": {
+    "title": "Mon fil d’activité",
+    "adminSubtitle": "Validations, créations et changements de statut à surveiller.",
+    "memberSubtitle": "Messages, activités, projets et notifications importantes.",
+    "empty": "Aucune activité récente pour le moment.",
+    "activityDate": "Activity Date",
+    "projectTracked": "Projet suivi",
+    "currentGroup": "Groupe actuel",
+    "partnerSubtitle": "Soutiens, projets ouverts et activités disponibles.",
+    "referentSubtitle": "Demandes, membres, activités et projets liés à vos groupes.",
+    "superAdminSubtitle": "Actions sensibles, sécurité et activité administrative."
+  },
+  "adminMobile": {
+    "opportunitiesTitle": "Opportunités à modérer"
+  },
+  "search": {
+    "global": "Recherche globale",
+    "placeholder": "Rechercher dans BX-Connect",
+    "clear": "Effacer la recherche",
+    "loading": "Recherche en cours...",
+    "noResults": "Aucun résultat",
+    "unavailable": "Recherche indisponible."
+  },
+  "upload": {
+    "invalidType": "Type non autorisé. Utilisez JPEG, PNG, WEBP ou GIF.",
+    "fileTooLarge": "Fichier trop volumineux (max 5 Mo)."
+  },
+  "sidebar": {
+    "open": "Ouvrir la sidebar",
+    "collapse": "Réduire la sidebar",
+    "mobileMenu": "Menu BX-Connect"
+  },
+  "dashboardCharts": {
+    "title": "Indicateurs visuels",
+    "adminSubtitle": "Répartitions calculées à partir des données chargées dans ce tableau de bord.",
+    "superAdminSubtitle": "Vue synthétique des comptes administrateurs et de l’activité auditée.",
+    "projectsByStatus": "Projets par statut",
+    "activitiesByStatus": "Activités par statut",
+    "supportsByStatus": "Soutiens par statut",
+    "adminsByStatus": "Administrateurs par statut",
+    "auditOverview": "Aperçu audit"
   }
 }

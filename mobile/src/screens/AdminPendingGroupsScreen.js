@@ -39,7 +39,7 @@ export default function AdminPendingGroupsScreen() {
       accepted ? t('adminMobile.validateGroup') : t('adminMobile.refuseGroup'),
       accepted ? t('adminMobile.confirmValidateGroup') : t('adminMobile.confirmRefuseGroup'),
       [
-        { text: t('common.cancel', { defaultValue: 'Annuler' }), style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
           text: accepted ? t('adminMobile.validate') : t('adminMobile.refuse'),
           style: accepted ? 'default' : 'destructive',

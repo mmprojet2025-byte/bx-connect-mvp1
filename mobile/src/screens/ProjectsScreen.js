@@ -155,9 +155,7 @@ export default function ProjectsScreen() {
 
       if (editingProject && isReferent) {
         await api.put(`/projets/referent/${editingProject.id}`, payload);
-        setMessage(t('projects.project_updated_referent', {
-          defaultValue: 'Le projet a été modifié.',
-        }));
+        setMessage(t('projects.project_updated_referent'));
         closeProjectFormAfterSave();
         await chargerProjets();
         return;
@@ -177,7 +175,7 @@ export default function ProjectsScreen() {
         err,
         t,
         editingProject
-          ? t('projects.error_update_referent', { defaultValue: 'Vous ne pouvez modifier que les projets des groupes que vous encadrez.' })
+          ? t('projects.error_update_referent')
           : t('projects.error_submit'),
       ));
     } finally {
@@ -299,7 +297,7 @@ export default function ProjectsScreen() {
       )}
 
       {isPartenaire && (
-        <InfoBox text={t('partner.projectsReadOnly', { defaultValue: 'Projets ouverts au soutien et initiatives à découvrir.' })} />
+        <InfoBox text={t('partner.projectsReadOnly')} />
       )}
 
       {message !== '' && (
@@ -368,10 +366,10 @@ export default function ProjectsScreen() {
         allowNoGroup={isAdmin}
         visibilityOptions={visibilityOptions}
         submitLabel={editingProject
-          ? t('common.save', { defaultValue: 'Enregistrer' })
+          ? t('common.save')
           : isAdmin ? t('projects.create_project') : t('projects.submit_project')}
         title={editingProject
-          ? t('projects.edit_project', { defaultValue: 'Modifier le projet' })
+          ? t('projects.edit_project')
           : isAdmin ? t('projects.create_project') : t('projects.propose')}
         t={t}
       />
@@ -414,14 +412,14 @@ function ProjectCard({ projet, t, language, isPartenaire, editable, onEdit }) {
         {isPartenaire && (
           <MetaRow
             label={t('partner.support')}
-            value={t('partner.secureFinalization', { defaultValue: 'Finalisation sécurisée depuis l’espace partenaire.' })}
+            value={t('partner.secureFinalization')}
           />
         )}
       </View>
       {editable ? (
         <TouchableOpacity style={styles.editButton} onPress={onEdit}>
           <AppIcon name="edit" size={16} color="#2563EB" />
-          <Text style={styles.editButtonText}>{t('common.edit', { defaultValue: 'Modifier' })}</Text>
+          <Text style={styles.editButtonText}>{t('common.edit')}</Text>
         </TouchableOpacity>
       ) : null}
     </View>
@@ -515,7 +513,7 @@ function ProjectFormModal({
             <Text style={styles.label}>{t('projects.form_budget')}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Ex: 500"
+              placeholder={t('projects.budget_placeholder')}
               placeholderTextColor="#94a3b8"
               value={form.budgetDemande}
               onChangeText={(val) => setForm({ ...form, budgetDemande: val })}
@@ -645,7 +643,7 @@ function MetaRow({ label, value }) {
 }
 
 function translateProjetStatut(statut, t) {
-  return t(`statuses.${statut}`, { defaultValue: statut || t('projects.fallback_project') });
+  return t(`statuses.${statut}`);
 }
 
 function statusColor(statut) {

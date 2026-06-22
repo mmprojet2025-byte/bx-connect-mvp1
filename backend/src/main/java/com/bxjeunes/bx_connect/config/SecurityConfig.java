@@ -69,6 +69,10 @@ public class SecurityConfig {
         "/swagger-ui.html",
         "/v3/api-docs/**",
 
+        // Monitoring public minimal
+        "/actuator/health",
+        "/actuator/info",
+
         // Upload — accès aux fichiers statiques
         "/uploads/**"
     };

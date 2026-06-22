@@ -22,9 +22,7 @@ export default function AdminPartnerSupportsScreen() {
       const res = await api.get('/partenaire/admin/tous');
       setSupports(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      setError(getApiError(err, t, t('adminMobile.supportsLoadError', {
-        defaultValue: 'Impossible de charger les soutiens partenaires.',
-      })));
+      setError(getApiError(err, t, t('adminMobile.supportsLoadError')));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -39,15 +37,15 @@ export default function AdminPartnerSupportsScreen() {
     const accepted = action === 'valider';
     Alert.alert(
       accepted
-        ? t('adminMobile.approveSupport', { defaultValue: 'Valider le soutien' })
-        : t('adminMobile.rejectSupport', { defaultValue: 'Refuser le soutien' }),
+        ? t('adminMobile.approveSupport')
+        : t('adminMobile.rejectSupport'),
       accepted
-        ? t('adminMobile.confirmApproveSupport', { defaultValue: 'Ce soutien sera validé.' })
-        : t('adminMobile.confirmRejectSupport', { defaultValue: 'Ce soutien sera refusé.' }),
+        ? t('adminMobile.confirmApproveSupport')
+        : t('adminMobile.confirmRejectSupport'),
       [
-        { text: t('common.cancel', { defaultValue: 'Annuler' }), style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: accepted ? t('adminMobile.validate', { defaultValue: 'Valider' }) : t('adminMobile.refuse', { defaultValue: 'Refuser' }),
+          text: accepted ? t('adminMobile.validate') : t('adminMobile.refuse'),
           style: accepted ? 'default' : 'destructive',
           onPress: () => processSupport(support, action),
         },
@@ -64,13 +62,11 @@ export default function AdminPartnerSupportsScreen() {
         commentaireAdmin: '',
       });
       setMessage(action === 'valider'
-        ? t('adminMobile.supportApproved', { defaultValue: 'Soutien validé.' })
-        : t('adminMobile.supportRejected', { defaultValue: 'Soutien refusé.' }));
+        ? t('adminMobile.supportApproved')
+        : t('adminMobile.supportRejected'));
       await loadSupports();
     } catch (err) {
-      setError(getApiError(err, t, t('adminMobile.supportProcessError', {
-        defaultValue: 'Impossible de traiter ce soutien.',
-      })));
+      setError(getApiError(err, t, t('adminMobile.supportProcessError')));
     } finally {
       setProcessingId(null);
     }
@@ -85,7 +81,7 @@ export default function AdminPartnerSupportsScreen() {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={COLORS.bxBlue} />
-        <Text style={styles.loadingText}>{t('common.loading', { defaultValue: 'Chargement...' })}</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -94,11 +90,9 @@ export default function AdminPartnerSupportsScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <SectionHeader
-          title={t('adminMobile.partnerSupportsTitle', { defaultValue: 'Soutiens partenaires' })}
-          subtitle={t('adminMobile.partnerSupportsSubtitle', {
-            count: pendingCount,
-            defaultValue: `${pendingCount} en attente`,
-          })}
+          title={t('adminMobile.partnerSupportsTitle')}
+          subtitle={t('adminMobile.partnerSupportsSubtitle',{
+            count: pendingCount})}
           icon="wallet"
         />
       </View>
@@ -109,9 +103,9 @@ export default function AdminPartnerSupportsScreen() {
       {supports.length === 0 ? (
         <EmptyState
           icon="wallet"
-          title={t('adminMobile.noSupports', { defaultValue: 'Aucun soutien' })}
-          text={t('adminMobile.noSupportsText', { defaultValue: 'Les soutiens partenaires apparaîtront ici.' })}
-          actionLabel={t('common.retry', { defaultValue: 'Réessayer' })}
+          title={t('adminMobile.noSupports')}
+          text={t('adminMobile.noSupportsText')}
+          actionLabel={t('common.retry')}
           onAction={() => loadSupports()}
         />
       ) : (
@@ -138,7 +132,7 @@ export default function AdminPartnerSupportsScreen() {
 
 function SupportCard({ support, processing, onApprove, onReject, t }) {
   const pending = support.statutPaiement === 'EN_ATTENTE';
-  const target = support.projetTitre || support.activiteTitre || t('partner.supportFallback', { defaultValue: 'Soutien' });
+  const target = support.projetTitre || support.activiteTitre || t('partner.supportFallback');
 
   return (
     <Card style={styles.card}>
@@ -154,10 +148,10 @@ function SupportCard({ support, processing, onApprove, onReject, t }) {
       </View>
 
       <View style={styles.metaBox}>
-        <Meta label={t('partner.amount', { defaultValue: 'Montant' })} value={`${support.montant || 0} €`} />
-        <Meta label={t('partnerSupport.target', { defaultValue: 'Cible' })} value={support.projetTitre ? t('partnerSupport.project', { defaultValue: 'Projet' }) : t('partnerSupport.activity', { defaultValue: 'Activité' })} />
-        <Meta label={t('roles.PARTENAIRE', { defaultValue: 'Partenaire' })} value={partnerName(support, t)} />
-        {support.reponseAdmin ? <Meta label={t('partnerSupport.adminReply', { defaultValue: 'Réponse admin' })} value={support.reponseAdmin} /> : null}
+        <Meta label={t('partner.amount')} value={`${support.montant || 0} €`} />
+        <Meta label={t('partnerSupport.target')} value={support.projetTitre ? t('partnerSupport.project') : t('partnerSupport.activity')} />
+        <Meta label={t('roles.PARTENAIRE')} value={partnerName(support, t)} />
+        {support.reponseAdmin ? <Meta label={t('partnerSupport.adminReply')} value={support.reponseAdmin} /> : null}
       </View>
 
       {support.message ? <Text style={styles.message} numberOfLines={2}>{support.message}</Text> : null}
@@ -166,18 +160,16 @@ function SupportCard({ support, processing, onApprove, onReject, t }) {
         <View style={styles.actions}>
           <TouchableOpacity style={[styles.approveButton, processing && styles.disabled]} disabled={processing} onPress={onApprove}>
             <AppIcon name="check" size={16} color="#fff" />
-            <Text style={styles.actionText}>{t('adminMobile.validate', { defaultValue: 'Valider' })}</Text>
+            <Text style={styles.actionText}>{t('adminMobile.validate')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.rejectButton, processing && styles.disabled]} disabled={processing} onPress={onReject}>
             <AppIcon name="close" size={16} color="#fff" />
-            <Text style={styles.actionText}>{t('adminMobile.refuse', { defaultValue: 'Refuser' })}</Text>
+            <Text style={styles.actionText}>{t('adminMobile.refuse')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <Text style={styles.unavailableHint}>
-          {t('adminMobile.supportActionUnavailable', {
-            defaultValue: "Cette action n'est plus disponible car le soutien n'est plus en attente.",
-          })}
+          {t('adminMobile.supportActionUnavailable')}
         </Text>
       )}
     </Card>
@@ -204,11 +196,11 @@ function InfoBox({ text, tone }) {
 
 function partnerName(support, t) {
   const name = `${support.partenairePrenom || ''} ${support.partenaireNom || ''}`.trim();
-  return name || support.partenaireEmail || t('common.notAvailable', { defaultValue: 'Non renseigné' });
+  return name || support.partenaireEmail || t('common.notAvailable');
 }
 
 function formatStatus(status, t) {
-  return t(`partner.supportStatuses.${status}`, { defaultValue: String(status || '').replaceAll('_', ' ') || '-' });
+  return t(`partner.supportStatuses.${status}`);
 }
 
 function statusColor(status) {
@@ -218,8 +210,8 @@ function statusColor(status) {
 }
 
 function getApiError(err, t, fallback) {
-  if (err.response?.status === 401) return t('errors.session_expired', { defaultValue: 'Session expirée.' });
-  if (err.response?.status === 403) return t('errors.forbidden', { defaultValue: 'Accès refusé.' });
+  if (err.response?.status === 401) return t('errors.session_expired');
+  if (err.response?.status === 403) return t('errors.forbidden');
   return fallback;
 }
 

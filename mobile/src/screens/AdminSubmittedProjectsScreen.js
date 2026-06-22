@@ -22,9 +22,7 @@ export default function AdminSubmittedProjectsScreen() {
       const res = await api.get('/projets/admin/soumis');
       setProjects(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      setError(getApiError(err, t, t('adminMobile.submittedProjectsLoadError', {
-        defaultValue: 'Impossible de charger les projets soumis.',
-      })));
+      setError(getApiError(err, t, t('adminMobile.submittedProjectsLoadError')));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -39,15 +37,15 @@ export default function AdminSubmittedProjectsScreen() {
     const approved = statut === 'APPROUVE';
     Alert.alert(
       approved
-        ? t('adminMobile.approveProject', { defaultValue: 'Valider le projet' })
-        : t('adminMobile.rejectProject', { defaultValue: 'Refuser le projet' }),
+        ? t('adminMobile.approveProject')
+        : t('adminMobile.rejectProject'),
       approved
-        ? t('adminMobile.confirmApproveProject', { defaultValue: 'Ce projet sera approuvé.' })
-        : t('adminMobile.confirmRejectProject', { defaultValue: 'Ce projet sera refusé.' }),
+        ? t('adminMobile.confirmApproveProject')
+        : t('adminMobile.confirmRejectProject'),
       [
-        { text: t('common.cancel', { defaultValue: 'Annuler' }), style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: approved ? t('adminMobile.validate', { defaultValue: 'Valider' }) : t('adminMobile.refuse', { defaultValue: 'Refuser' }),
+          text: approved ? t('adminMobile.validate') : t('adminMobile.refuse'),
           style: approved ? 'default' : 'destructive',
           onPress: () => processProject(project, statut),
         },
@@ -62,13 +60,11 @@ export default function AdminSubmittedProjectsScreen() {
     try {
       await api.patch(`/projets/${project.id}/statut?statut=${statut}`);
       setMessage(statut === 'APPROUVE'
-        ? t('adminMobile.projectApproved', { defaultValue: 'Projet validé.' })
-        : t('adminMobile.projectRejected', { defaultValue: 'Projet refusé.' }));
+        ? t('adminMobile.projectApproved')
+        : t('adminMobile.projectRejected'));
       await loadProjects();
     } catch (err) {
-      setError(getApiError(err, t, t('adminMobile.projectProcessError', {
-        defaultValue: 'Impossible de traiter ce projet.',
-      })));
+      setError(getApiError(err, t, t('adminMobile.projectProcessError')));
     } finally {
       setProcessingId(null);
     }
@@ -78,7 +74,7 @@ export default function AdminSubmittedProjectsScreen() {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={COLORS.bxBlue} />
-        <Text style={styles.loadingText}>{t('common.loading', { defaultValue: 'Chargement...' })}</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -87,11 +83,9 @@ export default function AdminSubmittedProjectsScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <SectionHeader
-          title={t('adminMobile.submittedProjects', { defaultValue: 'Projets soumis' })}
-          subtitle={t('adminMobile.submittedProjectsSubtitle', {
-            count: projects.length,
-            defaultValue: `${projects.length} projet(s) à traiter`,
-          })}
+          title={t('adminMobile.submittedProjects')}
+          subtitle={t('adminMobile.submittedProjectsSubtitle',{
+            count: projects.length})}
           icon="project"
         />
       </View>
@@ -102,9 +96,9 @@ export default function AdminSubmittedProjectsScreen() {
       {projects.length === 0 ? (
         <EmptyState
           icon="check"
-          title={t('adminMobile.noSubmittedProjects', { defaultValue: 'Aucun projet soumis' })}
-          text={t('adminMobile.noSubmittedProjectsText', { defaultValue: 'Les projets en attente de décision apparaîtront ici.' })}
-          actionLabel={t('common.retry', { defaultValue: 'Réessayer' })}
+          title={t('adminMobile.noSubmittedProjects')}
+          text={t('adminMobile.noSubmittedProjectsText')}
+          actionLabel={t('common.retry')}
           onAction={() => loadProjects()}
         />
       ) : (
@@ -137,26 +131,26 @@ function ProjectCard({ project, processing, onApprove, onReject, t }) {
           <AppIcon name="project" size={20} color={COLORS.impactOrange} />
         </View>
         <View style={styles.cardText}>
-          <Text style={styles.title} numberOfLines={2}>{project.titre || t('common.notAvailable', { defaultValue: 'Non renseigné' })}</Text>
-          <Text style={styles.subtitle} numberOfLines={2}>{project.description || project.groupeNom || t('common.notAvailable', { defaultValue: 'Non renseigné' })}</Text>
+          <Text style={styles.title} numberOfLines={2}>{project.titre || t('common.notAvailable')}</Text>
+          <Text style={styles.subtitle} numberOfLines={2}>{project.description || project.groupeNom || t('common.notAvailable')}</Text>
         </View>
         <Badge label={formatStatus(project.statut, t)} color={COLORS.warning} soft />
       </View>
 
       <View style={styles.metaBox}>
-        <Meta label={t('navigation.groups', { defaultValue: 'Groupe' })} value={project.groupeNom || '-'} />
-        <Meta label={t('projects.carrier', { defaultValue: 'Porteur' })} value={ownerName(project, t)} />
-        <Meta label={t('projects.budget', { defaultValue: 'Budget' })} value={`${project.budgetDemande || 0} €`} />
+        <Meta label={t('navigation.groups')} value={project.groupeNom || '-'} />
+        <Meta label={t('projects.carrier')} value={ownerName(project, t)} />
+        <Meta label={t('projects.budget')} value={`${project.budgetDemande || 0} €`} />
       </View>
 
       <View style={styles.actions}>
         <TouchableOpacity style={[styles.approveButton, processing && styles.disabled]} disabled={processing} onPress={onApprove}>
           <AppIcon name="check" size={16} color="#fff" />
-          <Text style={styles.actionText}>{t('adminMobile.validate', { defaultValue: 'Valider' })}</Text>
+          <Text style={styles.actionText}>{t('adminMobile.validate')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.rejectButton, processing && styles.disabled]} disabled={processing} onPress={onReject}>
           <AppIcon name="close" size={16} color="#fff" />
-          <Text style={styles.actionText}>{t('adminMobile.refuse', { defaultValue: 'Refuser' })}</Text>
+          <Text style={styles.actionText}>{t('adminMobile.refuse')}</Text>
         </TouchableOpacity>
       </View>
     </Card>
@@ -183,16 +177,16 @@ function InfoBox({ text, tone }) {
 
 function ownerName(project, t) {
   const name = `${project.porteurPrenom || ''} ${project.porteurNom || ''}`.trim();
-  return name || project.porteurEmail || t('common.notAvailable', { defaultValue: 'Non renseigné' });
+  return name || project.porteurEmail || t('common.notAvailable');
 }
 
 function formatStatus(status, t) {
-  return t(`statuses.${status}`, { defaultValue: String(status || '').replaceAll('_', ' ') || '-' });
+  return t(`statuses.${status}`);
 }
 
 function getApiError(err, t, fallback) {
-  if (err.response?.status === 401) return t('errors.session_expired', { defaultValue: 'Session expirée.' });
-  if (err.response?.status === 403) return t('errors.forbidden', { defaultValue: 'Accès refusé.' });
+  if (err.response?.status === 401) return t('errors.session_expired');
+  if (err.response?.status === 403) return t('errors.forbidden');
   return fallback;
 }
 

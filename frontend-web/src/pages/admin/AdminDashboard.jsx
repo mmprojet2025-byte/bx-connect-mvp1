@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import {
+  Bar,
+  BarChart,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import api from '../../api/axios'
 import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
@@ -54,10 +65,21 @@ export default function AdminDashboard() {
   const soutiensEnAttente = soutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE')
   const activitesAPublier = activites.filter(activite => activite.statut === 'BROUILLON')
   const pendingTotal = groupesEnAttente.length + projetsSoumis.length + soutiensEnAttente.length + activitesAPublier.length
+  const projectStatusData = useMemo(
+    () => buildStatusData(projets, 'statut', t),
+    [projets, t]
+  )
+  const activityStatusData = useMemo(
+    () => buildStatusData(activites, 'statut', t),
+    [activites, t]
+  )
+  const supportStatusData = useMemo(
+    () => buildStatusData(soutiens, 'statutPaiement', t),
+    [soutiens, t]
+  )
 
   return (
     <CollaborativeDashboardLayout
-      role="ADMIN"
       emoji="Shield"
       title={t('ux.adminDashboard.title', { defaultValue: 'Centre de pilotage BX-Connect' })}
       subtitle={t('admin.dashboardSummary', {
@@ -91,6 +113,13 @@ export default function AdminDashboard() {
               t={t}
             />
 
+            <AdminCharts
+              projectStatusData={projectStatusData}
+              activityStatusData={activityStatusData}
+              supportStatusData={supportStatusData}
+              t={t}
+            />
+
             <ActivityFeed
               title={t('activityFeed.title', { defaultValue: 'Mon fil d’activité' })}
               subtitle={t('activityFeed.adminSubtitle', { defaultValue: 'Validations, créations et changements de statut à surveiller.' })}
@@ -113,6 +142,98 @@ export default function AdminDashboard() {
           </>
         )}
     </CollaborativeDashboardLayout>
+  )
+}
+
+const CHART_COLORS = ['#2563eb', '#0f766e', '#d97706', '#7c3aed', '#dc2626', '#64748b']
+
+function buildStatusData(items, field, t) {
+  const counts = items.reduce((acc, item) => {
+    const status = item[field] || 'UNKNOWN'
+    acc[status] = (acc[status] || 0) + 1
+    return acc
+  }, {})
+
+  return Object.entries(counts).map(([status, value]) => ({
+    status,
+    label: t(`statuses.${status}`, { defaultValue: status.replaceAll('_', ' ') }),
+    value,
+  }))
+}
+
+function AdminCharts({ projectStatusData, activityStatusData, supportStatusData, t }) {
+  const hasProjects = projectStatusData.length > 0
+  const hasActivities = activityStatusData.length > 0
+  const hasSupports = supportStatusData.length > 0
+
+  if (!hasProjects && !hasActivities && !hasSupports) return null
+
+  return (
+    <section className="mb-6 rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-lg shadow-slate-950/5">
+      <SectionHeader icon="BarChart" title={t('dashboardCharts.title')} subtitle={t('dashboardCharts.adminSubtitle')} />
+      <div className="grid gap-4 xl:grid-cols-3">
+        {hasProjects && (
+          <ChartPanel title={t('dashboardCharts.projectsByStatus')}>
+            <StatusBarChart data={projectStatusData} />
+          </ChartPanel>
+        )}
+        {hasActivities && (
+          <ChartPanel title={t('dashboardCharts.activitiesByStatus')}>
+            <StatusPieChart data={activityStatusData} />
+          </ChartPanel>
+        )}
+        {hasSupports && (
+          <ChartPanel title={t('dashboardCharts.supportsByStatus')}>
+            <StatusPieChart data={supportStatusData} />
+          </ChartPanel>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function ChartPanel({ title, children }) {
+  return (
+    <article className="min-h-[240px] rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+      <h3 className="mb-3 text-sm font-black text-slate-800">{title}</h3>
+      {children}
+    </article>
+  )
+}
+
+function StatusBarChart({ data }) {
+  return (
+    <div className="h-48">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
+          <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} height={52} />
+          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+          <Tooltip />
+          <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+            {data.map((entry, index) => (
+              <Cell key={entry.status} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+function StatusPieChart({ data }) {
+  return (
+    <div className="h-48">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie data={data} dataKey="value" nameKey="label" innerRadius={42} outerRadius={72} paddingAngle={3}>
+            {data.map((entry, index) => (
+              <Cell key={entry.status} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
   )
 }
 

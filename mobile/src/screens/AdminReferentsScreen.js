@@ -21,9 +21,7 @@ export default function AdminReferentsScreen() {
       const res = await api.get('/admin/referents');
       setReferents(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      setError(getApiError(err, t, t('adminMobile.referentsLoadError', {
-        defaultValue: 'Impossible de charger les référents.',
-      })));
+      setError(getApiError(err, t, t('adminMobile.referentsLoadError')));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -47,7 +45,7 @@ export default function AdminReferentsScreen() {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={COLORS.bxBlue} />
-        <Text style={styles.loadingText}>{t('common.loading', { defaultValue: 'Chargement...' })}</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -56,11 +54,9 @@ export default function AdminReferentsScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <SectionHeader
-          title={t('adminMobile.referentsTitle', { defaultValue: 'Référents' })}
-          subtitle={t('adminMobile.referentsSubtitle', {
-            count: referents.length,
-            defaultValue: `${referents.length} référent(s)`,
-          })}
+          title={t('adminMobile.referentsTitle')}
+          subtitle={t('adminMobile.referentsSubtitle',{
+            count: referents.length})}
           icon="profile"
         />
         <View style={styles.searchBox}>
@@ -69,7 +65,7 @@ export default function AdminReferentsScreen() {
             style={styles.searchInput}
             value={search}
             onChangeText={setSearch}
-            placeholder={t('common.search', { defaultValue: 'Rechercher' })}
+            placeholder={t('common.search')}
             placeholderTextColor="#94a3b8"
           />
         </View>
@@ -78,16 +74,16 @@ export default function AdminReferentsScreen() {
       {error ? (
         <EmptyState
           icon="warning"
-          title={t('common.error', { defaultValue: 'Erreur' })}
+          title={t('common.error')}
           text={error}
-          actionLabel={t('common.retry', { defaultValue: 'Réessayer' })}
+          actionLabel={t('common.retry')}
           onAction={() => loadReferents()}
         />
       ) : filteredReferents.length === 0 ? (
         <EmptyState
           icon="profile"
-          title={t('adminMobile.noReferents', { defaultValue: 'Aucun référent' })}
-          text={t('adminMobile.noReferentsText', { defaultValue: 'Les référents apparaîtront ici.' })}
+          title={t('adminMobile.noReferents')}
+          text={t('adminMobile.noReferentsText')}
         />
       ) : (
         <FlatList
@@ -106,7 +102,7 @@ export default function AdminReferentsScreen() {
 function ReferentCard({ referent, language, t }) {
   const active = referent.actif !== false;
   const fullName = `${referent.prenom || ''} ${referent.nom || ''}`.trim()
-    || t('adminMobile.unknownUser', { defaultValue: 'Utilisateur' });
+    || t('adminMobile.unknownUser');
 
   return (
     <Card style={styles.card}>
@@ -116,22 +112,20 @@ function ReferentCard({ referent, language, t }) {
         </View>
         <View style={styles.cardText}>
           <Text style={styles.name} numberOfLines={1}>{fullName}</Text>
-          <Text style={styles.email} numberOfLines={1}>{referent.email || t('common.notAvailable', { defaultValue: 'Non renseigné' })}</Text>
+          <Text style={styles.email} numberOfLines={1}>{referent.email || t('common.notAvailable')}</Text>
         </View>
         <Badge
-          label={active ? t('common.active', { defaultValue: 'Actif' }) : t('common.inactive', { defaultValue: 'Inactif' })}
+          label={active ? t('common.active') : t('common.inactive')}
           color={active ? COLORS.success : COLORS.danger}
           soft
         />
       </View>
       <View style={styles.metaBox}>
-        <Meta label={t('users.status', { defaultValue: 'Statut' })} value={active ? t('common.active', { defaultValue: 'Actif' }) : t('common.inactive', { defaultValue: 'Inactif' })} />
-        <Meta label={t('users.registration', { defaultValue: 'Inscription' })} value={formatDate(referent.dateInscription, language, t)} />
+        <Meta label={t('users.status')} value={active ? t('common.active') : t('common.inactive')} />
+        <Meta label={t('users.registration')} value={formatDate(referent.dateInscription, language, t)} />
       </View>
       <Text style={styles.readOnlyHint}>
-        {t('adminMobile.referentsReadOnlyHint', {
-          defaultValue: 'Création et modifications avancées disponibles sur le web.',
-        })}
+        {t('adminMobile.referentsReadOnlyHint')}
       </Text>
     </Card>
   );
@@ -151,13 +145,13 @@ function initials(user) {
 }
 
 function formatDate(value, language, t) {
-  if (!value) return t('common.notAvailable', { defaultValue: 'Non renseigné' });
+  if (!value) return t('common.notAvailable');
   return new Date(value).toLocaleDateString(language || 'fr-BE');
 }
 
 function getApiError(err, t, fallback) {
-  if (err.response?.status === 401) return t('errors.session_expired', { defaultValue: 'Session expirée.' });
-  if (err.response?.status === 403) return t('errors.forbidden', { defaultValue: 'Accès refusé.' });
+  if (err.response?.status === 401) return t('errors.session_expired');
+  if (err.response?.status === 403) return t('errors.forbidden');
   return fallback;
 }
 

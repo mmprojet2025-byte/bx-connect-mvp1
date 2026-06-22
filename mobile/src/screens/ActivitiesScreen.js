@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import AppIcon from '../components/AppIcon';
+import { getReadOnlyCache, saveReadOnlyCache } from '../services/readOnlyCache';
 import {
   EmptyState as SharedEmptyState,
   ErrorState as SharedErrorState,
@@ -27,6 +28,7 @@ const EMPTY_FORM = {
   gratuite: true,
   prix: '',
 };
+const PUBLIC_ACTIVITIES_CACHE_KEY = 'activities:public';
 
 export default function ActivitiesScreen() {
   const { t, i18n } = useTranslation();
@@ -49,6 +51,7 @@ export default function ActivitiesScreen() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [cacheNotice, setCacheNotice] = useState('');
   const [recherche, setRecherche] = useState('');
 
   useEffect(() => {
@@ -58,6 +61,7 @@ export default function ActivitiesScreen() {
   const chargerActivites = async () => {
     setLoading(true);
     setError('');
+    setCacheNotice('');
 
     if (isSuperAdmin) {
       setLoading(false);
@@ -87,7 +91,9 @@ export default function ActivitiesScreen() {
       }
 
       const activitesRes = await api.get('/activites', { skipAuth: true });
-      setActivites(activitesRes.data || []);
+      const publicActivities = activitesRes.data || [];
+      setActivites(publicActivities);
+      await saveReadOnlyCache(PUBLIC_ACTIVITIES_CACHE_KEY, publicActivities);
 
       if (isMembre) {
         try {
@@ -100,6 +106,20 @@ export default function ActivitiesScreen() {
         setInscriptions([]);
       }
     } catch (err) {
+      const canUsePublicCache = !isAdmin && !isReferent && !isPartenaire && !isSuperAdmin
+        && err.response?.status !== 403;
+      const cachedActivities = canUsePublicCache
+        ? await getReadOnlyCache(PUBLIC_ACTIVITIES_CACHE_KEY)
+        : null;
+
+      if (cachedActivities?.length) {
+        setActivites(cachedActivities);
+        setInscriptions([]);
+        setCacheNotice(t('common.cache_notice'));
+        setError('');
+        return;
+      }
+
       if (isMembre && err.response?.status === 403) {
         setActivites([]);
         setInscriptions([]);
@@ -224,9 +244,8 @@ export default function ActivitiesScreen() {
     if (activite.statut === statut) return;
     Alert.alert(
       t('activities.change_status'),
-      t('activities.confirm_status_change', {
-        status: t(`statuses.${statut}`, { defaultValue: statut }),
-      }),
+      t('activities.confirm_status_change',{
+        status: t(`statuses.${statut}`, { defaultValue: statut })}),
       [
         { text: t('buttons.cancel'), style: 'cancel' },
         {
@@ -301,7 +320,11 @@ export default function ActivitiesScreen() {
       )}
 
       {isPartenaire && (
-        <InfoBox text={t('partner.activitiesReadOnly', { defaultValue: 'Activités ouvertes au soutien et initiatives à suivre.' })} />
+        <InfoBox text={t('partner.activitiesReadOnly')} />
+      )}
+
+      {cacheNotice !== '' && (
+        <InfoBox text={cacheNotice} />
       )}
 
       {message !== '' && (
@@ -358,6 +381,7 @@ export default function ActivitiesScreen() {
               onStatusChange={(statut) => confirmStatusChange(item, statut)}
               t={t}
               language={i18n.language}
+              readOnly={cacheNotice !== ''}
             />
           )}
           contentContainerStyle={styles.listContent}
@@ -396,10 +420,11 @@ function ActivityCard({
   onStatusChange,
   t,
   language,
+  readOnly,
 }) {
   const complete = isActiviteComplete(activite);
   const alreadyRegistered = !!inscription && inscription.statut !== 'ANNULEE';
-  const canRegister = isMembre && activite.statut === 'PUBLIEE' && !alreadyRegistered && !complete;
+  const canRegister = !readOnly && isMembre && activite.statut === 'PUBLIEE' && !alreadyRegistered && !complete;
   const status = getActivityStatus({ activite, inscription, complete }, t);
   const itineraryUrl = buildMapsUrl({
     latitude: activite.latitude,
@@ -431,7 +456,7 @@ function ActivityCard({
         >
           <AppIcon name="location-outline" size={14} color="#2563EB" />
           <Text style={styles.itineraryButtonText}>
-            {t('geo.viewItinerary', { defaultValue: "Voir l’itinéraire" })}
+            {t('geo.viewItinerary')}
           </Text>
         </TouchableOpacity>
       ) : null}
@@ -469,11 +494,13 @@ function ActivityCard({
               <TouchableOpacity
                 style={styles.cancelRegistrationButton}
                 onPress={onAnnulerInscription}
-                disabled={actionLoading}
+                disabled={readOnly || actionLoading}
               >
                 <Text style={styles.cancelRegistrationText}>{t('activities.cancel_short')}</Text>
               </TouchableOpacity>
             </View>
+          ) : readOnly ? (
+            <StatusLine text={t('common.cache_read_only')} color="#64748b" />
           ) : complete ? (
             <StatusLine text={t('activities.full')} color="#EF4444" />
           ) : activite.statut !== 'PUBLIEE' ? (
@@ -520,7 +547,7 @@ function ActivityCard({
                     activite.statut === statut && styles.statusOptionTextActive,
                   ]}
                 >
-                  {t(`statuses.${statut}`, { defaultValue: statut })}
+                  {t(`statuses.${statut}`)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -593,7 +620,7 @@ function ActivityFormModal({
                 label={t('activities.date')}
                 value={form.date}
                 onChangeText={(value) => update('date', value)}
-                placeholder="2026-06-12"
+                placeholder={t('activities.date_placeholder')}
                 keyboardType="numbers-and-punctuation"
               />
               <FormInput
@@ -601,7 +628,7 @@ function ActivityFormModal({
                 label={t('activities.start_time')}
                 value={form.heureDebut}
                 onChangeText={(value) => update('heureDebut', value)}
-                placeholder="09:00"
+                placeholder={t('activities.start_time_placeholder')}
                 keyboardType="numbers-and-punctuation"
               />
             </View>
@@ -612,7 +639,7 @@ function ActivityFormModal({
                 label={t('activities.end_time')}
                 value={form.heureFin}
                 onChangeText={(value) => update('heureFin', value)}
-                placeholder="12:00"
+                placeholder={t('activities.end_time_placeholder')}
                 keyboardType="numbers-and-punctuation"
               />
               <FormInput
@@ -620,7 +647,7 @@ function ActivityFormModal({
                 label={t('activities.form_capacity')}
                 value={form.capaciteMax}
                 onChangeText={(value) => update('capaciteMax', value)}
-                placeholder="20"
+                placeholder={t('activities.capacity_placeholder')}
                 keyboardType="numeric"
               />
             </View>
@@ -661,7 +688,7 @@ function ActivityFormModal({
                 label={t('activities.form_price')}
                 value={form.prix}
                 onChangeText={(value) => update('prix', value)}
-                placeholder="15"
+                placeholder={t('activities.price_placeholder')}
                 keyboardType="decimal-pad"
               />
             )}
@@ -861,11 +888,11 @@ function formatCapacite(activite, t) {
 }
 
 function translateInscription(statut, t) {
-  return t(`statuses.${statut}`, { defaultValue: statut || t('statuses.UNKNOWN') });
+  return t(`statuses.${statut}`);
 }
 
 function translateActiviteStatut(statut, t) {
-  return t(`statuses.${statut}`, { defaultValue: statut || t('activities.fallback_activity') });
+  return t(`statuses.${statut}`);
 }
 
 function statusColor(statut) {
@@ -923,8 +950,8 @@ async function openItinerary(url, t) {
     await Linking.openURL(url);
   } catch {
     Alert.alert(
-      t('geo.openErrorTitle', { defaultValue: 'Itinéraire indisponible' }),
-      t('geo.openErrorText', { defaultValue: "Impossible d’ouvrir l’application de cartographie." }),
+      t('geo.openErrorTitle'),
+      t('geo.openErrorText'),
     );
   }
 }

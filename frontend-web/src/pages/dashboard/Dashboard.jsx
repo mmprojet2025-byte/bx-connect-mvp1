@@ -46,7 +46,6 @@ export default function Dashboard() {
 
   return (
     <CollaborativeDashboardLayout
-      role="MEMBRE"
       emoji="👋"
       title={t('memberDashboard.hello', { name: user?.prenom || t('memberDashboard.memberFallback') })}
       subtitle={groupe?.nom ? t('memberDashboard.group.currentWithName', { group: groupe.nom, defaultValue: `Espace de travail : ${groupe.nom}` }) : t('memberDashboard.group.noGroupDescription')}

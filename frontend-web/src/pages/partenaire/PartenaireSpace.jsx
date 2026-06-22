@@ -270,7 +270,6 @@ export default function PartenaireSpace() {
 
   if (loading) return (
     <CollaborativeDashboardLayout
-      role="PARTENAIRE"
       emoji="🤝"
       title={t('partnerSpace.title')}
       subtitle={t('partnerSpace.loading')}
@@ -281,7 +280,6 @@ export default function PartenaireSpace() {
 
   return (
     <CollaborativeDashboardLayout
-      role="PARTENAIRE"
       emoji="Handshake"
       title={profilInstitutionnel?.nomOrganisation || t('partnerSpace.title')}
       subtitle={t('partnerSpace.dashboardSubtitle', { defaultValue: `${projetsOuverts.length} projet(s) ouvert(s) · ${mesSoutiens.length} soutien(s) suivi(s)` })}

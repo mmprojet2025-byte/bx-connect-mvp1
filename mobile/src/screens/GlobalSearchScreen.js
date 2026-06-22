@@ -71,10 +71,8 @@ export default function GlobalSearchScreen({ navigation }) {
     const handled = navigateToResult(result, navigation, auth);
     if (!handled) {
       Alert.alert(
-        t('search.mobileUnavailableTitle', { defaultValue: 'Ouverture indisponible' }),
-        t('search.mobileUnavailableText', {
-          defaultValue: 'Ce résultat existe bien, mais son écran mobile dédié n’est pas encore disponible.',
-        }),
+        t('search.mobileUnavailableTitle'),
+        t('search.mobileUnavailableText'),
       );
     }
   };
@@ -91,7 +89,7 @@ export default function GlobalSearchScreen({ navigation }) {
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="search"
-            placeholder={t('search.placeholder', { defaultValue: 'Rechercher dans BX-Connect...' })}
+            placeholder={t('search.placeholder')}
             placeholderTextColor="#94a3b8"
             style={styles.searchInput}
           />
@@ -100,24 +98,22 @@ export default function GlobalSearchScreen({ navigation }) {
               style={styles.clearButton}
               onPress={() => setQuery('')}
               accessibilityRole="button"
-              accessibilityLabel={t('common.clear', { defaultValue: 'Effacer' })}
+              accessibilityLabel={t('common.clear')}
             >
               <AppIcon name="close" size={19} color={COLORS.muted} />
             </TouchableOpacity>
           ) : null}
         </View>
         <Text style={styles.helperText}>
-          {t('search.helper', {
-            defaultValue: 'Activités, groupes, projets, partenaires, opportunités et membres selon vos droits.',
-          })}
+          {t('search.helper')}
         </Text>
       </View>
 
       {trimmedQuery.length < 2 ? (
         <EmptyState
           icon="search"
-          title={t('search.startTitle', { defaultValue: 'Que cherchez-vous ?' })}
-          text={t('search.startText', { defaultValue: 'Saisissez au moins 2 caractères pour lancer la recherche globale.' })}
+          title={t('search.startTitle')}
+          text={t('search.startText')}
         />
       ) : loading ? (
         <View style={styles.loadingBox}>
@@ -134,8 +130,8 @@ export default function GlobalSearchScreen({ navigation }) {
       ) : flatData.length === 0 ? (
         <EmptyState
           icon="search"
-          title={t('search.noResults', { defaultValue: 'Aucun résultat' })}
-          text={t('search.noResultsText', { defaultValue: 'Essayez avec un autre mot-clé ou une orthographe différente.' })}
+          title={t('search.noResults')}
+          text={t('search.noResultsText')}
         />
       ) : (
         <FlatList
@@ -284,9 +280,9 @@ function typeLabel(type, t) {
     ACTIVITE: t('navigation.activities'),
     GROUPE: t('navigation.groups'),
     PROJET: t('navigation.projects'),
-    PARTENAIRE: t('roles.PARTENAIRE', { defaultValue: 'Partenaires' }),
-    OPPORTUNITE: t('search.opportunities', { defaultValue: 'Opportunités' }),
-    MEMBRE: t('roles.MEMBRE', { defaultValue: 'Membres' }),
+    PARTENAIRE: t('roles.PARTENAIRE'),
+    OPPORTUNITE: t('search.opportunities'),
+    MEMBRE: t('roles.MEMBRE'),
   };
   return labels[type] || type;
 }
@@ -327,7 +323,7 @@ function formatDate(value, language, t) {
 function getApiError(err, t) {
   if (err.response?.status === 401) return t('errors.session_expired');
   if (err.response?.status === 403) return t('errors.forbidden');
-  return t('search.error', { defaultValue: 'Impossible de charger les résultats de recherche.' });
+  return t('search.error');
 }
 
 const styles = StyleSheet.create({

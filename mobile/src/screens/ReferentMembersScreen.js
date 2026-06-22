@@ -130,7 +130,7 @@ function MemberCard({ member, language, t }) {
           <Text style={styles.title}>{name}</Text>
           <Text style={styles.subtitle} numberOfLines={1}>{member.email || t('common.notAvailable')}</Text>
         </View>
-        <Badge label={t(`statuses.${status}`, { defaultValue: status })} color={statusColor(status)} soft />
+        <Badge label={t(`statuses.${status}`)} color={statusColor(status)} soft />
       </View>
       <View style={styles.metaBox}>
         <Meta label={t('navigation.groups')} value={member.groupeNom || t('common.notAvailable')} />

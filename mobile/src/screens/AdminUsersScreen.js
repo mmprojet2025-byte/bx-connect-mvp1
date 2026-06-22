@@ -124,7 +124,7 @@ function UserCard({ user, t }) {
       <View style={styles.metaRow}>
         <Text style={styles.metaLabel}>{t('users.role')}</Text>
         <Text style={[styles.metaValue, { color: roleColor(user.role) }]}>
-          {t(`roles.${user.role}`, { defaultValue: user.role || t('common.notAvailable') })}
+          {t(`roles.${user.role}`)}
         </Text>
       </View>
     </Card>

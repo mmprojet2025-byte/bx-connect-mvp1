@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { trackLoginSuccessRole } from '../monitoring/analytics'
 
 const AuthContext = createContext(null)
 
@@ -27,6 +28,7 @@ export function AuthProvider({ children }) {
     setUser(userData)
     localStorage.setItem('token', newToken)
     localStorage.setItem('user', JSON.stringify(userData))
+    trackLoginSuccessRole(userData?.role)
   }
 
   // logout : vide tout

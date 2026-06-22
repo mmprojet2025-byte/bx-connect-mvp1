@@ -1,6 +1,13 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { onUnauthorized } from '../api/axios';
+import {
+  clearStoredAuth,
+  getStoredToken,
+  getStoredUser,
+  setStoredToken,
+  setStoredUser,
+} from '../services/secureAuthStorage';
+import { trackLoginSuccessRole } from '../services/analytics';
 
 const AuthContext = createContext(null);
 
@@ -10,20 +17,19 @@ export function AuthProvider({ children }) {
   const [sessionExpired, setSessionExpired] = useState(false);
   const [loading, setLoading] = useState(true); // ← vrai pendant le chargement initial
 
-  // ─── Charger le token et le user depuis AsyncStorage au démarrage ──────────
+  // ─── Charger le token sécurisé et le user au démarrage ────────────────────
   useEffect(() => {
     const loadStoredAuth = async () => {
       try {
-        const savedToken = await AsyncStorage.getItem('token');
-        const savedUser  = await AsyncStorage.getItem('user');
+        const savedToken = await getStoredToken();
+        const savedUser  = await getStoredUser();
         if (savedToken && savedUser) {
           setToken(savedToken);
           setUser(JSON.parse(savedUser));
         }
-      } catch (error) {
+      } catch {
         // En cas d'erreur de lecture, on vide le stockage
-        await AsyncStorage.removeItem('token');
-        await AsyncStorage.removeItem('user');
+        await clearStoredAuth();
       } finally {
         setLoading(false);
       }
@@ -43,8 +49,9 @@ export function AuthProvider({ children }) {
     setSessionExpired(false);
     setToken(newToken);
     setUser(userData);
-    await AsyncStorage.setItem('token', newToken);
-    await AsyncStorage.setItem('user', JSON.stringify(userData));
+    await setStoredToken(newToken);
+    await setStoredUser(userData);
+    trackLoginSuccessRole(userData?.role);
   };
 
   // ─── Logout : vide tout ───────────────────────────────────────────────────
@@ -52,7 +59,7 @@ export function AuthProvider({ children }) {
     setSessionExpired(false);
     setToken(null);
     setUser(null);
-    await AsyncStorage.multiRemove(['token', 'user']);
+    await clearStoredAuth();
   };
 
   // ─── Helpers de rôle ──────────────────────────────────────────────────────

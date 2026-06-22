@@ -514,15 +514,16 @@ function NotificationLink({ item, count, active, label }) {
 }
 
 const SEARCH_GROUPS = [
-  { type: 'ACTIVITE', label: 'Activités', icon: 'Calendar' },
-  { type: 'GROUPE', label: 'Groupes', icon: 'Users' },
-  { type: 'PROJET', label: 'Projets', icon: 'Rocket' },
-  { type: 'PARTENAIRE', label: 'Partenaires', icon: 'Handshake' },
-  { type: 'OPPORTUNITE', label: 'Opportunités', icon: 'Megaphone' },
-  { type: 'MEMBRE', label: 'Membres', icon: 'User' },
+  { type: 'ACTIVITE', labelKey: 'nav.activities', icon: 'Calendar' },
+  { type: 'GROUPE', labelKey: 'nav.groups', icon: 'Users' },
+  { type: 'PROJET', labelKey: 'nav.projects', icon: 'Rocket' },
+  { type: 'PARTENAIRE', labelKey: 'nav.partner', icon: 'Handshake' },
+  { type: 'OPPORTUNITE', labelKey: 'partnerSpace.opportunities', icon: 'Megaphone' },
+  { type: 'MEMBRE', labelKey: 'nav.members', icon: 'User' },
 ]
 
 function GlobalSearch({ navigate }) {
+  const { t } = useTranslation()
   const searchRef = useRef(null)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
@@ -567,7 +568,7 @@ function GlobalSearch({ navigate }) {
         })
         .catch(() => {
           setResults([])
-          setError('Recherche indisponible.')
+          setError(t('search.unavailable'))
           setOpen(true)
         })
         .finally(() => setLoading(false))
@@ -595,7 +596,7 @@ function GlobalSearch({ navigate }) {
   return (
     <div ref={searchRef} className="relative w-full max-w-md">
       <label className="relative block">
-        <span className="sr-only">Recherche globale</span>
+        <span className="sr-only">{t('search.global')}</span>
         <AppIcon name="Search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
           type="search"
@@ -605,7 +606,7 @@ function GlobalSearch({ navigate }) {
             setQuery(event.target.value)
             setOpen(true)
           }}
-          placeholder="Rechercher dans BX-Connect"
+          placeholder={t('search.placeholder')}
           className="h-10 w-full rounded-full border border-slate-200 bg-slate-50 pl-10 pr-10 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:ring-2 focus:ring-blue-100"
         />
         {query && (
@@ -617,7 +618,7 @@ function GlobalSearch({ navigate }) {
               setOpen(false)
             }}
             className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-            aria-label="Effacer la recherche"
+            aria-label={t('search.clear')}
           >
             <AppIcon name="X" className="h-3.5 w-3.5" />
           </button>
@@ -627,18 +628,18 @@ function GlobalSearch({ navigate }) {
       {showPanel && (
         <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10">
           {loading ? (
-            <SearchState icon="Search" label="Recherche en cours..." />
+            <SearchState icon="Search" label={t('search.loading')} />
           ) : error ? (
             <SearchState icon="TriangleAlert" label={error} tone="error" />
           ) : groupedResults.length === 0 ? (
-            <SearchState icon="Search" label="Aucun résultat" />
+            <SearchState icon="Search" label={t('search.noResults')} />
           ) : (
             <div className="max-h-[70vh] overflow-y-auto py-2">
               {groupedResults.map(group => (
                 <section key={group.type} className="px-2 py-1">
                   <h3 className="mb-1 flex items-center gap-1.5 px-2 text-[11px] font-black uppercase tracking-wide text-slate-400">
                     <AppIcon name={group.icon} className="h-3.5 w-3.5" />
-                    {group.label}
+                    {t(group.labelKey)}
                   </h3>
                   <div className="grid gap-1">
                     {group.items.map(item => (

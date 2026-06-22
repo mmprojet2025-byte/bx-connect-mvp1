@@ -88,9 +88,7 @@ export default function PartnerSupportsScreen({ route }) {
       const res = await api.get('/annonces/partenaire/mes-opportunites');
       setOpportunities(res.data || []);
     } catch (err) {
-      setOpportunityError(getApiError(err, t, t('partner.opportunitiesLoadError', {
-        defaultValue: 'Impossible de charger vos opportunités.',
-      })));
+      setOpportunityError(getApiError(err, t, t('partner.opportunitiesLoadError')));
     } finally {
       setOpportunitiesLoading(false);
     }
@@ -116,7 +114,7 @@ export default function PartnerSupportsScreen({ route }) {
     if (!editingSupport) return;
     const montant = Number(String(supportForm.montant).replace(',', '.'));
     if (!montant || montant < 1) {
-      setError(t('partner.supportAmountError', { defaultValue: 'Le montant minimum est de 1 €.' }));
+      setError(t('partner.supportAmountError'));
       return;
     }
 
@@ -128,13 +126,11 @@ export default function PartnerSupportsScreen({ route }) {
         montant,
         message: supportForm.message.trim(),
       });
-      setMessage(t('partner.supportUpdated', { defaultValue: 'Votre soutien a été modifié.' }));
+      setMessage(t('partner.supportUpdated'));
       closeEditSupportAfterSave();
       await chargerSoutiens();
     } catch (err) {
-      setError(getApiError(err, t, t('partner.supportUpdateError', {
-        defaultValue: 'Ce soutien n’est plus modifiable.',
-      })));
+      setError(getApiError(err, t, t('partner.supportUpdateError')));
     } finally {
       setSavingSupport(false);
     }
@@ -147,14 +143,12 @@ export default function PartnerSupportsScreen({ route }) {
 
   const confirmCancelSupport = (support) => {
     Alert.alert(
-      t('partner.cancelSupport', { defaultValue: 'Annuler le soutien' }),
-      t('partner.confirmCancelSupport', {
-        defaultValue: 'Voulez-vous annuler cette proposition de soutien ?',
-      }),
+      t('partner.cancelSupport'),
+      t('partner.confirmCancelSupport'),
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
-          text: t('partner.cancelSupport', { defaultValue: 'Annuler le soutien' }),
+          text: t('partner.cancelSupport'),
           style: 'destructive',
           onPress: () => cancelSupport(support),
         },
@@ -168,12 +162,10 @@ export default function PartnerSupportsScreen({ route }) {
     setMessage('');
     try {
       await api.patch(`/partenaire/mes-soutiens/${support.id}/annuler`);
-      setMessage(t('partner.supportCancelled', { defaultValue: 'Votre soutien a été annulé.' }));
+      setMessage(t('partner.supportCancelled'));
       await chargerSoutiens();
     } catch (err) {
-      setError(getApiError(err, t, t('partner.supportCancelError', {
-        defaultValue: 'Ce soutien ne peut plus être annulé.',
-      })));
+      setError(getApiError(err, t, t('partner.supportCancelError')));
     } finally {
       setCancellingId(null);
     }
@@ -204,16 +196,12 @@ export default function PartnerSupportsScreen({ route }) {
     setMessage('');
     try {
       await api.post('/annonces/opportunites', opportunityPayload(opportunityForm));
-      setMessage(t('partner.opportunityCreated', {
-        defaultValue: "Votre opportunité a été envoyée à l'administration pour validation.",
-      }));
+      setMessage(t('partner.opportunityCreated'));
       setShowOpportunityForm(false);
       setOpportunityForm(EMPTY_OPPORTUNITY_FORM);
       await chargerOpportunites();
     } catch (err) {
-      setOpportunityError(getApiError(err, t, t('partner.opportunityCreateError', {
-        defaultValue: 'Impossible de créer cette opportunité.',
-      })));
+      setOpportunityError(getApiError(err, t, t('partner.opportunityCreateError')));
     } finally {
       setSavingOpportunity(false);
     }
@@ -242,21 +230,19 @@ export default function PartnerSupportsScreen({ route }) {
     <View style={styles.container}>
       <View style={styles.header}>
         <SectionHeader
-          title={t('partner.supportsAndOpportunities', { defaultValue: 'Soutiens & Opportunités' })}
-          subtitle={t('partner.mobilePartnerSpaceSubtitle', {
-            defaultValue: 'Deux espaces pour suivre vos soutiens et publier vos opportunités.',
-          })}
+          title={t('partner.supportsAndOpportunities')}
+          subtitle={t('partner.mobilePartnerSpaceSubtitle')}
           icon="wallet"
         />
         <View style={styles.segmented}>
           <SegmentButton
             active={activeTab === 'supports'}
-            label={t('partner.supports', { defaultValue: 'Soutiens' })}
+            label={t('partner.supports')}
             onPress={() => setActiveTab('supports')}
           />
           <SegmentButton
             active={activeTab === 'opportunities'}
-            label={t('partner.opportunities', { defaultValue: 'Opportunités' })}
+            label={t('partner.opportunities')}
             onPress={() => setActiveTab('opportunities')}
           />
         </View>
@@ -355,10 +341,8 @@ function SupportsList({ supports, error, refreshing, t, language, onRefresh, onR
     return (
         <EmptyState
           icon="wallet"
-          title={t('partner.noSupports', { defaultValue: 'Aucun soutien' })}
-          text={t('partner.noSupportsText', {
-            defaultValue: 'Vos propositions de soutien apparaîtront ici après envoi.',
-          })}
+          title={t('partner.noSupports')}
+          text={t('partner.noSupportsText')}
           actionLabel={t('common.retry')}
           onAction={onRetry}
         />
@@ -402,7 +386,7 @@ function SupportCard({ support, t, language, onEdit, onCancel, cancelling }) {
           <Text style={styles.title} numberOfLines={2}>{title}</Text>
           <Text style={styles.subtitle}>{isProject ? t('navigation.projects') : t('navigation.activities')}</Text>
         </View>
-        <Badge label={t(`partner.supportStatuses.${status}`, { defaultValue: status })} color={statusColor(status)} soft />
+        <Badge label={t(`partner.supportStatuses.${status}`)} color={statusColor(status)} soft />
       </View>
       <View style={styles.metaBox}>
         <Meta label={t('partner.amount')} value={`${support.montant || 0} €`} />
@@ -413,21 +397,19 @@ function SupportCard({ support, t, language, onEdit, onCancel, cancelling }) {
         <View style={styles.actions}>
           <TouchableOpacity style={styles.secondaryButton} onPress={onEdit}>
             <AppIcon name="edit" size={16} color={COLORS.bxBlueLight} />
-            <Text style={styles.secondaryButtonText}>{t('common.edit', { defaultValue: 'Modifier' })}</Text>
+            <Text style={styles.secondaryButtonText}>{t('common.edit')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.dangerButton} onPress={onCancel} disabled={cancelling}>
             {cancelling
               ? <ActivityIndicator size="small" color="#fff" />
               : <AppIcon name="close" size={16} color="#fff" />
             }
-            <Text style={styles.dangerButtonText}>{t('common.cancel', { defaultValue: 'Annuler' })}</Text>
+            <Text style={styles.dangerButtonText}>{t('common.cancel')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <Text style={styles.unavailableHint}>
-          {t('partner.supportActionUnavailable', {
-            defaultValue: "Cette action n'est plus disponible car le soutien n'est plus en attente.",
-          })}
+          {t('partner.supportActionUnavailable')}
         </Text>
       )}
     </Card>
@@ -452,7 +434,7 @@ function OpportunitiesList({ opportunities, loading, error, refreshing, t, langu
         <TouchableOpacity style={styles.createOpportunityButton} onPress={onCreate}>
           <AppIcon name="add-circle-outline" size={18} color="#fff" />
           <Text style={styles.createOpportunityText}>
-            {t('partner.createOpportunity', { defaultValue: 'Créer une opportunité' })}
+            {t('partner.createOpportunity')}
           </Text>
         </TouchableOpacity>
       )}
@@ -467,10 +449,8 @@ function OpportunitiesList({ opportunities, loading, error, refreshing, t, langu
       ) : (
         <EmptyState
           icon="alert"
-          title={t('partner.noOpportunities', { defaultValue: 'Aucune opportunité' })}
-          text={t('partner.noOpportunitiesText', {
-            defaultValue: 'Publiez une offre, un stage, une formation ou un appel à projet.',
-          })}
+          title={t('partner.noOpportunities')}
+          text={t('partner.noOpportunitiesText')}
         />
       )}
       renderItem={({ item }) => <OpportunityCard opportunity={item} t={t} language={language} />}
@@ -501,9 +481,9 @@ function OpportunityCard({ opportunity, t, language }) {
         <Text style={styles.message} numberOfLines={2}>{opportunity.descriptionCourte}</Text>
       ) : null}
       <View style={styles.metaBox}>
-        <Meta label={t('partner.date', { defaultValue: 'Date' })} value={formatDate(opportunity.dateCreation, language, t)} />
+        <Meta label={t('partner.date')} value={formatDate(opportunity.dateCreation, language, t)} />
         <Meta
-          label={t('partner.expiration', { defaultValue: 'Expiration' })}
+          label={t('partner.expiration')}
           value={formatDate(opportunity.dateExpiration, language, t)}
         />
       </View>
@@ -520,31 +500,31 @@ function SupportEditModal({ visible, support, form, setForm, saving, onClose, on
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalOverlay}>
         <View style={styles.modalCard}>
-          <Text style={styles.modalTitle}>{t('partner.editSupport', { defaultValue: 'Modifier le soutien' })}</Text>
+          <Text style={styles.modalTitle}>{t('partner.editSupport')}</Text>
           <Text style={styles.modalTarget} numberOfLines={2}>{target}</Text>
-          <Text style={styles.inputLabel}>{t('partner.amount', { defaultValue: 'Montant' })}</Text>
+          <Text style={styles.inputLabel}>{t('partner.amount')}</Text>
           <TextInput
             value={form.montant}
             onChangeText={(value) => setForm((current) => ({ ...current, montant: value }))}
             keyboardType="decimal-pad"
-            placeholder="100"
+            placeholder={t('partner.amountPlaceholder')}
             style={styles.input}
           />
-          <Text style={styles.inputLabel}>{t('partner.message', { defaultValue: 'Message' })}</Text>
+          <Text style={styles.inputLabel}>{t('partner.message')}</Text>
           <TextInput
             value={form.message}
             onChangeText={(value) => setForm((current) => ({ ...current, message: value }))}
             multiline
             numberOfLines={4}
-            placeholder={t('partner.messagePlaceholder', { defaultValue: 'Votre message...' })}
+            placeholder={t('partner.messagePlaceholder')}
             style={[styles.input, styles.textArea]}
           />
           <View style={styles.modalActions}>
             <TouchableOpacity style={styles.modalCancel} onPress={onClose} disabled={saving}>
-              <Text style={styles.modalCancelText}>{t('common.cancel', { defaultValue: 'Annuler' })}</Text>
+              <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.modalSubmit, saving && styles.disabled]} onPress={onSubmit} disabled={saving}>
-              {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalSubmitText}>{t('common.save', { defaultValue: 'Enregistrer' })}</Text>}
+              {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalSubmitText}>{t('common.save')}</Text>}
             </TouchableOpacity>
           </View>
         </View>
@@ -558,41 +538,39 @@ function OpportunityFormModal({ visible, form, setForm, saving, onClose, onSubmi
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.fullModal}>
         <ScrollView contentContainerStyle={styles.formContent} keyboardShouldPersistTaps="handled">
-          <Text style={styles.modalTitle}>{t('partner.createOpportunity', { defaultValue: 'Créer une opportunité' })}</Text>
+          <Text style={styles.modalTitle}>{t('partner.createOpportunity')}</Text>
           <Text style={styles.modalHint}>
-            {t('partner.opportunityModerationHint', {
-              defaultValue: "Elle sera envoyée à l'administration pour validation avant publication.",
-            })}
+            {t('partner.opportunityModerationHint')}
           </Text>
 
-          <Text style={styles.inputLabel}>{t('common.title', { defaultValue: 'Titre' })}</Text>
+          <Text style={styles.inputLabel}>{t('common.title')}</Text>
           <TextInput
             value={form.titre}
             onChangeText={(value) => setForm((current) => ({ ...current, titre: value }))}
             style={styles.input}
-            placeholder={t('partner.opportunityTitlePlaceholder', { defaultValue: 'Titre de l’opportunité' })}
+            placeholder={t('partner.opportunityTitlePlaceholder')}
           />
 
-          <Text style={styles.inputLabel}>{t('partner.shortDescription', { defaultValue: 'Description courte' })}</Text>
+          <Text style={styles.inputLabel}>{t('partner.shortDescription')}</Text>
           <TextInput
             value={form.descriptionCourte}
             onChangeText={(value) => setForm((current) => ({ ...current, descriptionCourte: value }))}
             style={[styles.input, styles.textAreaSmall]}
             multiline
             maxLength={300}
-            placeholder={t('partner.shortDescriptionPlaceholder', { defaultValue: 'Résumé visible dans les annonces' })}
+            placeholder={t('partner.shortDescriptionPlaceholder')}
           />
 
-          <Text style={styles.inputLabel}>{t('common.content', { defaultValue: 'Contenu' })}</Text>
+          <Text style={styles.inputLabel}>{t('common.content')}</Text>
           <TextInput
             value={form.contenu}
             onChangeText={(value) => setForm((current) => ({ ...current, contenu: value }))}
             style={[styles.input, styles.textArea]}
             multiline
-            placeholder={t('partner.opportunityContentPlaceholder', { defaultValue: 'Détail de l’offre ou de la publication' })}
+            placeholder={t('partner.opportunityContentPlaceholder')}
           />
 
-          <Text style={styles.inputLabel}>{t('partner.category', { defaultValue: 'Catégorie' })}</Text>
+          <Text style={styles.inputLabel}>{t('partner.category')}</Text>
           <View style={styles.categoryGrid}>
             {OPPORTUNITY_CATEGORIES.map((category) => (
               <TouchableOpacity
@@ -607,30 +585,30 @@ function OpportunityFormModal({ visible, form, setForm, saving, onClose, onSubmi
             ))}
           </View>
 
-          <Text style={styles.inputLabel}>{t('partner.externalLink', { defaultValue: 'Lien externe' })}</Text>
+          <Text style={styles.inputLabel}>{t('partner.externalLink')}</Text>
           <TextInput
             value={form.lienExterne}
             onChangeText={(value) => setForm((current) => ({ ...current, lienExterne: value }))}
             style={styles.input}
             autoCapitalize="none"
             keyboardType="url"
-            placeholder="https://..."
+            placeholder={t('common.urlPlaceholder')}
           />
 
-          <Text style={styles.inputLabel}>{t('partner.expirationDate', { defaultValue: 'Date expiration' })}</Text>
+          <Text style={styles.inputLabel}>{t('partner.expirationDate')}</Text>
           <TextInput
             value={form.dateExpiration}
             onChangeText={(value) => setForm((current) => ({ ...current, dateExpiration: value }))}
             style={styles.input}
-            placeholder="YYYY-MM-DD"
+            placeholder={t('common.datePlaceholder')}
           />
 
           <View style={styles.modalActions}>
             <TouchableOpacity style={styles.modalCancel} onPress={onClose} disabled={saving}>
-              <Text style={styles.modalCancelText}>{t('common.cancel', { defaultValue: 'Annuler' })}</Text>
+              <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.modalSubmit, saving && styles.disabled]} onPress={onSubmit} disabled={saving}>
-              {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalSubmitText}>{t('common.send', { defaultValue: 'Envoyer' })}</Text>}
+              {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalSubmitText}>{t('common.send')}</Text>}
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -667,19 +645,19 @@ function moderationColor(status) {
 }
 
 function formatStatus(status, t) {
-  return t(`partner.opportunityStatuses.${status}`, { defaultValue: String(status || '').replaceAll('_', ' ') });
+  return t(`partner.opportunityStatuses.${status}`);
 }
 
 function formatCategory(category, t) {
-  return t(`partner.opportunityCategories.${category}`, { defaultValue: String(category || '').replaceAll('_', ' ') });
+  return t(`partner.opportunityCategories.${category}`);
 }
 
 function validateOpportunityForm(form, t) {
-  if (!form.titre.trim()) return t('partner.opportunityTitleRequired', { defaultValue: 'Le titre est obligatoire.' });
-  if (!form.contenu.trim()) return t('partner.opportunityContentRequired', { defaultValue: 'Le contenu est obligatoire.' });
-  if (!form.categorieOpportunite) return t('partner.opportunityCategoryRequired', { defaultValue: 'La catégorie est obligatoire.' });
+  if (!form.titre.trim()) return t('partner.opportunityTitleRequired');
+  if (!form.contenu.trim()) return t('partner.opportunityContentRequired');
+  if (!form.categorieOpportunite) return t('partner.opportunityCategoryRequired');
   if (form.dateExpiration && !/^\d{4}-\d{2}-\d{2}$/.test(form.dateExpiration.trim())) {
-    return t('partner.opportunityDateFormat', { defaultValue: 'La date doit être au format YYYY-MM-DD.' });
+    return t('partner.opportunityDateFormat');
   }
   return '';
 }

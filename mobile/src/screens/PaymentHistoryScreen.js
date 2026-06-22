@@ -6,8 +6,10 @@ import {
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import AppIcon from '../components/AppIcon';
+import { useTranslation } from 'react-i18next';
 
 export default function PaymentHistoryScreen() {
+  const { t, i18n } = useTranslation();
   const { isAuthenticated } = useAuth();
 
   const [paiements, setPaiements] = useState([]);
@@ -26,7 +28,7 @@ export default function PaymentHistoryScreen() {
       const res = await api.get('/stripe/historique');
       setPaiements(res.data);
     } catch {
-      setError('Impossible de charger l\'historique.');
+      setError(t('paymentHistory.loadError'));
     } finally {
       setLoading(false);
     }
@@ -65,12 +67,12 @@ export default function PaymentHistoryScreen() {
             <Text style={styles.cardTitle} numberOfLines={1}>
               {item.activiteTitre ? item.activiteTitre :
                item.projetTitre   ? item.projetTitre :
-               'Soutien BX-CONNECT'}
+               t('paymentHistory.supportFallback')}
             </Text>
             <Text style={styles.cardDate}>
               {item.fournisseur || 'STRIPE'} ·{' '}
               {item.dateCreation
-                ? new Date(item.dateCreation).toLocaleDateString('fr-BE')
+                ? new Date(item.dateCreation).toLocaleDateString(i18n.language || 'fr-BE')
                 : '—'}
             </Text>
             {item.message && (
@@ -98,8 +100,8 @@ export default function PaymentHistoryScreen() {
         <View style={styles.emptyIcon}>
           <AppIcon name="lock" size={32} color="#38BDF8" />
         </View>
-        <Text style={styles.emptyTitle}>Connexion requise</Text>
-        <Text style={styles.emptyText}>Connectez-vous pour voir votre historique.</Text>
+        <Text style={styles.emptyTitle}>{t('paymentHistory.loginTitle')}</Text>
+        <Text style={styles.emptyText}>{t('paymentHistory.loginText')}</Text>
       </View>
     );
   }
@@ -110,9 +112,9 @@ export default function PaymentHistoryScreen() {
       {/* En-tête */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>Historique des paiements</Text>
+          <Text style={styles.headerTitle}>{t('paymentHistory.title')}</Text>
           <Text style={styles.headerSub}>
-            Total payé : <Text style={styles.totalPaye}>{totalPaye.toFixed(2)} €</Text>
+            {t('paymentHistory.totalPaid')} <Text style={styles.totalPaye}>{totalPaye.toFixed(2)} €</Text>
           </Text>
         </View>
         <TouchableOpacity style={styles.refreshBtn} onPress={fetchHistorique}>
@@ -146,18 +148,18 @@ export default function PaymentHistoryScreen() {
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#1E3A8A" />
-          <Text style={styles.loadingText}>Chargement...</Text>
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
         </View>
       ) : paiementsFiltres.length === 0 ? (
         <View style={styles.centered}>
           <View style={styles.emptyIcon}>
             <AppIcon name="payment" size={32} color="#38BDF8" />
           </View>
-          <Text style={styles.emptyTitle}>Aucun paiement</Text>
+          <Text style={styles.emptyTitle}>{t('paymentHistory.emptyTitle')}</Text>
           <Text style={styles.emptyText}>
             {filtre === 'TOUS'
-              ? 'Vous n\'avez pas encore effectué de paiement.'
-              : `Aucun paiement avec le statut "${filtre}".`}
+              ? t('paymentHistory.emptyAll')
+              : t('paymentHistory.emptyForStatus', { status: filtre })}
           </Text>
         </View>
       ) : (

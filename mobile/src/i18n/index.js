@@ -6,6 +6,7 @@ import { initReactI18next } from 'react-i18next';
 import en from './locales/en.json';
 import fr from './locales/fr.json';
 import nl from './locales/nl.json';
+import { trackLanguageChange } from '../services/analytics';
 
 export const LANGUAGE_STORAGE_KEY = 'bxconnect_mobile_lang';
 export const SUPPORTED_LANGUAGES = ['fr', 'nl', 'en'];
@@ -66,6 +67,7 @@ export async function changeAppLanguage(language) {
 
   await i18n.changeLanguage(normalizedLanguage);
   await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, normalizedLanguage);
+  trackLanguageChange(normalizedLanguage);
 }
 
 export default i18n;

@@ -7,11 +7,14 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import AppIcon from '../components/AppIcon';
+import { getReadOnlyCache, saveReadOnlyCache } from '../services/readOnlyCache';
 import {
   EmptyState as SharedEmptyState,
   ErrorState as SharedErrorState,
   LoadingState,
 } from '../components/MobileUI';
+
+const PUBLIC_GROUPS_CACHE_KEY = 'groups:public';
 
 export default function GroupesScreen() {
   const { t } = useTranslation();
@@ -29,6 +32,7 @@ export default function GroupesScreen() {
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [cacheNotice, setCacheNotice] = useState('');
   const [recherche, setRecherche] = useState('');
 
   useEffect(() => {
@@ -39,6 +43,7 @@ export default function GroupesScreen() {
     setLoading(true);
     setError('');
     setMessage('');
+    setCacheNotice('');
 
     if (isSuperAdmin) {
       setLoading(false);
@@ -59,6 +64,7 @@ export default function GroupesScreen() {
         try {
           const groupesRes = await api.get('/groupes');
           groupesData = groupesRes.data || [];
+          await saveReadOnlyCache(PUBLIC_GROUPS_CACHE_KEY, groupesData);
         } catch (err) {
           if (!isMembre || err.response?.status !== 403) throw err;
 
@@ -83,6 +89,20 @@ export default function GroupesScreen() {
         }
       }
     } catch (err) {
+      const canUsePublicCache = !isAdmin && !isReferent && !isSuperAdmin
+        && err.response?.status !== 403;
+      const cachedGroups = canUsePublicCache
+        ? await getReadOnlyCache(PUBLIC_GROUPS_CACHE_KEY)
+        : null;
+
+      if (cachedGroups?.length) {
+        setGroupes(cachedGroups);
+        setAdhesions([]);
+        setCacheNotice(t('common.cache_notice'));
+        setError('');
+        return;
+      }
+
       if (isMembre && err.response?.status === 403) {
         setGroupes([]);
         setAdhesions([]);
@@ -194,7 +214,11 @@ export default function GroupesScreen() {
       )}
 
       {isAdmin && (
-        <InfoBox text={t('adminMobile.groupsReadOnly', { defaultValue: 'Vue mobile de suivi des groupes, référents et statuts.' })} />
+        <InfoBox text={t('adminMobile.groupsReadOnly')} />
+      )}
+
+      {cacheNotice !== '' && (
+        <InfoBox text={cacheNotice} />
       )}
 
       {message !== '' && (
@@ -245,6 +269,7 @@ export default function GroupesScreen() {
               onRejoindre={() => handleRejoindre(item.id)}
               onQuitter={() => handleQuitter(item.id)}
               t={t}
+              readOnly={cacheNotice !== ''}
             />
           )}
           contentContainerStyle={styles.listContent}
@@ -258,7 +283,7 @@ export default function GroupesScreen() {
 }
 
 function MemberStatus({ adhesionAcceptee, adhesionEnAttente, t }) {
-  let title = t('statuses.AUCUN_GROUPE', { defaultValue: t('memberDashboard.status.noGroupLabel') });
+  let title = t('statuses.AUCUN_GROUPE');
   let text = t('groups.can_request_group');
   let color = '#38BDF8';
   let bg = '#E0F2FE';
@@ -296,11 +321,12 @@ function GroupeCard({
   onRejoindre,
   onQuitter,
   t,
+  readOnly,
 }) {
   const acceptedHere = adhesion?.statut === 'ACCEPTE';
   const pendingHere = adhesion?.statut === 'EN_ATTENTE';
   const refusedHere = adhesion?.statut === 'REFUSE';
-  const canRequest = isMembre && !hasActiveOrPendingAdhesion;
+  const canRequest = !readOnly && isMembre && !hasActiveOrPendingAdhesion;
   const itineraryUrl = buildMapsUrl({
     latitude: groupe.latitude,
     longitude: groupe.longitude,
@@ -330,10 +356,10 @@ function GroupeCard({
         {groupe.theme && <MetaRow label={t('groups.theme')} value={groupe.theme} />}
         {groupe.categorie && <MetaRow label={t('groups.category')} value={groupe.categorie} />}
         {groupe.adresseReunion && (
-          <MetaRow label={t('geo.meetingAddress', { defaultValue: 'Lieu de réunion' })} value={groupe.adresseReunion} />
+          <MetaRow label={t('geo.meetingAddress')} value={groupe.adresseReunion} />
         )}
         {groupe.commune && (
-          <MetaRow label={t('geo.commune', { defaultValue: 'Commune' })} value={groupe.commune} />
+          <MetaRow label={t('geo.commune')} value={groupe.commune} />
         )}
         <MetaRow
           label={t('groups.referent')}
@@ -350,7 +376,7 @@ function GroupeCard({
         >
           <AppIcon name="location-outline" size={16} color="#2563EB" />
           <Text style={styles.itineraryButtonText}>
-            {t('geo.viewItinerary', { defaultValue: "Voir l’itinéraire" })}
+            {t('geo.viewItinerary')}
           </Text>
         </TouchableOpacity>
       ) : null}
@@ -373,7 +399,7 @@ function GroupeCard({
             <TouchableOpacity
               style={[styles.btnDanger, actionLoading && styles.btnDisabled]}
               onPress={onQuitter}
-              disabled={actionLoading}
+              disabled={readOnly || actionLoading}
             >
               {actionLoading
                 ? <ActivityIndicator color="#fff" size="small" />
@@ -390,7 +416,11 @@ function GroupeCard({
             <StatusLine text={t('groups.previous_refused')} color="#EF4444" />
           )}
 
-          {!acceptedHere && !pendingHere && (
+          {readOnly && (
+            <StatusLine text={t('common.cache_read_only')} color="#64748b" />
+          )}
+
+          {!readOnly && !acceptedHere && !pendingHere && (
             <TouchableOpacity
               style={[styles.btnPrimary, (!canRequest || actionLoading) && styles.btnDisabled]}
               onPress={onRejoindre}
@@ -452,7 +482,7 @@ function MetaRow({ label, value }) {
 }
 
 function translateGroupeStatut(statut, t) {
-  return t(`statuses.${statut}`, { defaultValue: statut || t('groups.title') });
+  return t(`statuses.${statut}`);
 }
 
 function getApiError(err, t, fallback) {
@@ -484,8 +514,8 @@ async function openItinerary(url, t) {
     await Linking.openURL(url);
   } catch {
     Alert.alert(
-      t('geo.openErrorTitle', { defaultValue: 'Itinéraire indisponible' }),
-      t('geo.openErrorText', { defaultValue: "Impossible d’ouvrir l’application de cartographie." }),
+      t('geo.openErrorTitle'),
+      t('geo.openErrorText'),
     );
   }
 }
