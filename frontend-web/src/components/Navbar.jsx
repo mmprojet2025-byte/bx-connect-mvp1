@@ -166,6 +166,7 @@ export default function Navbar() {
             <AccountDropdown
               open={openDropdown === 'account'}
               active={location.pathname === '/profil'}
+              notificationsActive={location.pathname === '/notifications'}
               onToggle={toggleDropdown}
               isAuthenticated={isAuthenticated}
               user={user}
@@ -348,13 +349,13 @@ function LanguageDropdown({ open, onToggle, i18n, onLanguageChange, t }) {
   )
 }
 
-function AccountDropdown({ open, active, onToggle, isAuthenticated, user, onLogout, t }) {
+function AccountDropdown({ open, active, notificationsActive, onToggle, isAuthenticated, user, onLogout, t }) {
   return (
     <div className="relative">
       <button
         type="button"
         onClick={() => onToggle('account')}
-        className={`flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold transition ${
+        className={`flex h-8 items-center gap-1.5 rounded-lg px-1.5 text-sm font-semibold transition ${
           active || open
             ? 'bg-slate-100 text-blue-700'
             : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'
@@ -375,13 +376,15 @@ function AccountDropdown({ open, active, onToggle, isAuthenticated, user, onLogo
           {isAuthenticated && (
             <div className="mb-1 border-b border-slate-100 px-2.5 py-2">
               <p className="text-sm font-semibold text-slate-950">{user?.prenom} {user?.nom}</p>
-              <p className="truncate text-xs text-slate-500">{user?.email}</p>
+              <p className="break-all text-xs leading-relaxed text-slate-500">{user?.email}</p>
             </div>
           )}
 
           {isAuthenticated ? (
             <>
               <NavItem item={{ to: '/profil', label: t('nav.profile'), icon: 'User' }} active={active} dropdown />
+              <NavItem item={{ to: '/notifications', label: t('nav.notifications'), icon: 'Bell' }} active={notificationsActive} dropdown />
+              <div className="my-1 border-t border-slate-100" />
               <button
                 type="button"
                 onClick={onLogout}

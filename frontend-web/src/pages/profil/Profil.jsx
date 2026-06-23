@@ -108,7 +108,7 @@ export default function Profil() {
       <Navbar />
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
-        <header className="mb-5 rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-sm">
+        <header className="mb-5 rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-wide text-blue-700">{t('profile.title')}</p>
@@ -135,17 +135,18 @@ export default function Profil() {
 
         <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
           {/* Carte profil */}
-          <div id="infos" className="rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-sm">
+          <div id="infos" className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
             <div className="flex gap-5 items-start flex-wrap">
 
               {/* Avatar */}
               <div className="flex flex-col items-center gap-2">
-                <div className="rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-50 p-3 ring-1 ring-blue-100">
+                <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 p-2 ring-1 ring-blue-100">
                   <ImageUpload
                     type="avatar"
                     currentUrl={avatarUrl || defaultAvatar}
                     onUploadSuccess={(url) => setAvatarUrl(url)}
                     shape="circle"
+                    size={84}
                     label={t('profile.photo')}
                   />
                 </div>
@@ -159,7 +160,7 @@ export default function Profil() {
                     {profil?.prenom} {profil?.nom}
                   </h2>
                   <div className="grid sm:grid-cols-2 gap-3 mb-5">
-                    <ProfileInfo label={t('users.email')} value={profil?.email} />
+                    <ProfileInfo label={t('users.email')} value={profil?.email} valueClassName="break-all leading-relaxed" />
                     <ProfileInfo label={t('profile.language')} value={languageLabel(profil?.languePreference, t)} />
                     <ProfileInfo
                       label={t('users.memberSince')}
@@ -173,7 +174,7 @@ export default function Profil() {
                   </div>
                   <button
                     onClick={() => setEditMode(true)}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500"
+                    className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
                   >
                     <AppIcon name="Edit" className="h-4 w-4" />
                     {t('profile.edit_btn')}
@@ -210,11 +211,11 @@ export default function Profil() {
                     </select>
                   </div>
                   <div className="flex gap-3">
-                    <button type="submit" className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-sm text-white transition hover:bg-blue-500">
+                    <button type="submit" className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm text-white transition hover:bg-blue-500">
                       <AppIcon name="Save" className="h-4 w-4" />
                       {t('profile.save_btn')}
                     </button>
-                    <button type="button" onClick={() => setEditMode(false)} className="inline-flex items-center gap-2 rounded-2xl bg-gray-200 px-4 py-2 text-sm text-slate-700 transition hover:bg-gray-300">
+                    <button type="button" onClick={() => setEditMode(false)} className="inline-flex items-center gap-2 rounded-lg bg-gray-200 px-3 py-2 text-sm text-slate-700 transition hover:bg-gray-300">
                       <AppIcon name="XCircle" className="h-4 w-4" />
                       {t('profile.cancel_btn')}
                     </button>
@@ -226,9 +227,9 @@ export default function Profil() {
           </div>
 
           {/* Sécurité — Changer mot de passe */}
-          <aside id="securite" className="rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-sm h-fit">
+          <aside id="securite" className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm h-fit">
           <div className="flex items-start gap-3 mb-4">
-            <div className="h-11 w-11 rounded-2xl bg-orange-100 text-orange-700 flex items-center justify-center">
+            <div className="h-11 w-11 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center">
               <AppIcon name="Lock" className="h-5 w-5" />
             </div>
             <div>
@@ -239,7 +240,7 @@ export default function Profil() {
           {!showPasswordForm ? (
             <button
               onClick={() => setShowPasswordForm(true)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-400"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-400"
             >
               <AppIcon name="Lock" className="h-4 w-4" />
               {t('profile.change_password')}
@@ -265,11 +266,11 @@ export default function Profil() {
                 />
               </div>
               <div className="flex gap-3">
-                <button type="submit" className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-sm text-white transition hover:bg-blue-500">
+                <button type="submit" className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm text-white transition hover:bg-blue-500">
                   <AppIcon name="Save" className="h-4 w-4" />
                   {t('profile.save_password')}
                 </button>
-                <button type="button" onClick={() => setShowPasswordForm(false)} className="inline-flex items-center gap-2 rounded-2xl bg-gray-200 px-4 py-2 text-sm text-slate-700 transition hover:bg-gray-300">
+                <button type="button" onClick={() => setShowPasswordForm(false)} className="inline-flex items-center gap-2 rounded-lg bg-gray-200 px-3 py-2 text-sm text-slate-700 transition hover:bg-gray-300">
                   <AppIcon name="XCircle" className="h-4 w-4" />
                   {t('profile.cancel_btn')}
                 </button>
@@ -279,7 +280,7 @@ export default function Profil() {
           </aside>
         </div>
 
-        <section id="parametres" className="mt-5 rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-sm">
+        <section id="parametres" className="mt-5 rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
           <h2 className="flex items-center gap-2 font-black text-slate-950">
             <AppIcon name="Settings" className="h-5 w-5 text-blue-700" />
             {t('profile.preferences', { defaultValue: 'Préférences' })}
@@ -290,7 +291,7 @@ export default function Profil() {
           </div>
         </section>
 
-        <section className="mt-5 rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-sm">
+        <section className="mt-5 rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
           <h2 className="flex items-center gap-2 font-black text-slate-950">
             <AppIcon name="Shield" className="h-5 w-5 text-blue-700" />
             {t('legal.profileTitle')}
@@ -326,18 +327,18 @@ function getApiError(err, fallback, t) {
   return fallback;
 }
 
-function ProfileInfo({ label, value }) {
+function ProfileInfo({ label, value, valueClassName = '' }) {
   return (
-    <div className="rounded-2xl bg-slate-50 px-4 py-3">
+    <div className="rounded-lg bg-slate-50 px-4 py-3">
       <p className="text-xs font-semibold uppercase text-slate-400">{label}</p>
-      <div className="mt-1 text-sm font-semibold text-slate-700 break-words">{value || '—'}</div>
+      <div className={`mt-1 text-sm font-semibold text-slate-700 break-words ${valueClassName}`}>{value || '—'}</div>
     </div>
   );
 }
 
 function PreferenceItem({ icon, title, value, action, actionLabel }) {
   return (
-    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+    <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
       <div className="flex items-start gap-3">
         <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
           <AppIcon name={icon} className="h-5 w-5" />

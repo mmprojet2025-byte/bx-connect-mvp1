@@ -48,7 +48,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
   const routes = ROLE_ROUTES[role] || ROLE_ROUTES.MEMBRE
   const recentItems = useRecentWorkspaceItems(location, user)
   const workQueue = useSidebarWorkQueue(role)
-  const mainSections = getMainSections(role)
+  const mainSections = getMainSections(role, t)
   const spaceSections = getSpaceSections(role)
   const workSections = getWorkSections(role, workQueue)
   const sidebarSections = [...mainSections, ...spaceSections, ...workSections]
@@ -395,11 +395,12 @@ function useSidebarWorkQueue(role) {
   return queue
 }
 
-function getMainSections(role) {
+function getMainSections(role, t) {
   if (role === 'ADMIN') {
     return sections([
       group('Vue d’ensemble', [
         link('Tableau de bord', '/admin/dashboard', 'Home'),
+        link(t('impact.nav'), '/impact', 'BarChart'),
       ]),
       group('Administration', [
         link('Utilisateurs', '/admin/utilisateurs', 'Users'),

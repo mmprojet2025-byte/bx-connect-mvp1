@@ -134,14 +134,14 @@ export default function ActiviteDetail() {
         {message && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>}
         {error   && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>}
 
-        <div className="bg-white rounded-2xl shadow overflow-hidden">
+        <div className="overflow-hidden rounded-xl bg-white shadow">
           <div className="relative">
             <ActivityCover
               imageUrl={activite.imageUrl}
               title={activite.titre}
               categorie={activite.categorie}
               theme={activite.theme}
-              className="h-72"
+              className="h-64 sm:h-72 lg:h-80"
             />
             <div className="absolute left-5 top-5">
               <StatusBadge status={activite.statut}>
@@ -151,34 +151,57 @@ export default function ActiviteDetail() {
           </div>
 
           <div className="grid lg:grid-cols-[1fr_320px] gap-8 p-6 md:p-8">
-            <section>
-              <h1 className="text-3xl font-bold text-blue-900 leading-tight">{activite.titre}</h1>
-              {activite.description && (
-                <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line mt-4">
-                  {activite.description}
-                </p>
-              )}
-
-              <div className="flex flex-wrap gap-2 mt-6">
-              {activite.categorie && (
-                <span className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full font-medium">
-                  {activite.categorie}
-                </span>
-              )}
-              {activite.theme && (
-                <span className="bg-teal-100 text-teal-700 text-xs px-3 py-1 rounded-full font-medium">
-                  {activite.theme}
-                </span>
-              )}
-              <span className={`text-xs px-3 py-1 rounded-full font-medium ${
-                activite.gratuite ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-              }`}>
-                {activite.gratuite ? t('activities.free') : t('activities.price_value', { price: activite.prix })}
-              </span>
+            <section className="min-w-0">
+              <div className="border-b border-slate-100 pb-5">
+                <div className="flex flex-wrap gap-2">
+                  {activite.categorie && (
+                    <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
+                      {activite.categorie}
+                    </span>
+                  )}
+                  {activite.theme && (
+                    <span className="rounded-full bg-teal-100 px-3 py-1 text-xs font-medium text-teal-700">
+                      {activite.theme}
+                    </span>
+                  )}
+                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${
+                    activite.gratuite ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                  }`}>
+                    {activite.gratuite ? t('activities.free') : t('activities.price_value', { price: activite.prix })}
+                  </span>
+                </div>
+                <h1 className="mt-4 text-3xl font-bold leading-tight text-blue-900">{activite.titre}</h1>
+                {(locationDetails?.label || activite.dateDebut) && (
+                  <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-semibold text-slate-500">
+                    {locationDetails?.label && (
+                      <span className="inline-flex items-center gap-1.5">
+                        <AppIcon name="MapPin" className="h-4 w-4 text-blue-600" />
+                        {locationDetails.label}
+                      </span>
+                    )}
+                    {activite.dateDebut && (
+                      <span className="inline-flex items-center gap-1.5">
+                        <AppIcon name="Calendar" className="h-4 w-4 text-blue-600" />
+                        {new Date(activite.dateDebut).toLocaleDateString(i18n.language || 'fr-BE')}
+                      </span>
+                    )}
+                  </p>
+                )}
               </div>
+
+              {activite.description && (
+                <section className="mt-6 rounded-lg border border-slate-100 bg-slate-50 px-5 py-4">
+                  <h2 className="text-sm font-black uppercase tracking-wide text-slate-500">
+                    {t('activities.description')}
+                  </h2>
+                  <p className="mt-3 whitespace-pre-line text-sm leading-7 text-gray-600">
+                    {activite.description}
+                  </p>
+                </section>
+              )}
             </section>
 
-            <aside className="bg-gray-50 rounded-2xl p-5 h-fit">
+            <aside className="h-fit rounded-xl bg-gray-50 p-5">
               <div className="grid gap-4">
               {locationDetails?.label && (
                 <InfoBlock>
@@ -223,7 +246,7 @@ export default function ActiviteDetail() {
               </div>
 
               {locationDetails?.routeUrl && (
-                <div className="mt-5 rounded-2xl border border-blue-100 bg-white p-3">
+                <div className="mt-5 rounded-lg border border-blue-100 bg-white p-3">
                   {locationDetails.hasCoordinates ? (
                     <div
                       ref={mapContainerRef}
@@ -242,7 +265,7 @@ export default function ActiviteDetail() {
                     className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-600"
                   >
                     <AppIcon name="MapPin" className="h-4 w-4" />
-                    Voir l’itinéraire
+                    {t('location.openRoute')}
                   </a>
                 </div>
               )}

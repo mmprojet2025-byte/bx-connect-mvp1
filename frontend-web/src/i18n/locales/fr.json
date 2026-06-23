@@ -148,6 +148,7 @@
     "form_free": "Activité gratuite",
     "form_price": "Prix (€)",
     "form_description": "Description",
+    "description": "Description",
     "form_image": "Image de couverture",
     "create_btn": "Créer l'activité",
     "free": "Gratuit",
@@ -340,6 +341,7 @@
     "members_capacity": "{{count}}/{{capacity}} membres",
     "members_count": "{{count}} membre(s)",
     "description_soon": "Ce groupe accueillera bientôt une description complète.",
+    "presentation": "Présentation du groupe",
     "sending": "Envoi...",
     "confirm_leave": "Voulez-vous vraiment quitter ce groupe ? Vous perdrez l’accès à sa messagerie.",
     "notFound": "Groupe introuvable.",
@@ -1580,6 +1582,101 @@
     "open": "Ouvrir la sidebar",
     "collapse": "Réduire la sidebar",
     "mobileMenu": "Menu BX-Connect"
+  },
+  "impact": {
+    "nav": "Centre d’Impact",
+    "title": "Centre d’Impact Territorial",
+    "subtitle": "Une première vue vendable de l’impact local : participation, projets, partenaires, financement et qualité des données.",
+    "loading": "Chargement de l’impact territorial...",
+    "error": "Impossible de charger les données d’impact.",
+    "partialError": "Certaines sources n’ont pas répondu. Les indicateurs affichés utilisent les données disponibles.",
+    "emptyTitle": "Aucune donnée d’impact disponible",
+    "emptyDescription": "Les indicateurs apparaîtront dès que des activités, groupes, projets ou soutiens seront disponibles.",
+    "kpis": {
+      "activeMembers": "Membres actifs",
+      "completedActivities": "Activités réalisées",
+      "activeGroups": "Groupes actifs",
+      "approvedProjects": "Projets approuvés",
+      "activePartners": "Partenaires actifs",
+      "collectedAmount": "Montants collectés"
+    },
+    "charts": {
+      "title": "Lecture visuelle de l’impact",
+      "description": "Graphiques construits uniquement à partir des données déjà chargées par le frontend.",
+      "activitiesByStatus": "Activités par statut",
+      "projectsByStatus": "Projets par statut",
+      "supportsByStatus": "Soutiens par statut",
+      "activitiesByCommune": "Activités par commune",
+      "noData": "Aucune donnée"
+    },
+    "map": {
+      "title": "Carte d’impact",
+      "description": "Activités et groupes disposant déjà de coordonnées géographiques.",
+      "aria": "Carte des activités et groupes géolocalisés",
+      "activities": "Activités géolocalisées",
+      "groups": "Groupes géolocalisés",
+      "emptyTitle": "Aucun point géolocalisé",
+      "emptyDescription": "Ajoutez des coordonnées aux activités ou groupes pour alimenter la carte d’impact."
+    },
+    "quality": {
+      "title": "Qualité des données",
+      "description": "Points à corriger pour rendre les rapports plus crédibles auprès d’une commune, d’un financeur ou d’un partenaire.",
+      "activitiesWithoutCommune": "Activités sans commune",
+      "activitiesWithoutCommuneDesc": "La commune permet de territorialiser les actions.",
+      "activitiesWithoutCoordinates": "Activités sans coordonnées",
+      "activitiesWithoutCoordinatesDesc": "Les coordonnées alimentent la carte d’impact.",
+      "groupsWithoutDescription": "Groupes sans description",
+      "groupsWithoutDescriptionDesc": "Une présentation claire renforce la lisibilité du rapport.",
+      "projectsWithoutBudget": "Projets sans budget",
+      "projectsWithoutBudgetDesc": "Le budget aide à relier projets, besoins et soutiens."
+    },
+    "limits": {
+      "eyebrow": "Limites V1",
+      "title": "Impact calculé sans nouvel endpoint",
+      "description": "Cette version agrège les données existantes côté frontend. Elle ne remplace pas encore un vrai module d’impact multi-organisation avec exports PDF/Excel, présence réelle et territoires normalisés."
+    },
+    "exports": {
+      "pdf": "Exporter PDF",
+      "excel": "Exporter Excel",
+      "reportTitle": "Rapport d’impact territorial",
+      "period": "Généré le {{date}}",
+      "generatedAt": "Dernière génération affichée : {{date}}",
+      "v1Notice": "Rapport V1 généré côté frontend à partir des données déjà disponibles dans Bx-Connect. Les chiffres servent de synthèse opérationnelle et doivent être validés avant transmission officielle.",
+      "sections": {
+        "summary": "Synthèse",
+        "activitiesByStatus": "Activités par statut",
+        "projectsByStatus": "Projets par statut",
+        "supportsByStatus": "Soutiens par statut",
+        "activitiesByCommune": "Activités par commune",
+        "dataQuality": "Qualité des données",
+        "rawVolumes": "Volumes de données"
+      },
+      "sheets": {
+        "summary": "Synthèse",
+        "activities": "Activités",
+        "projects": "Projets",
+        "supports": "Soutiens",
+        "groups": "Groupes",
+        "quality": "Qualité données"
+      },
+      "columns": {
+        "indicator": "Indicateur",
+        "value": "Valeur",
+        "status": "Statut",
+        "count": "Nombre",
+        "commune": "Commune",
+        "note": "Note",
+        "dataset": "Donnée",
+        "registrations": "Inscriptions",
+        "geolocated": "Géolocalisé",
+        "group": "Groupe",
+        "owner": "Porteur",
+        "budget": "Budget",
+        "participants": "Participants",
+        "partner": "Partenaire",
+        "target": "Cible"
+      }
+    }
   },
   "dashboardCharts": {
     "title": "Indicateurs visuels",

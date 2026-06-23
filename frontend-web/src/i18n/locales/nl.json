@@ -148,6 +148,7 @@
     "form_free": "Gratis activiteit",
     "form_price": "Prijs (€)",
     "form_description": "Beschrijving",
+    "description": "Beschrijving",
     "form_image": "Omslagafbeelding",
     "create_btn": "Activiteit aanmaken",
     "free": "Gratis",
@@ -340,6 +341,7 @@
     "members_capacity": "{{count}}/{{capacity}} leden",
     "members_count": "{{count}} lid/leden",
     "description_soon": "Deze groep krijgt binnenkort een volledige beschrijving.",
+    "presentation": "Groepsvoorstelling",
     "sending": "Verzenden...",
     "confirm_leave": "Wil je deze groep echt verlaten? Je verliest de toegang tot de groepsberichten.",
     "notFound": "Groupe introuvable.",
@@ -1580,6 +1582,101 @@
     "open": "Sidebar openen",
     "collapse": "Sidebar verkleinen",
     "mobileMenu": "BX-Connect-menu"
+  },
+  "impact": {
+    "nav": "Impactcentrum",
+    "title": "Territoriaal Impactcentrum",
+    "subtitle": "Een eerste verkoopbare kijk op lokale impact: participatie, projecten, partners, financiering en datakwaliteit.",
+    "loading": "Territoriale impact laden...",
+    "error": "Kan impactgegevens niet laden.",
+    "partialError": "Sommige bronnen hebben niet geantwoord. De getoonde indicatoren gebruiken de beschikbare gegevens.",
+    "emptyTitle": "Geen impactgegevens beschikbaar",
+    "emptyDescription": "Indicatoren verschijnen zodra activiteiten, groepen, projecten of steunrecords beschikbaar zijn.",
+    "kpis": {
+      "activeMembers": "Actieve leden",
+      "completedActivities": "Uitgevoerde activiteiten",
+      "activeGroups": "Actieve groepen",
+      "approvedProjects": "Goedgekeurde projecten",
+      "activePartners": "Actieve partners",
+      "collectedAmount": "Opgehaalde bedragen"
+    },
+    "charts": {
+      "title": "Visueel impactoverzicht",
+      "description": "Grafieken opgebouwd met alleen gegevens die al door de frontend worden geladen.",
+      "activitiesByStatus": "Activiteiten per status",
+      "projectsByStatus": "Projecten per status",
+      "supportsByStatus": "Steun per status",
+      "activitiesByCommune": "Activiteiten per gemeente",
+      "noData": "Geen gegevens"
+    },
+    "map": {
+      "title": "Impactkaart",
+      "description": "Activiteiten en groepen die al geografische coördinaten hebben.",
+      "aria": "Kaart met geolokaliseerde activiteiten en groepen",
+      "activities": "Geolokaliseerde activiteiten",
+      "groups": "Geolokaliseerde groepen",
+      "emptyTitle": "Geen geolokaliseerd punt",
+      "emptyDescription": "Voeg coördinaten toe aan activiteiten of groepen om de impactkaart te vullen."
+    },
+    "quality": {
+      "title": "Datakwaliteit",
+      "description": "Punten om te verbeteren zodat rapporten geloofwaardiger worden voor een gemeente, financier of partner.",
+      "activitiesWithoutCommune": "Activiteiten zonder gemeente",
+      "activitiesWithoutCommuneDesc": "De gemeente helpt acties territoriaal te situeren.",
+      "activitiesWithoutCoordinates": "Activiteiten zonder coördinaten",
+      "activitiesWithoutCoordinatesDesc": "Coördinaten voeden de impactkaart.",
+      "groupsWithoutDescription": "Groepen zonder beschrijving",
+      "groupsWithoutDescriptionDesc": "Een duidelijke voorstelling maakt het rapport leesbaarder.",
+      "projectsWithoutBudget": "Projecten zonder budget",
+      "projectsWithoutBudgetDesc": "Het budget helpt projecten, noden en steun te verbinden."
+    },
+    "limits": {
+      "eyebrow": "V1-limieten",
+      "title": "Impact berekend zonder nieuw endpoint",
+      "description": "Deze versie aggregeert bestaande gegevens in de frontend. Ze vervangt nog geen volledige multi-organisatie impactmodule met PDF/Excel-exports, echte aanwezigheden en genormaliseerde territoria."
+    },
+    "exports": {
+      "pdf": "PDF exporteren",
+      "excel": "Excel exporteren",
+      "reportTitle": "Territoriaal impactrapport",
+      "period": "Gegenereerd op {{date}}",
+      "generatedAt": "Laatst getoonde generatie: {{date}}",
+      "v1Notice": "V1-rapport gegenereerd in de frontend op basis van gegevens die al beschikbaar zijn in Bx-Connect. De cijfers zijn een operationele samenvatting en moeten worden gevalideerd vóór officiële indiening.",
+      "sections": {
+        "summary": "Synthese",
+        "activitiesByStatus": "Activiteiten per status",
+        "projectsByStatus": "Projecten per status",
+        "supportsByStatus": "Steun per status",
+        "activitiesByCommune": "Activiteiten per gemeente",
+        "dataQuality": "Datakwaliteit",
+        "rawVolumes": "Datavolumes"
+      },
+      "sheets": {
+        "summary": "Synthese",
+        "activities": "Activiteiten",
+        "projects": "Projecten",
+        "supports": "Steun",
+        "groups": "Groepen",
+        "quality": "Datakwaliteit"
+      },
+      "columns": {
+        "indicator": "Indicator",
+        "value": "Waarde",
+        "status": "Status",
+        "count": "Aantal",
+        "commune": "Gemeente",
+        "note": "Notitie",
+        "dataset": "Dataset",
+        "registrations": "Inschrijvingen",
+        "geolocated": "Geolokaliseerd",
+        "group": "Groep",
+        "owner": "Drager",
+        "budget": "Budget",
+        "participants": "Deelnemers",
+        "partner": "Partner",
+        "target": "Doel"
+      }
+    }
   },
   "dashboardCharts": {
     "title": "Visuele indicatoren",

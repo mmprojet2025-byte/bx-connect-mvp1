@@ -19,6 +19,7 @@ export default function ImageUpload({
   onUploadSuccess,
   shape = 'rectangle',
   label = 'Changer l\'image',
+  size = 100,
 }) {
   const { t } = useTranslation();
   const [preview, setPreview] = useState(currentUrl);
@@ -71,8 +72,8 @@ export default function ImageUpload({
   const containerStyle =
     shape === 'circle'
       ? {
-          width: '100px',
-          height: '100px',
+          width: `${size}px`,
+          height: `${size}px`,
           borderRadius: '50%',
           overflow: 'hidden',
           border: '3px solid #2E86AB',

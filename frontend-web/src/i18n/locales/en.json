@@ -148,6 +148,7 @@
     "form_free": "Free activity",
     "form_price": "Price (€)",
     "form_description": "Description",
+    "description": "Description",
     "form_image": "Cover image",
     "create_btn": "Create activity",
     "free": "Free",
@@ -340,6 +341,7 @@
     "members_capacity": "{{count}}/{{capacity}} members",
     "members_count": "{{count}} member(s)",
     "description_soon": "This group will soon have a full description.",
+    "presentation": "Group overview",
     "sending": "Sending...",
     "confirm_leave": "Are you sure you want to leave this group? You will lose access to its messages.",
     "notFound": "Groupe introuvable.",
@@ -1580,6 +1582,101 @@
     "open": "Open sidebar",
     "collapse": "Collapse sidebar",
     "mobileMenu": "BX-Connect menu"
+  },
+  "impact": {
+    "nav": "Impact Center",
+    "title": "Territorial Impact Center",
+    "subtitle": "A first sellable view of local impact: participation, projects, partners, funding and data quality.",
+    "loading": "Loading territorial impact...",
+    "error": "Unable to load impact data.",
+    "partialError": "Some sources did not respond. The indicators shown use the available data.",
+    "emptyTitle": "No impact data available",
+    "emptyDescription": "Indicators will appear once activities, groups, projects or support records are available.",
+    "kpis": {
+      "activeMembers": "Active members",
+      "completedActivities": "Completed activities",
+      "activeGroups": "Active groups",
+      "approvedProjects": "Approved projects",
+      "activePartners": "Active partners",
+      "collectedAmount": "Collected amounts"
+    },
+    "charts": {
+      "title": "Visual impact overview",
+      "description": "Charts built only from data already loaded by the frontend.",
+      "activitiesByStatus": "Activities by status",
+      "projectsByStatus": "Projects by status",
+      "supportsByStatus": "Support by status",
+      "activitiesByCommune": "Activities by municipality",
+      "noData": "No data"
+    },
+    "map": {
+      "title": "Impact map",
+      "description": "Activities and groups that already have geographic coordinates.",
+      "aria": "Map of geolocated activities and groups",
+      "activities": "Geolocated activities",
+      "groups": "Geolocated groups",
+      "emptyTitle": "No geolocated point",
+      "emptyDescription": "Add coordinates to activities or groups to feed the impact map."
+    },
+    "quality": {
+      "title": "Data quality",
+      "description": "Items to improve to make reports more credible for a municipality, funder or partner.",
+      "activitiesWithoutCommune": "Activities without municipality",
+      "activitiesWithoutCommuneDesc": "The municipality helps localize actions.",
+      "activitiesWithoutCoordinates": "Activities without coordinates",
+      "activitiesWithoutCoordinatesDesc": "Coordinates feed the impact map.",
+      "groupsWithoutDescription": "Groups without description",
+      "groupsWithoutDescriptionDesc": "A clear overview improves report readability.",
+      "projectsWithoutBudget": "Projects without budget",
+      "projectsWithoutBudgetDesc": "The budget helps connect projects, needs and support."
+    },
+    "limits": {
+      "eyebrow": "V1 limits",
+      "title": "Impact calculated without a new endpoint",
+      "description": "This version aggregates existing data on the frontend. It does not yet replace a full multi-organization impact module with PDF/Excel exports, real attendance and normalized territories."
+    },
+    "exports": {
+      "pdf": "Export PDF",
+      "excel": "Export Excel",
+      "reportTitle": "Territorial impact report",
+      "period": "Generated on {{date}}",
+      "generatedAt": "Last displayed generation: {{date}}",
+      "v1Notice": "V1 report generated on the frontend from data already available in Bx-Connect. Figures are an operational summary and should be validated before official submission.",
+      "sections": {
+        "summary": "Summary",
+        "activitiesByStatus": "Activities by status",
+        "projectsByStatus": "Projects by status",
+        "supportsByStatus": "Support by status",
+        "activitiesByCommune": "Activities by municipality",
+        "dataQuality": "Data quality",
+        "rawVolumes": "Data volumes"
+      },
+      "sheets": {
+        "summary": "Summary",
+        "activities": "Activities",
+        "projects": "Projects",
+        "supports": "Support",
+        "groups": "Groups",
+        "quality": "Data quality"
+      },
+      "columns": {
+        "indicator": "Indicator",
+        "value": "Value",
+        "status": "Status",
+        "count": "Count",
+        "commune": "Municipality",
+        "note": "Note",
+        "dataset": "Dataset",
+        "registrations": "Registrations",
+        "geolocated": "Geolocated",
+        "group": "Group",
+        "owner": "Owner",
+        "budget": "Budget",
+        "participants": "Participants",
+        "partner": "Partner",
+        "target": "Target"
+      }
+    }
   },
   "dashboardCharts": {
     "title": "Visual indicators",
