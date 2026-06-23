@@ -11,6 +11,7 @@ import Register         from './pages/auth/Register'
 import ForgotPassword   from './pages/auth/ForgotPassword'
 import Activites        from './pages/activites/Activites'
 import ActiviteDetail   from './pages/activites/ActiviteDetail'
+import PresenceSheet    from './pages/activites/PresenceSheet'
 import Projets          from './pages/projets/Projets'
 import NotFound         from './pages/NotFound'
 import Notifications    from './pages/Notifications'
@@ -42,6 +43,7 @@ import ReferentDemandes   from './pages/referent/ReferentDemandes'
 import ReferentActivites  from './pages/referent/ReferentActivites'
 import ReferentProjets    from './pages/referent/ReferentProjets'
 import ReferentMessagerie from './pages/referent/ReferentMessagerie'
+import ReferentRapports   from './pages/referent/ReferentRapports'
 import GestionPrestations from './pages/prestations/GestionPrestations'
 
 // Pages Admin
@@ -205,7 +207,9 @@ export default function App() {
           <Route path="/referent/membres"     element={<ReferentRoute><ReferentMembres /></ReferentRoute>} />
           <Route path="/referent/demandes"    element={<ReferentRoute><ReferentDemandes /></ReferentRoute>} />
           <Route path="/referent/activites"   element={<ReferentRoute><ReferentActivites /></ReferentRoute>} />
+          <Route path="/referent/activites/:id/presences" element={<ReferentRoute><PresenceSheet backTo="/referent/activites" tone="teal" /></ReferentRoute>} />
           <Route path="/referent/projets"     element={<ReferentRoute><ReferentProjets /></ReferentRoute>} />
+          <Route path="/referent/rapports"    element={<ReferentRoute><ReferentRapports /></ReferentRoute>} />
           <Route path="/referent/messagerie"  element={<ReferentRoute><ReferentMessagerie /></ReferentRoute>} />
           <Route path="/referent/prestations" element={<ReferentRoute><GestionPrestations /></ReferentRoute>} />
           <Route path="/referent/annonces"     element={<ReferentRoute><Annonces /></ReferentRoute>} />
@@ -216,6 +220,7 @@ export default function App() {
           <Route path="/admin/utilisateurs"  element={<AdminRoute><AdminUtilisateurs /></AdminRoute>} />
           <Route path="/admin/referents"     element={<AdminRoute><AdminReferents /></AdminRoute>} />
           <Route path="/admin/activites"     element={<AdminRoute><AdminActivites /></AdminRoute>} />
+          <Route path="/admin/activites/:id/presences" element={<AdminRoute><PresenceSheet backTo="/admin/activites" /></AdminRoute>} />
           <Route path="/admin/projets"       element={<AdminRoute><AdminProjets /></AdminRoute>} />
           <Route path="/admin/groupes"       element={<AdminRoute><AdminGroupes /></AdminRoute>} />
           <Route path="/admin/soutiens"      element={<AdminRoute><AdminSoutiens /></AdminRoute>} />

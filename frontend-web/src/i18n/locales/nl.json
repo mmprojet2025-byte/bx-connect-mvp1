@@ -1598,7 +1598,12 @@
       "activeGroups": "Actieve groepen",
       "approvedProjects": "Goedgekeurde projecten",
       "activePartners": "Actieve partners",
-      "collectedAmount": "Opgehaalde bedragen"
+      "collectedAmount": "Opgehaalde bedragen",
+      "realParticipants": "Reële deelnemers",
+      "present": "Aanwezig",
+      "absent": "Afwezig",
+      "excused": "Verontschuldigd",
+      "attendanceRate": "Aanwezigheidsgraad"
     },
     "charts": {
       "title": "Visueel impactoverzicht",
@@ -1607,7 +1612,17 @@
       "projectsByStatus": "Projecten per status",
       "supportsByStatus": "Steun per status",
       "activitiesByCommune": "Activiteiten per gemeente",
+      "presenceByStatus": "Aanwezigheden per status",
+      "presenceEvolution": "Evolutie van aanwezigheden",
+      "topActivitiesByAttendance": "Meest bezochte activiteiten",
+      "attendanceRateByActivity": "Aanwezigheidsgraad per activiteit",
       "noData": "Geen gegevens"
+    },
+    "presence": {
+      "title": "Reële deelname",
+      "description": "Indicatoren berekend op basis van ingevulde aanwezigheidslijsten.",
+      "badgeAvailable": "Aanwezigheidsgegevens beschikbaar",
+      "badgeEmpty": "Geen aanwezigheden ingevuld"
     },
     "map": {
       "title": "Impactkaart",
@@ -1615,6 +1630,9 @@
       "aria": "Kaart met geolokaliseerde activiteiten en groepen",
       "activities": "Geolokaliseerde activiteiten",
       "groups": "Geolokaliseerde groepen",
+      "registered": "Ingeschreven",
+      "present": "Aanwezig",
+      "attendanceRate": "Aanwezigheidsgraad",
       "emptyTitle": "Geen geolokaliseerd punt",
       "emptyDescription": "Voeg coördinaten toe aan activiteiten of groepen om de impactkaart te vullen."
     },
@@ -1645,7 +1663,13 @@
       "groupsWithoutDescription": "Groepen zonder beschrijving",
       "groupsWithoutDescriptionDesc": "Een duidelijke voorstelling maakt het rapport leesbaarder.",
       "projectsWithoutBudget": "Projecten zonder budget",
-      "projectsWithoutBudgetDesc": "Het budget helpt projecten, noden en steun te verbinden."
+      "projectsWithoutBudgetDesc": "Het budget helpt projecten, noden en steun te verbinden.",
+      "completedActivitiesWithoutPresenceSheet": "Afgeronde activiteiten zonder aanwezigheidslijst",
+      "completedActivitiesWithoutPresenceSheetDesc": "Deze activiteiten kunnen nog geen reële deelname voeden.",
+      "completedActivitiesNotClosed": "Afgeronde activiteiten niet afgesloten",
+      "completedActivitiesNotClosedDesc": "Een afgesloten lijst maakt aanwezigheidsgegevens betrouwbaarder.",
+      "unfilledPresences": "Niet ingevulde aanwezigheden",
+      "unfilledPresencesDesc": "Deze lijnen moeten als aanwezig, afwezig of verontschuldigd worden aangeduid."
     },
     "limits": {
       "eyebrow": "V1-limieten",
@@ -1666,6 +1690,7 @@
         "projectsByStatus": "Projecten per status",
         "supportsByStatus": "Steun per status",
         "activitiesByCommune": "Activiteiten per gemeente",
+        "realParticipation": "Reële deelname",
         "dataQuality": "Datakwaliteit",
         "rawVolumes": "Datavolumes"
       },
@@ -1675,6 +1700,7 @@
         "projects": "Projecten",
         "supports": "Steun",
         "groups": "Groepen",
+        "presences": "Aanwezigheden",
         "quality": "Datakwaliteit"
       },
       "columns": {
@@ -1687,13 +1713,166 @@
         "note": "Notitie",
         "dataset": "Dataset",
         "registrations": "Inschrijvingen",
+        "registered": "Ingeschreven",
         "geolocated": "Geolokaliseerd",
+        "activity": "Activiteit",
+        "participant": "Deelnemer",
         "group": "Groep",
         "owner": "Drager",
         "budget": "Budget",
         "participants": "Deelnemers",
         "partner": "Partner",
         "target": "Doel"
+      }
+    }
+  },
+  "presence": {
+    "title": "Aanwezigheden",
+    "eyebrow": "Aanwezigheidslijst",
+    "description": "Registreer de werkelijke deelname van de ingeschreven deelnemers aan deze activiteit.",
+    "activityFallback": "Activiteit",
+    "backToActivities": "Terug naar activiteiten",
+    "loading": "Aanwezigheidslijst laden...",
+    "bulkActions": "Snelle acties",
+    "commentPlaceholder": "Optionele opmerking",
+    "sheetClosed": "Deze aanwezigheidslijst is afgesloten. De acties zijn uitgeschakeld.",
+    "validatedAt": "Gevalideerd op {{date}}",
+    "statuses": {
+      "NON_RENSEIGNEE": "Niet ingevuld",
+      "PRESENT": "Aanwezig",
+      "ABSENT": "Afwezig",
+      "EXCUSE": "Verontschuldigd"
+    },
+    "quick": {
+      "PRESENT": "Aanwezig",
+      "ABSENT": "Afwezig",
+      "EXCUSE": "Verontschuldigd"
+    },
+    "actions": {
+      "markAllPresent": "Alles aanwezig",
+      "markAllAbsent": "Alles afwezig",
+      "resetAll": "Resetten",
+      "closeSheet": "Lijst afsluiten"
+    },
+    "table": {
+      "member": "Lid",
+      "registration": "Inschrijving",
+      "presence": "Aanwezigheid",
+      "comment": "Opmerking"
+    },
+    "messages": {
+      "saved": "Aanwezigheid opgeslagen.",
+      "bulkSaved": "Aanwezigheden bijgewerkt.",
+      "closed": "Aanwezigheidslijst afgesloten."
+    },
+    "errors": {
+      "loadTitle": "Kan aanwezigheden niet laden",
+      "load": "Kan de aanwezigheidslijst niet laden.",
+      "save": "Kan de aanwezigheid niet opslaan.",
+      "bulk": "Kan de aanwezigheden niet bijwerken.",
+      "close": "Kan de aanwezigheidslijst niet afsluiten."
+    },
+    "empty": {
+      "title": "Geen inschrijvingen",
+      "description": "Deze activiteit heeft nog geen inschrijvingen om weer te geven."
+    }
+  },
+  "referentReports": {
+    "nav": "Rapporten",
+    "eyebrow": "Terreinrapporten",
+    "title": "Groepsrapporten",
+    "description": "Genereer een PDF- of Excelrapport met groepen, activiteiten, aanwezigheden, projecten en leden die al beschikbaar zijn voor de referent.",
+    "loading": "Rapportgegevens voorbereiden...",
+    "errorTitle": "Rapporten kunnen niet worden geladen",
+    "error": "Sommige gegevens die nodig zijn voor rapporten zijn momenteel niet beschikbaar.",
+    "partialError": "Sommige gegevens konden niet worden geladen. Het rapport wordt gegenereerd met de beschikbare informatie.",
+    "actions": {
+      "exportPdf": "PDF exporteren",
+      "exportExcel": "Excel exporteren"
+    },
+    "filters": {
+      "title": "Rapportfilters",
+      "subtitle": "KPI's, tabellen en exports gebruiken dezelfde filters.",
+      "group": "Groep",
+      "period": "Periode",
+      "allGroups": "Al mijn groepen"
+    },
+    "periods": {
+      "all": "Volledige periode",
+      "last30": "Laatste 30 dagen",
+      "last90": "Laatste 90 dagen",
+      "currentYear": "Huidig jaar"
+    },
+    "kpis": {
+      "members": "Groepsleden",
+      "completedActivities": "Uitgevoerde activiteiten",
+      "registered": "Ingeschreven",
+      "present": "Aanwezig",
+      "absent": "Afwezig",
+      "excused": "Verontschuldigd",
+      "attendanceRate": "Aanwezigheidsgraad",
+      "submittedProjects": "Ingediende projecten",
+      "approvedProjects": "Goedgekeurde projecten",
+      "unclosedSheets": "Niet afgesloten lijsten"
+    },
+    "sections": {
+      "activities": "Activiteiten",
+      "activitiesSubtitle": "Reële deelname berekend op basis van geladen aanwezigheidslijsten.",
+      "projects": "Projecten",
+      "projectsSubtitle": "Projecten gekoppeld aan begeleide groepen en de gekozen periode.",
+      "presences": "Aanwezigheden",
+      "presencesSubtitle": "Overzicht van de laatste aanwezigheden in het rapport.",
+      "quality": "Datakwaliteit",
+      "qualitySubtitle": "Punten om te verbeteren voor betrouwbaardere rapporten."
+    },
+    "columns": {
+      "rate": "Graad"
+    },
+    "quality": {
+      "unclosedSheets": "Afgeronde activiteiten zonder afgesloten lijst",
+      "unclosedSheetsDesc": "Deze activiteiten kunnen uitgevoerd zijn, maar de deelname is nog niet gevalideerd.",
+      "notFilled": "Niet ingevulde aanwezigheden",
+      "notFilledDesc": "Deze lijnen moeten ingevuld worden om de aanwezigheidsgraad te verbeteren.",
+      "unlinkedActivities": "Activiteiten zonder bruikbare groepslink",
+      "unlinkedActivitiesDesc": "Zonder groepsidentificatie op de activiteit kan filteren per groep onvolledig blijven."
+    },
+    "limits": {
+      "title": "V2.2-limieten",
+      "existingEndpoints": "Het rapport hergebruikt alleen bestaande endpoints, zonder specifieke backendaggregatie.",
+      "noBackendAggregation": "Totalen worden in de browser berekend op basis van gegevens die beschikbaar zijn voor de referent.",
+      "activityGroupLink": "Sommige activiteiten hebben geen expliciete groepslink en kunnen ontbreken in een per groep gefilterd rapport."
+    },
+    "empty": {
+      "title": "Geen gegevens om te exporteren",
+      "description": "Er zijn geen groepen, projecten, activiteiten of aanwezigheden beschikbaar om een rapport te genereren.",
+      "activities": "Geen activiteiten voor deze filters.",
+      "projects": "Geen projecten voor deze filters.",
+      "presences": "Geen aanwezigheden voor deze filters."
+    },
+    "exports": {
+      "reportTitle": "Groepsrapport",
+      "generatedAt": "Gegenereerd op {{date}}",
+      "sections": {
+        "filters": "Filters",
+        "summary": "Samenvatting",
+        "activities": "Activiteiten",
+        "presences": "Aanwezigheden",
+        "projects": "Projecten",
+        "limits": "V2.2-limieten",
+        "quality": "Datakwaliteit"
+      },
+      "columns": {
+        "label": "Indicator",
+        "value": "Waarde",
+        "note": "Notitie",
+        "limit": "Limiet"
+      },
+      "sheets": {
+        "summary": "Samenvatting",
+        "activities": "Activiteiten",
+        "presences": "Aanwezigheden",
+        "projects": "Projecten",
+        "quality": "Datakwaliteit"
       }
     }
   },

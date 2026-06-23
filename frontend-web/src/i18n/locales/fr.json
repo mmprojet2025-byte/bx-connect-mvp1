@@ -1598,7 +1598,12 @@
       "activeGroups": "Groupes actifs",
       "approvedProjects": "Projets approuvés",
       "activePartners": "Partenaires actifs",
-      "collectedAmount": "Montants collectés"
+      "collectedAmount": "Montants collectés",
+      "realParticipants": "Participants réels",
+      "present": "Présents",
+      "absent": "Absents",
+      "excused": "Excusés",
+      "attendanceRate": "Taux de présence"
     },
     "charts": {
       "title": "Lecture visuelle de l’impact",
@@ -1607,7 +1612,17 @@
       "projectsByStatus": "Projets par statut",
       "supportsByStatus": "Soutiens par statut",
       "activitiesByCommune": "Activités par commune",
+      "presenceByStatus": "Présences par statut",
+      "presenceEvolution": "Évolution des présences",
+      "topActivitiesByAttendance": "Activités les plus fréquentées",
+      "attendanceRateByActivity": "Taux de présence par activité",
       "noData": "Aucune donnée"
+    },
+    "presence": {
+      "title": "Participation réelle",
+      "description": "Indicateurs calculés à partir des feuilles de présence encodées.",
+      "badgeAvailable": "Données de présence disponibles",
+      "badgeEmpty": "Aucune présence encodée"
     },
     "map": {
       "title": "Carte d’impact",
@@ -1615,6 +1630,9 @@
       "aria": "Carte des activités et groupes géolocalisés",
       "activities": "Activités géolocalisées",
       "groups": "Groupes géolocalisés",
+      "registered": "Inscrits",
+      "present": "Présents",
+      "attendanceRate": "Taux de présence",
       "emptyTitle": "Aucun point géolocalisé",
       "emptyDescription": "Ajoutez des coordonnées aux activités ou groupes pour alimenter la carte d’impact."
     },
@@ -1645,7 +1663,13 @@
       "groupsWithoutDescription": "Groupes sans description",
       "groupsWithoutDescriptionDesc": "Une présentation claire renforce la lisibilité du rapport.",
       "projectsWithoutBudget": "Projets sans budget",
-      "projectsWithoutBudgetDesc": "Le budget aide à relier projets, besoins et soutiens."
+      "projectsWithoutBudgetDesc": "Le budget aide à relier projets, besoins et soutiens.",
+      "completedActivitiesWithoutPresenceSheet": "Activités terminées sans feuille de présence",
+      "completedActivitiesWithoutPresenceSheetDesc": "Ces activités ne peuvent pas encore alimenter la participation réelle.",
+      "completedActivitiesNotClosed": "Activités terminées non clôturées",
+      "completedActivitiesNotClosedDesc": "Une feuille clôturée fiabilise les chiffres de présence.",
+      "unfilledPresences": "Présences non renseignées",
+      "unfilledPresencesDesc": "Ces lignes doivent être qualifiées en présent, absent ou excusé."
     },
     "limits": {
       "eyebrow": "Limites V1",
@@ -1666,6 +1690,7 @@
         "projectsByStatus": "Projets par statut",
         "supportsByStatus": "Soutiens par statut",
         "activitiesByCommune": "Activités par commune",
+        "realParticipation": "Participation réelle",
         "dataQuality": "Qualité des données",
         "rawVolumes": "Volumes de données"
       },
@@ -1675,6 +1700,7 @@
         "projects": "Projets",
         "supports": "Soutiens",
         "groups": "Groupes",
+        "presences": "Présences",
         "quality": "Qualité données"
       },
       "columns": {
@@ -1687,13 +1713,166 @@
         "note": "Note",
         "dataset": "Donnée",
         "registrations": "Inscriptions",
+        "registered": "Inscrits",
         "geolocated": "Géolocalisé",
+        "activity": "Activité",
+        "participant": "Participant",
         "group": "Groupe",
         "owner": "Porteur",
         "budget": "Budget",
         "participants": "Participants",
         "partner": "Partenaire",
         "target": "Cible"
+      }
+    }
+  },
+  "presence": {
+    "title": "Présences",
+    "eyebrow": "Feuille de présence",
+    "description": "Encodez la participation réelle des inscrits à cette activité.",
+    "activityFallback": "Activité",
+    "backToActivities": "Retour aux activités",
+    "loading": "Chargement de la feuille de présence...",
+    "bulkActions": "Actions rapides",
+    "commentPlaceholder": "Commentaire facultatif",
+    "sheetClosed": "Cette feuille de présence est clôturée. Les actions sont désactivées.",
+    "validatedAt": "Validée le {{date}}",
+    "statuses": {
+      "NON_RENSEIGNEE": "Non renseigné",
+      "PRESENT": "Présent",
+      "ABSENT": "Absent",
+      "EXCUSE": "Excusé"
+    },
+    "quick": {
+      "PRESENT": "Présent",
+      "ABSENT": "Absent",
+      "EXCUSE": "Excusé"
+    },
+    "actions": {
+      "markAllPresent": "Tout marquer présent",
+      "markAllAbsent": "Tout marquer absent",
+      "resetAll": "Réinitialiser",
+      "closeSheet": "Clôturer la feuille"
+    },
+    "table": {
+      "member": "Membre",
+      "registration": "Inscription",
+      "presence": "Présence",
+      "comment": "Commentaire"
+    },
+    "messages": {
+      "saved": "Présence enregistrée.",
+      "bulkSaved": "Présences mises à jour.",
+      "closed": "Feuille de présence clôturée."
+    },
+    "errors": {
+      "loadTitle": "Impossible de charger les présences",
+      "load": "Impossible de charger la feuille de présence.",
+      "save": "Impossible d’enregistrer la présence.",
+      "bulk": "Impossible de mettre à jour les présences.",
+      "close": "Impossible de clôturer la feuille de présence."
+    },
+    "empty": {
+      "title": "Aucun inscrit",
+      "description": "Cette activité n’a pas encore d’inscription à afficher."
+    }
+  },
+  "referentReports": {
+    "nav": "Rapports",
+    "eyebrow": "Rapports terrain",
+    "title": "Rapports de groupe",
+    "description": "Générez un rapport PDF ou Excel à partir des groupes, activités, présences, projets et membres déjà accessibles au référent.",
+    "loading": "Préparation des données du rapport...",
+    "errorTitle": "Impossible de charger les rapports",
+    "error": "Certaines données nécessaires aux rapports ne sont pas accessibles pour le moment.",
+    "partialError": "Certaines données n’ont pas pu être chargées. Le rapport reste généré avec les informations disponibles.",
+    "actions": {
+      "exportPdf": "Exporter PDF",
+      "exportExcel": "Exporter Excel"
+    },
+    "filters": {
+      "title": "Filtres du rapport",
+      "subtitle": "Les KPI, tableaux et exports utilisent les mêmes filtres.",
+      "group": "Groupe",
+      "period": "Période",
+      "allGroups": "Tous mes groupes"
+    },
+    "periods": {
+      "all": "Toute la période",
+      "last30": "30 derniers jours",
+      "last90": "90 derniers jours",
+      "currentYear": "Année en cours"
+    },
+    "kpis": {
+      "members": "Membres du groupe",
+      "completedActivities": "Activités réalisées",
+      "registered": "Inscrits",
+      "present": "Présents",
+      "absent": "Absents",
+      "excused": "Excusés",
+      "attendanceRate": "Taux de présence",
+      "submittedProjects": "Projets soumis",
+      "approvedProjects": "Projets approuvés",
+      "unclosedSheets": "Feuilles non clôturées"
+    },
+    "sections": {
+      "activities": "Activités",
+      "activitiesSubtitle": "Participation réelle calculée à partir des feuilles de présence chargées.",
+      "projects": "Projets",
+      "projectsSubtitle": "Projets liés aux groupes encadrés et à la période sélectionnée.",
+      "presences": "Présences",
+      "presencesSubtitle": "Aperçu des dernières présences incluses dans le rapport.",
+      "quality": "Qualité des données",
+      "qualitySubtitle": "Points à corriger pour rendre les rapports plus fiables."
+    },
+    "columns": {
+      "rate": "Taux"
+    },
+    "quality": {
+      "unclosedSheets": "Activités terminées sans feuille clôturée",
+      "unclosedSheetsDesc": "Ces activités peuvent être réalisées, mais la participation n’est pas encore validée.",
+      "notFilled": "Présences non renseignées",
+      "notFilledDesc": "Ces lignes doivent être encodées pour améliorer le taux de présence.",
+      "unlinkedActivities": "Activités sans lien groupe exploitable",
+      "unlinkedActivitiesDesc": "Sans identifiant de groupe dans l’activité, le filtre par groupe peut rester incomplet."
+    },
+    "limits": {
+      "title": "Limites V2.2",
+      "existingEndpoints": "Le rapport réutilise uniquement les endpoints existants, sans agrégation backend dédiée.",
+      "noBackendAggregation": "Les totaux sont calculés côté navigateur à partir des données accessibles au référent.",
+      "activityGroupLink": "Certaines activités ne portent pas de lien groupe explicite et peuvent être exclues d’un rapport filtré par groupe."
+    },
+    "empty": {
+      "title": "Aucune donnée à exporter",
+      "description": "Aucun groupe, projet, activité ou présence n’est disponible pour générer un rapport.",
+      "activities": "Aucune activité pour ces filtres.",
+      "projects": "Aucun projet pour ces filtres.",
+      "presences": "Aucune présence pour ces filtres."
+    },
+    "exports": {
+      "reportTitle": "Rapport de groupe",
+      "generatedAt": "Généré le {{date}}",
+      "sections": {
+        "filters": "Filtres",
+        "summary": "Synthèse",
+        "activities": "Activités",
+        "presences": "Présences",
+        "projects": "Projets",
+        "limits": "Limites V2.2",
+        "quality": "Qualité données"
+      },
+      "columns": {
+        "label": "Indicateur",
+        "value": "Valeur",
+        "note": "Note",
+        "limit": "Limite"
+      },
+      "sheets": {
+        "summary": "Synthèse",
+        "activities": "Activités",
+        "presences": "Présences",
+        "projects": "Projets",
+        "quality": "Qualité données"
       }
     }
   },

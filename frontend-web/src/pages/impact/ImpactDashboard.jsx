@@ -37,6 +37,7 @@ export default function ImpactDashboard() {
     projects: [],
     supports: [],
     publicPartners: [],
+    presences: [],
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -61,7 +62,7 @@ export default function ImpactDashboard() {
 
     try {
       const results = await Promise.allSettled(requests.map(([, request]) => request))
-      const nextData = { users: [], activities: [], groups: [], projects: [], supports: [], publicPartners: [] }
+      const nextData = { users: [], activities: [], groups: [], projects: [], supports: [], publicPartners: [], presences: [] }
       let fulfilled = 0
 
       results.forEach((result, index) => {
@@ -71,6 +72,22 @@ export default function ImpactDashboard() {
           nextData[key] = Array.isArray(result.value.data) ? result.value.data : []
         }
       })
+
+      if (nextData.activities.length > 0) {
+        const presenceResults = await Promise.allSettled(
+          nextData.activities
+            .filter(activity => activity.id)
+            .map(activity => api.get(`/activites/${activity.id}/presences`)
+              .then(response => enrichPresenceRows(response.data, activity)))
+        )
+        nextData.presences = presenceResults
+          .filter(result => result.status === 'fulfilled')
+          .flatMap(result => result.value)
+
+        if (presenceResults.some(result => result.status === 'rejected')) {
+          setPartialError(t('impact.partialError'))
+        }
+      }
 
       if (fulfilled === 0) {
         throw new Error('impact-load-failed')
@@ -145,6 +162,7 @@ export default function ImpactDashboard() {
 
   const hasAnyData = Object.values(data).some(items => items.length > 0)
   const hasFilteredData = Object.values(filteredData).some(items => items.length > 0)
+  const hasEncodedPresence = impact.presence.hasEncoded
   const generatedAt = useMemo(() => new Date(), [])
 
   return (
@@ -224,6 +242,25 @@ export default function ImpactDashboard() {
             ]}
           />
 
+          <div className="mb-4 rounded-xl border border-slate-100 bg-white p-4 shadow-lg shadow-slate-950/5">
+            <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black ${hasEncodedPresence ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
+              <AppIcon name={hasEncodedPresence ? 'CheckCircle' : 'ClipboardList'} className="h-4 w-4" />
+              {hasEncodedPresence ? t('impact.presence.badgeAvailable') : t('impact.presence.badgeEmpty')}
+            </span>
+          </div>
+
+          <CompactKpiRow
+            accent="teal"
+            className="mb-4 lg:grid-cols-3 xl:grid-cols-5"
+            items={[
+              { icon: 'Users', label: t('impact.kpis.realParticipants'), value: impact.kpis.realParticipants, tone: 'blue' },
+              { icon: 'CheckCircle', label: t('impact.kpis.present'), value: impact.kpis.present, tone: 'green' },
+              { icon: 'XCircle', label: t('impact.kpis.absent'), value: impact.kpis.absent, tone: 'red' },
+              { icon: 'Clock', label: t('impact.kpis.excused'), value: impact.kpis.excused, tone: 'amber' },
+              { icon: 'BarChart', label: t('impact.kpis.attendanceRate'), value: formatPercent(impact.kpis.attendanceRate, i18n.language), tone: 'teal' },
+            ]}
+          />
+
           <section className="mb-4 rounded-xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-950/5">
             <SectionHeader
               icon="BarChart"
@@ -242,6 +279,28 @@ export default function ImpactDashboard() {
               </ChartPanel>
               <ChartPanel title={t('impact.charts.activitiesByCommune')} empty={!impact.activityCommuneData.length} emptyLabel={t('impact.charts.noData')}>
                 <StatusBarChart data={impact.activityCommuneData} />
+              </ChartPanel>
+            </div>
+          </section>
+
+          <section className="mb-4 rounded-xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-950/5">
+            <SectionHeader
+              icon="Users"
+              title={t('impact.presence.title')}
+              description={t('impact.presence.description')}
+            />
+            <div className="grid gap-4 xl:grid-cols-4">
+              <ChartPanel title={t('impact.charts.presenceByStatus')} empty={!impact.presenceStatusData.length} emptyLabel={t('impact.charts.noData')}>
+                <StatusPieChart data={impact.presenceStatusData} />
+              </ChartPanel>
+              <ChartPanel title={t('impact.charts.presenceEvolution')} empty={!impact.presenceEvolutionData.length} emptyLabel={t('impact.charts.noData')}>
+                <StatusBarChart data={impact.presenceEvolutionData} />
+              </ChartPanel>
+              <ChartPanel title={t('impact.charts.topActivitiesByAttendance')} empty={!impact.topAttendanceActivitiesData.length} emptyLabel={t('impact.charts.noData')}>
+                <StatusBarChart data={impact.topAttendanceActivitiesData} />
+              </ChartPanel>
+              <ChartPanel title={t('impact.charts.attendanceRateByActivity')} empty={!impact.attendanceRateByActivityData.length} emptyLabel={t('impact.charts.noData')}>
+                <StatusBarChart data={impact.attendanceRateByActivityData} />
               </ChartPanel>
             </div>
           </section>
@@ -511,6 +570,11 @@ function applyImpactFilters(data, filters) {
     && matchesSupportScope(support, filters, filteredProjectIds, filteredActivityIds, projectLookup, activityLookup, groupLookup)
   )
 
+  const presences = data.presences.filter(presence => {
+    if (!filteredActivityIds.has(String(presence.activiteId))) return false
+    return matchesPeriod(presence, periodFilter, ['activiteDateDebut', 'datePresence', 'dateInscription'])
+  })
+
   return {
     users: hasTerritoryFilter ? [] : data.users.filter(user => matchesPeriod(user, periodFilter, ['dateInscription'])),
     activities,
@@ -518,6 +582,7 @@ function applyImpactFilters(data, filters) {
     projects,
     supports,
     publicPartners: hasAnyFilter ? [] : data.publicPartners,
+    presences,
   }
 }
 
@@ -627,6 +692,9 @@ function buildImpactModel(data, t, context = {}) {
   const projects = data.projects
   const supports = data.supports
   const publicPartners = data.publicPartners
+  const presences = data.presences || []
+  const attendanceSummary = buildAttendanceSummary(presences)
+  const presenceByActivity = buildPresenceByActivity(presences)
 
   const activeMembers = context.selectedGroup?.nombreMembres ?? users.filter(user => user.role === 'MEMBRE' && user.actif !== false).length
   const completedActivities = activities.filter(activity => {
@@ -648,13 +716,23 @@ function buildImpactModel(data, t, context = {}) {
       approvedProjects,
       activePartners,
       collectedAmount,
+      realParticipants: attendanceSummary.realParticipants,
+      present: attendanceSummary.present,
+      absent: attendanceSummary.absent,
+      excused: attendanceSummary.excused,
+      attendanceRate: attendanceSummary.attendanceRate,
     },
+    presence: attendanceSummary,
     activityStatusData: buildCountData(activities, 'statut', t),
     projectStatusData: buildCountData(projects, 'statut', t),
     supportStatusData: buildCountData(supports, 'statutPaiement', t),
     activityCommuneData: buildCountData(activities.filter(item => item.commune), 'commune', t, false),
+    presenceStatusData: buildPresenceStatusData(attendanceSummary, t),
+    presenceEvolutionData: buildPresenceEvolutionData(presences),
+    topAttendanceActivitiesData: buildTopAttendanceActivitiesData(presenceByActivity),
+    attendanceRateByActivityData: buildAttendanceRateByActivityData(presenceByActivity),
     mapPoints: [
-      ...activities.map(activity => toMapPoint(activity, 'activity')),
+      ...activities.map(activity => toMapPoint(activity, 'activity', presenceByActivity.get(String(activity.id)), t)),
       ...groups.map(group => toMapPoint(group, 'group')),
     ].filter(Boolean),
     qualityItems: [
@@ -678,8 +756,145 @@ function buildImpactModel(data, t, context = {}) {
         description: t('impact.quality.projectsWithoutBudgetDesc'),
         value: projects.filter(project => project.budgetDemande === null || project.budgetDemande === undefined || project.budgetDemande === '').length,
       },
+      {
+        label: t('impact.quality.completedActivitiesWithoutPresenceSheet'),
+        description: t('impact.quality.completedActivitiesWithoutPresenceSheetDesc'),
+        value: activities.filter(activity => isCompletedActivity(activity, now) && !presenceByActivity.has(String(activity.id))).length,
+      },
+      {
+        label: t('impact.quality.completedActivitiesNotClosed'),
+        description: t('impact.quality.completedActivitiesNotClosedDesc'),
+        value: activities.filter(activity => {
+          if (!isCompletedActivity(activity, now)) return false
+          const summary = presenceByActivity.get(String(activity.id))
+          return summary && !summary.closed
+        }).length,
+      },
+      {
+        label: t('impact.quality.unfilledPresences'),
+        description: t('impact.quality.unfilledPresencesDesc'),
+        value: presences.filter(presence => presence.statutPresence === 'NON_RENSEIGNEE').length,
+      },
     ],
   }
+}
+
+function enrichPresenceRows(rows, activity) {
+  if (!Array.isArray(rows)) return []
+  return rows.map(row => ({
+    ...row,
+    activiteId: row.activiteId || activity.id,
+    activiteTitre: row.activiteTitre || activity.titre,
+    activiteDateDebut: activity.dateDebut,
+    activiteDateFin: activity.dateFin,
+    activiteCommune: activity.commune,
+    activiteLieu: activity.lieu,
+  }))
+}
+
+function buildAttendanceSummary(presences) {
+  const encodedStatuses = new Set(['PRESENT', 'ABSENT', 'EXCUSE'])
+  const presentRows = presences.filter(row => row.statutPresence === 'PRESENT')
+  const present = presentRows.length
+  const absent = presences.filter(row => row.statutPresence === 'ABSENT').length
+  const excused = presences.filter(row => row.statutPresence === 'EXCUSE').length
+  const encodedTotal = presences.filter(row => encodedStatuses.has(row.statutPresence)).length
+  const realParticipants = new Set(presentRows.map(row => row.membreId || row.membreEmail).filter(Boolean)).size
+
+  return {
+    present,
+    absent,
+    excused,
+    notFilled: presences.filter(row => row.statutPresence === 'NON_RENSEIGNEE').length,
+    encodedTotal,
+    realParticipants,
+    attendanceRate: encodedTotal > 0 ? present / encodedTotal : 0,
+    hasEncoded: encodedTotal > 0,
+  }
+}
+
+function buildPresenceByActivity(presences) {
+  const map = new Map()
+  presences.forEach(row => {
+    const activityId = String(row.activiteId || '')
+    if (!activityId) return
+    if (!map.has(activityId)) {
+      map.set(activityId, {
+        activityId,
+        title: row.activiteTitre || 'Activité',
+        date: row.activiteDateDebut,
+        registered: 0,
+        present: 0,
+        absent: 0,
+        excused: 0,
+        notFilled: 0,
+        validated: 0,
+      })
+    }
+    const summary = map.get(activityId)
+    summary.registered += 1
+    if (row.statutPresence === 'PRESENT') summary.present += 1
+    else if (row.statutPresence === 'ABSENT') summary.absent += 1
+    else if (row.statutPresence === 'EXCUSE') summary.excused += 1
+    else summary.notFilled += 1
+    if (row.dateValidationPresence) summary.validated += 1
+    const encodedTotal = summary.present + summary.absent + summary.excused
+    summary.attendanceRate = encodedTotal > 0 ? summary.present / encodedTotal : 0
+    summary.closed = summary.registered > 0 && summary.validated === summary.registered
+  })
+  return map
+}
+
+function buildPresenceStatusData(summary, t) {
+  const items = [
+    ['PRESENT', summary.present],
+    ['ABSENT', summary.absent],
+    ['EXCUSE', summary.excused],
+    ['NON_RENSEIGNEE', summary.notFilled],
+  ]
+  return items
+    .filter(([, value]) => value > 0)
+    .map(([key, value]) => ({
+      key,
+      label: t(`presence.statuses.${key}`, { defaultValue: key }),
+      value,
+    }))
+}
+
+function buildPresenceEvolutionData(presences) {
+  const counts = presences
+    .filter(row => row.statutPresence === 'PRESENT')
+    .reduce((acc, row) => {
+      const date = firstValidDate(row, ['activiteDateDebut', 'datePresence', 'dateInscription'])
+      if (!date) return acc
+      const key = date.toISOString().slice(0, 7)
+      acc[key] = (acc[key] || 0) + 1
+      return acc
+    }, {})
+  return Object.entries(counts)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => ({ key, label: key, value }))
+}
+
+function buildTopAttendanceActivitiesData(presenceByActivity) {
+  return Array.from(presenceByActivity.values())
+    .filter(item => item.present > 0)
+    .sort((a, b) => b.present - a.present)
+    .slice(0, 6)
+    .map(item => ({ key: item.activityId, label: truncateLabel(item.title), value: item.present }))
+}
+
+function buildAttendanceRateByActivityData(presenceByActivity) {
+  return Array.from(presenceByActivity.values())
+    .filter(item => item.present + item.absent + item.excused > 0)
+    .sort((a, b) => b.attendanceRate - a.attendanceRate)
+    .slice(0, 6)
+    .map(item => ({ key: item.activityId, label: truncateLabel(item.title), value: Math.round(item.attendanceRate * 100) }))
+}
+
+function truncateLabel(value) {
+  const text = String(value || '')
+  return text.length > 18 ? `${text.slice(0, 16)}…` : text
 }
 
 function buildCountData(items, field, t, translateStatus = true) {
@@ -696,17 +911,25 @@ function buildCountData(items, field, t, translateStatus = true) {
   }))
 }
 
-function toMapPoint(item, kind) {
+function toMapPoint(item, kind, presenceSummary, t) {
   if (!hasCoordinates(item)) return null
   const latitude = Number(item.latitude)
   const longitude = Number(item.longitude)
   const location = [item.commune, item.lieu || item.adresseReunion || item.adresse].filter(Boolean).join(' · ')
+  const presenceDetails = kind === 'activity' && presenceSummary
+    ? `<br/>${escapeHtml(t('impact.map.registered'))}: ${presenceSummary.registered}<br/>${escapeHtml(t('impact.map.present'))}: ${presenceSummary.present}<br/>${escapeHtml(t('impact.map.attendanceRate'))}: ${Math.round((presenceSummary.attendanceRate || 0) * 100)}%`
+    : ''
   return {
     kind,
     latitude,
     longitude,
-    label: `<strong>${escapeHtml(item.titre || item.nom || 'BX-Connect')}</strong>${location ? `<br/>${escapeHtml(location)}` : ''}`,
+    label: `<strong>${escapeHtml(item.titre || item.nom || 'BX-Connect')}</strong>${location ? `<br/>${escapeHtml(location)}` : ''}${presenceDetails}`,
   }
+}
+
+function isCompletedActivity(activity, now = new Date()) {
+  const endDate = activity.dateFin ? new Date(activity.dateFin) : null
+  return endDate && Number.isFinite(endDate.getTime()) && endDate < now
 }
 
 function hasCoordinates(item) {
@@ -726,6 +949,13 @@ function formatCurrency(value, language) {
   return new Intl.NumberFormat(language || 'fr-BE', {
     style: 'currency',
     currency: 'EUR',
+    maximumFractionDigits: 0,
+  }).format(value || 0)
+}
+
+function formatPercent(value, language) {
+  return new Intl.NumberFormat(language || 'fr-BE', {
+    style: 'percent',
     maximumFractionDigits: 0,
   }).format(value || 0)
 }
@@ -767,6 +997,15 @@ function exportImpactPdf({ data, impact, filterSummary, generatedAt, t, language
   cursorY = addPdfTable(doc, cursorY, t('impact.exports.sections.summary'), [
     [t('impact.exports.columns.indicator'), t('impact.exports.columns.value')],
     ...buildKpiRows(impact, t, language),
+  ])
+
+  cursorY = addPdfTable(doc, cursorY, t('impact.exports.sections.realParticipation'), [
+    [t('impact.exports.columns.indicator'), t('impact.exports.columns.value')],
+    [t('impact.exports.columns.registered'), impact.presence.encodedTotal + impact.presence.notFilled],
+    [t('impact.kpis.present'), impact.kpis.present],
+    [t('impact.kpis.absent'), impact.kpis.absent],
+    [t('impact.kpis.excused'), impact.kpis.excused],
+    [t('impact.kpis.attendanceRate'), formatPercent(impact.kpis.attendanceRate, language)],
   ])
 
   cursorY = addPdfTable(doc, cursorY, t('impact.exports.sections.activitiesByStatus'), [
@@ -883,6 +1122,23 @@ function exportImpactExcel({ data, impact, filterSummary, generatedAt, t, langua
     ]),
   ])
 
+  appendSheet(workbook, t('impact.exports.sheets.presences'), [
+    [
+      t('impact.exports.columns.activity'),
+      t('common.date'),
+      t('impact.exports.columns.participant'),
+      t('presence.table.registration'),
+      t('presence.table.presence'),
+    ],
+    ...data.presences.map(presence => [
+      presence.activiteTitre || '',
+      presence.activiteDateDebut || presence.datePresence || '',
+      [presence.membrePrenom, presence.membreNom].filter(Boolean).join(' ') || presence.membreEmail || '',
+      presence.statutInscription || '',
+      presence.statutPresence || '',
+    ]),
+  ])
+
   appendSheet(workbook, t('impact.exports.sheets.groups'), [
     [
       t('groups.title'),
@@ -944,6 +1200,11 @@ function buildKpiRows(impact, t, language) {
     [t('impact.kpis.approvedProjects'), impact.kpis.approvedProjects],
     [t('impact.kpis.activePartners'), impact.kpis.activePartners],
     [t('impact.kpis.collectedAmount'), formatCurrency(impact.kpis.collectedAmount, language)],
+    [t('impact.kpis.realParticipants'), impact.kpis.realParticipants],
+    [t('impact.kpis.present'), impact.kpis.present],
+    [t('impact.kpis.absent'), impact.kpis.absent],
+    [t('impact.kpis.excused'), impact.kpis.excused],
+    [t('impact.kpis.attendanceRate'), formatPercent(impact.kpis.attendanceRate, language)],
   ]
 }
 

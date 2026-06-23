@@ -49,7 +49,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
   const recentItems = useRecentWorkspaceItems(location, user)
   const workQueue = useSidebarWorkQueue(role)
   const mainSections = getMainSections(role, t)
-  const spaceSections = getSpaceSections(role)
+  const spaceSections = getSpaceSections(role, t)
   const workSections = getWorkSections(role, workQueue)
   const sidebarSections = [...mainSections, ...spaceSections, ...workSections]
   const homeRoute = routes.home || getDefaultRouteForRole(role)
@@ -461,7 +461,7 @@ function getMainSections(role, t) {
   ])
 }
 
-function getSpaceSections(role) {
+function getSpaceSections(role, t) {
   if (role === 'ADMIN') {
     return sections([
       group('Gestion opérationnelle', [
@@ -487,6 +487,7 @@ function getSpaceSections(role) {
         link('Mes groupes', '/referent/groupes', 'Users'),
         link('Membres', '/referent/membres', 'User'),
         link('Projets', '/referent/projets', 'Rocket'),
+        link(t('referentReports.nav'), '/referent/rapports', 'FileText'),
         link('Prestations', '/referent/prestations', 'CheckCircle'),
       ]),
     ])

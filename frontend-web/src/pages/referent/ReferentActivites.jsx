@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import api from '../../api/axios'
@@ -318,6 +319,13 @@ export default function ReferentActivites() {
                     />
                   </div>
                   <div className="mt-4 flex justify-end">
+                    <Link
+                      to={`/referent/activites/${activite.id}/presences`}
+                      className="mr-2 inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      <AppIcon name="ClipboardList" className="h-4 w-4" />
+                      {t('presence.title')}
+                    </Link>
                     <button
                       type="button"
                       onClick={() => startEdit(activite)}

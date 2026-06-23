@@ -1598,7 +1598,12 @@
       "activeGroups": "Active groups",
       "approvedProjects": "Approved projects",
       "activePartners": "Active partners",
-      "collectedAmount": "Collected amounts"
+      "collectedAmount": "Collected amounts",
+      "realParticipants": "Real participants",
+      "present": "Present",
+      "absent": "Absent",
+      "excused": "Excused",
+      "attendanceRate": "Attendance rate"
     },
     "charts": {
       "title": "Visual impact overview",
@@ -1607,7 +1612,17 @@
       "projectsByStatus": "Projects by status",
       "supportsByStatus": "Support by status",
       "activitiesByCommune": "Activities by municipality",
+      "presenceByStatus": "Attendance by status",
+      "presenceEvolution": "Attendance evolution",
+      "topActivitiesByAttendance": "Most attended activities",
+      "attendanceRateByActivity": "Attendance rate by activity",
       "noData": "No data"
+    },
+    "presence": {
+      "title": "Real participation",
+      "description": "Indicators calculated from encoded attendance sheets.",
+      "badgeAvailable": "Attendance data available",
+      "badgeEmpty": "No attendance encoded"
     },
     "map": {
       "title": "Impact map",
@@ -1615,6 +1630,9 @@
       "aria": "Map of geolocated activities and groups",
       "activities": "Geolocated activities",
       "groups": "Geolocated groups",
+      "registered": "Registered",
+      "present": "Present",
+      "attendanceRate": "Attendance rate",
       "emptyTitle": "No geolocated point",
       "emptyDescription": "Add coordinates to activities or groups to feed the impact map."
     },
@@ -1645,7 +1663,13 @@
       "groupsWithoutDescription": "Groups without description",
       "groupsWithoutDescriptionDesc": "A clear overview improves report readability.",
       "projectsWithoutBudget": "Projects without budget",
-      "projectsWithoutBudgetDesc": "The budget helps connect projects, needs and support."
+      "projectsWithoutBudgetDesc": "The budget helps connect projects, needs and support.",
+      "completedActivitiesWithoutPresenceSheet": "Completed activities without attendance sheet",
+      "completedActivitiesWithoutPresenceSheetDesc": "These activities cannot yet feed real participation indicators.",
+      "completedActivitiesNotClosed": "Completed activities not closed",
+      "completedActivitiesNotClosedDesc": "A closed sheet makes attendance figures more reliable.",
+      "unfilledPresences": "Unfilled attendance lines",
+      "unfilledPresencesDesc": "These lines should be qualified as present, absent or excused."
     },
     "limits": {
       "eyebrow": "V1 limits",
@@ -1666,6 +1690,7 @@
         "projectsByStatus": "Projects by status",
         "supportsByStatus": "Support by status",
         "activitiesByCommune": "Activities by municipality",
+        "realParticipation": "Real participation",
         "dataQuality": "Data quality",
         "rawVolumes": "Data volumes"
       },
@@ -1675,6 +1700,7 @@
         "projects": "Projects",
         "supports": "Support",
         "groups": "Groups",
+        "presences": "Attendance",
         "quality": "Data quality"
       },
       "columns": {
@@ -1687,13 +1713,166 @@
         "note": "Note",
         "dataset": "Dataset",
         "registrations": "Registrations",
+        "registered": "Registered",
         "geolocated": "Geolocated",
+        "activity": "Activity",
+        "participant": "Participant",
         "group": "Group",
         "owner": "Owner",
         "budget": "Budget",
         "participants": "Participants",
         "partner": "Partner",
         "target": "Target"
+      }
+    }
+  },
+  "presence": {
+    "title": "Attendance",
+    "eyebrow": "Attendance sheet",
+    "description": "Record the real participation of registered people for this activity.",
+    "activityFallback": "Activity",
+    "backToActivities": "Back to activities",
+    "loading": "Loading attendance sheet...",
+    "bulkActions": "Quick actions",
+    "commentPlaceholder": "Optional comment",
+    "sheetClosed": "This attendance sheet is closed. Actions are disabled.",
+    "validatedAt": "Validated on {{date}}",
+    "statuses": {
+      "NON_RENSEIGNEE": "Not filled in",
+      "PRESENT": "Present",
+      "ABSENT": "Absent",
+      "EXCUSE": "Excused"
+    },
+    "quick": {
+      "PRESENT": "Present",
+      "ABSENT": "Absent",
+      "EXCUSE": "Excused"
+    },
+    "actions": {
+      "markAllPresent": "Mark all present",
+      "markAllAbsent": "Mark all absent",
+      "resetAll": "Reset",
+      "closeSheet": "Close sheet"
+    },
+    "table": {
+      "member": "Member",
+      "registration": "Registration",
+      "presence": "Attendance",
+      "comment": "Comment"
+    },
+    "messages": {
+      "saved": "Attendance saved.",
+      "bulkSaved": "Attendance updated.",
+      "closed": "Attendance sheet closed."
+    },
+    "errors": {
+      "loadTitle": "Unable to load attendance",
+      "load": "Unable to load the attendance sheet.",
+      "save": "Unable to save attendance.",
+      "bulk": "Unable to update attendance.",
+      "close": "Unable to close the attendance sheet."
+    },
+    "empty": {
+      "title": "No registrations",
+      "description": "This activity has no registrations to display yet."
+    }
+  },
+  "referentReports": {
+    "nav": "Reports",
+    "eyebrow": "Field reports",
+    "title": "Group reports",
+    "description": "Generate a PDF or Excel report from the groups, activities, attendance, projects and members already available to the referent.",
+    "loading": "Preparing report data...",
+    "errorTitle": "Unable to load reports",
+    "error": "Some data required for reports is not available right now.",
+    "partialError": "Some data could not be loaded. The report is still generated with the available information.",
+    "actions": {
+      "exportPdf": "Export PDF",
+      "exportExcel": "Export Excel"
+    },
+    "filters": {
+      "title": "Report filters",
+      "subtitle": "KPIs, tables and exports use the same filters.",
+      "group": "Group",
+      "period": "Period",
+      "allGroups": "All my groups"
+    },
+    "periods": {
+      "all": "All time",
+      "last30": "Last 30 days",
+      "last90": "Last 90 days",
+      "currentYear": "Current year"
+    },
+    "kpis": {
+      "members": "Group members",
+      "completedActivities": "Completed activities",
+      "registered": "Registered",
+      "present": "Present",
+      "absent": "Absent",
+      "excused": "Excused",
+      "attendanceRate": "Attendance rate",
+      "submittedProjects": "Submitted projects",
+      "approvedProjects": "Approved projects",
+      "unclosedSheets": "Unclosed sheets"
+    },
+    "sections": {
+      "activities": "Activities",
+      "activitiesSubtitle": "Real participation calculated from the loaded attendance sheets.",
+      "projects": "Projects",
+      "projectsSubtitle": "Projects linked to supervised groups and the selected period.",
+      "presences": "Attendance",
+      "presencesSubtitle": "Overview of the latest attendance rows included in the report.",
+      "quality": "Data quality",
+      "qualitySubtitle": "Items to improve to make reports more reliable."
+    },
+    "columns": {
+      "rate": "Rate"
+    },
+    "quality": {
+      "unclosedSheets": "Completed activities without a closed sheet",
+      "unclosedSheetsDesc": "These activities may be completed, but participation has not been validated yet.",
+      "notFilled": "Unfilled attendance rows",
+      "notFilledDesc": "These rows should be completed to improve the attendance rate.",
+      "unlinkedActivities": "Activities without usable group link",
+      "unlinkedActivitiesDesc": "Without a group identifier on the activity, group filtering may remain incomplete."
+    },
+    "limits": {
+      "title": "V2.2 limits",
+      "existingEndpoints": "The report only reuses existing endpoints, without a dedicated backend aggregation.",
+      "noBackendAggregation": "Totals are calculated in the browser from data available to the referent.",
+      "activityGroupLink": "Some activities do not carry an explicit group link and may be excluded from a group-filtered report."
+    },
+    "empty": {
+      "title": "No data to export",
+      "description": "No group, project, activity or attendance data is available to generate a report.",
+      "activities": "No activities for these filters.",
+      "projects": "No projects for these filters.",
+      "presences": "No attendance rows for these filters."
+    },
+    "exports": {
+      "reportTitle": "Group report",
+      "generatedAt": "Generated on {{date}}",
+      "sections": {
+        "filters": "Filters",
+        "summary": "Summary",
+        "activities": "Activities",
+        "presences": "Attendance",
+        "projects": "Projects",
+        "limits": "V2.2 limits",
+        "quality": "Data quality"
+      },
+      "columns": {
+        "label": "Indicator",
+        "value": "Value",
+        "note": "Note",
+        "limit": "Limit"
+      },
+      "sheets": {
+        "summary": "Summary",
+        "activities": "Activities",
+        "presences": "Attendance",
+        "projects": "Projects",
+        "quality": "Data quality"
       }
     }
   },

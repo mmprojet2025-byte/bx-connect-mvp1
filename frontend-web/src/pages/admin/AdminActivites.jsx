@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../../api/axios';
 import Navbar from '../../components/Navbar';
@@ -381,6 +382,13 @@ export default function AdminActivites() {
                           <AppIcon name="Edit" className="h-3.5 w-3.5" />
                           {t('common.edit')}
                         </button>
+                        <Link
+                          to={`/admin/activites/${a.id}/presences`}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-200"
+                        >
+                          <AppIcon name="ClipboardList" className="h-3.5 w-3.5" />
+                          {t('presence.title')}
+                        </Link>
                         <button
                           onClick={() => supprimerActivite(a.id, a.titre)}
                           className="inline-flex items-center gap-1.5 rounded-xl bg-red-100 px-3 py-2 text-xs font-medium text-red-700 transition hover:bg-red-200"
@@ -463,6 +471,13 @@ export default function AdminActivites() {
                               <AppIcon name="Edit" className="h-3.5 w-3.5" />
                               {t('common.edit')}
                             </button>
+                            <Link
+                              to={`/admin/activites/${a.id}/presences`}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-200"
+                            >
+                              <AppIcon name="ClipboardList" className="h-3.5 w-3.5" />
+                              {t('presence.title')}
+                            </Link>
                             <button
                               onClick={() => supprimerActivite(a.id, a.titre)}
                               className="inline-flex items-center gap-1.5 rounded-lg bg-red-100 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-200"
