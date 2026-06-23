@@ -63,7 +63,7 @@ export default function AdminDashboard() {
     () => groupes.filter(groupe => !groupe.referentId),
     [groupes]
   )
-  const projetsSoumis = projets.filter(projet => projet.statut === 'SOUMIS')
+  const projetsSoumis = projets.filter(projet => ['VALIDE_REFERENT', 'SOUMIS'].includes(projet.statut))
   const soutiensEnAttente = soutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE')
   const activitesAPublier = activites.filter(activite => activite.statut === 'BROUILLON')
   const pendingTotal = groupesEnAttente.length + projetsSoumis.length + soutiensEnAttente.length + activitesAPublier.length
@@ -113,7 +113,7 @@ export default function AdminDashboard() {
               items={[
                 { icon: 'TriangleAlert', label: t('ux.adminDashboard.priority'), value: pendingTotal, tone: pendingTotal > 0 ? 'amber' : 'green' },
                 { icon: 'Clock', label: t('ux.adminDashboard.pendingGroups'), value: groupesEnAttente.length, tone: groupesEnAttente.length > 0 ? 'amber' : 'blue' },
-                { icon: 'Rocket', label: t('statuses.SOUMIS', { defaultValue: 'Projets soumis' }), value: projetsSoumis.length, tone: projetsSoumis.length > 0 ? 'amber' : 'blue' },
+                { icon: 'Rocket', label: t('admin.projectsToValidate'), value: projetsSoumis.length, tone: projetsSoumis.length > 0 ? 'amber' : 'blue' },
                 { icon: 'Handshake', label: t('nav.supports', { defaultValue: 'Soutiens' }), value: soutiensEnAttente.length, tone: soutiensEnAttente.length > 0 ? 'amber' : 'blue' },
               ]}
             />
@@ -319,7 +319,7 @@ function AdminQueue({ groupesSansReferent, groupesEnAttente, projetsSoumis, sout
     },
     {
       icon: 'Rocket',
-      label: t('statuses.SOUMIS', { defaultValue: 'Projets soumis' }),
+      label: t('admin.projectsToValidate'),
       value: projetsSoumis.length,
       description: t('admin.submittedProjectsDesc', { defaultValue: 'Projets à relire ou orienter.' }),
       to: '/admin/projets',

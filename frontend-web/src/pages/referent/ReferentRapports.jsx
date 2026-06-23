@@ -387,6 +387,7 @@ function buildReportModel(filteredData, rawData, filters, t, language) {
   const presenceTotals = countPresenceStatuses(filteredData.presences)
   const completedActivities = filteredData.activities.filter(isCompletedActivity)
   const activityRows = buildActivityRows(filteredData.activities, filteredData.presences)
+  const projectTotals = buildProjectStatusTotals(filteredData.projects)
   const attendanceDenominator = presenceTotals.PRESENT + presenceTotals.ABSENT + presenceTotals.EXCUSE
   const attendanceRate = attendanceDenominator > 0 ? presenceTotals.PRESENT / attendanceDenominator : 0
   const activitiesWithoutClosedSheet = completedActivities.filter(activity => {
@@ -410,8 +411,11 @@ function buildReportModel(filteredData, rawData, filters, t, language) {
       { key: 'absent', label: t('referentReports.kpis.absent'), value: presenceTotals.ABSENT, icon: 'XCircle', tone: 'red' },
       { key: 'excused', label: t('referentReports.kpis.excused'), value: presenceTotals.EXCUSE, icon: 'Clock', tone: 'amber' },
       { key: 'attendanceRate', label: t('referentReports.kpis.attendanceRate'), value: formatPercent(attendanceRate, language), icon: 'BarChart3', tone: 'violet' },
-      { key: 'submittedProjects', label: t('referentReports.kpis.submittedProjects'), value: countByStatuses(filteredData.projects, ['SOUMIS']), icon: 'Rocket', tone: 'blue' },
-      { key: 'approvedProjects', label: t('referentReports.kpis.approvedProjects'), value: countByStatuses(filteredData.projects, ['APPROUVE', 'APPROUVÉ', 'VALIDE', 'VALIDÉ']), icon: 'CheckCircle', tone: 'green' },
+      { key: 'submittedToReferent', label: t('referentReports.kpis.submittedToReferent'), value: projectTotals.submittedToReferent, icon: 'Rocket', tone: 'blue' },
+      { key: 'validatedByReferent', label: t('referentReports.kpis.validatedByReferent'), value: projectTotals.validatedByReferent, icon: 'CheckCircle', tone: 'teal' },
+      { key: 'rejectedByReferent', label: t('referentReports.kpis.rejectedByReferent'), value: projectTotals.rejectedByReferent, icon: 'XCircle', tone: 'red' },
+      { key: 'approvedByAdmin', label: t('referentReports.kpis.approvedByAdmin'), value: projectTotals.approvedByAdmin, icon: 'ShieldCheck', tone: 'green' },
+      { key: 'rejectedByAdmin', label: t('referentReports.kpis.rejectedByAdmin'), value: projectTotals.rejectedByAdmin, icon: 'ShieldX', tone: 'amber' },
       { key: 'unclosedSheets', label: t('referentReports.kpis.unclosedSheets'), value: activitiesWithoutClosedSheet, icon: 'AlertTriangle', tone: 'amber' },
     ],
     activityRows,
@@ -468,6 +472,16 @@ function countPresenceStatuses(rows) {
 
 function countByStatuses(items, statuses) {
   return items.filter(item => statuses.includes(normalizeStatus(item.statut))).length
+}
+
+function buildProjectStatusTotals(projects) {
+  return {
+    submittedToReferent: countByStatuses(projects, ['SOUMIS']),
+    validatedByReferent: countByStatuses(projects, ['VALIDE_REFERENT']),
+    rejectedByReferent: countByStatuses(projects, ['REFUSE_REFERENT']),
+    approvedByAdmin: countByStatuses(projects, ['APPROUVE', 'APPROUVÉ']),
+    rejectedByAdmin: countByStatuses(projects, ['REJETE', 'REJETÉ']),
+  }
 }
 
 function normalizeStatus(status) {
@@ -605,10 +619,11 @@ function exportReportPdf({ report, data, generatedAt, language, t }) {
   ])
 
   cursorY = addPdfTable(doc, cursorY, t('referentReports.exports.sections.projects'), [
-    [t('common.title'), t('users.status'), t('common.date')],
+    [t('common.title'), t('users.status'), t('impact.exports.columns.referentComment'), t('common.date')],
     ...data.projects.map(project => [
       project.titre || '',
       translateStatus(project.statut, t),
+      getProjectReferentComment(project),
       formatDate(project.dateCreation || project.dateSoumission || project.dateValidation, language),
     ]),
   ])
@@ -668,10 +683,11 @@ function exportReportExcel({ report, data, generatedAt, language, t }) {
   ])
 
   appendSheet(workbook, t('referentReports.exports.sheets.projects'), [
-    [t('common.title'), t('users.status'), t('common.date'), t('referentReports.filters.group')],
+    [t('common.title'), t('users.status'), t('impact.exports.columns.referentComment'), t('common.date'), t('referentReports.filters.group')],
     ...data.projects.map(project => [
       project.titre || '',
       translateStatus(project.statut, t),
+      getProjectReferentComment(project),
       formatDate(project.dateCreation || project.dateSoumission || project.dateValidation, language),
       project.groupeNom || project.groupe?.nom || '',
     ]),
@@ -759,4 +775,8 @@ function translatePresence(status, t) {
 
 function translateStatus(status, t) {
   return t(`statuses.${status}`, { defaultValue: status || '-' })
+}
+
+function getProjectReferentComment(project) {
+  return project.commentaireReferent || project.commentaireValidationReferent || project.motifRefusReferent || ''
 }

@@ -242,6 +242,18 @@ export default function ImpactDashboard() {
             ]}
           />
 
+          <CompactKpiRow
+            accent="violet"
+            className="mb-4 lg:grid-cols-3 xl:grid-cols-5"
+            items={[
+              { icon: 'Clock', label: t('impact.kpis.submittedToReferent'), value: impact.kpis.submittedToReferent, tone: 'blue' },
+              { icon: 'CheckCircle', label: t('impact.kpis.validatedByReferent'), value: impact.kpis.validatedByReferent, tone: 'teal' },
+              { icon: 'XCircle', label: t('impact.kpis.rejectedByReferent'), value: impact.kpis.rejectedByReferent, tone: 'red' },
+              { icon: 'ShieldCheck', label: t('impact.kpis.finalApprovedProjects'), value: impact.kpis.approvedProjects, tone: 'green' },
+              { icon: 'ShieldX', label: t('impact.kpis.finalRejectedProjects'), value: impact.kpis.rejectedProjects, tone: 'amber' },
+            ]}
+          />
+
           <div className="mb-4 rounded-xl border border-slate-100 bg-white p-4 shadow-lg shadow-slate-950/5">
             <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black ${hasEncodedPresence ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
               <AppIcon name={hasEncodedPresence ? 'CheckCircle' : 'ClipboardList'} className="h-4 w-4" />
@@ -695,6 +707,7 @@ function buildImpactModel(data, t, context = {}) {
   const presences = data.presences || []
   const attendanceSummary = buildAttendanceSummary(presences)
   const presenceByActivity = buildPresenceByActivity(presences)
+  const projectSummary = buildProjectStatusSummary(projects)
 
   const activeMembers = context.selectedGroup?.nombreMembres ?? users.filter(user => user.role === 'MEMBRE' && user.actif !== false).length
   const completedActivities = activities.filter(activity => {
@@ -702,7 +715,6 @@ function buildImpactModel(data, t, context = {}) {
     return endDate && Number.isFinite(endDate.getTime()) && endDate < now
   }).length
   const activeGroups = groups.filter(group => group.statut === 'VALIDE' || group.actif === true).length
-  const approvedProjects = projects.filter(project => project.statut === 'APPROUVE').length
   const activePartners = users.filter(user => user.role === 'PARTENAIRE' && user.actif !== false).length || publicPartners.length
   const collectedAmount = supports
     .filter(support => support.statutPaiement === 'PAYE')
@@ -713,7 +725,11 @@ function buildImpactModel(data, t, context = {}) {
       activeMembers,
       completedActivities,
       activeGroups,
-      approvedProjects,
+      submittedToReferent: projectSummary.submittedToReferent,
+      validatedByReferent: projectSummary.validatedByReferent,
+      rejectedByReferent: projectSummary.rejectedByReferent,
+      approvedProjects: projectSummary.approvedByAdmin,
+      rejectedProjects: projectSummary.rejectedByAdmin,
       activePartners,
       collectedAmount,
       realParticipants: attendanceSummary.realParticipants,
@@ -724,7 +740,7 @@ function buildImpactModel(data, t, context = {}) {
     },
     presence: attendanceSummary,
     activityStatusData: buildCountData(activities, 'statut', t),
-    projectStatusData: buildCountData(projects, 'statut', t),
+    projectStatusData: buildProjectStatusData(projects, t),
     supportStatusData: buildCountData(supports, 'statutPaiement', t),
     activityCommuneData: buildCountData(activities.filter(item => item.commune), 'commune', t, false),
     presenceStatusData: buildPresenceStatusData(attendanceSummary, t),
@@ -755,6 +771,21 @@ function buildImpactModel(data, t, context = {}) {
         label: t('impact.quality.projectsWithoutBudget'),
         description: t('impact.quality.projectsWithoutBudgetDesc'),
         value: projects.filter(project => project.budgetDemande === null || project.budgetDemande === undefined || project.budgetDemande === '').length,
+      },
+      {
+        label: t('impact.quality.projectsWaitingAdmin'),
+        description: t('impact.quality.projectsWaitingAdminDesc'),
+        value: projectSummary.validatedByReferent,
+      },
+      {
+        label: t('impact.quality.legacySubmittedProjects'),
+        description: t('impact.quality.legacySubmittedProjectsDesc'),
+        value: projectSummary.submittedToReferent,
+      },
+      {
+        label: t('impact.quality.projectsRejectedReferentWithoutComment'),
+        description: t('impact.quality.projectsRejectedReferentWithoutCommentDesc'),
+        value: projects.filter(project => project.statut === 'REFUSE_REFERENT' && !getProjectReferentComment(project)).length,
       },
       {
         label: t('impact.quality.completedActivitiesWithoutPresenceSheet'),
@@ -909,6 +940,62 @@ function buildCountData(items, field, t, translateStatus = true) {
     label: translateStatus ? t(`statuses.${key}`, { defaultValue: key.replaceAll('_', ' ') }) : key,
     value,
   }))
+}
+
+function buildProjectStatusSummary(projects) {
+  return projects.reduce((acc, project) => {
+    const status = normalizeProjectStatus(project.statut)
+    if (status === 'SOUMIS') acc.submittedToReferent += 1
+    if (status === 'VALIDE_REFERENT') acc.validatedByReferent += 1
+    if (status === 'REFUSE_REFERENT') acc.rejectedByReferent += 1
+    if (status === 'APPROUVE') acc.approvedByAdmin += 1
+    if (status === 'REJETE') acc.rejectedByAdmin += 1
+    return acc
+  }, {
+    submittedToReferent: 0,
+    validatedByReferent: 0,
+    rejectedByReferent: 0,
+    approvedByAdmin: 0,
+    rejectedByAdmin: 0,
+  })
+}
+
+function buildProjectStatusData(projects, t) {
+  const order = ['BROUILLON', 'SOUMIS', 'VALIDE_REFERENT', 'REFUSE_REFERENT', 'APPROUVE', 'REJETE', 'EN_COURS', 'TERMINE', 'ARCHIVE']
+  const counts = projects.reduce((acc, project) => {
+    const key = normalizeProjectStatus(project.statut) || 'UNKNOWN'
+    acc[key] = (acc[key] || 0) + 1
+    return acc
+  }, {})
+
+  return Object.entries(counts)
+    .sort(([a], [b]) => {
+      const indexA = order.indexOf(a)
+      const indexB = order.indexOf(b)
+      if (indexA === -1 && indexB === -1) return a.localeCompare(b)
+      if (indexA === -1) return 1
+      if (indexB === -1) return -1
+      return indexA - indexB
+    })
+    .map(([key, value]) => ({
+      key,
+      label: t(`impact.projectStatuses.${key}`, {
+        defaultValue: t(`statuses.${key}`, { defaultValue: key.replaceAll('_', ' ') }),
+      }),
+      value,
+    }))
+}
+
+function normalizeProjectStatus(status) {
+  return String(status || '').trim().toUpperCase()
+}
+
+function getProjectReferentComment(project) {
+  return project.commentaireReferent || project.commentaireValidationReferent || project.motifRefusReferent || ''
+}
+
+function getProjectAdminComment(project) {
+  return project.commentaireAdmin || project.commentaireValidation || project.motifRejet || ''
 }
 
 function toMapPoint(item, kind, presenceSummary, t) {
@@ -1092,15 +1179,21 @@ function exportImpactExcel({ data, impact, filterSummary, generatedAt, t, langua
       t('impact.exports.columns.owner'),
       t('impact.exports.columns.budget'),
       t('impact.exports.columns.participants'),
+      t('impact.exports.columns.referentComment'),
+      t('impact.exports.columns.adminComment'),
       t('common.date'),
     ],
     ...data.projects.map(project => [
       project.titre || '',
-      project.statut || '',
+      t(`impact.projectStatuses.${normalizeProjectStatus(project.statut)}`, {
+        defaultValue: t(`statuses.${project.statut}`, { defaultValue: project.statut || '' }),
+      }),
       project.groupeNom || '',
       [project.porteurPrenom, project.porteurNom].filter(Boolean).join(' '),
       project.budgetDemande ?? '',
       project.nombreParticipants ?? '',
+      getProjectReferentComment(project),
+      getProjectAdminComment(project),
       project.dateCreation || '',
     ]),
   ])
@@ -1197,7 +1290,11 @@ function buildKpiRows(impact, t, language) {
     [t('impact.kpis.activeMembers'), impact.kpis.activeMembers],
     [t('impact.kpis.completedActivities'), impact.kpis.completedActivities],
     [t('impact.kpis.activeGroups'), impact.kpis.activeGroups],
-    [t('impact.kpis.approvedProjects'), impact.kpis.approvedProjects],
+    [t('impact.kpis.submittedToReferent'), impact.kpis.submittedToReferent],
+    [t('impact.kpis.validatedByReferent'), impact.kpis.validatedByReferent],
+    [t('impact.kpis.rejectedByReferent'), impact.kpis.rejectedByReferent],
+    [t('impact.kpis.finalApprovedProjects'), impact.kpis.approvedProjects],
+    [t('impact.kpis.finalRejectedProjects'), impact.kpis.rejectedProjects],
     [t('impact.kpis.activePartners'), impact.kpis.activePartners],
     [t('impact.kpis.collectedAmount'), formatCurrency(impact.kpis.collectedAmount, language)],
     [t('impact.kpis.realParticipants'), impact.kpis.realParticipants],

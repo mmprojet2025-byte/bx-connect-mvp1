@@ -15,7 +15,7 @@ import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import projectsIllustration from '../../assets/illustrations/projects.png';
 
-const STATUTS = ['BROUILLON', 'SOUMIS', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE'];
+const STATUTS = ['BROUILLON', 'SOUMIS', 'VALIDE_REFERENT', 'REFUSE_REFERENT', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE'];
 const VISIBILITES = ['GROUPE', 'COMMUNAUTE', 'PARTENAIRES', 'PUBLIC'];
 const emptyForm = { titre: '', description: '', budgetDemande: '', groupeId: '', visibilite: 'PUBLIC' };
 
@@ -119,6 +119,17 @@ export default function AdminProjets() {
     }
   };
 
+  const deciderProjet = async (projet, approuver) => {
+    try {
+      const res = await api.patch(`/projets/${projet.id}/valider?approuver=${approuver}`);
+      setProjets(prev => prev.map(p => p.id === projet.id ? res.data : p));
+      setMessage(approuver ? t('admin.projectFinallyApproved') : t('admin.projectFinallyRejected'));
+      setError('');
+    } catch (err) {
+      setError(userFriendlyError(err, t('admin.errorStatusChange')));
+    }
+  };
+
   const supprimerProjet = async (id, titre) => {
     if (!confirmSensitiveAction(t('admin.confirmDeleteProject', { title: titre }))) return;
     try {
@@ -141,7 +152,9 @@ export default function AdminProjets() {
   const nomsGroupes = [...new Set(projets.map(p => p.groupeNom).filter(Boolean))];
   const stats = {
     total: projets.length,
-    soumis: projets.filter(p => p.statut === 'SOUMIS').length,
+    aValider: projets.filter(p => ['VALIDE_REFERENT', 'SOUMIS'].includes(p.statut)).length,
+    validesReferent: projets.filter(p => p.statut === 'VALIDE_REFERENT').length,
+    anciensSoumis: projets.filter(p => p.statut === 'SOUMIS').length,
     actifs: projets.filter(p => ['APPROUVE', 'EN_COURS'].includes(p.statut)).length,
     budget: projets.reduce((total, projet) => total + (Number(projet.budgetDemande) || 0), 0),
   };
@@ -176,9 +189,10 @@ export default function AdminProjets() {
 
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <AdminStatCard icon="Rocket" label={t('common.total', { defaultValue: 'Total' })} value={stats.total} tone="blue" />
-          <AdminStatCard icon="Clock" label={t('statuses.SOUMIS', { defaultValue: 'Soumis' })} value={stats.soumis} tone="amber" />
+          <AdminStatCard icon="Clock" label={t('admin.projectsToValidate')} value={stats.aValider} tone="amber" />
+          <AdminStatCard icon="CheckCircle" label={t('admin.validatedByReferent')} value={stats.validesReferent} tone="green" />
+          <AdminStatCard icon="Archive" label={t('admin.legacySubmittedProjects')} value={stats.anciensSoumis} tone="violet" />
           <AdminStatCard icon="CheckCircle" label={t('statuses.EN_COURS', { defaultValue: 'Actifs' })} value={stats.actifs} tone="green" />
-          <AdminStatCard icon="Wallet" label={t('admin.budgetLabel')} value={`${stats.budget} €`} tone="violet" />
         </div>
 
         {message && (
@@ -256,7 +270,7 @@ export default function AdminProjets() {
                     borderColor: statutColor(s),
                   }}
                 >
-                  {t(`statuses.${s}`, s)} ({count})
+                  {adminProjectStatusLabel(s, t)} ({count})
                 </button>
               );
             })}
@@ -308,7 +322,7 @@ export default function AdminProjets() {
                   <ProjectCover imageUrl={p.imageUrl} title={p.titre} className="h-36" />
                   <div className="absolute left-4 top-4">
                     <StatusBadge status={p.statut}>
-                      {t(`statuses.${p.statut}`, p.statut)}
+                      {adminProjectStatusLabel(p.statut, t)}
                     </StatusBadge>
                   </div>
                 </div>
@@ -335,6 +349,41 @@ export default function AdminProjets() {
                     <InfoPill label={t('projects.owner')} value={projectOwner(p, t)} />
                     <InfoPill label={t('projects.createdAt')} value={formatProjectDate(p.dateSoumission || p.dateCreation)} />
                   </div>
+                  <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                    <span className="font-bold text-slate-800">{t('admin.projectWorkflowState')}</span>
+                    <span className="mt-1 block">{adminProjectWorkflowHint(p.statut, t)}</span>
+                    {p.commentaireReferent && (
+                      <span className="mt-2 block text-slate-500">
+                        <strong>{t('referent.referentComment')} :</strong> {p.commentaireReferent}
+                      </span>
+                    )}
+                    {p.statut === 'SOUMIS' && (
+                      <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-800">
+                        {t('admin.legacyFlow')}
+                      </span>
+                    )}
+                  </div>
+
+                  {['VALIDE_REFERENT', 'SOUMIS'].includes(p.statut) && (
+                    <div className="mb-3 grid gap-2 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => deciderProjet(p, true)}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-500"
+                      >
+                        <AppIcon name="CheckCircle" className="h-3.5 w-3.5" />
+                        {t('admin.finalApprove')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deciderProjet(p, false)}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-100"
+                      >
+                        <AppIcon name="XCircle" className="h-3.5 w-3.5" />
+                        {t('admin.finalReject')}
+                      </button>
+                    </div>
+                  )}
 
                   <div className="flex gap-2">
                     <select
@@ -342,7 +391,7 @@ export default function AdminProjets() {
                       onChange={e => changerStatut(p.id, e.target.value)}
                       className="flex-1 text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
                     >
-                      {STATUTS.map(s => <option key={s} value={s}>{t(`statuses.${s}`, s)}</option>)}
+                      {STATUTS.map(s => <option key={s} value={s}>{adminProjectStatusLabel(s, t)}</option>)}
                     </select>
                     <button
                       onClick={() => modifierProjet(p)}
@@ -446,10 +495,30 @@ function AdminStatCard({ icon, label, value, tone = 'blue' }) {
 function statutColor(statut) {
   switch (statut) {
     case 'APPROUVE':  return '#28a745';
+    case 'VALIDE_REFERENT': return '#0f766e';
+    case 'REFUSE_REFERENT': return '#be123c';
     case 'EN_COURS':  return '#2E86AB';
     case 'TERMINE':   return '#6c757d';
     case 'REJETE':    return '#dc3545';
     case 'SOUMIS':    return '#17a2b8';
     default:          return '#ffc107';
   }
+}
+
+function adminProjectStatusLabel(status, t) {
+  if (status === 'VALIDE_REFERENT') return t('admin.statusValidatedByReferent')
+  if (status === 'REFUSE_REFERENT') return t('admin.statusRejectedByReferent')
+  if (status === 'SOUMIS') return t('admin.statusLegacySubmitted')
+  if (status === 'APPROUVE') return t('admin.statusFinallyApproved')
+  if (status === 'REJETE') return t('admin.statusFinallyRejected')
+  return t(`statuses.${status}`, { defaultValue: status })
+}
+
+function adminProjectWorkflowHint(status, t) {
+  if (status === 'VALIDE_REFERENT') return t('admin.workflowWaitingAdminValidation')
+  if (status === 'SOUMIS') return t('admin.workflowLegacySubmitted')
+  if (status === 'REFUSE_REFERENT') return t('admin.workflowRejectedByReferent')
+  if (status === 'APPROUVE') return t('admin.workflowFinallyApproved')
+  if (status === 'REJETE') return t('admin.workflowFinallyRejected')
+  return t('admin.workflowProjectGeneric')
 }

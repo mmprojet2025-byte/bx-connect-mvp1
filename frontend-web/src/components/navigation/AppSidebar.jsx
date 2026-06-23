@@ -50,7 +50,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
   const workQueue = useSidebarWorkQueue(role)
   const mainSections = getMainSections(role, t)
   const spaceSections = getSpaceSections(role, t)
-  const workSections = getWorkSections(role, workQueue)
+  const workSections = getWorkSections(role, workQueue, t)
   const sidebarSections = [...mainSections, ...spaceSections, ...workSections]
   const homeRoute = routes.home || getDefaultRouteForRole(role)
 
@@ -340,7 +340,7 @@ function useSidebarWorkQueue(role) {
         const soutiens = Array.isArray(soutiensRes.data) ? soutiensRes.data : []
         setQueue({
           groupesEnAttente: Array.isArray(groupesRes.data) ? groupesRes.data.length : 0,
-          projetsSoumis: projets.filter(projet => projet.statut === 'SOUMIS').length,
+          projetsSoumis: projets.filter(projet => ['VALIDE_REFERENT', 'SOUMIS'].includes(projet.statut)).length,
           soutiensEnAttente: soutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE').length,
           demandes: 0,
           activites: 0,
@@ -505,12 +505,12 @@ function getSpaceSections(role, t) {
   ])
 }
 
-function getWorkSections(role, queue) {
+function getWorkSections(role, queue, t) {
   if (role === 'ADMIN') {
     return sections([
       group('Actions prioritaires', [
         link('Groupes en attente', '/admin/groupes', 'ClipboardList', queue.groupesEnAttente),
-        link('Projets soumis', '/admin/projets', 'Rocket', queue.projetsSoumis),
+        link(t('admin.projectsToValidate'), '/admin/projets', 'Rocket', queue.projetsSoumis),
         link('Soutiens partenaires', '/admin/soutiens', 'Handshake', queue.soutiensEnAttente),
       ]),
     ])

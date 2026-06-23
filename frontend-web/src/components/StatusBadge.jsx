@@ -7,6 +7,8 @@ const STATUS_STYLES = {
   ANNULEE: 'bg-gray-100 text-gray-700',
   BROUILLON: 'bg-gray-50 text-gray-600 border border-gray-200',
   SOUMIS: 'bg-sky-100 text-sky-800',
+  VALIDE_REFERENT: 'bg-teal-100 text-teal-800',
+  REFUSE_REFERENT: 'bg-rose-100 text-rose-800',
   APPROUVE: 'bg-green-100 text-green-800',
   REJETE: 'bg-red-100 text-red-800',
   EN_COURS: 'bg-blue-100 text-blue-800',
