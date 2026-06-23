@@ -1850,6 +1850,82 @@
       "description": "This activity has no registrations to display yet."
     }
   },
+  "referentImpact": {
+    "nav": "Impact",
+    "title": "My groups impact",
+    "subtitle": "A field view of supervised groups, completed activities, real attendance and followed projects.",
+    "loading": "Loading referent impact...",
+    "errorTitle": "Unable to load impact",
+    "error": "Referent impact data is not available right now.",
+    "partialError": "Some data could not be loaded. Indicators use the available information.",
+    "actions": {
+      "reports": "Generate a report"
+    },
+    "cta": {
+      "title": "My groups impact",
+      "description": "{{groups}} group(s), {{activities}} activity/activities and {{projects}} project(s) followed in your scope.",
+      "action": "View impact"
+    },
+    "empty": {
+      "title": "No impact data",
+      "description": "Indicators will appear once your groups, activities, attendance or projects are available."
+    },
+    "filters": {
+      "title": "Filters",
+      "subtitle": "Refine the view by group and period.",
+      "period": "Period",
+      "group": "Group",
+      "allGroups": "All my groups"
+    },
+    "periods": {
+      "all": "All time",
+      "last30": "Last 30 days",
+      "last90": "Last 90 days",
+      "currentYear": "Current year"
+    },
+    "kpis": {
+      "groups": "Supervised groups",
+      "members": "Active members",
+      "completedActivities": "Completed activities",
+      "registered": "Registered",
+      "present": "Present",
+      "absent": "Absent",
+      "excused": "Excused",
+      "attendanceRate": "Attendance rate",
+      "submittedProjects": "Submitted projects",
+      "validatedByReferent": "Validated by referent",
+      "rejectedByReferent": "Rejected by referent",
+      "approvedByAdmin": "Approved by admin"
+    },
+    "presence": {
+      "emptyEncoded": "No attendance has been encoded for these filters. Participation charts will appear after attendance sheets are completed."
+    },
+    "charts": {
+      "title": "Visual overview",
+      "subtitle": "Charts calculated from data already available to the referent.",
+      "presenceByStatus": "Attendance by status",
+      "activitiesByMonth": "Activities by month",
+      "projectsByStatus": "Projects by status",
+      "attendanceRateByActivity": "Attendance rate by activity",
+      "topActivities": "Most attended activities",
+      "noData": "No data"
+    },
+    "quality": {
+      "title": "Data quality",
+      "subtitle": "Items to improve to make group reports more reliable.",
+      "unclosedSheets": "Unclosed sheets",
+      "unclosedSheetsDesc": "These activities may be completed, but attendance has not yet been validated.",
+      "notFilled": "Unfilled attendance",
+      "notFilledDesc": "These rows should be encoded as present, absent or excused.",
+      "unlinkedActivities": "Activities without group link",
+      "unlinkedActivitiesDesc": "These activities may be excluded from a group filter.",
+      "unlinkedActivitiesAllGroupsDesc": "This check becomes a priority when filtering on a specific group."
+    },
+    "reports": {
+      "title": "PDF / Excel report",
+      "subtitle": "To export these data, use the Reports page which reuses the same sources."
+    }
+  },
   "referentReports": {
     "nav": "Reports",
     "eyebrow": "Field reports",

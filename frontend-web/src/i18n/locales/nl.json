@@ -1850,6 +1850,82 @@
       "description": "Deze activiteit heeft nog geen inschrijvingen om weer te geven."
     }
   },
+  "referentImpact": {
+    "nav": "Impact",
+    "title": "Impact van mijn groepen",
+    "subtitle": "Een terreinbeeld van begeleide groepen, uitgevoerde activiteiten, reële aanwezigheden en opgevolgde projecten.",
+    "loading": "Referentimpact laden...",
+    "errorTitle": "Impact kan niet worden geladen",
+    "error": "De impactgegevens van de referent zijn momenteel niet beschikbaar.",
+    "partialError": "Sommige gegevens konden niet worden geladen. De indicatoren gebruiken de beschikbare informatie.",
+    "actions": {
+      "reports": "Rapport genereren"
+    },
+    "cta": {
+      "title": "Impact van mijn groepen",
+      "description": "{{groups}} groep(en), {{activities}} activiteit(en) en {{projects}} project(en) opgevolgd binnen uw perimeter.",
+      "action": "Impact bekijken"
+    },
+    "empty": {
+      "title": "Geen impactgegevens",
+      "description": "Indicatoren verschijnen zodra uw groepen, activiteiten, aanwezigheden of projecten beschikbaar zijn."
+    },
+    "filters": {
+      "title": "Filters",
+      "subtitle": "Verfijn de weergave per groep en periode.",
+      "period": "Periode",
+      "group": "Groep",
+      "allGroups": "Al mijn groepen"
+    },
+    "periods": {
+      "all": "Volledige periode",
+      "last30": "Laatste 30 dagen",
+      "last90": "Laatste 90 dagen",
+      "currentYear": "Huidig jaar"
+    },
+    "kpis": {
+      "groups": "Begeleide groepen",
+      "members": "Actieve leden",
+      "completedActivities": "Uitgevoerde activiteiten",
+      "registered": "Ingeschreven",
+      "present": "Aanwezig",
+      "absent": "Afwezig",
+      "excused": "Verontschuldigd",
+      "attendanceRate": "Aanwezigheidsgraad",
+      "submittedProjects": "Ingediende projecten",
+      "validatedByReferent": "Gevalideerd door referent",
+      "rejectedByReferent": "Geweigerd door referent",
+      "approvedByAdmin": "Goedgekeurd door admin"
+    },
+    "presence": {
+      "emptyEncoded": "Er zijn geen aanwezigheden ingevoerd voor deze filters. Participatiegrafieken verschijnen zodra aanwezigheidslijsten zijn ingevuld."
+    },
+    "charts": {
+      "title": "Visuele weergave",
+      "subtitle": "Grafieken berekend op basis van gegevens die al beschikbaar zijn voor de referent.",
+      "presenceByStatus": "Aanwezigheden per status",
+      "activitiesByMonth": "Activiteiten per maand",
+      "projectsByStatus": "Projecten per status",
+      "attendanceRateByActivity": "Aanwezigheidsgraad per activiteit",
+      "topActivities": "Meest bezochte activiteiten",
+      "noData": "Geen gegevens"
+    },
+    "quality": {
+      "title": "Datakwaliteit",
+      "subtitle": "Punten om te verbeteren zodat groepsrapporten betrouwbaarder worden.",
+      "unclosedSheets": "Niet afgesloten lijsten",
+      "unclosedSheetsDesc": "Deze activiteiten kunnen uitgevoerd zijn, maar de aanwezigheden zijn nog niet gevalideerd.",
+      "notFilled": "Niet ingevulde aanwezigheden",
+      "notFilledDesc": "Deze lijnen moeten als aanwezig, afwezig of verontschuldigd worden aangeduid.",
+      "unlinkedActivities": "Activiteiten zonder groepslink",
+      "unlinkedActivitiesDesc": "Deze activiteiten kunnen ontbreken in een groepsfilter.",
+      "unlinkedActivitiesAllGroupsDesc": "Deze controle wordt prioritair wanneer u op een specifieke groep filtert."
+    },
+    "reports": {
+      "title": "PDF / Excel-rapport",
+      "subtitle": "Gebruik de pagina Rapporten om deze gegevens te exporteren. Die hergebruikt dezelfde bronnen."
+    }
+  },
   "referentReports": {
     "nav": "Rapporten",
     "eyebrow": "Terreinrapporten",

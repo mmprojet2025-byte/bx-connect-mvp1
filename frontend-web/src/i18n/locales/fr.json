@@ -1850,6 +1850,82 @@
       "description": "Cette activité n’a pas encore d’inscription à afficher."
     }
   },
+  "referentImpact": {
+    "nav": "Impact",
+    "title": "Impact de mes groupes",
+    "subtitle": "Une vue terrain des groupes encadrés, activités réalisées, présences réelles et projets suivis.",
+    "loading": "Chargement de l’impact référent...",
+    "errorTitle": "Impossible de charger l’impact",
+    "error": "Les données d’impact référent ne sont pas accessibles pour le moment.",
+    "partialError": "Certaines données n’ont pas pu être chargées. Les indicateurs utilisent les informations disponibles.",
+    "actions": {
+      "reports": "Générer un rapport"
+    },
+    "cta": {
+      "title": "Impact de mes groupes",
+      "description": "{{groups}} groupe(s), {{activities}} activité(s) et {{projects}} projet(s) suivis dans votre périmètre.",
+      "action": "Voir l’impact"
+    },
+    "empty": {
+      "title": "Aucune donnée d’impact",
+      "description": "Les indicateurs apparaîtront dès que vos groupes, activités, présences ou projets seront disponibles."
+    },
+    "filters": {
+      "title": "Filtres",
+      "subtitle": "Affinez la lecture par groupe et par période.",
+      "period": "Période",
+      "group": "Groupe",
+      "allGroups": "Tous mes groupes"
+    },
+    "periods": {
+      "all": "Toute la période",
+      "last30": "30 derniers jours",
+      "last90": "90 derniers jours",
+      "currentYear": "Année en cours"
+    },
+    "kpis": {
+      "groups": "Groupes suivis",
+      "members": "Membres actifs",
+      "completedActivities": "Activités réalisées",
+      "registered": "Inscrits",
+      "present": "Présents",
+      "absent": "Absents",
+      "excused": "Excusés",
+      "attendanceRate": "Taux de présence",
+      "submittedProjects": "Projets soumis",
+      "validatedByReferent": "Validés référent",
+      "rejectedByReferent": "Refusés référent",
+      "approvedByAdmin": "Approuvés admin"
+    },
+    "presence": {
+      "emptyEncoded": "Aucune présence encodée pour ces filtres. Les graphiques de participation apparaîtront après encodage des feuilles de présence."
+    },
+    "charts": {
+      "title": "Lecture visuelle",
+      "subtitle": "Graphiques calculés à partir des données déjà disponibles pour le référent.",
+      "presenceByStatus": "Présences par statut",
+      "activitiesByMonth": "Activités par mois",
+      "projectsByStatus": "Projets par statut",
+      "attendanceRateByActivity": "Taux de présence par activité",
+      "topActivities": "Activités les plus fréquentées",
+      "noData": "Aucune donnée"
+    },
+    "quality": {
+      "title": "Qualité des données",
+      "subtitle": "Points à améliorer pour rendre les rapports de groupe plus fiables.",
+      "unclosedSheets": "Feuilles non clôturées",
+      "unclosedSheetsDesc": "Ces activités peuvent être réalisées, mais les présences ne sont pas encore validées.",
+      "notFilled": "Présences non renseignées",
+      "notFilledDesc": "Ces lignes doivent être encodées en présent, absent ou excusé.",
+      "unlinkedActivities": "Activités sans rattachement groupe",
+      "unlinkedActivitiesDesc": "Ces activités peuvent être exclues d’un filtre par groupe.",
+      "unlinkedActivitiesAllGroupsDesc": "Ce contrôle devient prioritaire lorsque vous filtrez sur un groupe précis."
+    },
+    "reports": {
+      "title": "Rapport PDF / Excel",
+      "subtitle": "Pour exporter ces données, utilisez la page Rapports qui reprend les mêmes sources."
+    }
+  },
   "referentReports": {
     "nav": "Rapports",
     "eyebrow": "Rapports terrain",

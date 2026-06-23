@@ -44,6 +44,7 @@ import ReferentActivites  from './pages/referent/ReferentActivites'
 import ReferentProjets    from './pages/referent/ReferentProjets'
 import ReferentMessagerie from './pages/referent/ReferentMessagerie'
 import ReferentRapports   from './pages/referent/ReferentRapports'
+import ReferentImpactDashboard from './pages/referent/ReferentImpactDashboard'
 import GestionPrestations from './pages/prestations/GestionPrestations'
 
 // Pages Admin
@@ -210,6 +211,7 @@ export default function App() {
           <Route path="/referent/activites/:id/presences" element={<ReferentRoute><PresenceSheet backTo="/referent/activites" tone="teal" /></ReferentRoute>} />
           <Route path="/referent/projets"     element={<ReferentRoute><ReferentProjets /></ReferentRoute>} />
           <Route path="/referent/rapports"    element={<ReferentRoute><ReferentRapports /></ReferentRoute>} />
+          <Route path="/referent/impact"      element={<ReferentRoute><ReferentImpactDashboard /></ReferentRoute>} />
           <Route path="/referent/messagerie"  element={<ReferentRoute><ReferentMessagerie /></ReferentRoute>} />
           <Route path="/referent/prestations" element={<ReferentRoute><GestionPrestations /></ReferentRoute>} />
           <Route path="/referent/annonces"     element={<ReferentRoute><Annonces /></ReferentRoute>} />
