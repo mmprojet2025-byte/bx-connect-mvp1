@@ -44,6 +44,16 @@ public class Projet {
     @Column(length = 500)
     private String commentaireAdmin;
 
+    @Column(length = 500)
+    private String commentaireReferent;
+
+    private LocalDateTime dateValidationReferent;
+    private LocalDateTime dateRefusReferent;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "referent_validateur_id")
+    private User referentValidateur;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "porteur_id", nullable = false)
     private User porteur;
@@ -103,6 +113,18 @@ public class Projet {
 
     public String getCommentaireAdmin() { return commentaireAdmin; }
     public void setCommentaireAdmin(String commentaireAdmin) { this.commentaireAdmin = commentaireAdmin; }
+
+    public String getCommentaireReferent() { return commentaireReferent; }
+    public void setCommentaireReferent(String commentaireReferent) { this.commentaireReferent = commentaireReferent; }
+
+    public LocalDateTime getDateValidationReferent() { return dateValidationReferent; }
+    public void setDateValidationReferent(LocalDateTime dateValidationReferent) { this.dateValidationReferent = dateValidationReferent; }
+
+    public LocalDateTime getDateRefusReferent() { return dateRefusReferent; }
+    public void setDateRefusReferent(LocalDateTime dateRefusReferent) { this.dateRefusReferent = dateRefusReferent; }
+
+    public User getReferentValidateur() { return referentValidateur; }
+    public void setReferentValidateur(User referentValidateur) { this.referentValidateur = referentValidateur; }
 
     public User getPorteur() { return porteur; }
     public void setPorteur(User porteur) { this.porteur = porteur; }

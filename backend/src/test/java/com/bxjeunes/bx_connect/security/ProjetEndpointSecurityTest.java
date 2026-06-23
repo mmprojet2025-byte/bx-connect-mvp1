@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.mockito.Mockito.verify;
@@ -83,6 +84,28 @@ class ProjetEndpointSecurityTest {
     }
 
     @Test
+    @WithMockUser(username = "referent@test.be", roles = "REFERENT")
+    @DisplayName("REFERENT peut appeler la validation terrain de ses projets")
+    void referent_peut_appeler_validation_terrain() throws Exception {
+        mockMvc.perform(patch("/api/projets/referent/1/valider")
+                        .param("commentaire", "ok terrain"))
+                .andExpect(status().isOk());
+
+        verify(projetService).validerProjetReferent(1L, "ok terrain", "referent@test.be");
+    }
+
+    @Test
+    @WithMockUser(username = "referent@test.be", roles = "REFERENT")
+    @DisplayName("REFERENT peut appeler le refus terrain de ses projets")
+    void referent_peut_appeler_refus_terrain() throws Exception {
+        mockMvc.perform(patch("/api/projets/referent/1/refuser")
+                        .param("commentaire", "a revoir"))
+                .andExpect(status().isOk());
+
+        verify(projetService).refuserProjetReferent(1L, "a revoir", "referent@test.be");
+    }
+
+    @Test
     @WithMockUser(roles = "MEMBRE")
     @DisplayName("MEMBRE ne peut pas appeler la modification referent")
     void membre_ne_peut_pas_modifier_projet_referent() throws Exception {
@@ -94,6 +117,20 @@ class ProjetEndpointSecurityTest {
     @DisplayName("PARTENAIRE ne peut pas appeler la modification referent")
     void partenaire_ne_peut_pas_modifier_projet_referent() throws Exception {
         assertModifierProjetReferentForbidden();
+    }
+
+    @Test
+    @WithMockUser(roles = "MEMBRE")
+    @DisplayName("MEMBRE ne peut pas appeler la validation terrain referent")
+    void membre_ne_peut_pas_valider_projet_referent() throws Exception {
+        assertValidationProjetReferentForbidden();
+    }
+
+    @Test
+    @WithMockUser(roles = "PARTENAIRE")
+    @DisplayName("PARTENAIRE ne peut pas appeler la validation terrain referent")
+    void partenaire_ne_peut_pas_valider_projet_referent() throws Exception {
+        assertValidationProjetReferentForbidden();
     }
 
     private void assertRejoindreProjetForbidden() throws Exception {
@@ -111,6 +148,11 @@ class ProjetEndpointSecurityTest {
                                   "visibilite": "GROUPE"
                                 }
                                 """))
+                .andExpect(status().isForbidden());
+    }
+
+    private void assertValidationProjetReferentForbidden() throws Exception {
+        mockMvc.perform(patch("/api/projets/referent/1/valider"))
                 .andExpect(status().isForbidden());
     }
 }

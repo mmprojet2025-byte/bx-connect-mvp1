@@ -241,7 +241,7 @@ class ProjetSecurityTest {
     @Test
     @DisplayName("Valider et refuser un projet journalisent la decision admin")
     void valider_refuser_projet_journalisent_decision_admin() {
-        Projet projetApprouve = projet(42L, StatutProjet.SOUMIS, groupe, membre);
+        Projet projetApprouve = projet(42L, StatutProjet.VALIDE_REFERENT, groupe, membre);
         when(projetRepository.findById(42L)).thenReturn(Optional.of(projetApprouve));
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
         when(projetRepository.save(projetApprouve)).thenReturn(projetApprouve);
@@ -254,12 +254,12 @@ class ProjetSecurityTest {
                 org.mockito.ArgumentMatchers.eq("PROJECT"),
                 org.mockito.ArgumentMatchers.eq(42L),
                 org.mockito.ArgumentMatchers.eq("Projet test"),
-                org.mockito.ArgumentMatchers.eq("SOUMIS"),
+                org.mockito.ArgumentMatchers.eq("VALIDE_REFERENT"),
                 org.mockito.ArgumentMatchers.eq("APPROUVE"),
                 org.mockito.ArgumentMatchers.eq("Projet approuve."),
                 org.mockito.ArgumentMatchers.contains("\"groupeId\":10"));
 
-        Projet projetRejete = projet(43L, StatutProjet.SOUMIS, groupe, membre);
+        Projet projetRejete = projet(43L, StatutProjet.VALIDE_REFERENT, groupe, membre);
         when(projetRepository.findById(43L)).thenReturn(Optional.of(projetRejete));
         when(projetRepository.save(projetRejete)).thenReturn(projetRejete);
 
@@ -271,10 +271,121 @@ class ProjetSecurityTest {
                 org.mockito.ArgumentMatchers.eq("PROJECT"),
                 org.mockito.ArgumentMatchers.eq(43L),
                 org.mockito.ArgumentMatchers.eq("Projet test"),
-                org.mockito.ArgumentMatchers.eq("SOUMIS"),
+                org.mockito.ArgumentMatchers.eq("VALIDE_REFERENT"),
                 org.mockito.ArgumentMatchers.eq("REJETE"),
                 org.mockito.ArgumentMatchers.eq("Projet rejete."),
                 org.mockito.ArgumentMatchers.contains("\"groupeId\":10"));
+    }
+
+    @Test
+    @DisplayName("ADMIN peut encore valider temporairement un ancien projet SOUMIS")
+    void admin_valide_ancien_projet_soumis_compatibilite_transition() {
+        Projet projet = projet(44L, StatutProjet.SOUMIS, groupe, membre);
+        when(projetRepository.findById(44L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(projetRepository.save(projet)).thenReturn(projet);
+
+        ProjetResponse response = projetService.validerProjet(44L, true, "transition", admin.getEmail());
+
+        assertThat(response.getStatut()).isEqualTo(StatutProjet.APPROUVE);
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(admin),
+                org.mockito.ArgumentMatchers.eq("PROJECT_APPROVED"),
+                org.mockito.ArgumentMatchers.eq("PROJECT"),
+                org.mockito.ArgumentMatchers.eq(44L),
+                org.mockito.ArgumentMatchers.eq("Projet test"),
+                org.mockito.ArgumentMatchers.eq("SOUMIS"),
+                org.mockito.ArgumentMatchers.eq("APPROUVE"),
+                org.mockito.ArgumentMatchers.eq("Projet approuve."),
+                org.mockito.ArgumentMatchers.contains("\"groupeId\":10"));
+    }
+
+    @Test
+    @DisplayName("REFERENT valide un projet de son groupe sans approbation finale")
+    void referent_valide_projet_de_son_groupe_sans_approbation_finale() {
+        Projet projet = projet(45L, StatutProjet.SOUMIS, groupe, membre);
+        when(projetRepository.findById(45L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(referent.getEmail())).thenReturn(Optional.of(referent));
+        when(userRepository.findByRoleAndActifTrue(Role.ADMIN)).thenReturn(List.of(admin));
+        when(projetRepository.save(projet)).thenReturn(projet);
+
+        ProjetResponse response = projetService.validerProjetReferent(45L, "ok terrain", referent.getEmail());
+
+        assertThat(response.getStatut()).isEqualTo(StatutProjet.VALIDE_REFERENT);
+        assertThat(response.getCommentaireReferent()).isEqualTo("ok terrain");
+        assertThat(response.getReferentValidateurId()).isEqualTo(referent.getId());
+        assertThat(response.getDateValidationReferent()).isNotNull();
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(referent),
+                org.mockito.ArgumentMatchers.eq("PROJECT_REFERENT_APPROVED"),
+                org.mockito.ArgumentMatchers.eq("PROJECT"),
+                org.mockito.ArgumentMatchers.eq(45L),
+                org.mockito.ArgumentMatchers.eq("Projet test"),
+                org.mockito.ArgumentMatchers.eq("SOUMIS"),
+                org.mockito.ArgumentMatchers.eq("VALIDE_REFERENT"),
+                org.mockito.ArgumentMatchers.eq("Projet valide par referent."),
+                org.mockito.ArgumentMatchers.contains("\"groupeId\":10"));
+    }
+
+    @Test
+    @DisplayName("REFERENT refuse un projet avec commentaire")
+    void referent_refuse_projet_avec_commentaire() {
+        Projet projet = projet(46L, StatutProjet.SOUMIS, groupe, membre);
+        when(projetRepository.findById(46L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(referent.getEmail())).thenReturn(Optional.of(referent));
+        when(projetRepository.save(projet)).thenReturn(projet);
+
+        ProjetResponse response = projetService.refuserProjetReferent(46L, "budget a revoir", referent.getEmail());
+
+        assertThat(response.getStatut()).isEqualTo(StatutProjet.REFUSE_REFERENT);
+        assertThat(response.getCommentaireReferent()).isEqualTo("budget a revoir");
+        assertThat(response.getDateRefusReferent()).isNotNull();
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(referent),
+                org.mockito.ArgumentMatchers.eq("PROJECT_REFERENT_REJECTED"),
+                org.mockito.ArgumentMatchers.eq("PROJECT"),
+                org.mockito.ArgumentMatchers.eq(46L),
+                org.mockito.ArgumentMatchers.eq("Projet test"),
+                org.mockito.ArgumentMatchers.eq("SOUMIS"),
+                org.mockito.ArgumentMatchers.eq("REFUSE_REFERENT"),
+                org.mockito.ArgumentMatchers.eq("Projet refuse par referent."),
+                org.mockito.ArgumentMatchers.contains("\"groupeId\":10"));
+    }
+
+    @Test
+    @DisplayName("REFERENT ne peut pas valider un projet hors perimetre")
+    void referent_ne_peut_pas_valider_projet_hors_perimetre() {
+        Projet projet = projet(47L, StatutProjet.SOUMIS, autreGroupe, membre);
+        when(projetRepository.findById(47L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(referent.getEmail())).thenReturn(Optional.of(referent));
+
+        assertThatThrownBy(() -> projetService.validerProjetReferent(47L, "ok", referent.getEmail()))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    @DisplayName("PARTENAIRE ne peut pas utiliser la validation referent au service")
+    void partenaire_ne_peut_pas_valider_comme_referent() {
+        User partenaire = user(7L, "partenaire@test.be", Role.PARTENAIRE);
+        Projet projet = projet(48L, StatutProjet.SOUMIS, groupe, membre);
+        when(projetRepository.findById(48L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(partenaire.getEmail())).thenReturn(Optional.of(partenaire));
+
+        assertThatThrownBy(() -> projetService.validerProjetReferent(48L, "ok", partenaire.getEmail()))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    @DisplayName("File admin contient les projets valides referent et les anciens soumis")
+    void file_admin_contient_valides_referent_et_anciens_soumis() {
+        Projet valideReferent = projet(49L, StatutProjet.VALIDE_REFERENT, groupe, membre);
+        Projet ancienSoumis = projet(50L, StatutProjet.SOUMIS, groupe, membre);
+        when(projetRepository.findByStatutIn(List.of(StatutProjet.VALIDE_REFERENT, StatutProjet.SOUMIS)))
+                .thenReturn(List.of(valideReferent, ancienSoumis));
+
+        assertThat(projetService.projetsSoumis())
+                .extracting(ProjetResponse::getStatut)
+                .containsExactly(StatutProjet.VALIDE_REFERENT, StatutProjet.SOUMIS);
     }
 
     @Test

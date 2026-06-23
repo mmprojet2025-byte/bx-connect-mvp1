@@ -60,6 +60,24 @@ public class ProjetController {
         return ResponseEntity.ok(projetService.modifierProjetReferent(id, request, authentication.getName()));
     }
 
+    @PatchMapping("/referent/{id}/valider")
+    @PreAuthorize("hasRole('REFERENT')")
+    public ResponseEntity<ProjetResponse> validerProjetReferent(
+            @PathVariable Long id,
+            @RequestParam(required = false) String commentaire,
+            Authentication authentication) {
+        return ResponseEntity.ok(projetService.validerProjetReferent(id, commentaire, authentication.getName()));
+    }
+
+    @PatchMapping("/referent/{id}/refuser")
+    @PreAuthorize("hasRole('REFERENT')")
+    public ResponseEntity<ProjetResponse> refuserProjetReferent(
+            @PathVariable Long id,
+            @RequestParam(required = false) String commentaire,
+            Authentication authentication) {
+        return ResponseEntity.ok(projetService.refuserProjetReferent(id, commentaire, authentication.getName()));
+    }
+
     // ─── GET /api/projets/{id} — Détail d'un projet ──────────────────────────
 
     @GetMapping("/{id}")

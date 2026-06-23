@@ -224,6 +224,63 @@ public class ProjetService {
         return ProjetResponse.fromEntity(saved);
     }
 
+    // ─── Validation terrain par REFERENT : ne valide jamais définitivement ───
+
+    public ProjetResponse validerProjetReferent(Long id, String commentaire, String emailReferent) {
+        Projet projet = projetRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Projet introuvable"));
+        User referent = chargerUtilisateur(emailReferent);
+
+        verifierDecisionReferentAutorisee(projet, referent);
+
+        StatutProjet ancienStatut = projet.getStatut();
+        projet.setStatut(StatutProjet.VALIDE_REFERENT);
+        projet.setCommentaireReferent(commentaire);
+        projet.setReferentValidateur(referent);
+        projet.setDateValidationReferent(LocalDateTime.now());
+        projet.setDateRefusReferent(null);
+
+        Projet saved = projetRepository.save(projet);
+        notifierAdminsProjetValideReferent(saved, referent);
+        notificationService.creer(
+                saved.getPorteur(),
+                "Projet validé par votre référent",
+                "Votre projet \"" + saved.getTitre() + "\" a été validé par le référent et sera examiné par l'administration.",
+                "VALIDATION_REFERENT_PROJET",
+                "/projets/" + saved.getId());
+        auditerStatut(referent, "PROJECT_REFERENT_APPROVED", saved,
+                nomStatut(ancienStatut), nomStatut(saved.getStatut()),
+                "Projet valide par referent.", metadataProjet(saved));
+        return ProjetResponse.fromEntity(saved);
+    }
+
+    public ProjetResponse refuserProjetReferent(Long id, String commentaire, String emailReferent) {
+        Projet projet = projetRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Projet introuvable"));
+        User referent = chargerUtilisateur(emailReferent);
+
+        verifierDecisionReferentAutorisee(projet, referent);
+
+        StatutProjet ancienStatut = projet.getStatut();
+        projet.setStatut(StatutProjet.REFUSE_REFERENT);
+        projet.setCommentaireReferent(commentaire);
+        projet.setReferentValidateur(referent);
+        projet.setDateRefusReferent(LocalDateTime.now());
+        projet.setDateValidationReferent(null);
+
+        Projet saved = projetRepository.save(projet);
+        notificationService.creer(
+                saved.getPorteur(),
+                "Projet refusé par votre référent",
+                "Votre projet \"" + saved.getTitre() + "\" a été refusé par le référent.",
+                "REFUS_REFERENT_PROJET",
+                "/projets/" + saved.getId());
+        auditerStatut(referent, "PROJECT_REFERENT_REJECTED", saved,
+                nomStatut(ancienStatut), nomStatut(saved.getStatut()),
+                "Projet refuse par referent.", metadataProjet(saved));
+        return ProjetResponse.fromEntity(saved);
+    }
+
     // ─── Valider ou rejeter un projet (ADMIN / REFERENT) — A09, R13 ──────────
 
     public ProjetResponse validerProjet(Long id, boolean approuver, String commentaire, String emailAdmin) {
@@ -231,8 +288,8 @@ public class ProjetService {
                 .orElseThrow(() -> new RuntimeException("Projet introuvable"));
         User admin = chargerUtilisateur(emailAdmin);
 
-        if (projet.getStatut() != StatutProjet.SOUMIS) {
-            throw new RuntimeException("Ce projet n'est pas en attente de validation");
+        if (!projetPretPourDecisionAdmin(projet)) {
+            throw new RuntimeException("Ce projet n'est pas en attente de validation administrative");
         }
 
         StatutProjet ancienStatut = projet.getStatut();
@@ -392,7 +449,10 @@ public class ProjetService {
     // ─── Projets soumis en attente (ADMIN / REFERENT) ────────────────────────
 
     public List<ProjetResponse> projetsSoumis() {
-        return projetRepository.findByStatut(StatutProjet.SOUMIS)
+        // Transition douce V2.3 : les nouveaux projets arrivent en VALIDE_REFERENT.
+        // Les anciens projets deja SOUMIS restent visibles temporairement pour ne pas
+        // bloquer la file admin avant migration.
+        return projetRepository.findByStatutIn(List.of(StatutProjet.VALIDE_REFERENT, StatutProjet.SOUMIS))
                 .stream()
                 .map(ProjetResponse::fromEntity)
                 .collect(Collectors.toList());
@@ -486,6 +546,18 @@ public class ProjetService {
         }
     }
 
+    private void notifierAdminsProjetValideReferent(Projet projet, User referent) {
+        String nomReferent = referent.getPrenom() != null ? referent.getPrenom() : referent.getEmail();
+        for (User admin : userRepository.findByRoleAndActifTrue(Role.ADMIN)) {
+            notificationService.creer(
+                    admin,
+                    "Projet validé par référent",
+                    "Le projet \"" + projet.getTitre() + "\" a été validé par " + nomReferent + " et attend une décision finale.",
+                    "VALIDATION_REFERENT_PROJET",
+                    "/admin/projets");
+        }
+    }
+
     private Groupe chargerGroupeEncadre(Long groupeId, User referent) {
         if (groupeId == null) {
             throw new RuntimeException("Le groupe est obligatoire pour un projet referent.");
@@ -543,6 +615,20 @@ public class ProjetService {
             return false;
         }
         return projet.getGroupe().getReferent().getId().equals(referent.getId());
+    }
+
+    private void verifierDecisionReferentAutorisee(Projet projet, User referent) {
+        if (referent.getRole() != Role.REFERENT || !referentEncadreProjet(referent, projet)) {
+            throw new AccessDeniedException("Vous ne pouvez valider que les projets des groupes que vous encadrez.");
+        }
+        if (projet.getStatut() != StatutProjet.SOUMIS) {
+            throw new RuntimeException("Le projet doit etre en statut SOUMIS pour etre relu par un referent.");
+        }
+    }
+
+    private boolean projetPretPourDecisionAdmin(Projet projet) {
+        return projet.getStatut() == StatutProjet.VALIDE_REFERENT
+                || projet.getStatut() == StatutProjet.SOUMIS;
     }
 
     private User chargerUtilisateur(String email) {

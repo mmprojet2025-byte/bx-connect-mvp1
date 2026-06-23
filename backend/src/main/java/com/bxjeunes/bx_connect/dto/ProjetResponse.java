@@ -21,6 +21,12 @@ public class ProjetResponse {
     private LocalDateTime dateValidation;
     private LocalDateTime dateCloture;
     private String commentaireAdmin;
+    private String commentaireReferent;
+    private LocalDateTime dateValidationReferent;
+    private LocalDateTime dateRefusReferent;
+    private Long referentValidateurId;
+    private String referentValidateurPrenom;
+    private String referentValidateurNom;
     private String porteurPrenom;
     private String porteurNom;
     private Long groupeId;
@@ -44,6 +50,14 @@ public class ProjetResponse {
         r.dateValidation = projet.getDateValidation();
         r.dateCloture = projet.getDateCloture();
         r.commentaireAdmin = projet.getCommentaireAdmin();
+        r.commentaireReferent = projet.getCommentaireReferent();
+        r.dateValidationReferent = projet.getDateValidationReferent();
+        r.dateRefusReferent = projet.getDateRefusReferent();
+        if (projet.getReferentValidateur() != null) {
+            r.referentValidateurId = projet.getReferentValidateur().getId();
+            r.referentValidateurPrenom = projet.getReferentValidateur().getPrenom();
+            r.referentValidateurNom = projet.getReferentValidateur().getNom();
+        }
         if (projet.getPorteur() != null) {
             r.porteurPrenom = projet.getPorteur().getPrenom();
             r.porteurNom = projet.getPorteur().getNom();
@@ -71,6 +85,12 @@ public class ProjetResponse {
     public LocalDateTime getDateValidation() { return dateValidation; }
     public LocalDateTime getDateCloture() { return dateCloture; }
     public String getCommentaireAdmin() { return commentaireAdmin; }
+    public String getCommentaireReferent() { return commentaireReferent; }
+    public LocalDateTime getDateValidationReferent() { return dateValidationReferent; }
+    public LocalDateTime getDateRefusReferent() { return dateRefusReferent; }
+    public Long getReferentValidateurId() { return referentValidateurId; }
+    public String getReferentValidateurPrenom() { return referentValidateurPrenom; }
+    public String getReferentValidateurNom() { return referentValidateurNom; }
     public String getPorteurPrenom() { return porteurPrenom; }
     public String getPorteurNom() { return porteurNom; }
     public Long getGroupeId() { return groupeId; }
