@@ -127,28 +127,16 @@ public class ReferentService {
                 .collect(Collectors.toList());
     }
 
-    // ─── R13 : Valider un projet soumis ──────────────────────────────────────
+    // ─── Legacy V2.3 : neutralise l'ancien workflow referent ────────────────
     public ProjetResponse validerProjet(Long projetId) {
-        Projet projet = projetRepository.findById(projetId)
-                .orElseThrow(() -> new RuntimeException("Projet introuvable : " + projetId));
-
-        if (projet.getStatut() != StatutProjet.SOUMIS) {
-            throw new RuntimeException("Le projet doit être en statut SOUMIS pour être validé.");
-        }
-        projet.setStatut(StatutProjet.APPROUVE);
-        return ProjetResponse.fromEntity(projetRepository.save(projet));
+        throw new AccessDeniedException(
+                "Ancien workflow referent desactive. Utiliser /api/projets/referent/{id}/valider.");
     }
 
-    // ─── R13 : Refuser un projet soumis ──────────────────────────────────────
+    // ─── Legacy V2.3 : neutralise l'ancien workflow referent ────────────────
     public ProjetResponse refuserProjet(Long projetId) {
-        Projet projet = projetRepository.findById(projetId)
-                .orElseThrow(() -> new RuntimeException("Projet introuvable : " + projetId));
-
-        if (projet.getStatut() != StatutProjet.SOUMIS) {
-            throw new RuntimeException("Le projet doit être en statut SOUMIS pour être refusé.");
-        }
-        projet.setStatut(StatutProjet.REJETE);
-        return ProjetResponse.fromEntity(projetRepository.save(projet));
+        throw new AccessDeniedException(
+                "Ancien workflow referent desactive. Utiliser /api/projets/referent/{id}/refuser.");
     }
 
     // ─── R14 : Projets soumis en attente de validation ───────────────────────
