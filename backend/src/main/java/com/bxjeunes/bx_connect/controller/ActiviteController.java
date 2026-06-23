@@ -3,8 +3,12 @@ package com.bxjeunes.bx_connect.controller;
 import com.bxjeunes.bx_connect.dto.ActiviteFiltreRequest;
 import com.bxjeunes.bx_connect.dto.ActiviteRequest;
 import com.bxjeunes.bx_connect.dto.ActiviteResponse;
+import com.bxjeunes.bx_connect.dto.PresenceBulkRequest;
+import com.bxjeunes.bx_connect.dto.PresenceRequest;
+import com.bxjeunes.bx_connect.dto.PresenceResponse;
 import com.bxjeunes.bx_connect.entity.StatutActivite;
 import com.bxjeunes.bx_connect.service.ActiviteService;
+import com.bxjeunes.bx_connect.service.PresenceService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,9 +25,11 @@ import java.util.Map;
 public class ActiviteController {
 
     private final ActiviteService activiteService;
+    private final PresenceService presenceService;
 
-    public ActiviteController(ActiviteService activiteService) {
+    public ActiviteController(ActiviteService activiteService, PresenceService presenceService) {
         this.activiteService = activiteService;
+        this.presenceService = presenceService;
     }
 
     // ─── PUBLIC : Lister les activités publiées (V02) ─────────────────────────
@@ -134,5 +140,51 @@ public class ActiviteController {
     public ResponseEntity<Void> supprimer(@PathVariable Long id, Authentication authentication) {
         activiteService.supprimer(id, authentication.getName());
         return ResponseEntity.noContent().build();
+    }
+
+    // ─── ADMIN/REFERENT/SUPER_ADMIN : Consulter les présences ───────────────
+    @GetMapping("/{id}/presences")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT', 'SUPER_ADMIN')")
+    public ResponseEntity<List<PresenceResponse>> listerPresences(
+            @PathVariable Long id,
+            Authentication authentication) {
+        return ResponseEntity.ok(presenceService.listerPresences(id, authentication.getName()));
+    }
+
+    // ─── ADMIN/REFERENT : Encoder une présence ──────────────────────────────
+    @PatchMapping("/{id}/presences/{inscriptionId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
+    public ResponseEntity<PresenceResponse> modifierPresence(
+            @PathVariable Long id,
+            @PathVariable Long inscriptionId,
+            @Valid @RequestBody PresenceRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(presenceService.modifierPresence(
+                id,
+                inscriptionId,
+                request,
+                authentication.getName()));
+    }
+
+    // ─── ADMIN/REFERENT : Encoder des présences en masse ────────────────────
+    @PatchMapping("/{id}/presences/bulk")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
+    public ResponseEntity<List<PresenceResponse>> modifierPresencesBulk(
+            @PathVariable Long id,
+            @Valid @RequestBody PresenceBulkRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(presenceService.modifierPresencesBulk(
+                id,
+                request,
+                authentication.getName()));
+    }
+
+    // ─── ADMIN/REFERENT : Clôturer la feuille de présence ───────────────────
+    @PostMapping("/{id}/presences/cloturer")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
+    public ResponseEntity<List<PresenceResponse>> cloturerPresences(
+            @PathVariable Long id,
+            Authentication authentication) {
+        return ResponseEntity.ok(presenceService.cloturerPresences(id, authentication.getName()));
     }
 }

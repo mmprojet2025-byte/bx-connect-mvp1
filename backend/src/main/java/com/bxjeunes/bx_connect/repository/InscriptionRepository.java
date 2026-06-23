@@ -20,6 +20,8 @@ public interface InscriptionRepository extends JpaRepository<Inscription, Long> 
     // Toutes les inscriptions à une activité (pour le référent/admin)
     List<Inscription> findByActiviteId(Long activiteId);
 
+    Optional<Inscription> findByIdAndActiviteId(Long id, Long activiteId);
+
     // Vérifier si un membre est déjà inscrit à une activité
     Optional<Inscription> findByMembreIdAndActiviteId(Long membreId, Long activiteId);
 

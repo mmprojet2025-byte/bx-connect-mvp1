@@ -1,11 +1,14 @@
 package com.bxjeunes.bx_connect.security;
 
 import com.bxjeunes.bx_connect.dto.ActiviteRequest;
+import com.bxjeunes.bx_connect.dto.PresenceBulkRequest;
+import com.bxjeunes.bx_connect.dto.PresenceRequest;
 import com.bxjeunes.bx_connect.entity.Activite;
 import com.bxjeunes.bx_connect.entity.Inscription;
 import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.StatutActivite;
 import com.bxjeunes.bx_connect.entity.StatutInscription;
+import com.bxjeunes.bx_connect.entity.StatutPresence;
 import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.dto.InscriptionRequest;
 import com.bxjeunes.bx_connect.repository.ActiviteRepository;
@@ -17,6 +20,7 @@ import com.bxjeunes.bx_connect.service.ActiviteService;
 import com.bxjeunes.bx_connect.service.AuditLogService;
 import com.bxjeunes.bx_connect.service.InscriptionService;
 import com.bxjeunes.bx_connect.service.NotificationService;
+import com.bxjeunes.bx_connect.service.PresenceService;
 import com.bxjeunes.bx_connect.service.ReferentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -53,6 +57,7 @@ class ActiviteSecurityTest {
 
     @InjectMocks private ActiviteService activiteService;
     @InjectMocks private InscriptionService inscriptionService;
+    @InjectMocks private PresenceService presenceService;
     @InjectMocks private ReferentService referentService;
 
     private User admin;
@@ -164,6 +169,139 @@ class ActiviteSecurityTest {
         inscriptionService.inscriptionsParActivite(20L, admin.getEmail());
 
         verify(inscriptionRepository).findByActiviteId(20L);
+    }
+
+    @Test
+    @DisplayName("Une ancienne inscription expose une presence non renseignee par defaut")
+    void ancienne_inscription_presence_non_renseignee() {
+        Inscription inscription = inscription(70L, activiteReferentB, user(4L, "membre@test.be", Role.MEMBRE));
+
+        assertThat(inscription.getStatutPresence()).isEqualTo(StatutPresence.NON_RENSEIGNEE);
+    }
+
+    @Test
+    @DisplayName("ADMIN peut encoder une presence")
+    void admin_peut_encoder_presence() {
+        Inscription inscription = inscription(70L, activiteReferentB, user(4L, "membre@test.be", Role.MEMBRE));
+        PresenceRequest request = presenceRequest(StatutPresence.PRESENT, "Arrive a l'heure");
+
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(activiteRepository.findById(20L)).thenReturn(Optional.of(activiteReferentB));
+        when(inscriptionRepository.findByIdAndActiviteId(70L, 20L)).thenReturn(Optional.of(inscription));
+        when(inscriptionRepository.save(inscription)).thenReturn(inscription);
+
+        var response = presenceService.modifierPresence(20L, 70L, request, admin.getEmail());
+
+        assertThat(response.getStatutPresence()).isEqualTo(StatutPresence.PRESENT);
+        assertThat(inscription.getPresenceEncodeePar()).isSameAs(admin);
+        assertThat(inscription.getCommentairePresence()).isEqualTo("Arrive a l'heure");
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(admin),
+                org.mockito.ArgumentMatchers.eq("ACTIVITY_ATTENDANCE_UPDATED"),
+                org.mockito.ArgumentMatchers.eq("ACTIVITY"),
+                org.mockito.ArgumentMatchers.eq(20L),
+                org.mockito.ArgumentMatchers.eq("Activite B"),
+                org.mockito.ArgumentMatchers.eq("NON_RENSEIGNEE"),
+                org.mockito.ArgumentMatchers.eq("PRESENT"),
+                org.mockito.ArgumentMatchers.eq("Presence activite modifiee."),
+                org.mockito.ArgumentMatchers.contains("\"inscriptionId\":70"));
+    }
+
+    @Test
+    @DisplayName("REFERENT peut encoder une presence sur sa propre activite")
+    void referent_peut_encoder_presence_propre_activite() {
+        Inscription inscription = inscription(70L, activiteReferentB, user(4L, "membre@test.be", Role.MEMBRE));
+        PresenceRequest request = presenceRequest(StatutPresence.ABSENT, null);
+
+        when(userRepository.findByEmail(referentB.getEmail())).thenReturn(Optional.of(referentB));
+        when(activiteRepository.findById(20L)).thenReturn(Optional.of(activiteReferentB));
+        when(inscriptionRepository.findByIdAndActiviteId(70L, 20L)).thenReturn(Optional.of(inscription));
+        when(inscriptionRepository.save(inscription)).thenReturn(inscription);
+
+        var response = presenceService.modifierPresence(20L, 70L, request, referentB.getEmail());
+
+        assertThat(response.getStatutPresence()).isEqualTo(StatutPresence.ABSENT);
+        assertThat(inscription.getPresenceEncodeePar()).isSameAs(referentB);
+    }
+
+    @Test
+    @DisplayName("REFERENT ne peut pas encoder une presence hors perimetre")
+    void referent_ne_peut_pas_encoder_presence_hors_perimetre() {
+        PresenceRequest request = presenceRequest(StatutPresence.PRESENT, null);
+
+        when(userRepository.findByEmail(referentA.getEmail())).thenReturn(Optional.of(referentA));
+        when(activiteRepository.findById(20L)).thenReturn(Optional.of(activiteReferentB));
+
+        assertThatThrownBy(() -> presenceService.modifierPresence(20L, 70L, request, referentA.getEmail()))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(inscriptionRepository, never()).findByIdAndActiviteId(70L, 20L);
+    }
+
+    @Test
+    @DisplayName("MEMBRE ne peut pas consulter les presences")
+    void membre_ne_peut_pas_consulter_presences() {
+        User membre = user(4L, "membre@test.be", Role.MEMBRE);
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        when(activiteRepository.findById(20L)).thenReturn(Optional.of(activiteReferentB));
+
+        assertThatThrownBy(() -> presenceService.listerPresences(20L, membre.getEmail()))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(inscriptionRepository, never()).findByActiviteId(20L);
+    }
+
+    @Test
+    @DisplayName("Bulk presence met a jour plusieurs inscriptions")
+    void bulk_presence_met_a_jour_plusieurs_inscriptions() {
+        User membreA = user(4L, "membre-a@test.be", Role.MEMBRE);
+        User membreB = user(5L, "membre-b@test.be", Role.MEMBRE);
+        Inscription inscriptionA = inscription(70L, activiteReferentB, membreA);
+        Inscription inscriptionB = inscription(71L, activiteReferentB, membreB);
+        PresenceBulkRequest request = new PresenceBulkRequest();
+        PresenceBulkRequest.PresenceBulkItemRequest itemA = bulkItem(70L, StatutPresence.PRESENT);
+        PresenceBulkRequest.PresenceBulkItemRequest itemB = bulkItem(71L, StatutPresence.EXCUSE);
+        request.setPresences(List.of(itemA, itemB));
+
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(activiteRepository.findById(20L)).thenReturn(Optional.of(activiteReferentB));
+        when(inscriptionRepository.findByIdAndActiviteId(70L, 20L)).thenReturn(Optional.of(inscriptionA));
+        when(inscriptionRepository.findByIdAndActiviteId(71L, 20L)).thenReturn(Optional.of(inscriptionB));
+        when(inscriptionRepository.save(any(Inscription.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var responses = presenceService.modifierPresencesBulk(20L, request, admin.getEmail());
+
+        assertThat(responses).hasSize(2);
+        assertThat(inscriptionA.getStatutPresence()).isEqualTo(StatutPresence.PRESENT);
+        assertThat(inscriptionB.getStatutPresence()).isEqualTo(StatutPresence.EXCUSE);
+    }
+
+    @Test
+    @DisplayName("Cloture presence valide les inscriptions non annulees")
+    void cloture_presence_valide_inscriptions_non_annulees() {
+        Inscription inscriptionActive = inscription(70L, activiteReferentB, user(4L, "membre@test.be", Role.MEMBRE));
+        Inscription inscriptionAnnulee = inscription(71L, activiteReferentB, user(5L, "membre2@test.be", Role.MEMBRE));
+        inscriptionAnnulee.setStatut(StatutInscription.ANNULEE);
+
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(activiteRepository.findById(20L)).thenReturn(Optional.of(activiteReferentB));
+        when(inscriptionRepository.findByActiviteId(20L)).thenReturn(List.of(inscriptionActive, inscriptionAnnulee));
+        when(inscriptionRepository.save(any(Inscription.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var responses = presenceService.cloturerPresences(20L, admin.getEmail());
+
+        assertThat(responses).hasSize(1);
+        assertThat(inscriptionActive.getPresenceValideePar()).isSameAs(admin);
+        assertThat(inscriptionActive.getDateValidationPresence()).isNotNull();
+        assertThat(inscriptionAnnulee.getPresenceValideePar()).isNull();
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(admin),
+                org.mockito.ArgumentMatchers.eq("ACTIVITY_ATTENDANCE_VALIDATED"),
+                org.mockito.ArgumentMatchers.eq("ACTIVITY"),
+                org.mockito.ArgumentMatchers.eq(20L),
+                org.mockito.ArgumentMatchers.eq("Activite B"),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq("VALIDEE"),
+                org.mockito.ArgumentMatchers.eq("Feuille de presence activite validee."),
+                org.mockito.ArgumentMatchers.contains("\"totalInscriptions\":2"));
     }
 
     @Test
@@ -379,6 +517,29 @@ class ActiviteSecurityTest {
         activite.setStatut(statut);
         activite.setCreateur(createur);
         return activite;
+    }
+
+    private Inscription inscription(Long id, Activite activite, User membre) {
+        Inscription inscription = new Inscription();
+        inscription.setId(id);
+        inscription.setActivite(activite);
+        inscription.setMembre(membre);
+        inscription.setStatut(StatutInscription.CONFIRMEE);
+        return inscription;
+    }
+
+    private PresenceRequest presenceRequest(StatutPresence statutPresence, String commentaire) {
+        PresenceRequest request = new PresenceRequest();
+        request.setStatutPresence(statutPresence);
+        request.setCommentairePresence(commentaire);
+        return request;
+    }
+
+    private PresenceBulkRequest.PresenceBulkItemRequest bulkItem(Long inscriptionId, StatutPresence statutPresence) {
+        PresenceBulkRequest.PresenceBulkItemRequest item = new PresenceBulkRequest.PresenceBulkItemRequest();
+        item.setInscriptionId(inscriptionId);
+        item.setStatutPresence(statutPresence);
+        return item;
     }
 
     private ActiviteRequest activiteRequest(String titre) {

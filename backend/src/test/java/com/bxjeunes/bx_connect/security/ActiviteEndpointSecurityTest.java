@@ -6,6 +6,7 @@ import com.bxjeunes.bx_connect.controller.ActiviteController;
 import com.bxjeunes.bx_connect.controller.InscriptionController;
 import com.bxjeunes.bx_connect.service.ActiviteService;
 import com.bxjeunes.bx_connect.service.InscriptionService;
+import com.bxjeunes.bx_connect.service.PresenceService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,7 @@ class ActiviteEndpointSecurityTest {
 
     @MockitoBean private ActiviteService activiteService;
     @MockitoBean private InscriptionService inscriptionService;
+    @MockitoBean private PresenceService presenceService;
     @MockitoBean private JwtService jwtService;
     @MockitoBean private UserDetailsService userDetailsService;
 
@@ -80,6 +82,42 @@ class ActiviteEndpointSecurityTest {
         mockMvc.perform(delete("/api/activites/1"))
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/inscriptions/activite/1"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "MEMBRE")
+    @DisplayName("MEMBRE ne peut pas gerer les presences")
+    void membre_ne_peut_pas_gerer_presences() throws Exception {
+        mockMvc.perform(get("/api/activites/1/presences"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(patch("/api/activites/1/presences/2")
+                        .contentType("application/json")
+                        .content("{\"statutPresence\":\"PRESENT\"}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(patch("/api/activites/1/presences/bulk")
+                        .contentType("application/json")
+                        .content("{\"presences\":[{\"inscriptionId\":2,\"statutPresence\":\"PRESENT\"}]}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/activites/1/presences/cloturer"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    @DisplayName("SUPER_ADMIN peut consulter mais pas gerer les presences")
+    void super_admin_consulte_presences_sans_gerer() throws Exception {
+        mockMvc.perform(get("/api/activites/1/presences"))
+                .andExpect(status().isOk());
+        mockMvc.perform(patch("/api/activites/1/presences/2")
+                        .contentType("application/json")
+                        .content("{\"statutPresence\":\"PRESENT\"}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(patch("/api/activites/1/presences/bulk")
+                        .contentType("application/json")
+                        .content("{\"presences\":[{\"inscriptionId\":2,\"statutPresence\":\"PRESENT\"}]}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/activites/1/presences/cloturer"))
                 .andExpect(status().isForbidden());
     }
 

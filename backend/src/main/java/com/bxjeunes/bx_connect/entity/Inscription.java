@@ -34,6 +34,27 @@ public class Inscription {
     @Column
     private LocalDateTime dateAnnulation;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "statut_presence", nullable = false, columnDefinition = "varchar(30) default 'NON_RENSEIGNEE'")
+    private StatutPresence statutPresence = StatutPresence.NON_RENSEIGNEE;
+
+    @Column
+    private LocalDateTime datePresence;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "presence_encodee_par_id")
+    private User presenceEncodeePar;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "presence_validee_par_id")
+    private User presenceValideePar;
+
+    @Column
+    private LocalDateTime dateValidationPresence;
+
+    @Column(columnDefinition = "TEXT")
+    private String commentairePresence;
+
     // ─── Constructeurs ───────────────────────────────────────────────────────
 
     public Inscription() {}
@@ -57,4 +78,28 @@ public class Inscription {
 
     public LocalDateTime getDateAnnulation() { return dateAnnulation; }
     public void setDateAnnulation(LocalDateTime dateAnnulation) { this.dateAnnulation = dateAnnulation; }
+
+    public StatutPresence getStatutPresence() {
+        return statutPresence == null ? StatutPresence.NON_RENSEIGNEE : statutPresence;
+    }
+    public void setStatutPresence(StatutPresence statutPresence) {
+        this.statutPresence = statutPresence == null ? StatutPresence.NON_RENSEIGNEE : statutPresence;
+    }
+
+    public LocalDateTime getDatePresence() { return datePresence; }
+    public void setDatePresence(LocalDateTime datePresence) { this.datePresence = datePresence; }
+
+    public User getPresenceEncodeePar() { return presenceEncodeePar; }
+    public void setPresenceEncodeePar(User presenceEncodeePar) { this.presenceEncodeePar = presenceEncodeePar; }
+
+    public User getPresenceValideePar() { return presenceValideePar; }
+    public void setPresenceValideePar(User presenceValideePar) { this.presenceValideePar = presenceValideePar; }
+
+    public LocalDateTime getDateValidationPresence() { return dateValidationPresence; }
+    public void setDateValidationPresence(LocalDateTime dateValidationPresence) {
+        this.dateValidationPresence = dateValidationPresence;
+    }
+
+    public String getCommentairePresence() { return commentairePresence; }
+    public void setCommentairePresence(String commentairePresence) { this.commentairePresence = commentairePresence; }
 }
