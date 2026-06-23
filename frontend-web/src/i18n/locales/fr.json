@@ -1850,6 +1850,72 @@
       "description": "Cette activité n’a pas encore d’inscription à afficher."
     }
   },
+  "referentPartners": {
+    "nav": "Mes partenaires",
+    "eyebrow": "Partenaires locaux",
+    "title": "Mes partenaires",
+    "description": "Consultez les partenaires liés directement à vous ou aux groupes que vous encadrez.",
+    "loading": "Chargement de vos partenaires...",
+    "searchPlaceholder": "Rechercher un partenaire, un groupe ou un type...",
+    "unknownType": "Type non renseigné",
+    "direct": "Lien direct",
+    "byGroup": "Via groupe",
+    "website": "Site web",
+    "linkType": "Type de lien",
+    "startedAt": "Depuis",
+    "groupCount": "{{count}} groupe",
+    "groupCount_plural": "{{count}} groupes",
+    "referentCount": "{{count}} référent",
+    "referentCount_plural": "{{count}} référents",
+    "kpis": {
+      "partners": "Partenaires suivis",
+      "directLinks": "Liens directs",
+      "groupLinks": "Liens groupes",
+      "toClarify": "Points à clarifier"
+    },
+    "list": {
+      "title": "Partenaires liés",
+      "subtitle": "Partenaires affectés à votre périmètre de terrain."
+    },
+    "impact": {
+      "title": "Vue impact partenaire",
+      "subtitle": "Détail des liens connus pour le partenaire sélectionné.",
+      "loading": "Chargement du détail partenaire...",
+      "selectPartner": "Sélectionnez un partenaire.",
+      "groupsTitle": "Groupes liés",
+      "referentsTitle": "Référents liés",
+      "noGroups": "Aucun groupe lié.",
+      "noReferents": "Aucun référent lié."
+    },
+    "quality": {
+      "title": "Qualité des données",
+      "subtitle": "Points qui peuvent limiter la lecture de l’impact local.",
+      "withoutGroup": "Sans groupe lié",
+      "withoutGroupDesc": "Ces partenaires sont visibles, mais leur rattachement terrain reste incomplet.",
+      "withoutDirectReferent": "Sans lien direct",
+      "withoutDirectReferentDesc": "Ces partenaires sont liés via un groupe, mais pas directement à un référent.",
+      "withoutDescription": "Sans description",
+      "withoutDescriptionDesc": "Une description courte aide à comprendre le rôle du partenaire."
+    },
+    "empty": {
+      "title": "Aucun partenaire lié",
+      "description": "Les partenaires apparaîtront ici lorsqu’un administrateur les affectera à vous ou à vos groupes."
+    },
+    "errors": {
+      "title": "Impossible de charger les partenaires",
+      "load": "Impossible de charger vos partenaires.",
+      "detailTitle": "Impossible de charger le détail",
+      "detail": "Impossible de charger le détail de ce partenaire."
+    },
+    "linkTypes": {
+      "SOUTIEN": "Soutien",
+      "MENTORAT": "Mentorat",
+      "FORMATION": "Formation",
+      "EMPLOI": "Emploi",
+      "LOGISTIQUE": "Logistique",
+      "AUTRE": "Autre"
+    }
+  },
   "referentImpact": {
     "nav": "Impact",
     "title": "Impact de mes groupes",

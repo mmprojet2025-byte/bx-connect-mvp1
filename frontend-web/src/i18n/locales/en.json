@@ -1850,6 +1850,72 @@
       "description": "This activity has no registrations to display yet."
     }
   },
+  "referentPartners": {
+    "nav": "My partners",
+    "eyebrow": "Local partners",
+    "title": "My partners",
+    "description": "View the partners linked directly to you or to the groups you coordinate.",
+    "loading": "Loading your partners...",
+    "searchPlaceholder": "Search a partner, group or type...",
+    "unknownType": "Type not specified",
+    "direct": "Direct link",
+    "byGroup": "Via group",
+    "website": "Website",
+    "linkType": "Link type",
+    "startedAt": "Since",
+    "groupCount": "{{count}} group",
+    "groupCount_plural": "{{count}} groups",
+    "referentCount": "{{count}} referent",
+    "referentCount_plural": "{{count}} referents",
+    "kpis": {
+      "partners": "Tracked partners",
+      "directLinks": "Direct links",
+      "groupLinks": "Group links",
+      "toClarify": "Items to clarify"
+    },
+    "list": {
+      "title": "Linked partners",
+      "subtitle": "Partners assigned to your field scope."
+    },
+    "impact": {
+      "title": "Partner impact view",
+      "subtitle": "Known links for the selected partner.",
+      "loading": "Loading partner details...",
+      "selectPartner": "Select a partner.",
+      "groupsTitle": "Linked groups",
+      "referentsTitle": "Linked referents",
+      "noGroups": "No linked group.",
+      "noReferents": "No linked referent."
+    },
+    "quality": {
+      "title": "Data quality",
+      "subtitle": "Items that may limit local impact readability.",
+      "withoutGroup": "Without linked group",
+      "withoutGroupDesc": "These partners are visible, but their field link remains incomplete.",
+      "withoutDirectReferent": "Without direct link",
+      "withoutDirectReferentDesc": "These partners are linked through a group, but not directly to a referent.",
+      "withoutDescription": "Without description",
+      "withoutDescriptionDesc": "A short description helps clarify the partner’s role."
+    },
+    "empty": {
+      "title": "No linked partner",
+      "description": "Partners will appear here once an administrator assigns them to you or your groups."
+    },
+    "errors": {
+      "title": "Unable to load partners",
+      "load": "Unable to load your partners.",
+      "detailTitle": "Unable to load details",
+      "detail": "Unable to load this partner’s details."
+    },
+    "linkTypes": {
+      "SOUTIEN": "Support",
+      "MENTORAT": "Mentoring",
+      "FORMATION": "Training",
+      "EMPLOI": "Job",
+      "LOGISTIQUE": "Logistics",
+      "AUTRE": "Other"
+    }
+  },
   "referentImpact": {
     "nav": "Impact",
     "title": "My groups impact",

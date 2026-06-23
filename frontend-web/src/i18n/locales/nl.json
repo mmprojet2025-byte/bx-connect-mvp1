@@ -1850,6 +1850,72 @@
       "description": "Deze activiteit heeft nog geen inschrijvingen om weer te geven."
     }
   },
+  "referentPartners": {
+    "nav": "Mijn partners",
+    "eyebrow": "Lokale partners",
+    "title": "Mijn partners",
+    "description": "Bekijk de partners die rechtstreeks aan jou of aan je groepen zijn gekoppeld.",
+    "loading": "Je partners laden...",
+    "searchPlaceholder": "Zoek een partner, groep of type...",
+    "unknownType": "Type niet ingevuld",
+    "direct": "Rechtstreekse koppeling",
+    "byGroup": "Via groep",
+    "website": "Website",
+    "linkType": "Type koppeling",
+    "startedAt": "Sinds",
+    "groupCount": "{{count}} groep",
+    "groupCount_plural": "{{count}} groepen",
+    "referentCount": "{{count}} referent",
+    "referentCount_plural": "{{count}} referenten",
+    "kpis": {
+      "partners": "Opgevolgde partners",
+      "directLinks": "Rechtstreekse links",
+      "groupLinks": "Groepslinks",
+      "toClarify": "Te verduidelijken"
+    },
+    "list": {
+      "title": "Gekoppelde partners",
+      "subtitle": "Partners die aan jouw terreinwerking zijn gekoppeld."
+    },
+    "impact": {
+      "title": "Partnerimpact",
+      "subtitle": "Bekende koppelingen voor de geselecteerde partner.",
+      "loading": "Partnerdetails laden...",
+      "selectPartner": "Selecteer een partner.",
+      "groupsTitle": "Gekoppelde groepen",
+      "referentsTitle": "Gekoppelde referenten",
+      "noGroups": "Geen gekoppelde groep.",
+      "noReferents": "Geen gekoppelde referent."
+    },
+    "quality": {
+      "title": "Datakwaliteit",
+      "subtitle": "Punten die de lokale impact minder duidelijk kunnen maken.",
+      "withoutGroup": "Zonder gekoppelde groep",
+      "withoutGroupDesc": "Deze partners zijn zichtbaar, maar hun terreinlink is nog onvolledig.",
+      "withoutDirectReferent": "Zonder rechtstreekse link",
+      "withoutDirectReferentDesc": "Deze partners zijn via een groep gekoppeld, maar niet rechtstreeks aan een referent.",
+      "withoutDescription": "Zonder beschrijving",
+      "withoutDescriptionDesc": "Een korte beschrijving helpt om de rol van de partner te begrijpen."
+    },
+    "empty": {
+      "title": "Geen gekoppelde partner",
+      "description": "Partners verschijnen hier zodra een administrator ze aan jou of je groepen koppelt."
+    },
+    "errors": {
+      "title": "Partners konden niet worden geladen",
+      "load": "Je partners konden niet worden geladen.",
+      "detailTitle": "Details konden niet worden geladen",
+      "detail": "De details van deze partner konden niet worden geladen."
+    },
+    "linkTypes": {
+      "SOUTIEN": "Steun",
+      "MENTORAT": "Mentoring",
+      "FORMATION": "Opleiding",
+      "EMPLOI": "Job",
+      "LOGISTIQUE": "Logistiek",
+      "AUTRE": "Andere"
+    }
+  },
   "referentImpact": {
     "nav": "Impact",
     "title": "Impact van mijn groepen",

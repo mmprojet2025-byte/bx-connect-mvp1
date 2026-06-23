@@ -488,6 +488,7 @@ function getSpaceSections(role, t) {
         link('Mes groupes', '/referent/groupes', 'Users'),
         link('Membres', '/referent/membres', 'User'),
         link('Projets', '/referent/projets', 'Rocket'),
+        link(t('referentPartners.nav'), '/referent/partenaires', 'Handshake'),
         link(t('referentImpact.nav'), '/referent/impact', 'BarChart3'),
         link(t('referentReports.nav'), '/referent/rapports', 'FileText'),
         link('Prestations', '/referent/prestations', 'CheckCircle'),
