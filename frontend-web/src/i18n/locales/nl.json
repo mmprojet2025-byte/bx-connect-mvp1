@@ -2030,6 +2030,74 @@
       }
     }
   },
+  "partnerAssignments": {
+    "nav": "Partnerkoppelingen",
+    "eyebrow": "Lokale partners",
+    "title": "Partnerkoppelingen",
+    "description": "Koppel partners aan referenten en groepen om hun lokale impact op te volgen zonder bestaande financiële steun te wijzigen.",
+    "loading": "Partnerkoppelingen laden...",
+    "partner": "Partner",
+    "referent": "Referent",
+    "group": "Groep",
+    "linkType": "Type koppeling",
+    "comment": "Opmerking",
+    "active": "Actief",
+    "inactive": "Inactief",
+    "assignToReferent": "Aan referent koppelen",
+    "assignToGroup": "Aan groep koppelen",
+    "deactivate": "Koppeling deactiveren",
+    "startedAt": "Sinds",
+    "kpis": {
+      "total": "Koppelingen",
+      "active": "Actief",
+      "referents": "Referentkoppelingen",
+      "groups": "Groepskoppelingen"
+    },
+    "forms": {
+      "referentTitle": "Partner → referent",
+      "referentDescription": "Maak een lokale opvolgingskoppeling tussen een partner en een referent.",
+      "groupTitle": "Partner → groep",
+      "groupDescription": "Koppel een partner aan een terrein-groep met een type koppeling."
+    },
+    "placeholders": {
+      "partner": "Kies een partner",
+      "referent": "Kies een referent",
+      "group": "Kies een groep"
+    },
+    "lists": {
+      "referentsTitle": "Partner-referent koppelingen",
+      "referentsSubtitle": "Referenten verantwoordelijk voor de lokale opvolging van partners.",
+      "groupsTitle": "Partner-groep koppelingen",
+      "groupsSubtitle": "Partners gekoppeld aan terrein-groepen."
+    },
+    "empty": {
+      "referents": "Geen partner-referent koppeling.",
+      "groups": "Geen partner-groep koppeling."
+    },
+    "emptyPartners": {
+      "title": "Geen koppelbaar partnerprofiel",
+      "description": "Maak of vervolledig een partnerprofiel met organisatienaam voordat je een koppeling maakt."
+    },
+    "messages": {
+      "referentCreated": "Partner gekoppeld aan de referent.",
+      "groupCreated": "Partner gekoppeld aan de groep.",
+      "deactivated": "Koppeling gedeactiveerd."
+    },
+    "errors": {
+      "title": "Koppelingen konden niet worden geladen",
+      "load": "Partnerkoppelingen konden niet worden geladen.",
+      "create": "Koppeling kon niet worden aangemaakt.",
+      "deactivate": "Koppeling kon niet worden gedeactiveerd."
+    },
+    "linkTypes": {
+      "SOUTIEN": "Steun",
+      "MENTORAT": "Mentoring",
+      "FORMATION": "Opleiding",
+      "EMPLOI": "Job",
+      "LOGISTIQUE": "Logistiek",
+      "AUTRE": "Andere"
+    }
+  },
   "dashboardCharts": {
     "title": "Visuele indicatoren",
     "adminSubtitle": "Verdelingen berekend op basis van de gegevens die in dit dashboard zijn geladen.",

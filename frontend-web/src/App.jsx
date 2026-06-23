@@ -55,6 +55,7 @@ import AdminProjets      from './pages/admin/AdminProjets'
 import AdminGroupes      from './pages/admin/AdminGroupes'
 import AdminReferents    from './pages/admin/AdminReferents'
 import AdminSoutiens     from './pages/admin/AdminSoutiens'
+import AdminPartenaireAffectations from './pages/admin/AdminPartenaireAffectations'
 import ImpactDashboard   from './pages/impact/ImpactDashboard'
 import SuperAdminRoute      from './routes/SuperAdminRoute'
 import SuperAdminDashboard  from './pages/super-admin/SuperAdminDashboard'
@@ -226,6 +227,7 @@ export default function App() {
           <Route path="/admin/projets"       element={<AdminRoute><AdminProjets /></AdminRoute>} />
           <Route path="/admin/groupes"       element={<AdminRoute><AdminGroupes /></AdminRoute>} />
           <Route path="/admin/soutiens"      element={<AdminRoute><AdminSoutiens /></AdminRoute>} />
+          <Route path="/admin/partenaires/affectations" element={<AdminRoute><AdminPartenaireAffectations /></AdminRoute>} />
           <Route path="/admin/prestations"   element={<AdminRoute><GestionPrestations /></AdminRoute>} />
           <Route path="/admin/annonces"      element={<AdminRoute><Annonces /></AdminRoute>} />
           <Route path="/impact"              element={<AdminRoute><ImpactDashboard /></AdminRoute>} />

@@ -468,6 +468,7 @@ function getSpaceSections(role, t) {
         link('Activités', '/admin/activites', 'Calendar'),
         link('Prestations', '/admin/prestations', 'CheckCircle'),
         link('Annonces', '/admin/annonces', 'Megaphone'),
+        link(t('partnerAssignments.nav'), '/admin/partenaires/affectations', 'Handshake'),
       ]),
     ])
   }

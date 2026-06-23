@@ -2030,6 +2030,74 @@
       }
     }
   },
+  "partnerAssignments": {
+    "nav": "Affectations partenaires",
+    "eyebrow": "Partenaires locaux",
+    "title": "Affectations partenaires",
+    "description": "Associez les partenaires aux référents et aux groupes pour suivre leur impact local sans modifier les soutiens financiers existants.",
+    "loading": "Chargement des affectations partenaires...",
+    "partner": "Partenaire",
+    "referent": "Référent",
+    "group": "Groupe",
+    "linkType": "Type de lien",
+    "comment": "Commentaire",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "assignToReferent": "Affecter à un référent",
+    "assignToGroup": "Affecter à un groupe",
+    "deactivate": "Désactiver l’affectation",
+    "startedAt": "Depuis",
+    "kpis": {
+      "total": "Affectations",
+      "active": "Actives",
+      "referents": "Liens référents",
+      "groups": "Liens groupes"
+    },
+    "forms": {
+      "referentTitle": "Partenaire → référent",
+      "referentDescription": "Créez un lien de suivi local entre un partenaire et un référent.",
+      "groupTitle": "Partenaire → groupe",
+      "groupDescription": "Associez un partenaire à un groupe terrain avec un type de lien."
+    },
+    "placeholders": {
+      "partner": "Choisir un partenaire",
+      "referent": "Choisir un référent",
+      "group": "Choisir un groupe"
+    },
+    "lists": {
+      "referentsTitle": "Affectations partenaire-référent",
+      "referentsSubtitle": "Référents responsables du suivi local des partenaires.",
+      "groupsTitle": "Affectations partenaire-groupe",
+      "groupsSubtitle": "Partenaires associés aux groupes terrain."
+    },
+    "empty": {
+      "referents": "Aucune affectation partenaire-référent.",
+      "groups": "Aucune affectation partenaire-groupe."
+    },
+    "emptyPartners": {
+      "title": "Aucun profil partenaire affectable",
+      "description": "Créez ou complétez un profil partenaire avec un nom d’organisation avant de créer une affectation."
+    },
+    "messages": {
+      "referentCreated": "Partenaire affecté au référent.",
+      "groupCreated": "Partenaire affecté au groupe.",
+      "deactivated": "Affectation désactivée."
+    },
+    "errors": {
+      "title": "Impossible de charger les affectations",
+      "load": "Impossible de charger les affectations partenaires.",
+      "create": "Impossible de créer l’affectation.",
+      "deactivate": "Impossible de désactiver l’affectation."
+    },
+    "linkTypes": {
+      "SOUTIEN": "Soutien",
+      "MENTORAT": "Mentorat",
+      "FORMATION": "Formation",
+      "EMPLOI": "Emploi",
+      "LOGISTIQUE": "Logistique",
+      "AUTRE": "Autre"
+    }
+  },
   "dashboardCharts": {
     "title": "Indicateurs visuels",
     "adminSubtitle": "Répartitions calculées à partir des données chargées dans ce tableau de bord.",

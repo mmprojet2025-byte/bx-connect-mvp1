@@ -2030,6 +2030,74 @@
       }
     }
   },
+  "partnerAssignments": {
+    "nav": "Partner assignments",
+    "eyebrow": "Local partners",
+    "title": "Partner assignments",
+    "description": "Link partners to referents and groups to track their local impact without changing existing financial supports.",
+    "loading": "Loading partner assignments...",
+    "partner": "Partner",
+    "referent": "Referent",
+    "group": "Group",
+    "linkType": "Link type",
+    "comment": "Comment",
+    "active": "Active",
+    "inactive": "Inactive",
+    "assignToReferent": "Assign to a referent",
+    "assignToGroup": "Assign to a group",
+    "deactivate": "Deactivate assignment",
+    "startedAt": "Since",
+    "kpis": {
+      "total": "Assignments",
+      "active": "Active",
+      "referents": "Referent links",
+      "groups": "Group links"
+    },
+    "forms": {
+      "referentTitle": "Partner → referent",
+      "referentDescription": "Create a local follow-up link between a partner and a referent.",
+      "groupTitle": "Partner → group",
+      "groupDescription": "Assign a partner to a field group with a link type."
+    },
+    "placeholders": {
+      "partner": "Choose a partner",
+      "referent": "Choose a referent",
+      "group": "Choose a group"
+    },
+    "lists": {
+      "referentsTitle": "Partner-referent assignments",
+      "referentsSubtitle": "Referents responsible for local partner follow-up.",
+      "groupsTitle": "Partner-group assignments",
+      "groupsSubtitle": "Partners linked to field groups."
+    },
+    "empty": {
+      "referents": "No partner-referent assignment.",
+      "groups": "No partner-group assignment."
+    },
+    "emptyPartners": {
+      "title": "No assignable partner profile",
+      "description": "Create or complete a partner profile with an organization name before creating an assignment."
+    },
+    "messages": {
+      "referentCreated": "Partner assigned to the referent.",
+      "groupCreated": "Partner assigned to the group.",
+      "deactivated": "Assignment deactivated."
+    },
+    "errors": {
+      "title": "Unable to load assignments",
+      "load": "Unable to load partner assignments.",
+      "create": "Unable to create the assignment.",
+      "deactivate": "Unable to deactivate the assignment."
+    },
+    "linkTypes": {
+      "SOUTIEN": "Support",
+      "MENTORAT": "Mentoring",
+      "FORMATION": "Training",
+      "EMPLOI": "Job",
+      "LOGISTIQUE": "Logistics",
+      "AUTRE": "Other"
+    }
+  },
   "dashboardCharts": {
     "title": "Visual indicators",
     "adminSubtitle": "Breakdowns calculated from the data loaded in this dashboard.",
