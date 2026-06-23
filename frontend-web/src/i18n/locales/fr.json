@@ -1618,6 +1618,23 @@
       "emptyTitle": "Aucun point géolocalisé",
       "emptyDescription": "Ajoutez des coordonnées aux activités ou groupes pour alimenter la carte d’impact."
     },
+    "filters": {
+      "title": "Filtres d’impact",
+      "description": "Affinez la lecture par période, commune ou groupe avec les données déjà chargées.",
+      "period": "Période",
+      "periodAll": "Tout",
+      "period30": "30 derniers jours",
+      "period90": "90 derniers jours",
+      "periodYear": "Année en cours",
+      "commune": "Commune",
+      "allCommunes": "Toutes les communes",
+      "group": "Groupe",
+      "allGroups": "Tous les groupes",
+      "unknownGroup": "Groupe inconnu",
+      "reset": "Réinitialiser",
+      "emptyTitle": "Aucune donnée pour ces filtres",
+      "emptyDescription": "Élargissez la période, la commune ou le groupe pour retrouver des indicateurs."
+    },
     "quality": {
       "title": "Qualité des données",
       "description": "Points à corriger pour rendre les rapports plus crédibles auprès d’une commune, d’un financeur ou d’un partenaire.",
@@ -1643,6 +1660,7 @@
       "generatedAt": "Dernière génération affichée : {{date}}",
       "v1Notice": "Rapport V1 généré côté frontend à partir des données déjà disponibles dans Bx-Connect. Les chiffres servent de synthèse opérationnelle et doivent être validés avant transmission officielle.",
       "sections": {
+        "filters": "Filtres actifs",
         "summary": "Synthèse",
         "activitiesByStatus": "Activités par statut",
         "projectsByStatus": "Projets par statut",
@@ -1661,6 +1679,7 @@
       },
       "columns": {
         "indicator": "Indicateur",
+        "filter": "Filtre",
         "value": "Valeur",
         "status": "Statut",
         "count": "Nombre",

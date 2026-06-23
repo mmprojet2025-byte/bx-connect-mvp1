@@ -1618,6 +1618,23 @@
       "emptyTitle": "Geen geolokaliseerd punt",
       "emptyDescription": "Voeg coördinaten toe aan activiteiten of groepen om de impactkaart te vullen."
     },
+    "filters": {
+      "title": "Impactfilters",
+      "description": "Verfijn de weergave per periode, gemeente of groep met de reeds geladen gegevens.",
+      "period": "Periode",
+      "periodAll": "Alles",
+      "period30": "Laatste 30 dagen",
+      "period90": "Laatste 90 dagen",
+      "periodYear": "Lopend jaar",
+      "commune": "Gemeente",
+      "allCommunes": "Alle gemeenten",
+      "group": "Groep",
+      "allGroups": "Alle groepen",
+      "unknownGroup": "Onbekende groep",
+      "reset": "Resetten",
+      "emptyTitle": "Geen gegevens voor deze filters",
+      "emptyDescription": "Verbreed de periode, gemeente of groep om opnieuw indicatoren te tonen."
+    },
     "quality": {
       "title": "Datakwaliteit",
       "description": "Punten om te verbeteren zodat rapporten geloofwaardiger worden voor een gemeente, financier of partner.",
@@ -1643,6 +1660,7 @@
       "generatedAt": "Laatst getoonde generatie: {{date}}",
       "v1Notice": "V1-rapport gegenereerd in de frontend op basis van gegevens die al beschikbaar zijn in Bx-Connect. De cijfers zijn een operationele samenvatting en moeten worden gevalideerd vóór officiële indiening.",
       "sections": {
+        "filters": "Actieve filters",
         "summary": "Synthese",
         "activitiesByStatus": "Activiteiten per status",
         "projectsByStatus": "Projecten per status",
@@ -1661,6 +1679,7 @@
       },
       "columns": {
         "indicator": "Indicator",
+        "filter": "Filter",
         "value": "Waarde",
         "status": "Status",
         "count": "Aantal",

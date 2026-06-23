@@ -26,6 +26,7 @@ import CompactKpiRow from '../../components/dashboard/CompactKpiRow'
 import { CollaborativeDashboardLayout } from '../../components/dashboard/CollaborativeDashboard'
 
 const CHART_COLORS = ['#2563eb', '#0f766e', '#d97706', '#7c3aed', '#dc2626', '#64748b']
+const DEFAULT_FILTERS = { period: 'all', commune: 'all', group: 'all' }
 
 export default function ImpactDashboard() {
   const { t, i18n } = useTranslation()
@@ -40,6 +41,7 @@ export default function ImpactDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [partialError, setPartialError] = useState('')
+  const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const mapContainerRef = useRef(null)
   const mapRef = useRef(null)
 
@@ -87,7 +89,20 @@ export default function ImpactDashboard() {
 
   useEffect(() => { fetchImpact() }, [fetchImpact])
 
-  const impact = useMemo(() => buildImpactModel(data, t), [data, t])
+  const filterOptions = useMemo(() => buildFilterOptions(data), [data])
+  const filteredData = useMemo(() => applyImpactFilters(data, filters), [data, filters])
+  const selectedGroup = useMemo(
+    () => filteredData.groups.find(group => String(group.id) === String(filters.group)) || null,
+    [filteredData.groups, filters.group]
+  )
+  const impact = useMemo(
+    () => buildImpactModel(filteredData, t, { selectedGroup }),
+    [filteredData, selectedGroup, t]
+  )
+  const filterSummary = useMemo(
+    () => buildFilterSummary(filters, filterOptions, t),
+    [filters, filterOptions, t]
+  )
 
   useEffect(() => {
     if (!mapContainerRef.current || impact.mapPoints.length === 0) return undefined
@@ -129,6 +144,7 @@ export default function ImpactDashboard() {
   }, [impact.mapPoints])
 
   const hasAnyData = Object.values(data).some(items => items.length > 0)
+  const hasFilteredData = Object.values(filteredData).some(items => items.length > 0)
   const generatedAt = useMemo(() => new Date(), [])
 
   return (
@@ -140,7 +156,7 @@ export default function ImpactDashboard() {
         <>
           <button
             type="button"
-            onClick={() => exportImpactPdf({ data, impact, generatedAt: new Date(), t, language: i18n.language })}
+            onClick={() => exportImpactPdf({ data: filteredData, impact, filterSummary, generatedAt: new Date(), t, language: i18n.language })}
             className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-black text-white transition hover:bg-blue-600"
           >
             <AppIcon name="FileText" className="h-4 w-4" />
@@ -148,7 +164,7 @@ export default function ImpactDashboard() {
           </button>
           <button
             type="button"
-            onClick={() => exportImpactExcel({ data, impact, generatedAt: new Date(), t, language: i18n.language })}
+            onClick={() => exportImpactExcel({ data: filteredData, impact, filterSummary, generatedAt: new Date(), t, language: i18n.language })}
             className="inline-flex items-center gap-2 rounded-lg border border-blue-100 bg-white px-4 py-2 text-sm font-black text-blue-800 transition hover:bg-blue-50"
           >
             <AppIcon name="Archive" className="h-4 w-4" />
@@ -176,6 +192,25 @@ export default function ImpactDashboard() {
         />
       ) : (
         <>
+          <ImpactFilters
+            filters={filters}
+            options={filterOptions}
+            summary={filterSummary}
+            onChange={setFilters}
+            onReset={() => setFilters(DEFAULT_FILTERS)}
+            t={t}
+          />
+
+          {!hasFilteredData && (
+            <div className="mb-4">
+              <EmptyState
+                icon="Search"
+                title={t('impact.filters.emptyTitle')}
+                description={t('impact.filters.emptyDescription')}
+              />
+            </div>
+          )}
+
           <CompactKpiRow
             accent="blue"
             className="mb-4 lg:grid-cols-3 xl:grid-cols-6"
@@ -356,7 +391,235 @@ function LegendDot({ color, label }) {
   )
 }
 
-function buildImpactModel(data, t) {
+function ImpactFilters({ filters, options, summary, onChange, onReset, t }) {
+  return (
+    <section className="mb-4 rounded-xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-950/5">
+      <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+        <SectionHeader
+          icon="Search"
+          title={t('impact.filters.title')}
+          description={t('impact.filters.description')}
+        />
+        <button
+          type="button"
+          onClick={onReset}
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:bg-slate-50"
+        >
+          <AppIcon name="XCircle" className="h-4 w-4" />
+          {t('impact.filters.reset')}
+        </button>
+      </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        <FilterSelect
+          label={t('impact.filters.period')}
+          value={filters.period}
+          onChange={value => onChange(current => ({ ...current, period: value }))}
+          options={buildPeriodOptions(t)}
+        />
+        <FilterSelect
+          label={t('impact.filters.commune')}
+          value={filters.commune}
+          onChange={value => onChange(current => ({ ...current, commune: value }))}
+          options={[
+            { value: 'all', label: t('impact.filters.allCommunes') },
+            ...options.communes.map(commune => ({ value: commune, label: commune })),
+          ]}
+        />
+        <FilterSelect
+          label={t('impact.filters.group')}
+          value={filters.group}
+          onChange={value => onChange(current => ({ ...current, group: value }))}
+          options={[
+            { value: 'all', label: t('impact.filters.allGroups') },
+            ...options.groups.map(group => ({ value: String(group.id), label: group.nom })),
+          ]}
+        />
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
+        {summary.map(item => (
+          <span key={item.label} className="rounded-full bg-slate-100 px-3 py-1">
+            {item.label}: <span className="text-slate-800">{item.value}</span>
+          </span>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function FilterSelect({ label, value, options, onChange }) {
+  return (
+    <label className="grid gap-1.5">
+      <span className="text-xs font-black uppercase tracking-wide text-slate-400">{label}</span>
+      <select
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+      >
+        {options.map(option => (
+          <option key={option.value} value={option.value}>{option.label}</option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+function buildFilterOptions(data) {
+  const communes = Array.from(new Set([
+    ...data.activities.map(item => item.commune).filter(Boolean),
+    ...data.groups.map(item => item.commune).filter(Boolean),
+  ])).sort((a, b) => a.localeCompare(b))
+
+  const groups = data.groups
+    .filter(group => group.id && group.nom)
+    .map(group => ({ id: group.id, nom: group.nom }))
+    .sort((a, b) => a.nom.localeCompare(b.nom))
+
+  return { communes, groups }
+}
+
+function applyImpactFilters(data, filters) {
+  const periodFilter = getPeriodFilter(filters.period)
+  const hasTerritoryFilter = filters.commune !== 'all' || filters.group !== 'all'
+  const hasAnyFilter = hasTerritoryFilter || filters.period !== 'all'
+  const groupLookup = new Map(data.groups.map(group => [String(group.id), group]))
+  const activityLookup = new Map(data.activities.map(activity => [String(activity.id), activity]))
+  const projectLookup = new Map(data.projects.map(project => [String(project.id), project]))
+
+  const groups = data.groups.filter(group =>
+    matchesPeriod(group, periodFilter, ['dateCreation', 'dateValidation'])
+    && matchesCommune(group, filters.commune)
+    && matchesGroup(group, filters.group)
+  )
+  const selectedGroupIds = new Set(groups.map(group => String(group.id)))
+
+  const activities = data.activities.filter(activity =>
+    matchesPeriod(activity, periodFilter, ['dateDebut', 'dateFin', 'dateCreation'])
+    && matchesCommune(activity, filters.commune)
+    && matchesGroupOrUnfiltered(activity, filters.group)
+  )
+  const filteredActivityIds = new Set(activities.map(activity => String(activity.id)))
+
+  const projects = data.projects.filter(project =>
+    matchesPeriod(project, periodFilter, ['dateCreation', 'dateSoumission', 'dateValidation', 'dateCloture'])
+    && matchesProjectCommune(project, filters.commune, groupLookup)
+    && matchesProjectGroup(project, filters.group, selectedGroupIds)
+  )
+  const filteredProjectIds = new Set(projects.map(project => String(project.id)))
+
+  const supports = data.supports.filter(support =>
+    matchesPeriod(support, periodFilter, ['datePaiement', 'dateCreation', 'dateReponseAdmin'])
+    && matchesSupportScope(support, filters, filteredProjectIds, filteredActivityIds, projectLookup, activityLookup, groupLookup)
+  )
+
+  return {
+    users: hasTerritoryFilter ? [] : data.users.filter(user => matchesPeriod(user, periodFilter, ['dateInscription'])),
+    activities,
+    groups,
+    projects,
+    supports,
+    publicPartners: hasAnyFilter ? [] : data.publicPartners,
+  }
+}
+
+function buildPeriodOptions(t) {
+  return [
+    { value: 'all', label: t('impact.filters.periodAll') },
+    { value: '30d', label: t('impact.filters.period30') },
+    { value: '90d', label: t('impact.filters.period90') },
+    { value: 'year', label: t('impact.filters.periodYear') },
+  ]
+}
+
+function buildFilterSummary(filters, options, t) {
+  const period = buildPeriodOptions(t).find(item => item.value === filters.period)?.label || t('impact.filters.periodAll')
+  const commune = filters.commune === 'all' ? t('impact.filters.allCommunes') : filters.commune
+  const group = filters.group === 'all'
+    ? t('impact.filters.allGroups')
+    : options.groups.find(item => String(item.id) === String(filters.group))?.nom || t('impact.filters.unknownGroup')
+
+  return [
+    { label: t('impact.filters.period'), value: period },
+    { label: t('impact.filters.commune'), value: commune },
+    { label: t('impact.filters.group'), value: group },
+  ]
+}
+
+function getPeriodFilter(period) {
+  const now = new Date()
+  if (period === '30d') return { start: daysAgo(30), end: now }
+  if (period === '90d') return { start: daysAgo(90), end: now }
+  if (period === 'year') return { start: new Date(now.getFullYear(), 0, 1), end: now }
+  return null
+}
+
+function daysAgo(days) {
+  const date = new Date()
+  date.setDate(date.getDate() - days)
+  return date
+}
+
+function matchesPeriod(item, periodFilter, fields) {
+  if (!periodFilter) return true
+  const date = firstValidDate(item, fields)
+  if (!date) return false
+  return date >= periodFilter.start && date <= periodFilter.end
+}
+
+function firstValidDate(item, fields) {
+  for (const field of fields) {
+    const value = item[field]
+    if (!value) continue
+    const date = new Date(value)
+    if (Number.isFinite(date.getTime())) return date
+  }
+  return null
+}
+
+function matchesCommune(item, commune) {
+  return commune === 'all' || item.commune === commune
+}
+
+function matchesGroup(item, groupId) {
+  return groupId === 'all' || String(item.id) === String(groupId)
+}
+
+function matchesGroupOrUnfiltered(item, groupId) {
+  if (groupId === 'all') return true
+  return String(item.groupeId || item.groupe?.id || '') === String(groupId)
+}
+
+function matchesProjectGroup(project, groupId, selectedGroupIds) {
+  if (groupId === 'all') return true
+  return String(project.groupeId || project.groupe?.id || '') === String(groupId)
+    || selectedGroupIds.has(String(project.groupeId || project.groupe?.id || ''))
+}
+
+function matchesProjectCommune(project, commune, groupLookup) {
+  if (commune === 'all') return true
+  const group = groupLookup.get(String(project.groupeId || project.groupe?.id || ''))
+  return group?.commune === commune
+}
+
+function matchesSupportScope(support, filters, filteredProjectIds, filteredActivityIds, projectLookup, activityLookup, groupLookup) {
+  if (filters.group !== 'all') {
+    if (support.projetId && filteredProjectIds.has(String(support.projetId))) return true
+    return false
+  }
+
+  if (filters.commune !== 'all') {
+    if (support.activiteId && filteredActivityIds.has(String(support.activiteId))) return true
+    if (support.projetId) {
+      const project = projectLookup.get(String(support.projetId))
+      return matchesProjectCommune(project || {}, filters.commune, groupLookup)
+    }
+    const activity = activityLookup.get(String(support.activiteId || ''))
+    return activity?.commune === filters.commune
+  }
+
+  return true
+}
+
+function buildImpactModel(data, t, context = {}) {
   const now = new Date()
   const users = data.users
   const activities = data.activities
@@ -365,7 +628,7 @@ function buildImpactModel(data, t) {
   const supports = data.supports
   const publicPartners = data.publicPartners
 
-  const activeMembers = users.filter(user => user.role === 'MEMBRE' && user.actif !== false).length
+  const activeMembers = context.selectedGroup?.nombreMembres ?? users.filter(user => user.role === 'MEMBRE' && user.actif !== false).length
   const completedActivities = activities.filter(activity => {
     const endDate = activity.dateFin ? new Date(activity.dateFin) : null
     return endDate && Number.isFinite(endDate.getTime()) && endDate < now
@@ -476,7 +739,7 @@ function escapeHtml(value) {
     .replaceAll("'", '&#039;')
 }
 
-function exportImpactPdf({ data, impact, generatedAt, t, language }) {
+function exportImpactPdf({ data, impact, filterSummary, generatedAt, t, language }) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
   const margin = 14
   let cursorY = 18
@@ -495,6 +758,11 @@ function exportImpactPdf({ data, impact, generatedAt, t, language }) {
   doc.text(splitPdfText(doc, t('impact.exports.v1Notice'), 180), margin, cursorY)
   doc.setTextColor(0, 0, 0)
   cursorY += 14
+
+  cursorY = addPdfTable(doc, cursorY, t('impact.exports.sections.filters'), [
+    [t('impact.exports.columns.filter'), t('impact.exports.columns.value')],
+    ...filterSummary.map(item => [item.label, item.value]),
+  ])
 
   cursorY = addPdfTable(doc, cursorY, t('impact.exports.sections.summary'), [
     [t('impact.exports.columns.indicator'), t('impact.exports.columns.value')],
@@ -537,12 +805,16 @@ function exportImpactPdf({ data, impact, generatedAt, t, language }) {
   doc.save(buildExportFileName('rapport-impact', 'pdf', generatedAt))
 }
 
-function exportImpactExcel({ data, impact, generatedAt, t, language }) {
+function exportImpactExcel({ data, impact, filterSummary, generatedAt, t, language }) {
   const workbook = XLSX.utils.book_new()
 
   appendSheet(workbook, t('impact.exports.sheets.summary'), [
     [t('impact.exports.reportTitle')],
     [t('impact.exports.period', { date: formatDateTime(generatedAt, language) })],
+    [],
+    [t('impact.exports.sections.filters')],
+    [t('impact.exports.columns.filter'), t('impact.exports.columns.value')],
+    ...filterSummary.map(item => [item.label, item.value]),
     [],
     [t('impact.exports.columns.indicator'), t('impact.exports.columns.value')],
     ...buildKpiRows(impact, t, language),

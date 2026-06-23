@@ -1618,6 +1618,23 @@
       "emptyTitle": "No geolocated point",
       "emptyDescription": "Add coordinates to activities or groups to feed the impact map."
     },
+    "filters": {
+      "title": "Impact filters",
+      "description": "Refine the view by period, municipality or group using already loaded data.",
+      "period": "Period",
+      "periodAll": "All",
+      "period30": "Last 30 days",
+      "period90": "Last 90 days",
+      "periodYear": "Current year",
+      "commune": "Municipality",
+      "allCommunes": "All municipalities",
+      "group": "Group",
+      "allGroups": "All groups",
+      "unknownGroup": "Unknown group",
+      "reset": "Reset",
+      "emptyTitle": "No data for these filters",
+      "emptyDescription": "Broaden the period, municipality or group to recover indicators."
+    },
     "quality": {
       "title": "Data quality",
       "description": "Items to improve to make reports more credible for a municipality, funder or partner.",
@@ -1643,6 +1660,7 @@
       "generatedAt": "Last displayed generation: {{date}}",
       "v1Notice": "V1 report generated on the frontend from data already available in Bx-Connect. Figures are an operational summary and should be validated before official submission.",
       "sections": {
+        "filters": "Active filters",
         "summary": "Summary",
         "activitiesByStatus": "Activities by status",
         "projectsByStatus": "Projects by status",
@@ -1661,6 +1679,7 @@
       },
       "columns": {
         "indicator": "Indicator",
+        "filter": "Filter",
         "value": "Value",
         "status": "Status",
         "count": "Count",
