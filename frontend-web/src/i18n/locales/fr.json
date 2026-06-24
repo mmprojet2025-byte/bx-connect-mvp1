@@ -1745,6 +1745,49 @@
       "badgeAvailable": "Données de présence disponibles",
       "badgeEmpty": "Aucune présence encodée"
     },
+    "partners": {
+      "title": "Impact partenaires",
+      "description": "Lecture des partenaires, affectations locales et soutiens connus à partir des données disponibles.",
+      "emptyTitle": "Aucune donnée partenaire exploitable",
+      "emptyDescription": "Les indicateurs partenaires apparaîtront dès que des partenaires, affectations ou soutiens seront disponibles.",
+      "kpis": {
+        "active": "Partenaires actifs",
+        "inactive": "Partenaires inactifs",
+        "withReferent": "Avec référent",
+        "withoutReferent": "Sans référent",
+        "withGroup": "Avec groupe",
+        "withoutGroup": "Sans groupe",
+        "supportedAmount": "Montants soutenus",
+        "supportedProjects": "Projets soutenus",
+        "supportedActivities": "Activités soutenues",
+        "publishedOpportunities": "Opportunités publiées"
+      },
+      "charts": {
+        "byType": "Partenaires par type",
+        "linkTypes": "Types de liens",
+        "supportsByTarget": "Soutiens par cible",
+        "projects": "Projets",
+        "activities": "Activités"
+      },
+      "linkTypes": {
+        "SOUTIEN": "Soutien",
+        "MENTORAT": "Mentorat",
+        "FORMATION": "Formation",
+        "EMPLOI": "Emploi",
+        "LOGISTIQUE": "Logistique",
+        "AUTRE": "Autre"
+      },
+      "quality": {
+        "withoutReferent": "Partenaires sans référent",
+        "withoutReferentDesc": "Un référent associé clarifie le suivi terrain.",
+        "withoutGroup": "Partenaires sans groupe",
+        "withoutGroupDesc": "Un groupe lié rend l’impact local plus lisible.",
+        "inactive": "Partenaires inactifs",
+        "inactiveDesc": "Ces partenaires existent dans les affectations mais ne sont pas actifs.",
+        "withoutKnownSupport": "Partenaires sans soutien connu",
+        "withoutKnownSupportDesc": "Ces partenaires affectés n’ont pas encore de soutien validé identifiable."
+      }
+    },
     "map": {
       "title": "Carte d’impact",
       "description": "Activités et groupes disposant déjà de coordonnées géographiques.",
@@ -1818,6 +1861,8 @@
         "supportsByStatus": "Soutiens par statut",
         "activitiesByCommune": "Activités par commune",
         "realParticipation": "Participation réelle",
+        "partnerImpact": "Impact partenaires",
+        "partnerLimits": "Limites partenaires",
         "dataQuality": "Qualité des données",
         "rawVolumes": "Volumes de données"
       },
@@ -1828,6 +1873,8 @@
         "supports": "Soutiens",
         "groups": "Groupes",
         "presences": "Présences",
+        "partners": "Partenaires",
+        "partnerAssignments": "Affectations partenaires",
         "quality": "Qualité données"
       },
       "columns": {
@@ -1851,7 +1898,27 @@
         "referentComment": "Commentaire référent",
         "adminComment": "Commentaire admin",
         "partner": "Partenaire",
-        "target": "Cible"
+        "target": "Cible",
+        "linkedReferents": "Référents associés",
+        "linkedGroups": "Groupes associés",
+        "linkTypes": "Types de liens",
+        "knownSupportedAmount": "Montants soutenus connus",
+        "knownSupportedProjects": "Projets soutenus connus",
+        "knownSupportedActivities": "Activités soutenues connues",
+        "assignmentType": "Type d’affectation",
+        "referent": "Référent",
+        "linkType": "Type de lien",
+        "startDate": "Date début",
+        "endDate": "Date fin"
+      },
+      "assignmentTypes": {
+        "referent": "Référent",
+        "group": "Groupe"
+      },
+      "partnerLimits": {
+        "opportunities": "Les opportunités publiées ne sont pas incluses si elles ne sont pas chargées dans le Centre d’Impact.",
+        "inactive": "Les partenaires inactifs sont déduits des affectations disponibles.",
+        "amounts": "Les montants sont basés uniquement sur les soutiens chargés dans le rapport."
       }
     }
   },

@@ -37,6 +37,7 @@ export default function ImpactDashboard() {
     projects: [],
     supports: [],
     publicPartners: [],
+    partnerAssignments: { referents: [], groupes: [] },
     presences: [],
   })
   const [loading, setLoading] = useState(true)
@@ -58,18 +59,32 @@ export default function ImpactDashboard() {
       ['projects', api.get('/projets/admin/tous')],
       ['supports', api.get('/partenaire/admin/tous')],
       ['publicPartners', api.get('/partenaire/publics')],
+      ['partnerAssignments', api.get('/admin/partenaires/affectations')],
     ]
 
     try {
       const results = await Promise.allSettled(requests.map(([, request]) => request))
-      const nextData = { users: [], activities: [], groups: [], projects: [], supports: [], publicPartners: [], presences: [] }
+      const nextData = {
+        users: [],
+        activities: [],
+        groups: [],
+        projects: [],
+        supports: [],
+        publicPartners: [],
+        partnerAssignments: { referents: [], groupes: [] },
+        presences: [],
+      }
       let fulfilled = 0
 
       results.forEach((result, index) => {
         const key = requests[index][0]
         if (result.status === 'fulfilled') {
           fulfilled += 1
-          nextData[key] = Array.isArray(result.value.data) ? result.value.data : []
+          if (key === 'partnerAssignments') {
+            nextData[key] = normalizePartnerAssignments(result.value.data)
+          } else {
+            nextData[key] = Array.isArray(result.value.data) ? result.value.data : []
+          }
         }
       })
 
@@ -160,8 +175,8 @@ export default function ImpactDashboard() {
     }
   }, [impact.mapPoints])
 
-  const hasAnyData = Object.values(data).some(items => items.length > 0)
-  const hasFilteredData = Object.values(filteredData).some(items => items.length > 0)
+  const hasAnyData = hasImpactData(data)
+  const hasFilteredData = hasImpactData(filteredData)
   const hasEncodedPresence = impact.presence.hasEncoded
   const generatedAt = useMemo(() => new Date(), [])
 
@@ -273,6 +288,21 @@ export default function ImpactDashboard() {
             ]}
           />
 
+          <CompactKpiRow
+            accent="green"
+            className="mb-4 lg:grid-cols-3 xl:grid-cols-6"
+            items={[
+              { icon: 'Handshake', label: t('impact.partners.kpis.active'), value: impact.partnerImpact.kpis.activePartners, tone: 'green' },
+              { icon: 'XCircle', label: t('impact.partners.kpis.inactive'), value: impact.partnerImpact.kpis.inactivePartners, tone: 'slate' },
+              { icon: 'User', label: t('impact.partners.kpis.withReferent'), value: impact.partnerImpact.kpis.withReferent, tone: 'blue' },
+              { icon: 'AlertTriangle', label: t('impact.partners.kpis.withoutReferent'), value: impact.partnerImpact.kpis.withoutReferent, tone: impact.partnerImpact.kpis.withoutReferent > 0 ? 'amber' : 'green' },
+              { icon: 'Users', label: t('impact.partners.kpis.withGroup'), value: impact.partnerImpact.kpis.withGroup, tone: 'teal' },
+              { icon: 'AlertTriangle', label: t('impact.partners.kpis.withoutGroup'), value: impact.partnerImpact.kpis.withoutGroup, tone: impact.partnerImpact.kpis.withoutGroup > 0 ? 'amber' : 'green' },
+            ]}
+          />
+
+          <PartnerImpactSection impact={impact.partnerImpact} t={t} language={i18n.language} />
+
           <section className="mb-4 rounded-xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-950/5">
             <SectionHeader
               icon="BarChart"
@@ -375,6 +405,49 @@ export default function ImpactDashboard() {
         </>
       )}
     </CollaborativeDashboardLayout>
+  )
+}
+
+function PartnerImpactSection({ impact, t, language }) {
+  return (
+    <section className="mb-4 rounded-xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-950/5">
+      <SectionHeader
+        icon="Handshake"
+        title={t('impact.partners.title')}
+        description={t('impact.partners.description')}
+      />
+
+      <CompactKpiRow
+        accent="green"
+        className="mb-4 lg:grid-cols-2 xl:grid-cols-4"
+        items={[
+          { icon: 'DollarSign', label: t('impact.partners.kpis.supportedAmount'), value: formatCurrency(impact.kpis.supportedAmount, language), tone: 'amber' },
+          { icon: 'Rocket', label: t('impact.partners.kpis.supportedProjects'), value: impact.kpis.supportedProjects, tone: 'violet' },
+          { icon: 'Calendar', label: t('impact.partners.kpis.supportedActivities'), value: impact.kpis.supportedActivities, tone: 'blue' },
+          { icon: 'Megaphone', label: t('impact.partners.kpis.publishedOpportunities'), value: impact.kpis.publishedOpportunities, tone: 'green' },
+        ]}
+      />
+
+      {impact.hasData ? (
+        <div className="grid gap-4 xl:grid-cols-3">
+          <ChartPanel title={t('impact.partners.charts.byType')} empty={!impact.partnerTypeData.length} emptyLabel={t('impact.charts.noData')}>
+            <StatusPieChart data={impact.partnerTypeData} />
+          </ChartPanel>
+          <ChartPanel title={t('impact.partners.charts.linkTypes')} empty={!impact.linkTypeData.length} emptyLabel={t('impact.charts.noData')}>
+            <StatusPieChart data={impact.linkTypeData} />
+          </ChartPanel>
+          <ChartPanel title={t('impact.partners.charts.supportsByTarget')} empty={!impact.supportTargetData.length} emptyLabel={t('impact.charts.noData')}>
+            <StatusBarChart data={impact.supportTargetData} />
+          </ChartPanel>
+        </div>
+      ) : (
+        <EmptyState
+          icon="Handshake"
+          title={t('impact.partners.emptyTitle')}
+          description={t('impact.partners.emptyDescription')}
+        />
+      )}
+    </section>
   )
 }
 
@@ -548,6 +621,20 @@ function buildFilterOptions(data) {
   return { communes, groups }
 }
 
+function hasImpactData(data) {
+  return [
+    data.users,
+    data.activities,
+    data.groups,
+    data.projects,
+    data.supports,
+    data.publicPartners,
+    data.presences,
+    data.partnerAssignments?.referents,
+    data.partnerAssignments?.groupes,
+  ].some(items => Array.isArray(items) && items.length > 0)
+}
+
 function applyImpactFilters(data, filters) {
   const periodFilter = getPeriodFilter(filters.period)
   const hasTerritoryFilter = filters.commune !== 'all' || filters.group !== 'all'
@@ -582,6 +669,8 @@ function applyImpactFilters(data, filters) {
     && matchesSupportScope(support, filters, filteredProjectIds, filteredActivityIds, projectLookup, activityLookup, groupLookup)
   )
 
+  const partnerAssignments = filterPartnerAssignments(data.partnerAssignments, filters, selectedGroupIds, groups)
+
   const presences = data.presences.filter(presence => {
     if (!filteredActivityIds.has(String(presence.activiteId))) return false
     return matchesPeriod(presence, periodFilter, ['activiteDateDebut', 'datePresence', 'dateInscription'])
@@ -594,6 +683,7 @@ function applyImpactFilters(data, filters) {
     projects,
     supports,
     publicPartners: hasAnyFilter ? [] : data.publicPartners,
+    partnerAssignments,
     presences,
   }
 }
@@ -619,6 +709,35 @@ function buildFilterSummary(filters, options, t) {
     { label: t('impact.filters.commune'), value: commune },
     { label: t('impact.filters.group'), value: group },
   ]
+}
+
+function normalizePartnerAssignments(payload) {
+  return {
+    referents: Array.isArray(payload?.referents) ? payload.referents : [],
+    groupes: Array.isArray(payload?.groupes) ? payload.groupes : [],
+  }
+}
+
+function filterPartnerAssignments(assignments = {}, filters, selectedGroupIds, filteredGroups) {
+  const referents = Array.isArray(assignments.referents) ? assignments.referents : []
+  const groupes = Array.isArray(assignments.groupes) ? assignments.groupes : []
+
+  if (filters.group === 'all' && filters.commune === 'all') {
+    return { referents, groupes }
+  }
+
+  const groupIds = new Set(filteredGroups.map(group => String(group.id)))
+  selectedGroupIds.forEach(id => groupIds.add(String(id)))
+
+  const filteredGroupLinks = groupes.filter(link => groupIds.has(String(link.groupeId)))
+  const partnerIdsFromGroups = new Set(filteredGroupLinks.map(link => String(link.partenaireProfilId)).filter(Boolean))
+
+  return {
+    referents: filters.group === 'all'
+      ? referents
+      : referents.filter(link => partnerIdsFromGroups.has(String(link.partenaireProfilId))),
+    groupes: filteredGroupLinks,
+  }
 }
 
 function getPeriodFilter(period) {
@@ -704,10 +823,12 @@ function buildImpactModel(data, t, context = {}) {
   const projects = data.projects
   const supports = data.supports
   const publicPartners = data.publicPartners
+  const partnerAssignments = data.partnerAssignments || { referents: [], groupes: [] }
   const presences = data.presences || []
   const attendanceSummary = buildAttendanceSummary(presences)
   const presenceByActivity = buildPresenceByActivity(presences)
   const projectSummary = buildProjectStatusSummary(projects)
+  const partnerImpact = buildPartnerImpactModel({ publicPartners, partnerAssignments, supports, projects, activities, t })
 
   const activeMembers = context.selectedGroup?.nombreMembres ?? users.filter(user => user.role === 'MEMBRE' && user.actif !== false).length
   const completedActivities = activities.filter(activity => {
@@ -738,6 +859,7 @@ function buildImpactModel(data, t, context = {}) {
       excused: attendanceSummary.excused,
       attendanceRate: attendanceSummary.attendanceRate,
     },
+    partnerImpact,
     presence: attendanceSummary,
     activityStatusData: buildCountData(activities, 'statut', t),
     projectStatusData: buildProjectStatusData(projects, t),
@@ -806,8 +928,151 @@ function buildImpactModel(data, t, context = {}) {
         description: t('impact.quality.unfilledPresencesDesc'),
         value: presences.filter(presence => presence.statutPresence === 'NON_RENSEIGNEE').length,
       },
+      ...partnerImpact.qualityItems,
     ],
   }
+}
+
+function buildPartnerImpactModel({ publicPartners, partnerAssignments, supports, t }) {
+  const referentLinks = Array.isArray(partnerAssignments?.referents) ? partnerAssignments.referents : []
+  const groupLinks = Array.isArray(partnerAssignments?.groupes) ? partnerAssignments.groupes : []
+  const partnerRecords = collectPartnerRecords(publicPartners, referentLinks, groupLinks)
+  const activeReferentPartnerIds = new Set(referentLinks.filter(link => link.statut === 'ACTIF').map(getPartnerProfileId).filter(Boolean))
+  const activeGroupPartnerIds = new Set(groupLinks.filter(link => link.statut === 'ACTIF').map(getPartnerProfileId).filter(Boolean))
+  const inactivePartnerIds = new Set([
+    ...referentLinks.filter(link => link.statut === 'INACTIF').map(getPartnerProfileId).filter(Boolean),
+    ...groupLinks.filter(link => link.statut === 'INACTIF').map(getPartnerProfileId).filter(Boolean),
+  ])
+  const paidSupports = supports.filter(support => support.statutPaiement === 'PAYE')
+  const supportedPartnerKeys = new Set(paidSupports.map(getSupportPartnerKey).filter(Boolean))
+
+  const partners = Array.from(partnerRecords.values())
+  const totalKnownPartners = partners.length
+  const inactivePartners = partners.filter(partner => inactivePartnerIds.has(String(partner.profileId)) && !partner.active).length
+  const activePartners = partners.filter(partner => partner.active).length
+  const partnersWithReferent = partners.filter(partner => activeReferentPartnerIds.has(String(partner.profileId))).length
+  const partnersWithGroup = partners.filter(partner => activeGroupPartnerIds.has(String(partner.profileId))).length
+  const partnersWithoutKnownSupport = partners.filter(partner => {
+    if (!partner.userId) return false
+    return !supportedPartnerKeys.has(`user:${partner.userId}`)
+  }).length
+
+  return {
+    hasData: totalKnownPartners > 0 || supports.length > 0,
+    kpis: {
+      activePartners,
+      inactivePartners,
+      withReferent: partnersWithReferent,
+      withoutReferent: Math.max(totalKnownPartners - partnersWithReferent, 0),
+      withGroup: partnersWithGroup,
+      withoutGroup: Math.max(totalKnownPartners - partnersWithGroup, 0),
+      supportedAmount: paidSupports.reduce((sum, support) => sum + Number(support.montant || 0), 0),
+      supportedProjects: new Set(paidSupports.map(support => support.projetId).filter(Boolean)).size,
+      supportedActivities: new Set(paidSupports.map(support => support.activiteId).filter(Boolean)).size,
+      publishedOpportunities: 0,
+    },
+    partnerTypeData: buildPartnerTypeData(partners, t),
+    linkTypeData: buildPartnerLinkTypeData(groupLinks.filter(link => link.statut === 'ACTIF'), t),
+    supportTargetData: buildSupportTargetData(paidSupports, t),
+    qualityItems: [
+      {
+        label: t('impact.partners.quality.withoutReferent'),
+        description: t('impact.partners.quality.withoutReferentDesc'),
+        value: Math.max(totalKnownPartners - partnersWithReferent, 0),
+      },
+      {
+        label: t('impact.partners.quality.withoutGroup'),
+        description: t('impact.partners.quality.withoutGroupDesc'),
+        value: Math.max(totalKnownPartners - partnersWithGroup, 0),
+      },
+      {
+        label: t('impact.partners.quality.inactive'),
+        description: t('impact.partners.quality.inactiveDesc'),
+        value: inactivePartners,
+      },
+      {
+        label: t('impact.partners.quality.withoutKnownSupport'),
+        description: t('impact.partners.quality.withoutKnownSupportDesc'),
+        value: partnersWithoutKnownSupport,
+      },
+    ],
+  }
+}
+
+function collectPartnerRecords(publicPartners, referentLinks, groupLinks) {
+  const records = new Map()
+  publicPartners.forEach(partner => {
+    const profileId = String(partner.id || partner.partenaireProfilId || '')
+    if (!profileId) return
+    records.set(profileId, {
+      profileId,
+      userId: partner.partenaireUserId || partner.userId || null,
+      type: partner.typePartenaire || 'AUTRE',
+      active: true,
+    })
+  })
+
+  ;[...referentLinks, ...groupLinks].forEach(link => {
+    const profileId = getPartnerProfileId(link)
+    if (!profileId) return
+    const current = records.get(profileId) || { profileId, userId: null, type: 'AUTRE', active: false }
+    records.set(profileId, {
+      ...current,
+      userId: current.userId || link.partenaireUserId || null,
+      type: current.type || link.typePartenaire || 'AUTRE',
+      active: current.active || link.statut === 'ACTIF',
+    })
+  })
+
+  return records
+}
+
+function getPartnerProfileId(item) {
+  const id = item?.partenaireProfilId || item?.profilId || item?.id
+  return id ? String(id) : ''
+}
+
+function getSupportPartnerKey(support) {
+  if (support.partenaireId) return `user:${support.partenaireId}`
+  if (support.partenaireEmail) return `email:${support.partenaireEmail}`
+  return ''
+}
+
+function buildPartnerTypeData(partners, t) {
+  const counts = partners.reduce((acc, partner) => {
+    const key = partner.type || 'AUTRE'
+    acc[key] = (acc[key] || 0) + 1
+    return acc
+  }, {})
+
+  return Object.entries(counts).map(([key, value]) => ({
+    key,
+    label: t(`partnerInstitution.types.${key}`, { defaultValue: key.replaceAll('_', ' ') }),
+    value,
+  }))
+}
+
+function buildPartnerLinkTypeData(groupLinks, t) {
+  const counts = groupLinks.reduce((acc, link) => {
+    const key = link.typeLien || 'AUTRE'
+    acc[key] = (acc[key] || 0) + 1
+    return acc
+  }, {})
+
+  return Object.entries(counts).map(([key, value]) => ({
+    key,
+    label: t(`impact.partners.linkTypes.${key}`, { defaultValue: key.replaceAll('_', ' ') }),
+    value,
+  }))
+}
+
+function buildSupportTargetData(supports, t) {
+  const projectSupports = supports.filter(support => support.projetId).length
+  const activitySupports = supports.filter(support => support.activiteId).length
+  return [
+    projectSupports > 0 && { key: 'projects', label: t('impact.partners.charts.projects'), value: projectSupports },
+    activitySupports > 0 && { key: 'activities', label: t('impact.partners.charts.activities'), value: activitySupports },
+  ].filter(Boolean)
 }
 
 function enrichPresenceRows(rows, activity) {
@@ -1095,6 +1360,12 @@ function exportImpactPdf({ data, impact, filterSummary, generatedAt, t, language
     [t('impact.kpis.attendanceRate'), formatPercent(impact.kpis.attendanceRate, language)],
   ])
 
+  cursorY = addPdfTable(doc, cursorY, t('impact.exports.sections.partnerImpact'), [
+    [t('impact.exports.columns.indicator'), t('impact.exports.columns.value')],
+    ...buildPartnerKpiRows(impact, t, language),
+    [t('impact.partners.quality.withoutKnownSupport'), impact.partnerImpact.qualityItems.find(item => item.label === t('impact.partners.quality.withoutKnownSupport'))?.value ?? 0],
+  ])
+
   cursorY = addPdfTable(doc, cursorY, t('impact.exports.sections.activitiesByStatus'), [
     [t('impact.exports.columns.status'), t('impact.exports.columns.count')],
     ...impact.activityStatusData.map(item => [item.label, item.value]),
@@ -1118,6 +1389,13 @@ function exportImpactPdf({ data, impact, filterSummary, generatedAt, t, language
   cursorY = addPdfTable(doc, cursorY, t('impact.exports.sections.dataQuality'), [
     [t('impact.exports.columns.indicator'), t('impact.exports.columns.value'), t('impact.exports.columns.note')],
     ...impact.qualityItems.map(item => [item.label, item.value, item.description]),
+  ])
+
+  cursorY = addPdfTable(doc, cursorY, t('impact.exports.sections.partnerLimits'), [
+    [t('impact.exports.columns.note')],
+    [t('impact.exports.partnerLimits.opportunities')],
+    [t('impact.exports.partnerLimits.inactive')],
+    [t('impact.exports.partnerLimits.amounts')],
   ])
 
   addPdfTable(doc, cursorY, t('impact.exports.sections.rawVolumes'), [
@@ -1144,6 +1422,7 @@ function exportImpactExcel({ data, impact, filterSummary, generatedAt, t, langua
     [],
     [t('impact.exports.columns.indicator'), t('impact.exports.columns.value')],
     ...buildKpiRows(impact, t, language),
+    ...buildPartnerKpiRows(impact, t, language),
   ])
 
   appendSheet(workbook, t('impact.exports.sheets.activities'), [
@@ -1253,9 +1532,18 @@ function exportImpactExcel({ data, impact, filterSummary, generatedAt, t, langua
     ]),
   ])
 
+  appendSheet(workbook, t('impact.exports.sheets.partners'), buildPartnerExportRows({ data, impact, t, language }))
+
+  appendSheet(workbook, t('impact.exports.sheets.partnerAssignments'), buildPartnerAssignmentRows(data.partnerAssignments, t))
+
   appendSheet(workbook, t('impact.exports.sheets.quality'), [
     [t('impact.exports.columns.indicator'), t('impact.exports.columns.value'), t('impact.exports.columns.note')],
     ...impact.qualityItems.map(item => [item.label, item.value, item.description]),
+    [],
+    [t('impact.exports.sections.partnerLimits')],
+    [t('impact.exports.partnerLimits.opportunities')],
+    [t('impact.exports.partnerLimits.inactive')],
+    [t('impact.exports.partnerLimits.amounts')],
   ])
 
   XLSX.writeFile(workbook, buildExportFileName('rapport-impact', 'xlsx', generatedAt))
@@ -1303,6 +1591,169 @@ function buildKpiRows(impact, t, language) {
     [t('impact.kpis.excused'), impact.kpis.excused],
     [t('impact.kpis.attendanceRate'), formatPercent(impact.kpis.attendanceRate, language)],
   ]
+}
+
+function buildPartnerKpiRows(impact, t, language) {
+  return [
+    [t('impact.partners.kpis.active'), impact.partnerImpact.kpis.activePartners],
+    [t('impact.partners.kpis.inactive'), impact.partnerImpact.kpis.inactivePartners],
+    [t('impact.partners.kpis.withReferent'), impact.partnerImpact.kpis.withReferent],
+    [t('impact.partners.kpis.withoutReferent'), impact.partnerImpact.kpis.withoutReferent],
+    [t('impact.partners.kpis.withGroup'), impact.partnerImpact.kpis.withGroup],
+    [t('impact.partners.kpis.withoutGroup'), impact.partnerImpact.kpis.withoutGroup],
+    [t('impact.partners.kpis.supportedAmount'), formatCurrency(impact.partnerImpact.kpis.supportedAmount, language)],
+    [t('impact.partners.kpis.supportedProjects'), impact.partnerImpact.kpis.supportedProjects],
+    [t('impact.partners.kpis.supportedActivities'), impact.partnerImpact.kpis.supportedActivities],
+    [t('impact.partners.kpis.publishedOpportunities'), impact.partnerImpact.kpis.publishedOpportunities],
+  ]
+}
+
+function buildPartnerExportRows({ data, t, language }) {
+  const partnerRecords = buildPartnerExportRecords(data)
+  return [
+    [
+      t('impact.exports.columns.partner'),
+      t('users.status'),
+      t('impact.exports.columns.linkedReferents'),
+      t('impact.exports.columns.linkedGroups'),
+      t('impact.exports.columns.linkTypes'),
+      t('impact.exports.columns.knownSupportedAmount'),
+      t('impact.exports.columns.knownSupportedProjects'),
+      t('impact.exports.columns.knownSupportedActivities'),
+    ],
+    ...partnerRecords.map(record => [
+      record.name,
+      record.active ? t('users.active') : t('users.inactive'),
+      record.referents.join(', '),
+      record.groups.join(', '),
+      record.linkTypes.map(type => t(`impact.partners.linkTypes.${type}`, { defaultValue: type })).join(', '),
+      formatCurrency(record.amount, language),
+      record.projects.size,
+      record.activities.size,
+    ]),
+  ]
+}
+
+function buildPartnerAssignmentRows(assignments, t) {
+  const referents = Array.isArray(assignments?.referents) ? assignments.referents : []
+  const groupes = Array.isArray(assignments?.groupes) ? assignments.groupes : []
+  return [
+    [
+      t('impact.exports.columns.assignmentType'),
+      t('impact.exports.columns.partner'),
+      t('impact.exports.columns.referent'),
+      t('impact.exports.columns.group'),
+      t('impact.exports.columns.linkType'),
+      t('users.status'),
+      t('impact.exports.columns.startDate'),
+      t('impact.exports.columns.endDate'),
+      t('partnerAssignments.comment'),
+    ],
+    ...referents.map(link => [
+      t('impact.exports.assignmentTypes.referent'),
+      link.nomOrganisation || '',
+      formatReferentName(link),
+      '',
+      '',
+      link.statut || '',
+      link.dateDebut || '',
+      link.dateFin || '',
+      link.commentaire || '',
+    ]),
+    ...groupes.map(link => [
+      t('impact.exports.assignmentTypes.group'),
+      link.nomOrganisation || '',
+      formatReferentName(link),
+      link.groupeNom || '',
+      t(`impact.partners.linkTypes.${link.typeLien || 'AUTRE'}`, { defaultValue: link.typeLien || '' }),
+      link.statut || '',
+      link.dateDebut || '',
+      link.dateFin || '',
+      link.commentaire || '',
+    ]),
+  ]
+}
+
+function buildPartnerExportRecords(data) {
+  const records = new Map()
+  const assignments = data.partnerAssignments || { referents: [], groupes: [] }
+  const referents = Array.isArray(assignments.referents) ? assignments.referents : []
+  const groupes = Array.isArray(assignments.groupes) ? assignments.groupes : []
+
+  data.publicPartners.forEach(partner => {
+    const profileId = String(partner.id || partner.partenaireProfilId || '')
+    if (!profileId) return
+    records.set(profileId, createPartnerExportRecord({
+      profileId,
+      name: partner.nomOrganisation,
+      userId: partner.partenaireUserId || partner.userId,
+      active: true,
+    }))
+  })
+
+  ;[...referents, ...groupes].forEach(link => {
+    const profileId = getPartnerProfileId(link)
+    if (!profileId) return
+    const record = records.get(profileId) || createPartnerExportRecord({
+      profileId,
+      name: link.nomOrganisation,
+      userId: link.partenaireUserId,
+      active: false,
+    })
+    record.name = record.name || link.nomOrganisation || ''
+    record.userId = record.userId || link.partenaireUserId || null
+    record.active = record.active || link.statut === 'ACTIF'
+    records.set(profileId, record)
+  })
+
+  referents.forEach(link => {
+    const record = records.get(getPartnerProfileId(link))
+    if (!record) return
+    const referent = formatReferentName(link)
+    if (referent) record.referents.add(referent)
+  })
+
+  groupes.forEach(link => {
+    const record = records.get(getPartnerProfileId(link))
+    if (!record) return
+    if (link.groupeNom) record.groups.add(link.groupeNom)
+    if (link.typeLien) record.linkTypes.add(link.typeLien)
+  })
+
+  data.supports.forEach(support => {
+    if (support.statutPaiement !== 'PAYE' || !support.partenaireId) return
+    const record = Array.from(records.values()).find(item => String(item.userId) === String(support.partenaireId))
+    if (!record) return
+    record.amount += Number(support.montant || 0)
+    if (support.projetId) record.projects.add(String(support.projetId))
+    if (support.activiteId) record.activities.add(String(support.activiteId))
+  })
+
+  return Array.from(records.values()).map(record => ({
+    ...record,
+    referents: Array.from(record.referents),
+    groups: Array.from(record.groups),
+    linkTypes: Array.from(record.linkTypes),
+  }))
+}
+
+function createPartnerExportRecord({ profileId, name, userId, active }) {
+  return {
+    profileId,
+    name: name || '',
+    userId: userId || null,
+    active: Boolean(active),
+    referents: new Set(),
+    groups: new Set(),
+    linkTypes: new Set(),
+    amount: 0,
+    projects: new Set(),
+    activities: new Set(),
+  }
+}
+
+function formatReferentName(link) {
+  return [link.referentPrenom, link.referentNom].filter(Boolean).join(' ') || link.referentEmail || ''
 }
 
 function appendSheet(workbook, name, rows) {

@@ -1745,6 +1745,49 @@
       "badgeAvailable": "Aanwezigheidsgegevens beschikbaar",
       "badgeEmpty": "Geen aanwezigheden ingevuld"
     },
+    "partners": {
+      "title": "Partnerimpact",
+      "description": "Bekijk partners, lokale toewijzingen en bekende steun met de beschikbare gegevens.",
+      "emptyTitle": "Geen bruikbare partnergegevens",
+      "emptyDescription": "Partnerindicatoren verschijnen zodra partners, toewijzingen of steun beschikbaar zijn.",
+      "kpis": {
+        "active": "Actieve partners",
+        "inactive": "Inactieve partners",
+        "withReferent": "Met referent",
+        "withoutReferent": "Zonder referent",
+        "withGroup": "Met groep",
+        "withoutGroup": "Zonder groep",
+        "supportedAmount": "Gesteund bedrag",
+        "supportedProjects": "Gesteunde projecten",
+        "supportedActivities": "Gesteunde activiteiten",
+        "publishedOpportunities": "Gepubliceerde opportuniteiten"
+      },
+      "charts": {
+        "byType": "Partners per type",
+        "linkTypes": "Types koppelingen",
+        "supportsByTarget": "Steun per doel",
+        "projects": "Projecten",
+        "activities": "Activiteiten"
+      },
+      "linkTypes": {
+        "SOUTIEN": "Steun",
+        "MENTORAT": "Mentoring",
+        "FORMATION": "Opleiding",
+        "EMPLOI": "Job",
+        "LOGISTIQUE": "Logistiek",
+        "AUTRE": "Andere"
+      },
+      "quality": {
+        "withoutReferent": "Partners zonder referent",
+        "withoutReferentDesc": "Een gekoppelde referent maakt terreinopvolging duidelijker.",
+        "withoutGroup": "Partners zonder groep",
+        "withoutGroupDesc": "Een gekoppelde groep maakt lokale impact leesbaarder.",
+        "inactive": "Inactieve partners",
+        "inactiveDesc": "Deze partners bestaan in toewijzingen maar zijn niet actief.",
+        "withoutKnownSupport": "Partners zonder bekende steun",
+        "withoutKnownSupportDesc": "Deze toegewezen partners hebben nog geen identificeerbare gevalideerde steun."
+      }
+    },
     "map": {
       "title": "Impactkaart",
       "description": "Activiteiten en groepen die al geografische coördinaten hebben.",
@@ -1818,6 +1861,8 @@
         "supportsByStatus": "Steun per status",
         "activitiesByCommune": "Activiteiten per gemeente",
         "realParticipation": "Reële deelname",
+        "partnerImpact": "Partnerimpact",
+        "partnerLimits": "Partnerlimieten",
         "dataQuality": "Datakwaliteit",
         "rawVolumes": "Datavolumes"
       },
@@ -1828,6 +1873,8 @@
         "supports": "Steun",
         "groups": "Groepen",
         "presences": "Aanwezigheden",
+        "partners": "Partners",
+        "partnerAssignments": "Partnertoewijzingen",
         "quality": "Datakwaliteit"
       },
       "columns": {
@@ -1851,7 +1898,27 @@
         "referentComment": "Commentaar referent",
         "adminComment": "Commentaar admin",
         "partner": "Partner",
-        "target": "Doel"
+        "target": "Doel",
+        "linkedReferents": "Gekoppelde referenten",
+        "linkedGroups": "Gekoppelde groepen",
+        "linkTypes": "Types koppelingen",
+        "knownSupportedAmount": "Bekend gesteund bedrag",
+        "knownSupportedProjects": "Bekende gesteunde projecten",
+        "knownSupportedActivities": "Bekende gesteunde activiteiten",
+        "assignmentType": "Type toewijzing",
+        "referent": "Referent",
+        "linkType": "Type koppeling",
+        "startDate": "Startdatum",
+        "endDate": "Einddatum"
+      },
+      "assignmentTypes": {
+        "referent": "Referent",
+        "group": "Groep"
+      },
+      "partnerLimits": {
+        "opportunities": "Gepubliceerde opportuniteiten zijn niet inbegrepen als ze niet in het Impactcentrum geladen zijn.",
+        "inactive": "Inactieve partners worden afgeleid uit de beschikbare toewijzingen.",
+        "amounts": "Bedragen zijn alleen gebaseerd op steunrecords die in het rapport geladen zijn."
       }
     }
   },

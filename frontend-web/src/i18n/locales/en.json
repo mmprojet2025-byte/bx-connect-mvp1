@@ -1745,6 +1745,49 @@
       "badgeAvailable": "Attendance data available",
       "badgeEmpty": "No attendance encoded"
     },
+    "partners": {
+      "title": "Partner impact",
+      "description": "View partners, local assignments and known support using the available data.",
+      "emptyTitle": "No usable partner data",
+      "emptyDescription": "Partner indicators will appear once partners, assignments or support are available.",
+      "kpis": {
+        "active": "Active partners",
+        "inactive": "Inactive partners",
+        "withReferent": "With referent",
+        "withoutReferent": "Without referent",
+        "withGroup": "With group",
+        "withoutGroup": "Without group",
+        "supportedAmount": "Supported amount",
+        "supportedProjects": "Supported projects",
+        "supportedActivities": "Supported activities",
+        "publishedOpportunities": "Published opportunities"
+      },
+      "charts": {
+        "byType": "Partners by type",
+        "linkTypes": "Link types",
+        "supportsByTarget": "Support by target",
+        "projects": "Projects",
+        "activities": "Activities"
+      },
+      "linkTypes": {
+        "SOUTIEN": "Support",
+        "MENTORAT": "Mentoring",
+        "FORMATION": "Training",
+        "EMPLOI": "Job",
+        "LOGISTIQUE": "Logistics",
+        "AUTRE": "Other"
+      },
+      "quality": {
+        "withoutReferent": "Partners without referent",
+        "withoutReferentDesc": "A linked referent clarifies field follow-up.",
+        "withoutGroup": "Partners without group",
+        "withoutGroupDesc": "A linked group makes local impact easier to read.",
+        "inactive": "Inactive partners",
+        "inactiveDesc": "These partners exist in assignments but are not active.",
+        "withoutKnownSupport": "Partners without known support",
+        "withoutKnownSupportDesc": "These assigned partners do not yet have identifiable validated support."
+      }
+    },
     "map": {
       "title": "Impact map",
       "description": "Activities and groups that already have geographic coordinates.",
@@ -1818,6 +1861,8 @@
         "supportsByStatus": "Support by status",
         "activitiesByCommune": "Activities by municipality",
         "realParticipation": "Real participation",
+        "partnerImpact": "Partner impact",
+        "partnerLimits": "Partner limits",
         "dataQuality": "Data quality",
         "rawVolumes": "Data volumes"
       },
@@ -1828,6 +1873,8 @@
         "supports": "Support",
         "groups": "Groups",
         "presences": "Attendance",
+        "partners": "Partners",
+        "partnerAssignments": "Partner assignments",
         "quality": "Data quality"
       },
       "columns": {
@@ -1851,7 +1898,27 @@
         "referentComment": "Referent comment",
         "adminComment": "Admin comment",
         "partner": "Partner",
-        "target": "Target"
+        "target": "Target",
+        "linkedReferents": "Linked referents",
+        "linkedGroups": "Linked groups",
+        "linkTypes": "Link types",
+        "knownSupportedAmount": "Known supported amount",
+        "knownSupportedProjects": "Known supported projects",
+        "knownSupportedActivities": "Known supported activities",
+        "assignmentType": "Assignment type",
+        "referent": "Referent",
+        "linkType": "Link type",
+        "startDate": "Start date",
+        "endDate": "End date"
+      },
+      "assignmentTypes": {
+        "referent": "Referent",
+        "group": "Group"
+      },
+      "partnerLimits": {
+        "opportunities": "Published opportunities are not included if they are not loaded in the Impact Center.",
+        "inactive": "Inactive partners are inferred from the available assignments.",
+        "amounts": "Amounts are based only on support records loaded in the report."
       }
     }
   },
