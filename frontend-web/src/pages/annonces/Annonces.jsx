@@ -16,6 +16,7 @@ export default function Annonces() {
   const { user, isAuthenticated, isAdmin, isReferent } = useAuth();
   const [annonces, setAnnonces] = useState([]);
   const [adminOpportunities, setAdminOpportunities] = useState([]);
+  const [contentFilter, setContentFilter] = useState('TOUT');
   const [categoryFilter, setCategoryFilter] = useState('TOUTES');
   const [loading, setLoading] = useState(true);
   const [loadingOpportunities, setLoadingOpportunities] = useState(false);
@@ -30,9 +31,13 @@ export default function Annonces() {
 
   const peutPublier = isAdmin || isReferent;
   const hasOpportunities = annonces.some(a => a.categorieOpportunite);
-  const filteredAnnonces = categoryFilter === 'TOUTES'
-    ? annonces
-    : annonces.filter(a => a.categorieOpportunite === categoryFilter);
+  const filteredAnnonces = annonces.filter(a => {
+    const matchesContent = contentFilter === 'TOUT'
+      || (contentFilter === 'ANNONCES' && !a.categorieOpportunite)
+      || (contentFilter === 'OPPORTUNITES' && a.categorieOpportunite);
+    const matchesCategory = categoryFilter === 'TOUTES' || a.categorieOpportunite === categoryFilter;
+    return matchesContent && matchesCategory;
+  });
   const annonceStats = {
     total: annonces.length,
     globales: annonces.filter(a => a.type === 'GLOBALE').length,
@@ -162,9 +167,9 @@ export default function Annonces() {
           </h1>
           {peutPublier && (
             <button onClick={() => setShowForm(!showForm)}
-              className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600">
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600">
               <AppIcon name={showForm ? 'XCircle' : 'PlusCircle'} className="h-4 w-4" />
-              {showForm ? 'Annuler' : 'Nouvelle annonce'}
+              {showForm ? t('common.cancel') : t('announcements.new')}
             </button>
           )}
         </div>
@@ -180,7 +185,7 @@ export default function Annonces() {
         {error && annonces.length > 0 && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>}
 
         {isAdmin && (
-          <section className="mb-5 rounded-2xl border border-amber-100 bg-white p-4 shadow-sm">
+          <section id="moderation-opportunites" className="mb-5 rounded-xl border border-amber-100 bg-white p-4 shadow-sm">
             <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900">
@@ -205,7 +210,7 @@ export default function Annonces() {
             ) : (
               <div className="space-y-2.5">
                 {adminOpportunities.map(opportunity => (
-                  <article key={opportunity.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                  <article key={opportunity.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                       <div className="min-w-0">
                         <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -240,7 +245,7 @@ export default function Annonces() {
                             type="button"
                             onClick={() => handleModerateOpportunity(opportunity.id, 'publier')}
                             disabled={opportunityActionId === `publier-${opportunity.id}` || opportunityActionId === `refuser-${opportunity.id}`}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-green-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-green-500 disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-green-500 disabled:opacity-50"
                           >
                             <AppIcon name="CheckCircle" className="h-3.5 w-3.5" />
                             {t('common.publish')}
@@ -249,7 +254,7 @@ export default function Annonces() {
                             type="button"
                             onClick={() => handleModerateOpportunity(opportunity.id, 'refuser')}
                             disabled={opportunityActionId === `refuser-${opportunity.id}` || opportunityActionId === `publier-${opportunity.id}`}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
                           >
                             <AppIcon name="XCircle" className="h-3.5 w-3.5" />
                             {t('common.reject')}
@@ -264,12 +269,37 @@ export default function Annonces() {
           </section>
         )}
 
-        {hasOpportunities && (
-          <div className="mb-5 flex flex-wrap gap-2">
+        <section className="mb-5 rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
+          <div className="mb-3 flex flex-wrap gap-2">
+            {[
+              { id: 'TOUT', label: t('announcements.filters.all', { defaultValue: 'Annonces et opportunités' }) },
+              { id: 'ANNONCES', label: t('announcements.filters.announcements', { defaultValue: 'Annonces' }) },
+              { id: 'OPPORTUNITES', label: t('announcements.filters.opportunities', { defaultValue: 'Opportunités' }) },
+            ].map(filter => (
+              <button
+                key={filter.id}
+                type="button"
+                onClick={() => {
+                  setContentFilter(filter.id);
+                  if (filter.id !== 'OPPORTUNITES') setCategoryFilter('TOUTES');
+                }}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${contentFilter === filter.id ? 'bg-blue-700 text-white' : 'bg-slate-50 text-slate-600 hover:bg-blue-50'}`}
+              >
+                {filter.label}
+              </button>
+            ))}
+            {isAdmin && (
+              <a href="#moderation-opportunites" className="rounded-lg px-3 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-50">
+                {t('announcements.filters.moderation', { defaultValue: 'À modérer' })}
+              </a>
+            )}
+          </div>
+          {hasOpportunities && contentFilter !== 'ANNONCES' && (
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setCategoryFilter('TOUTES')}
-              className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${categoryFilter === 'TOUTES' ? 'bg-blue-700 text-white' : 'bg-white text-slate-600 hover:bg-blue-50'}`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${categoryFilter === 'TOUTES' ? 'bg-orange-600 text-white' : 'bg-slate-50 text-slate-600 hover:bg-orange-50'}`}
             >
               {t('common.all')}
             </button>
@@ -278,17 +308,18 @@ export default function Annonces() {
                 key={category}
                 type="button"
                 onClick={() => setCategoryFilter(category)}
-                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${categoryFilter === category ? 'bg-blue-700 text-white' : 'bg-white text-slate-600 hover:bg-blue-50'}`}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${categoryFilter === category ? 'bg-orange-600 text-white' : 'bg-slate-50 text-slate-600 hover:bg-orange-50'}`}
               >
                 {opportunityCategoryLabel(category, t)}
               </button>
             ))}
           </div>
-        )}
+          )}
+        </section>
 
         {/* Formulaire */}
         {showForm && peutPublier && (
-          <div className="bg-white rounded-2xl shadow p-5 mb-5">
+          <div className="bg-white rounded-xl shadow p-5 mb-5">
             <h2 className="text-lg font-bold text-blue-900 mb-4">{t('announcements.new')}</h2>
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
@@ -331,7 +362,7 @@ export default function Annonces() {
                   </label>
                 </div>
               )}
-              <button type="submit" className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-600">
+              <button type="submit" className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-600">
                 <AppIcon name="Megaphone" className="h-4 w-4" />
                 {t('announcements.publish')}
               </button>
@@ -359,7 +390,7 @@ export default function Annonces() {
         ) : (
           <div className="space-y-2.5">
             {filteredAnnonces.map(a => (
-              <div key={a.id} className={`bg-white rounded-2xl border border-slate-100 shadow-sm p-4 ${a.epinglee ? 'border-l-4 border-blue-500' : ''}`}>
+              <div key={a.id} className={`bg-white rounded-xl border border-slate-100 shadow-sm p-3.5 ${a.epinglee ? 'border-l-4 border-blue-500' : ''}`}>
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex flex-wrap items-center gap-2">
                     {a.epinglee && <AppIcon name="Pin" className="h-4 w-4 text-blue-500" />}
@@ -397,14 +428,14 @@ export default function Annonces() {
                 {a.descriptionCourte && (
                   <p className="mb-2 text-sm font-semibold leading-relaxed text-slate-700">{a.descriptionCourte}</p>
                 )}
-                <p className="text-gray-600 text-sm leading-relaxed mb-3 whitespace-pre-line line-clamp-4">{a.contenu}</p>
+                <p className="text-gray-600 text-sm leading-relaxed mb-2 whitespace-pre-line line-clamp-3">{a.contenu}</p>
                 {a.categorieOpportunite && <OpportunityMeta opportunity={a} t={t} />}
                 {a.lienExterne && (
                   <a
                     href={normalizeExternalUrl(a.lienExterne)}
                     target="_blank"
                     rel="noreferrer"
-                    className="mb-3 inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800 transition hover:border-blue-700 hover:bg-blue-700 hover:text-white"
+                    className="mb-3 inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800 transition hover:border-blue-700 hover:bg-blue-700 hover:text-white"
                   >
                     <AppIcon name="Globe" className="h-3.5 w-3.5" />
                     {t('announcements.openLink')}
@@ -435,7 +466,7 @@ function AnnouncementKpi({ icon, label, value, tone = 'slate' }) {
     orange: 'bg-orange-50 text-orange-700',
   };
   return (
-    <div className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+    <div className="rounded-lg border border-slate-100 bg-white p-3 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</p>

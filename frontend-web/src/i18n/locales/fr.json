@@ -1631,7 +1631,13 @@
     "system": "Système",
     "pin": "Épingler",
     "unpin": "Désépingler",
-    "openLink": "Voir le lien"
+    "openLink": "Voir le lien",
+    "filters": {
+      "all": "Annonces et opportunités",
+      "announcements": "Annonces",
+      "opportunities": "Opportunités",
+      "moderation": "À modérer"
+    }
   },
   "opportunityCategories": {
     "EMPLOI": "Emploi",

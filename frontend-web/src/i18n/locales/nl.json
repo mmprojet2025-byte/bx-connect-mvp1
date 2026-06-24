@@ -1631,7 +1631,13 @@
     "system": "Systeem",
     "pin": "Vastpinnen",
     "unpin": "Losmaken",
-    "openLink": "Link openen"
+    "openLink": "Link openen",
+    "filters": {
+      "all": "Aankondigingen en opportuniteiten",
+      "announcements": "Aankondigingen",
+      "opportunities": "Opportuniteiten",
+      "moderation": "Te modereren"
+    }
   },
   "opportunityCategories": {
     "EMPLOI": "Job",

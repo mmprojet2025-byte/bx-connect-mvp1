@@ -1631,7 +1631,13 @@
     "system": "System",
     "pin": "Pin",
     "unpin": "Unpin",
-    "openLink": "Open link"
+    "openLink": "Open link",
+    "filters": {
+      "all": "Announcements and opportunities",
+      "announcements": "Announcements",
+      "opportunities": "Opportunities",
+      "moderation": "To moderate"
+    }
   },
   "opportunityCategories": {
     "EMPLOI": "Job",

@@ -272,7 +272,7 @@ export default function Projets() {
               type="button"
               onClick={() => setShowForm(open => !open)}
               disabled={!peutProposer}
-              className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-300 disabled:text-slate-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
+              className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-300 disabled:text-slate-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
             >
               {showForm ? t('common.cancel') : t('ux.projects.propose')}
             </button>
@@ -289,7 +289,7 @@ export default function Projets() {
           <ProjectStat icon="Activity" label={t('projects.activeProjects', { defaultValue: 'En action' })} value={projetsEnAction} tone="blue" />
         </section>
 
-        <section className="bg-white rounded-[1.25rem] border border-slate-100 shadow-sm p-4 mb-5">
+        <section className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 mb-5">
           <div>
             <h2 className="font-semibold text-slate-950">{t('projects.workspaceTitle', { defaultValue: 'Projets à suivre' })}</h2>
             <p className="text-sm text-slate-500 mt-1">
@@ -312,7 +312,7 @@ export default function Projets() {
                   key={projet.id}
                   type="button"
                   onClick={() => setExpandedProjectId(projet.id)}
-                  className="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2 text-left transition hover:border-blue-200 hover:bg-blue-50"
+                  className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-left transition hover:border-blue-200 hover:bg-blue-50"
                 >
                   <span className="block truncate text-xs font-black text-slate-950">{projet.titre}</span>
                   <span className="mt-1 flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-500">
@@ -326,7 +326,7 @@ export default function Projets() {
         </section>
 
         {focusedProjectId && (
-          <div className="mb-6 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-800">
+          <div className="mb-6 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-800">
             <AppIcon name="Search" className="mr-2 inline h-4 w-4" />
             {t('projects.focusedProject', { id: focusedProjectId, defaultValue: `Projet ciblé #${focusedProjectId}` })}
             <Link to="/projets" className="ml-3 underline">{t('common.showAll', { defaultValue: 'Voir tous' })}</Link>
@@ -340,7 +340,7 @@ export default function Projets() {
           t={t}
         />
 
-        <section className="mb-5 rounded-[1.25rem] border border-slate-100 bg-white p-4 shadow-sm">
+        <section className="mb-5 rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
           <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-sm font-black text-slate-950">{t('common.filters', { defaultValue: 'Filtres' })}</h2>
@@ -358,17 +358,17 @@ export default function Projets() {
               value={recherche}
               onChange={event => setRecherche(event.target.value)}
               placeholder={t('projects.searchPlaceholder', { defaultValue: 'Rechercher un projet...' })}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
-            <select value={filtreStatut} onChange={event => setFiltreStatut(event.target.value)} className="rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <select value={filtreStatut} onChange={event => setFiltreStatut(event.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
               <option value="">{t('partnerSupport.admin.allStatuses', { defaultValue: 'Tous les statuts' })}</option>
               {PROJECT_STATUSES.map(statut => <option key={statut} value={statut}>{t(`statuses.${statut}`, { defaultValue: statut })}</option>)}
             </select>
-            <select value={filtreGroupe} onChange={event => setFiltreGroupe(event.target.value)} className="rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <select value={filtreGroupe} onChange={event => setFiltreGroupe(event.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
               <option value="">{t('projects.allGroups', { defaultValue: 'Tous les groupes' })}</option>
               {groupesDisponibles.map(groupe => <option key={groupe} value={groupe}>{groupe}</option>)}
             </select>
-            <select value={filtreVisibilite} onChange={event => setFiltreVisibilite(event.target.value)} className="rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <select value={filtreVisibilite} onChange={event => setFiltreVisibilite(event.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
               <option value="">{t('projects.allVisibilities', { defaultValue: 'Toutes les visibilités' })}</option>
               {PROJECT_VISIBILITIES.map(visibilite => <option key={visibilite} value={visibilite}>{t(`projectVisibility.${visibilite}`, { defaultValue: visibilite })}</option>)}
             </select>
@@ -376,7 +376,7 @@ export default function Projets() {
         </section>
 
         {showForm && peutProposer && (
-          <section className="bg-white rounded-[1.5rem] border border-slate-100 shadow-lg shadow-slate-900/5 p-6 mb-6">
+          <section className="bg-white rounded-xl border border-slate-100 shadow-lg shadow-slate-900/5 p-5 mb-6">
             <h2 className="text-lg font-bold text-slate-950 mb-4">{t('ux.projects.new')}</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <ImageUpload
@@ -394,7 +394,7 @@ export default function Projets() {
                   value={form.description}
                   onChange={e => setForm({ ...form, description: e.target.value })}
                   rows={4}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-vertical"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-vertical"
                 />
               </div>
               <Input label={t('projects.form_budget')} value={form.budgetDemande} onChange={value => setForm({ ...form, budgetDemande: value })} type="number" min="0" />
@@ -404,7 +404,7 @@ export default function Projets() {
                 onChange={value => setForm({ ...form, visibilite: value })}
                 t={t}
               />
-              <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+              <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-2 rounded-lg transition">
                 {t('projects.submit_project')}
               </button>
             </form>
@@ -482,7 +482,7 @@ function WorkflowStepper({ counts, activeStatus, onSelectStatus, t }) {
   ]
 
   return (
-    <section className="mb-5 rounded-[1.25rem] border border-blue-100 bg-white p-4 shadow-sm">
+    <section className="mb-5 rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
       <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-sm font-black text-slate-950">{t('ux.projects.workflow')}</h2>
@@ -500,13 +500,13 @@ function WorkflowStepper({ counts, activeStatus, onSelectStatus, t }) {
             key={`${step.label}-${index}`}
             type="button"
             onClick={() => onSelectStatus(step.status)}
-            className={`flex min-w-[118px] items-center gap-2 rounded-2xl border px-2.5 py-2 text-left transition ${
+            className={`flex min-w-[108px] items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition ${
               activeStatus === step.status
                 ? 'border-blue-300 bg-blue-50 shadow-sm'
                 : 'border-slate-100 bg-white hover:border-blue-200 hover:bg-slate-50'
             }`}
           >
-            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
               <AppIcon name={step.icon} className="h-4 w-4" />
             </span>
             <span className="min-w-0">
@@ -548,16 +548,16 @@ function ProjectCard({
   const nextStep = projectNextStep(projet, isAdmin, isPartenaire, isMembre, isParticipant, t)
 
   return (
-    <article className="bg-white rounded-[1.25rem] border border-slate-100 shadow-sm overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition flex flex-col">
+    <article className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition flex flex-col">
       <div className="relative">
-        <ProjectCover imageUrl={projet.imageUrl} title={projet.titre} className="h-32" />
+        <ProjectCover imageUrl={projet.imageUrl} title={projet.titre} className="h-28" />
         <div className="absolute left-4 top-4">
           <StatusBadge status={projet.statut}>
             {t(`statuses.${projet.statut}`, { defaultValue: projet.statut })}
           </StatusBadge>
         </div>
       </div>
-      <div className="p-4 flex flex-col flex-1">
+      <div className="p-3.5 flex flex-col flex-1">
         <div className="mb-2">
           <div className="mb-2 flex flex-wrap gap-2">
             <ProjectTypeBadge groupName={projet.groupeNom} />
@@ -632,19 +632,19 @@ function ProjectAlivePanel({ projet, nextStep, comments, commentsLoading, commen
   const recentEvents = buildProjectRecentEvents(projet, comments, t)
 
   return (
-    <div className="mt-3 space-y-3 rounded-2xl border border-slate-100 bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+    <div className="mt-3 space-y-3 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs leading-5 text-slate-600">
       <div className="grid gap-2 sm:grid-cols-2">
-        <div className="rounded-xl bg-white p-3">
+        <div className="rounded-lg bg-white p-3">
           <p className="font-black text-slate-800">{t('projects.currentState', { defaultValue: 'État actuel' })}</p>
           <p className="mt-1">{projectWorkflowText(projet, t)}</p>
         </div>
-        <div className="rounded-xl bg-white p-3">
+        <div className="rounded-lg bg-white p-3">
           <p className="font-black text-slate-800">{t('projects.nextStep', { defaultValue: 'Prochaine étape' })}</p>
           <p className="mt-1">{nextStep}</p>
         </div>
       </div>
 
-      <div className="rounded-xl bg-white p-3">
+      <div className="rounded-lg bg-white p-3">
         <p className="mb-2 font-black text-slate-800">{t('activityFeed.title', { defaultValue: 'Activité récente' })}</p>
         <div className="space-y-2">
           {recentEvents.map(event => (
@@ -659,7 +659,7 @@ function ProjectAlivePanel({ projet, nextStep, comments, commentsLoading, commen
         </div>
       </div>
 
-      <div className="rounded-xl bg-white p-3">
+      <div className="rounded-lg bg-white p-3">
         <div className="mb-2 flex items-center justify-between gap-2">
           <p className="font-black text-slate-800">{t('projects.discussion', { defaultValue: 'Discussion du projet' })}</p>
           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-500">{comments.length}</span>
@@ -671,7 +671,7 @@ function ProjectAlivePanel({ projet, nextStep, comments, commentsLoading, commen
         ) : (
           <div className="max-h-32 space-y-2 overflow-y-auto pr-1">
             {comments.slice(-4).map(comment => (
-              <div key={comment.id} className="rounded-xl bg-slate-50 px-3 py-2">
+              <div key={comment.id} className="rounded-lg bg-slate-50 px-3 py-2">
                 <p className="font-black text-slate-700">
                   {[comment.auteurPrenom, comment.auteurNom].filter(Boolean).join(' ') || t('users.user', { defaultValue: 'Utilisateur' })}
                 </p>
@@ -686,13 +686,13 @@ function ProjectAlivePanel({ projet, nextStep, comments, commentsLoading, commen
               value={commentDraft}
               onChange={event => onCommentChange(event.target.value)}
               placeholder={t('projects.commentPlaceholder', { defaultValue: 'Ajouter une note de suivi...' })}
-              className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
             <button
               type="button"
               onClick={onCommentSubmit}
               disabled={commentLoading || !commentDraft.trim()}
-              className="rounded-xl bg-blue-600 px-3 py-2 font-black text-white transition hover:bg-blue-500 disabled:opacity-50"
+              className="rounded-lg bg-blue-600 px-3 py-2 font-black text-white transition hover:bg-blue-500 disabled:opacity-50"
             >
               {t('common.send', { defaultValue: 'Envoyer' })}
             </button>
@@ -711,13 +711,13 @@ function ProjectStat({ icon, label, value, tone = 'slate' }) {
     amber: 'bg-amber-50 text-amber-700',
   }
   return (
-    <div className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+    <div className="rounded-lg border border-slate-100 bg-white p-3 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</p>
           <p className="mt-1 text-xl font-black text-slate-950">{value}</p>
         </div>
-        <span className={`grid h-9 w-9 place-items-center rounded-xl ${tones[tone] || tones.slate}`}>
+        <span className={`grid h-9 w-9 place-items-center rounded-lg ${tones[tone] || tones.slate}`}>
           <AppIcon name={icon} className="h-4 w-4" />
         </span>
       </div>
@@ -728,7 +728,7 @@ function ProjectStat({ icon, label, value, tone = 'slate' }) {
 function ProjectActions({ projet, isAuthenticated, isMembre, isPartenaire, peutValider, isParticipant, actionLoading, onToggleDetails, onFollow, onJoin, onApprove, onReject, t }) {
   return (
     <div className="mt-auto flex flex-wrap gap-2 pt-4">
-      <button type="button" onClick={onToggleDetails} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-200">
+      <button type="button" onClick={onToggleDetails} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-200">
         <AppIcon name="Eye" className="h-3.5 w-3.5" />
         {t('common.open', { defaultValue: 'Voir' })}
       </button>
@@ -737,7 +737,7 @@ function ProjectActions({ projet, isAuthenticated, isMembre, isPartenaire, peutV
           type="button"
           onClick={isParticipant ? onFollow : onJoin}
           disabled={actionLoading === `${projet.id}-JOIN`}
-          className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-black transition disabled:opacity-60 ${
+          className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-black transition disabled:opacity-60 ${
             isParticipant
               ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
               : 'bg-blue-600 text-white hover:bg-blue-500'
@@ -748,25 +748,25 @@ function ProjectActions({ projet, isAuthenticated, isMembre, isPartenaire, peutV
         </button>
       )}
       {isPartenaire && projet.statut === 'APPROUVE' && (
-        <Link to="/partenaire?tab=projets" className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-orange-600 px-3 py-2 text-xs font-black text-white transition hover:bg-orange-500">
+        <Link to="/partenaire?tab=projets-activites" className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-orange-600 px-3 py-2 text-xs font-black text-white transition hover:bg-orange-500">
           <AppIcon name="Handshake" className="h-3.5 w-3.5" />
           {t('partnerSpace.proposeSupport')}
         </Link>
       )}
       {peutValider && (
         <>
-          <button type="button" disabled={actionLoading === `${projet.id}-APPROUVE`} onClick={onApprove} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-500 disabled:opacity-60">
+          <button type="button" disabled={actionLoading === `${projet.id}-APPROUVE`} onClick={onApprove} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-500 disabled:opacity-60">
             <AppIcon name="CheckCircle" className="h-3.5 w-3.5" />
             {t('admin.approve', { defaultValue: 'Approuver' })}
           </button>
-          <button type="button" disabled={actionLoading === `${projet.id}-REJETE`} onClick={onReject} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-red-200 px-3 py-2 text-xs font-black text-red-700 transition hover:bg-red-50 disabled:opacity-60">
+          <button type="button" disabled={actionLoading === `${projet.id}-REJETE`} onClick={onReject} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-xs font-black text-red-700 transition hover:bg-red-50 disabled:opacity-60">
             <AppIcon name="XCircle" className="h-3.5 w-3.5" />
             {t('admin.reject', { defaultValue: 'Refuser' })}
           </button>
         </>
       )}
       {!isAuthenticated && (
-        <Link to="/login" className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white transition hover:bg-blue-500">
+        <Link to="/login" className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-black text-white transition hover:bg-blue-500">
           <AppIcon name="User" className="h-3.5 w-3.5" />
           {t('nav.login')}
         </Link>
@@ -782,7 +782,7 @@ function VisibilitySelect({ value, options, onChange, t }) {
       <select
         value={value}
         onChange={event => onChange(event.target.value)}
-        className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
       >
         {options.map(option => (
           <option key={option} value={option}>{t(`projectVisibility.${option}`)}</option>
@@ -794,7 +794,7 @@ function VisibilitySelect({ value, options, onChange, t }) {
 
 function InfoPill({ label, value, highlight = false }) {
   return (
-    <div className={`rounded-xl px-3 py-2 ${highlight ? 'bg-orange-50' : 'bg-slate-50'}`}>
+    <div className={`rounded-lg px-2.5 py-1.5 ${highlight ? 'bg-orange-50' : 'bg-slate-50'}`}>
       <p className={`text-[10px] font-semibold uppercase ${highlight ? 'text-orange-500' : 'text-slate-400'}`}>{label}</p>
       <p className={`mt-0.5 font-semibold truncate ${highlight ? 'text-orange-700' : 'text-slate-700'}`}>{value}</p>
     </div>
@@ -914,7 +914,7 @@ function Input({ label, value, onChange, type = 'text', required = false, min })
         min={min}
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
       />
     </div>
   )
