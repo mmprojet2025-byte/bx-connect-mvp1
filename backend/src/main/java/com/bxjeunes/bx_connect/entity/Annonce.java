@@ -34,6 +34,23 @@ public class Annonce {
     @Column(name = "description_courte", length = 300)
     private String descriptionCourte;
 
+    @Column(name = "nombre_places")
+    private Integer nombrePlaces;
+
+    @Column(name = "date_limite")
+    private LocalDateTime dateLimite;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "mode_candidature", length = 30)
+    private ModeCandidature modeCandidature;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "public_cible", length = 30)
+    private PublicCibleOpportunite publicCible;
+
+    @Column(name = "mise_en_avant")
+    private Boolean miseEnAvant = false;
+
     @Column(nullable = false)
     private boolean epinglee = false;
 
@@ -78,6 +95,21 @@ public class Annonce {
 
     public String getDescriptionCourte() { return descriptionCourte; }
     public void setDescriptionCourte(String descriptionCourte) { this.descriptionCourte = descriptionCourte; }
+
+    public Integer getNombrePlaces() { return nombrePlaces; }
+    public void setNombrePlaces(Integer nombrePlaces) { this.nombrePlaces = nombrePlaces; }
+
+    public LocalDateTime getDateLimite() { return dateLimite; }
+    public void setDateLimite(LocalDateTime dateLimite) { this.dateLimite = dateLimite; }
+
+    public ModeCandidature getModeCandidature() { return modeCandidature; }
+    public void setModeCandidature(ModeCandidature modeCandidature) { this.modeCandidature = modeCandidature; }
+
+    public PublicCibleOpportunite getPublicCible() { return publicCible; }
+    public void setPublicCible(PublicCibleOpportunite publicCible) { this.publicCible = publicCible; }
+
+    public boolean isMiseEnAvant() { return Boolean.TRUE.equals(miseEnAvant); }
+    public void setMiseEnAvant(boolean miseEnAvant) { this.miseEnAvant = miseEnAvant; }
 
     public boolean isEpinglee() { return epinglee; }
     public void setEpinglee(boolean epinglee) { this.epinglee = epinglee; }

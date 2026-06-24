@@ -4,6 +4,8 @@ import com.bxjeunes.bx_connect.dto.OpportunitePartenaireRequest;
 import com.bxjeunes.bx_connect.entity.Annonce;
 import com.bxjeunes.bx_connect.entity.CategorieOpportunite;
 import com.bxjeunes.bx_connect.entity.Groupe;
+import com.bxjeunes.bx_connect.entity.ModeCandidature;
+import com.bxjeunes.bx_connect.entity.PublicCibleOpportunite;
 import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.StatutModeration;
 import com.bxjeunes.bx_connect.entity.User;
@@ -22,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -193,6 +196,10 @@ class AnnonceSecurityTest {
         assertThat(response.getCategorieOpportunite()).isEqualTo(CategorieOpportunite.EMPLOI);
         assertThat(response.getStatutModeration()).isEqualTo(StatutModeration.EN_ATTENTE);
         assertThat(response.getType()).isEqualTo("GLOBALE");
+        assertThat(response.getNombrePlaces()).isEqualTo(12);
+        assertThat(response.getModeCandidature()).isEqualTo(ModeCandidature.LIEN_EXTERNE);
+        assertThat(response.getPublicCible()).isEqualTo(PublicCibleOpportunite.MEMBRES);
+        assertThat(response.isMiseEnAvant()).isTrue();
         verify(auditLogService).logStatusChange(
                 org.mockito.ArgumentMatchers.same(partenaire),
                 org.mockito.ArgumentMatchers.eq("OPPORTUNITY_CREATED"),
@@ -202,7 +209,7 @@ class AnnonceSecurityTest {
                 org.mockito.ArgumentMatchers.isNull(),
                 org.mockito.ArgumentMatchers.eq("EN_ATTENTE"),
                 org.mockito.ArgumentMatchers.eq("Opportunite partenaire creee."),
-                org.mockito.ArgumentMatchers.contains("\"categorieOpportunite\":\"EMPLOI\""));
+                org.mockito.ArgumentMatchers.contains("\"nombrePlaces\":12"));
     }
 
     @Test
@@ -372,6 +379,11 @@ class AnnonceSecurityTest {
         request.setCategorieOpportunite(CategorieOpportunite.EMPLOI);
         request.setDescriptionCourte("Offre courte");
         request.setLienExterne("https://partner.test/jobs");
+        request.setDateLimite(LocalDateTime.now().plusDays(30));
+        request.setNombrePlaces(12);
+        request.setModeCandidature(ModeCandidature.LIEN_EXTERNE);
+        request.setPublicCible(PublicCibleOpportunite.MEMBRES);
+        request.setMiseEnAvant(true);
         return request;
     }
 

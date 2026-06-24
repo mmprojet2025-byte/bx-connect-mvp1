@@ -1609,6 +1609,30 @@
     "PUBLIEE": "Publiée",
     "REFUSEE": "Refusée"
   },
+  "opportunityFields": {
+    "places": "Nombre de places",
+    "placesValue_one": "{{count}} place",
+    "placesValue_other": "{{count}} places",
+    "deadline": "Date limite",
+    "deadlineShort": "Limite",
+    "applicationMode": "Mode de candidature",
+    "publicTarget": "Public cible",
+    "featured": "Demander une mise en avant",
+    "featuredShort": "Mise en avant",
+    "externalLink": "Lien externe",
+    "modes": {
+      "LIEN_EXTERNE": "Lien externe",
+      "CONTACT_PARTENAIRE": "Contact partenaire",
+      "INFORMATION": "Information"
+    },
+    "targets": {
+      "TOUS": "Tous",
+      "MEMBRES": "Membres",
+      "REFERENTS": "Référents",
+      "GROUPES": "Groupes",
+      "PUBLIC": "Public"
+    }
+  },
   "location": {
     "title": "Localisation",
     "helper": "Recherchez les coordonnées à partir de l’adresse, ou cliquez directement sur la carte.",

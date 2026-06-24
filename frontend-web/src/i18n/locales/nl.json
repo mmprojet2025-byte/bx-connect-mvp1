@@ -1609,6 +1609,30 @@
     "PUBLIEE": "Gepubliceerd",
     "REFUSEE": "Geweigerd"
   },
+  "opportunityFields": {
+    "places": "Aantal plaatsen",
+    "placesValue_one": "{{count}} plaats",
+    "placesValue_other": "{{count}} plaatsen",
+    "deadline": "Deadline",
+    "deadlineShort": "Deadline",
+    "applicationMode": "Kandidaatstellingswijze",
+    "publicTarget": "Doelpubliek",
+    "featured": "Uitgelichte plaatsing aanvragen",
+    "featuredShort": "Uitgelicht",
+    "externalLink": "Externe link",
+    "modes": {
+      "LIEN_EXTERNE": "Externe link",
+      "CONTACT_PARTENAIRE": "Partnercontact",
+      "INFORMATION": "Informatie"
+    },
+    "targets": {
+      "TOUS": "Iedereen",
+      "MEMBRES": "Leden",
+      "REFERENTS": "Referenten",
+      "GROUPES": "Groepen",
+      "PUBLIC": "Publiek"
+    }
+  },
   "location": {
     "title": "Locatie",
     "helper": "Zoek coördinaten op basis van het adres of klik rechtstreeks op de kaart.",

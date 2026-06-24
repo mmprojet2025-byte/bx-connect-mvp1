@@ -220,6 +220,7 @@ export default function Annonces() {
                         {opportunity.descriptionCourte && (
                           <p className="mt-1 text-sm font-semibold text-slate-600">{opportunity.descriptionCourte}</p>
                         )}
+                        <OpportunityMeta opportunity={opportunity} t={t} />
                         <p className="mt-2 text-xs font-semibold text-slate-400">
                           {t('common.by')} {opportunity.auteurPrenom} {opportunity.auteurNom} ({opportunity.auteurRole}) ·{' '}
                           {opportunity.dateCreation
@@ -397,6 +398,7 @@ export default function Annonces() {
                   <p className="mb-2 text-sm font-semibold leading-relaxed text-slate-700">{a.descriptionCourte}</p>
                 )}
                 <p className="text-gray-600 text-sm leading-relaxed mb-3 whitespace-pre-line line-clamp-4">{a.contenu}</p>
+                {a.categorieOpportunite && <OpportunityMeta opportunity={a} t={t} />}
                 {a.lienExterne && (
                   <a
                     href={normalizeExternalUrl(a.lienExterne)}
@@ -447,6 +449,46 @@ function AnnouncementKpi({ icon, label, value, tone = 'slate' }) {
   );
 }
 
+function OpportunityMeta({ opportunity, t }) {
+  const deadline = opportunity.dateLimite || opportunity.dateExpiration;
+  const items = [
+    opportunity.nombrePlaces
+      ? { icon: 'Users', label: t('opportunityFields.placesValue', { count: opportunity.nombrePlaces }) }
+      : null,
+    deadline
+      ? {
+          icon: 'Clock',
+          label: `${t('opportunityFields.deadlineShort')} ${new Date(deadline).toLocaleDateString('fr-BE')}`,
+        }
+      : null,
+    opportunity.modeCandidature
+      ? { icon: 'Send', label: opportunityModeLabel(opportunity.modeCandidature, t) }
+      : null,
+    opportunity.publicCible
+      ? { icon: 'Users', label: opportunityTargetLabel(opportunity.publicCible, t) }
+      : null,
+    opportunity.miseEnAvant
+      ? { icon: 'Star', label: t('opportunityFields.featuredShort') }
+      : null,
+  ].filter(Boolean);
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="mb-3 mt-2 flex flex-wrap gap-2">
+      {items.map(item => (
+        <span
+          key={`${item.icon}-${item.label}`}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-600"
+        >
+          <AppIcon name={item.icon} className="h-3.5 w-3.5 text-orange-500" />
+          {item.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function opportunityCategoryLabel(category, t) {
   const labels = {
     EMPLOI: t('opportunityCategories.EMPLOI'),
@@ -457,6 +499,14 @@ function opportunityCategoryLabel(category, t) {
     PUBLICITE: t('opportunityCategories.PUBLICITE'),
   };
   return labels[category] || t('partnerSpace.opportunity', { defaultValue: 'Opportunité' });
+}
+
+function opportunityModeLabel(mode, t) {
+  return t(`opportunityFields.modes.${mode}`, { defaultValue: mode || '-' });
+}
+
+function opportunityTargetLabel(target, t) {
+  return t(`opportunityFields.targets.${target}`, { defaultValue: target || '-' });
 }
 
 function opportunityStatusLabel(status, t) {

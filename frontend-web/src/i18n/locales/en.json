@@ -1609,6 +1609,30 @@
     "PUBLIEE": "Published",
     "REFUSEE": "Rejected"
   },
+  "opportunityFields": {
+    "places": "Number of places",
+    "placesValue_one": "{{count}} place",
+    "placesValue_other": "{{count}} places",
+    "deadline": "Deadline",
+    "deadlineShort": "Deadline",
+    "applicationMode": "Application mode",
+    "publicTarget": "Target audience",
+    "featured": "Request featured placement",
+    "featuredShort": "Featured",
+    "externalLink": "External link",
+    "modes": {
+      "LIEN_EXTERNE": "External link",
+      "CONTACT_PARTENAIRE": "Partner contact",
+      "INFORMATION": "Information"
+    },
+    "targets": {
+      "TOUS": "Everyone",
+      "MEMBRES": "Members",
+      "REFERENTS": "Referents",
+      "GROUPES": "Groups",
+      "PUBLIC": "Public"
+    }
+  },
   "location": {
     "title": "Location",
     "helper": "Find coordinates from the address, or click directly on the map.",

@@ -1,6 +1,9 @@
 package com.bxjeunes.bx_connect.dto;
 
 import com.bxjeunes.bx_connect.entity.CategorieOpportunite;
+import com.bxjeunes.bx_connect.entity.ModeCandidature;
+import com.bxjeunes.bx_connect.entity.PublicCibleOpportunite;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -26,6 +29,14 @@ public class OpportunitePartenaireRequest {
     private String lienExterne;
 
     private LocalDateTime dateExpiration;
+    private LocalDateTime dateLimite;
+
+    @Min(value = 1, message = "Le nombre de places doit être supérieur à 0")
+    private Integer nombrePlaces;
+
+    private ModeCandidature modeCandidature;
+    private PublicCibleOpportunite publicCible;
+    private Boolean miseEnAvant;
 
     public String getTitre() { return titre; }
     public void setTitre(String titre) { this.titre = titre; }
@@ -39,4 +50,14 @@ public class OpportunitePartenaireRequest {
     public void setLienExterne(String lienExterne) { this.lienExterne = lienExterne; }
     public LocalDateTime getDateExpiration() { return dateExpiration; }
     public void setDateExpiration(LocalDateTime dateExpiration) { this.dateExpiration = dateExpiration; }
+    public LocalDateTime getDateLimite() { return dateLimite; }
+    public void setDateLimite(LocalDateTime dateLimite) { this.dateLimite = dateLimite; }
+    public Integer getNombrePlaces() { return nombrePlaces; }
+    public void setNombrePlaces(Integer nombrePlaces) { this.nombrePlaces = nombrePlaces; }
+    public ModeCandidature getModeCandidature() { return modeCandidature; }
+    public void setModeCandidature(ModeCandidature modeCandidature) { this.modeCandidature = modeCandidature; }
+    public PublicCibleOpportunite getPublicCible() { return publicCible; }
+    public void setPublicCible(PublicCibleOpportunite publicCible) { this.publicCible = publicCible; }
+    public Boolean getMiseEnAvant() { return miseEnAvant; }
+    public void setMiseEnAvant(Boolean miseEnAvant) { this.miseEnAvant = miseEnAvant; }
 }

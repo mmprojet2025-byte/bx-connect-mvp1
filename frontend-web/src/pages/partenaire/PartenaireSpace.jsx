@@ -29,6 +29,8 @@ import CompactKpiRow from '../../components/dashboard/CompactKpiRow';
 
 const PARTNER_TABS = new Set(['dashboard', 'projets', 'activites', 'soutiens', 'opportunites']);
 const OPPORTUNITY_CATEGORIES = ['EMPLOI', 'STAGE', 'FORMATION', 'EVENEMENT', 'APPEL_PROJET', 'PUBLICITE'];
+const OPPORTUNITY_APPLICATION_MODES = ['LIEN_EXTERNE', 'CONTACT_PARTENAIRE', 'INFORMATION'];
+const OPPORTUNITY_TARGETS = ['TOUS', 'MEMBRES', 'REFERENTS', 'GROUPES', 'PUBLIC'];
 
 export default function PartenaireSpace() {
   const { user } = useAuth();
@@ -251,9 +253,16 @@ export default function PartenaireSpace() {
         contenu: opportunityForm.contenu,
         categorieOpportunite: opportunityForm.categorieOpportunite,
         lienExterne: opportunityForm.lienExterne,
+        modeCandidature: opportunityForm.modeCandidature,
+        publicCible: opportunityForm.publicCible,
+        miseEnAvant: opportunityForm.miseEnAvant,
       };
-      if (opportunityForm.dateExpiration) {
-        payload.dateExpiration = opportunityForm.dateExpiration;
+      if (opportunityForm.nombrePlaces) {
+        payload.nombrePlaces = Number(opportunityForm.nombrePlaces);
+      }
+      if (opportunityForm.dateLimite) {
+        payload.dateLimite = opportunityForm.dateLimite;
+        payload.dateExpiration = opportunityForm.dateLimite;
       }
       await api.post('/annonces/opportunites', payload);
       const feedback = t('partnerSpace.opportunitySubmitted', { defaultValue: 'Opportunité envoyée à l’administration pour validation.' });
@@ -624,7 +633,7 @@ export default function PartenaireSpace() {
                       className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                     >
                       {OPPORTUNITY_CATEGORIES.map(category => (
-                        <option key={category} value={category}>{opportunityCategoryLabel(category)}</option>
+                        <option key={category} value={category}>{opportunityCategoryLabel(category, t)}</option>
                       ))}
                     </select>
                   </label>
@@ -636,14 +645,57 @@ export default function PartenaireSpace() {
                   />
                   <label className="block">
                     <span className="mb-1 block text-sm font-semibold text-slate-700">
-                      {t('partnerSpace.expirationDate', { defaultValue: 'Date d’expiration' })}
+                      {t('opportunityFields.deadline', { defaultValue: 'Date limite' })}
                     </span>
                     <input
                       type="datetime-local"
-                      value={opportunityForm.dateExpiration}
-                      onChange={event => setOpportunityForm({ ...opportunityForm, dateExpiration: event.target.value })}
+                      value={opportunityForm.dateLimite}
+                      onChange={event => setOpportunityForm({ ...opportunityForm, dateLimite: event.target.value })}
                       className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                     />
+                  </label>
+                  <ProfileInput
+                    label={t('opportunityFields.places', { defaultValue: 'Nombre de places' })}
+                    value={opportunityForm.nombrePlaces}
+                    onChange={value => setOpportunityForm({ ...opportunityForm, nombrePlaces: value })}
+                    type="number"
+                    min="1"
+                  />
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-semibold text-slate-700">
+                      {t('opportunityFields.applicationMode', { defaultValue: 'Mode de candidature' })}
+                    </span>
+                    <select
+                      value={opportunityForm.modeCandidature}
+                      onChange={event => setOpportunityForm({ ...opportunityForm, modeCandidature: event.target.value })}
+                      className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    >
+                      {OPPORTUNITY_APPLICATION_MODES.map(mode => (
+                        <option key={mode} value={mode}>{opportunityModeLabel(mode, t)}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-semibold text-slate-700">
+                      {t('opportunityFields.publicTarget', { defaultValue: 'Public cible' })}
+                    </span>
+                    <select
+                      value={opportunityForm.publicCible}
+                      onChange={event => setOpportunityForm({ ...opportunityForm, publicCible: event.target.value })}
+                      className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    >
+                      {OPPORTUNITY_TARGETS.map(target => (
+                        <option key={target} value={target}>{opportunityTargetLabel(target, t)}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="flex items-center gap-2 rounded-xl border border-orange-100 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-900">
+                    <input
+                      type="checkbox"
+                      checked={opportunityForm.miseEnAvant}
+                      onChange={event => setOpportunityForm({ ...opportunityForm, miseEnAvant: event.target.checked })}
+                    />
+                    {t('opportunityFields.featured', { defaultValue: 'Demander une mise en avant' })}
                   </label>
                   <label className="block md:col-span-2">
                     <span className="mb-1 block text-sm font-semibold text-slate-700">
@@ -696,7 +748,7 @@ export default function PartenaireSpace() {
             ) : (
               <div className="grid gap-4 lg:grid-cols-2">
                 {mesOpportunites.map(opportunite => (
-                  <OpportunityCard key={opportunite.id} opportunite={opportunite} language={i18n.language} />
+                  <OpportunityCard key={opportunite.id} opportunite={opportunite} language={i18n.language} t={t} />
                 ))}
               </div>
             )}
@@ -1381,18 +1433,18 @@ function PartnerImpactSummary({ impact, t }) {
   );
 }
 
-function OpportunityCard({ opportunite, language }) {
+function OpportunityCard({ opportunite, language, t }) {
   return (
     <article className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-wide text-orange-600">
-            {opportunityCategoryLabel(opportunite.categorieOpportunite)}
+            {opportunityCategoryLabel(opportunite.categorieOpportunite, t)}
           </p>
           <h3 className="mt-1 font-black text-slate-950">{opportunite.titre}</h3>
         </div>
         <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-black ${opportunityStatusStyle(opportunite.statutModeration)}`}>
-          {opportunityStatusLabel(opportunite.statutModeration)}
+          {opportunityStatusLabel(opportunite.statutModeration, t)}
         </span>
       </div>
       {opportunite.descriptionCourte && (
@@ -1405,9 +1457,30 @@ function OpportunityCard({ opportunite, language }) {
             {new Date(opportunite.dateCreation).toLocaleDateString(language || 'fr-BE')}
           </InlineIconLabel>
         )}
-        {opportunite.dateExpiration && (
+        {(opportunite.dateLimite || opportunite.dateExpiration) && (
           <InlineIconLabel icon="Clock">
-            Expire le {new Date(opportunite.dateExpiration).toLocaleDateString(language || 'fr-BE')}
+            {t('opportunityFields.deadlineShort', { defaultValue: 'Limite' })}{' '}
+            {new Date(opportunite.dateLimite || opportunite.dateExpiration).toLocaleDateString(language || 'fr-BE')}
+          </InlineIconLabel>
+        )}
+        {opportunite.nombrePlaces && (
+          <InlineIconLabel icon="Users">
+            {t('opportunityFields.placesValue', { count: opportunite.nombrePlaces, defaultValue: '{{count}} places' })}
+          </InlineIconLabel>
+        )}
+        {opportunite.modeCandidature && (
+          <InlineIconLabel icon="Send">
+            {opportunityModeLabel(opportunite.modeCandidature, t)}
+          </InlineIconLabel>
+        )}
+        {opportunite.publicCible && (
+          <InlineIconLabel icon="Users">
+            {opportunityTargetLabel(opportunite.publicCible, t)}
+          </InlineIconLabel>
+        )}
+        {opportunite.miseEnAvant && (
+          <InlineIconLabel icon="Star">
+            {t('opportunityFields.featuredShort', { defaultValue: 'Mise en avant' })}
           </InlineIconLabel>
         )}
         {opportunite.lienExterne && (
@@ -1418,7 +1491,7 @@ function OpportunityCard({ opportunite, language }) {
             className="inline-flex items-center gap-1.5 text-orange-700 hover:underline"
           >
             <AppIcon name="Globe" className="h-3.5 w-3.5" />
-            Lien externe
+            {t('opportunityFields.externalLink', { defaultValue: 'Lien externe' })}
           </a>
         )}
       </div>
@@ -1760,7 +1833,11 @@ function emptyOpportunityForm() {
     contenu: '',
     categorieOpportunite: 'EMPLOI',
     lienExterne: '',
-    dateExpiration: '',
+    dateLimite: '',
+    nombrePlaces: '',
+    modeCandidature: 'LIEN_EXTERNE',
+    publicCible: 'TOUS',
+    miseEnAvant: false,
   };
 }
 
@@ -1790,7 +1867,7 @@ function profileFromResponse(profile) {
   };
 }
 
-function opportunityCategoryLabel(category) {
+function opportunityCategoryLabel(category, t) {
   const labels = {
     EMPLOI: 'Emploi',
     STAGE: 'Stage',
@@ -1799,16 +1876,24 @@ function opportunityCategoryLabel(category) {
     APPEL_PROJET: 'Appel à projet',
     PUBLICITE: 'Publicité',
   };
-  return labels[category] || 'Opportunité';
+  return t ? t(`opportunityCategories.${category}`, { defaultValue: labels[category] || 'Opportunité' }) : labels[category] || 'Opportunité';
 }
 
-function opportunityStatusLabel(status) {
+function opportunityStatusLabel(status, t) {
   const labels = {
     EN_ATTENTE: 'En attente',
     PUBLIEE: 'Publiée',
     REFUSEE: 'Refusée',
   };
-  return labels[status] || status || 'En attente';
+  return t ? t(`opportunityModeration.${status}`, { defaultValue: labels[status] || status || 'En attente' }) : labels[status] || status || 'En attente';
+}
+
+function opportunityModeLabel(mode, t) {
+  return t(`opportunityFields.modes.${mode}`, { defaultValue: mode || '-' });
+}
+
+function opportunityTargetLabel(target, t) {
+  return t(`opportunityFields.targets.${target}`, { defaultValue: target || '-' });
 }
 
 function opportunityStatusStyle(status) {
@@ -1826,7 +1911,7 @@ function normalizeExternalUrl(value) {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
-function ProfileInput({ label, value, onChange, type = 'text', required = false }) {
+function ProfileInput({ label, value, onChange, type = 'text', required = false, ...inputProps }) {
   return (
     <label className="block">
       <span className="mb-1 block text-sm font-semibold text-slate-700">{label}</span>
@@ -1835,6 +1920,7 @@ function ProfileInput({ label, value, onChange, type = 'text', required = false 
         required={required}
         value={value}
         onChange={event => onChange(event.target.value)}
+        {...inputProps}
         className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
       />
     </label>

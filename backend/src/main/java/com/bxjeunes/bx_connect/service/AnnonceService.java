@@ -109,7 +109,18 @@ public class AnnonceService {
         annonce.setContenu(request.getContenu().trim());
         annonce.setDescriptionCourte(normaliser(request.getDescriptionCourte()));
         annonce.setLienExterne(normaliser(request.getLienExterne()));
-        annonce.setDateExpiration(request.getDateExpiration());
+        annonce.setDateLimite(request.getDateLimite());
+        annonce.setDateExpiration(request.getDateExpiration() != null
+                ? request.getDateExpiration()
+                : request.getDateLimite());
+        annonce.setNombrePlaces(request.getNombrePlaces());
+        annonce.setModeCandidature(request.getModeCandidature() != null
+                ? request.getModeCandidature()
+                : ModeCandidature.LIEN_EXTERNE);
+        annonce.setPublicCible(request.getPublicCible() != null
+                ? request.getPublicCible()
+                : PublicCibleOpportunite.TOUS);
+        annonce.setMiseEnAvant(Boolean.TRUE.equals(request.getMiseEnAvant()));
         annonce.setCategorieOpportunite(request.getCategorieOpportunite());
         annonce.setStatutModeration(StatutModeration.EN_ATTENTE);
         annonce.setType("GLOBALE");
@@ -403,8 +414,18 @@ public class AnnonceService {
         ajouterJson(entries, "type", annonce.getType());
         ajouterJson(entries, "categorieOpportunite",
                 annonce.getCategorieOpportunite() == null ? null : annonce.getCategorieOpportunite().name());
+        ajouterJson(entries, "modeCandidature",
+                annonce.getModeCandidature() == null ? null : annonce.getModeCandidature().name());
+        ajouterJson(entries, "publicCible",
+                annonce.getPublicCible() == null ? null : annonce.getPublicCible().name());
         if (annonce.getGroupe() != null) {
             entries.add("\"groupeId\":" + annonce.getGroupe().getId());
+        }
+        if (annonce.getNombrePlaces() != null) {
+            entries.add("\"nombrePlaces\":" + annonce.getNombrePlaces());
+        }
+        if (annonce.isMiseEnAvant()) {
+            entries.add("\"miseEnAvant\":true");
         }
         ajouterJson(entries, "lienExterne", annonce.getLienExterne());
         return "{" + String.join(",", entries) + "}";
@@ -431,6 +452,11 @@ public class AnnonceService {
         m.put("statutModeration", a.getStatutModeration());
         m.put("lienExterne", a.getLienExterne());
         m.put("descriptionCourte", a.getDescriptionCourte());
+        m.put("nombrePlaces", a.getNombrePlaces());
+        m.put("dateLimite", a.getDateLimite());
+        m.put("modeCandidature", a.getModeCandidature());
+        m.put("publicCible", a.getPublicCible());
+        m.put("miseEnAvant", a.isMiseEnAvant());
         m.put("epinglee",     a.isEpinglee());
         m.put("dateCreation", a.getDateCreation());
         m.put("dateExpiration", a.getDateExpiration());
