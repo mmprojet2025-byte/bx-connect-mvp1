@@ -398,15 +398,9 @@ function useSidebarWorkQueue(role) {
 function getMainSections(role, t) {
   if (role === 'ADMIN') {
     return sections([
-      group('Vue d’ensemble', [
+      group('Pilotage', [
         link('Tableau de bord', '/admin/dashboard', 'Home'),
         link(t('impact.nav'), '/impact', 'BarChart'),
-      ]),
-      group('Administration', [
-        link('Utilisateurs', '/admin/utilisateurs', 'Users'),
-        link('Référents', '/admin/referents', 'User'),
-      ]),
-      group('Communication', [
         link('Notifications', '/notifications', 'Bell'),
       ]),
     ])
@@ -464,11 +458,12 @@ function getMainSections(role, t) {
 function getSpaceSections(role, t) {
   if (role === 'ADMIN') {
     return sections([
-      group('Gestion opérationnelle', [
+      group('Gestion', [
+        link('Utilisateurs', '/admin/utilisateurs', 'Users'),
+        link('Référents', '/admin/referents', 'User'),
         link('Activités', '/admin/activites', 'Calendar'),
         link('Prestations', '/admin/prestations', 'CheckCircle'),
         link('Annonces', '/admin/annonces', 'Megaphone'),
-        link(t('partnerAssignments.nav'), '/admin/partenaires/affectations', 'Handshake'),
       ]),
     ])
   }
@@ -488,10 +483,12 @@ function getSpaceSections(role, t) {
         link('Mes groupes', '/referent/groupes', 'Users'),
         link('Membres', '/referent/membres', 'User'),
         link('Projets', '/referent/projets', 'Rocket'),
-        link(t('referentPartners.nav'), '/referent/partenaires', 'Handshake'),
-        link(t('referentImpact.nav'), '/referent/impact', 'BarChart3'),
-        link(t('referentReports.nav'), '/referent/rapports', 'FileText'),
         link('Prestations', '/referent/prestations', 'CheckCircle'),
+      ]),
+      group('Pilotage', [
+        link(t('referentImpact.nav'), '/referent/impact', 'BarChart3'),
+        link(t('referentPartners.nav'), '/referent/partenaires', 'Handshake'),
+        link(t('referentReports.nav'), '/referent/rapports', 'FileText'),
       ]),
     ])
   }
@@ -511,10 +508,13 @@ function getSpaceSections(role, t) {
 function getWorkSections(role, queue, t) {
   if (role === 'ADMIN') {
     return sections([
-      group('Actions prioritaires', [
+      group('Validation', [
         link('Groupes en attente', '/admin/groupes', 'ClipboardList', queue.groupesEnAttente),
         link(t('admin.projectsToValidate'), '/admin/projets', 'Rocket', queue.projetsSoumis),
+      ]),
+      group('Partenaires', [
         link('Soutiens partenaires', '/admin/soutiens', 'Handshake', queue.soutiensEnAttente),
+        link(t('partnerAssignments.nav'), '/admin/partenaires/affectations', 'Handshake'),
       ]),
     ])
   }
