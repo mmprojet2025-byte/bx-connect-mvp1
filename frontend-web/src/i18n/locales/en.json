@@ -1205,7 +1205,10 @@
       "projects": "Projects",
       "activities": "Activities",
       "supports": "Financial support",
-      "opportunities": "Opportunités"
+      "opportunities": "Opportunities",
+      "localImpact": "Local impact",
+      "profile": "Partner profile",
+      "projectsActivities": "Projects / Activities"
     },
     "opportunities": "Opportunities",
     "opportunity": "Opportunité",
@@ -1215,6 +1218,27 @@
     "opportunitySubmitted": "Opportunité envoyée à l’administration pour validation.",
     "dashboardSubtitle": "Dashboard Subtitle",
     "pendingSupports": "En attente",
+    "pendingOpportunities": "Pending opportunities",
+    "profileFallbackOrganization": "Partner organization",
+    "profileFallbackContact": "Contact not specified",
+    "dashboardFocus": {
+      "eyebrow": "To handle now",
+      "title": "Partner dashboard",
+      "subtitle": "Useful priorities before detailed statistics.",
+      "profileTitle": "Complete partner profile",
+      "profileDescription": "A complete profile improves public visibility and makes your impact easier to understand.",
+      "profileAction": "Open profile",
+      "opportunitiesTitle": "{{count}} opportunity/opportunities under review",
+      "opportunitiesDescription": "Track publications sent to the administration before they go live.",
+      "opportunitiesAction": "View opportunities",
+      "supportsTitle": "Track recent support",
+      "supportsDescription": "{{count}} recent support item(s) to review in the history.",
+      "noSupportsDescription": "No recent support yet. You can target an open project or activity.",
+      "supportsAction": "View support",
+      "impactTitle": "Read local impact",
+      "impactDescription": "{{groups}} linked group(s) · {{referents}} linked referent(s).",
+      "impactAction": "View impact"
+    },
     "opportunitiesHint": "Vos publications restent en attente jusqu’à validation par un administrateur.",
     "newOpportunity": "Nouvelle opportunité",
     "opportunityTitle": "Titre",
@@ -1721,6 +1745,24 @@
     "partialError": "Some sources did not respond. The indicators shown use the available data.",
     "emptyTitle": "No impact data available",
     "emptyDescription": "Indicators will appear once activities, groups, projects or support records are available.",
+    "sections": {
+      "summary": {
+        "title": "Summary",
+        "description": "The essential indicators to understand impact in a few seconds."
+      },
+      "participation": {
+        "title": "Real participation",
+        "description": "Attendance, activities and projects grouped into one field view."
+      },
+      "partners": {
+        "title": "Partners",
+        "description": "Partners, assignments and support gathered into one coherent block."
+      },
+      "qualityExports": {
+        "title": "Quality & Exports",
+        "description": "Data reliability, map, known limits and report generation."
+      }
+    },
     "kpis": {
       "activeMembers": "Active members",
       "completedActivities": "Completed activities",
@@ -1761,6 +1803,7 @@
       "presenceEvolution": "Attendance evolution",
       "topActivitiesByAttendance": "Most attended activities",
       "attendanceRateByActivity": "Attendance rate by activity",
+      "emptySection": "No usable chart data for this section.",
       "noData": "No data"
     },
     "presence": {

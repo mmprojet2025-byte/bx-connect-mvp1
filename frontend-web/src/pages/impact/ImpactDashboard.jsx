@@ -179,32 +179,22 @@ export default function ImpactDashboard() {
   const hasFilteredData = hasImpactData(filteredData)
   const hasEncodedPresence = impact.presence.hasEncoded
   const generatedAt = useMemo(() => new Date(), [])
+  const exportProps = { data: filteredData, impact, filterSummary, t, language: i18n.language }
+  const participationCharts = [
+    { key: 'presenceByStatus', title: t('impact.charts.presenceByStatus'), data: impact.presenceStatusData, type: 'pie' },
+    { key: 'presenceEvolution', title: t('impact.charts.presenceEvolution'), data: impact.presenceEvolutionData, type: 'bar' },
+    { key: 'topActivitiesByAttendance', title: t('impact.charts.topActivitiesByAttendance'), data: impact.topAttendanceActivitiesData, type: 'bar' },
+    { key: 'attendanceRateByActivity', title: t('impact.charts.attendanceRateByActivity'), data: impact.attendanceRateByActivityData, type: 'bar', unit: '%' },
+    { key: 'activitiesByStatus', title: t('impact.charts.activitiesByStatus'), data: impact.activityStatusData, type: 'pie' },
+    { key: 'activitiesByCommune', title: t('impact.charts.activitiesByCommune'), data: impact.activityCommuneData, type: 'bar' },
+    { key: 'projectsByStatus', title: t('impact.charts.projectsByStatus'), data: impact.projectStatusData, type: 'bar' },
+  ].filter(chart => chart.data.length > 0)
 
   return (
     <CollaborativeDashboardLayout
       emoji="BarChart3"
       title={t('impact.title')}
       subtitle={t('impact.subtitle')}
-      actions={hasAnyData && !loading ? (
-        <>
-          <button
-            type="button"
-            onClick={() => exportImpactPdf({ data: filteredData, impact, filterSummary, generatedAt: new Date(), t, language: i18n.language })}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-black text-white transition hover:bg-blue-600"
-          >
-            <AppIcon name="FileText" className="h-4 w-4" />
-            {t('impact.exports.pdf')}
-          </button>
-          <button
-            type="button"
-            onClick={() => exportImpactExcel({ data: filteredData, impact, filterSummary, generatedAt: new Date(), t, language: i18n.language })}
-            className="inline-flex items-center gap-2 rounded-lg border border-blue-100 bg-white px-4 py-2 text-sm font-black text-blue-800 transition hover:bg-blue-50"
-          >
-            <AppIcon name="Archive" className="h-4 w-4" />
-            {t('impact.exports.excel')}
-          </button>
-        </>
-      ) : null}
     >
       {partialError && hasAnyData && <Alert type="warning">{partialError}</Alert>}
 
@@ -244,173 +234,145 @@ export default function ImpactDashboard() {
             </div>
           )}
 
-          <CompactKpiRow
-            accent="blue"
-            className="mb-4 lg:grid-cols-3 xl:grid-cols-6"
-            items={[
-              { icon: 'Users', label: t('impact.kpis.activeMembers'), value: impact.kpis.activeMembers, tone: 'blue' },
-              { icon: 'Calendar', label: t('impact.kpis.completedActivities'), value: impact.kpis.completedActivities, tone: 'teal' },
-              { icon: 'Building', label: t('impact.kpis.activeGroups'), value: impact.kpis.activeGroups, tone: 'indigo' },
-              { icon: 'Rocket', label: t('impact.kpis.approvedProjects'), value: impact.kpis.approvedProjects, tone: 'violet' },
-              { icon: 'Handshake', label: t('impact.kpis.activePartners'), value: impact.kpis.activePartners, tone: 'green' },
-              { icon: 'DollarSign', label: t('impact.kpis.collectedAmount'), value: formatCurrency(impact.kpis.collectedAmount, i18n.language), tone: 'amber' },
-            ]}
-          />
-
-          <CompactKpiRow
-            accent="violet"
-            className="mb-4 lg:grid-cols-3 xl:grid-cols-5"
-            items={[
-              { icon: 'Clock', label: t('impact.kpis.submittedToReferent'), value: impact.kpis.submittedToReferent, tone: 'blue' },
-              { icon: 'CheckCircle', label: t('impact.kpis.validatedByReferent'), value: impact.kpis.validatedByReferent, tone: 'teal' },
-              { icon: 'XCircle', label: t('impact.kpis.rejectedByReferent'), value: impact.kpis.rejectedByReferent, tone: 'red' },
-              { icon: 'ShieldCheck', label: t('impact.kpis.finalApprovedProjects'), value: impact.kpis.approvedProjects, tone: 'green' },
-              { icon: 'ShieldX', label: t('impact.kpis.finalRejectedProjects'), value: impact.kpis.rejectedProjects, tone: 'amber' },
-            ]}
-          />
-
-          <div className="mb-4 rounded-xl border border-slate-100 bg-white p-4 shadow-lg shadow-slate-950/5">
-            <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black ${hasEncodedPresence ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
-              <AppIcon name={hasEncodedPresence ? 'CheckCircle' : 'ClipboardList'} className="h-4 w-4" />
-              {hasEncodedPresence ? t('impact.presence.badgeAvailable') : t('impact.presence.badgeEmpty')}
-            </span>
-          </div>
-
-          <CompactKpiRow
-            accent="teal"
-            className="mb-4 lg:grid-cols-3 xl:grid-cols-5"
-            items={[
-              { icon: 'Users', label: t('impact.kpis.realParticipants'), value: impact.kpis.realParticipants, tone: 'blue' },
-              { icon: 'CheckCircle', label: t('impact.kpis.present'), value: impact.kpis.present, tone: 'green' },
-              { icon: 'XCircle', label: t('impact.kpis.absent'), value: impact.kpis.absent, tone: 'red' },
-              { icon: 'Clock', label: t('impact.kpis.excused'), value: impact.kpis.excused, tone: 'amber' },
-              { icon: 'BarChart', label: t('impact.kpis.attendanceRate'), value: formatPercent(impact.kpis.attendanceRate, i18n.language), tone: 'teal' },
-            ]}
-          />
-
-          <CompactKpiRow
-            accent="green"
-            className="mb-4 lg:grid-cols-3 xl:grid-cols-6"
-            items={[
-              { icon: 'Handshake', label: t('impact.partners.kpis.active'), value: impact.partnerImpact.kpis.activePartners, tone: 'green' },
-              { icon: 'XCircle', label: t('impact.partners.kpis.inactive'), value: impact.partnerImpact.kpis.inactivePartners, tone: 'slate' },
-              { icon: 'User', label: t('impact.partners.kpis.withReferent'), value: impact.partnerImpact.kpis.withReferent, tone: 'blue' },
-              { icon: 'AlertTriangle', label: t('impact.partners.kpis.withoutReferent'), value: impact.partnerImpact.kpis.withoutReferent, tone: impact.partnerImpact.kpis.withoutReferent > 0 ? 'amber' : 'green' },
-              { icon: 'Users', label: t('impact.partners.kpis.withGroup'), value: impact.partnerImpact.kpis.withGroup, tone: 'teal' },
-              { icon: 'AlertTriangle', label: t('impact.partners.kpis.withoutGroup'), value: impact.partnerImpact.kpis.withoutGroup, tone: impact.partnerImpact.kpis.withoutGroup > 0 ? 'amber' : 'green' },
-            ]}
-          />
-
-          <PartnerImpactSection impact={impact.partnerImpact} t={t} language={i18n.language} />
-
-          <section className="mb-4 rounded-xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-950/5">
-            <SectionHeader
-              icon="BarChart"
-              title={t('impact.charts.title')}
-              description={t('impact.charts.description')}
+          <ImpactSection
+            icon="BarChart3"
+            title={t('impact.sections.summary.title')}
+            description={t('impact.sections.summary.description')}
+          >
+            <CompactKpiRow
+              accent="blue"
+              className="lg:grid-cols-3 xl:grid-cols-6"
+              items={[
+                { icon: 'Users', label: t('impact.kpis.realParticipants'), value: impact.kpis.realParticipants, tone: 'blue' },
+                { icon: 'BarChart', label: t('impact.kpis.attendanceRate'), value: formatPercent(impact.kpis.attendanceRate, i18n.language), tone: 'teal' },
+                { icon: 'Rocket', label: t('impact.kpis.approvedProjects'), value: impact.kpis.approvedProjects, tone: 'violet' },
+                { icon: 'Handshake', label: t('impact.kpis.activePartners'), value: impact.partnerImpact.kpis.activePartners, tone: 'green' },
+                { icon: 'DollarSign', label: t('impact.partners.kpis.supportedAmount'), value: formatCurrency(impact.partnerImpact.kpis.supportedAmount, i18n.language), tone: 'amber' },
+                { icon: 'Building', label: t('impact.kpis.activeGroups'), value: impact.kpis.activeGroups, tone: 'indigo' },
+              ]}
             />
-            <div className="grid gap-4 xl:grid-cols-4">
-              <ChartPanel title={t('impact.charts.activitiesByStatus')} empty={!impact.activityStatusData.length} emptyLabel={t('impact.charts.noData')}>
-                <StatusPieChart data={impact.activityStatusData} />
-              </ChartPanel>
-              <ChartPanel title={t('impact.charts.projectsByStatus')} empty={!impact.projectStatusData.length} emptyLabel={t('impact.charts.noData')}>
-                <StatusBarChart data={impact.projectStatusData} />
-              </ChartPanel>
-              <ChartPanel title={t('impact.charts.supportsByStatus')} empty={!impact.supportStatusData.length} emptyLabel={t('impact.charts.noData')}>
-                <StatusPieChart data={impact.supportStatusData} />
-              </ChartPanel>
-              <ChartPanel title={t('impact.charts.activitiesByCommune')} empty={!impact.activityCommuneData.length} emptyLabel={t('impact.charts.noData')}>
-                <StatusBarChart data={impact.activityCommuneData} />
-              </ChartPanel>
-            </div>
-          </section>
+          </ImpactSection>
 
-          <section className="mb-4 rounded-xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-950/5">
-            <SectionHeader
-              icon="Users"
-              title={t('impact.presence.title')}
-              description={t('impact.presence.description')}
+          <ImpactSection
+            icon="Users"
+            title={t('impact.sections.participation.title')}
+            description={t('impact.sections.participation.description')}
+          >
+            <div className="mb-4">
+              <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black ${hasEncodedPresence ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
+                <AppIcon name={hasEncodedPresence ? 'CheckCircle' : 'ClipboardList'} className="h-4 w-4" />
+                {hasEncodedPresence ? t('impact.presence.badgeAvailable') : t('impact.presence.badgeEmpty')}
+              </span>
+            </div>
+            <CompactKpiRow
+              accent="teal"
+              className="mb-4 lg:grid-cols-3 xl:grid-cols-6"
+              items={[
+                { icon: 'Calendar', label: t('impact.kpis.completedActivities'), value: impact.kpis.completedActivities, tone: 'teal' },
+                { icon: 'CheckCircle', label: t('impact.kpis.present'), value: impact.kpis.present, tone: 'green' },
+                { icon: 'XCircle', label: t('impact.kpis.absent'), value: impact.kpis.absent, tone: 'red' },
+                { icon: 'Clock', label: t('impact.kpis.excused'), value: impact.kpis.excused, tone: 'amber' },
+                { icon: 'Clock', label: t('impact.kpis.submittedToReferent'), value: impact.kpis.submittedToReferent, tone: 'blue' },
+                { icon: 'CheckCircle', label: t('impact.kpis.validatedByReferent'), value: impact.kpis.validatedByReferent, tone: 'teal' },
+                { icon: 'XCircle', label: t('impact.kpis.rejectedByReferent'), value: impact.kpis.rejectedByReferent, tone: 'red' },
+                { icon: 'ShieldX', label: t('impact.kpis.finalRejectedProjects'), value: impact.kpis.rejectedProjects, tone: 'amber' },
+              ]}
             />
-            <div className="grid gap-4 xl:grid-cols-4">
-              <ChartPanel title={t('impact.charts.presenceByStatus')} empty={!impact.presenceStatusData.length} emptyLabel={t('impact.charts.noData')}>
-                <StatusPieChart data={impact.presenceStatusData} />
-              </ChartPanel>
-              <ChartPanel title={t('impact.charts.presenceEvolution')} empty={!impact.presenceEvolutionData.length} emptyLabel={t('impact.charts.noData')}>
-                <StatusBarChart data={impact.presenceEvolutionData} />
-              </ChartPanel>
-              <ChartPanel title={t('impact.charts.topActivitiesByAttendance')} empty={!impact.topAttendanceActivitiesData.length} emptyLabel={t('impact.charts.noData')}>
-                <StatusBarChart data={impact.topAttendanceActivitiesData} />
-              </ChartPanel>
-              <ChartPanel title={t('impact.charts.attendanceRateByActivity')} empty={!impact.attendanceRateByActivityData.length} emptyLabel={t('impact.charts.noData')}>
-                <StatusBarChart data={impact.attendanceRateByActivityData} />
-              </ChartPanel>
-            </div>
-          </section>
+            <ChartGrid charts={participationCharts} t={t} />
+          </ImpactSection>
 
-          <section className="mb-4 grid gap-4 xl:grid-cols-[1.4fr_0.9fr]">
-            <article className="rounded-xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-950/5">
-              <SectionHeader
-                icon="MapPin"
-                title={t('impact.map.title')}
-                description={t('impact.map.description')}
-              />
-              {impact.mapPoints.length > 0 ? (
-                <>
-                  <div
-                    ref={mapContainerRef}
-                    className="h-[360px] overflow-hidden rounded-lg border border-slate-100"
-                    aria-label={t('impact.map.aria')}
-                  />
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
-                    <LegendDot color="bg-blue-700" label={t('impact.map.activities')} />
-                    <LegendDot color="bg-teal-700" label={t('impact.map.groups')} />
-                  </div>
-                </>
-              ) : (
-                <EmptyState
-                  icon="MapPin"
-                  title={t('impact.map.emptyTitle')}
-                  description={t('impact.map.emptyDescription')}
+          <PartnerImpactSection
+            impact={impact.partnerImpact}
+            supportStatusData={impact.supportStatusData}
+            t={t}
+            language={i18n.language}
+          />
+
+          <ImpactSection
+            icon="ClipboardList"
+            title={t('impact.sections.qualityExports.title')}
+            description={t('impact.sections.qualityExports.description')}
+          >
+            <div className="grid gap-4 xl:grid-cols-[1.2fr_0.9fr]">
+              <article className="rounded-lg border border-slate-100 bg-slate-50/70 p-4">
+                <SectionHeader
+                  icon="ClipboardList"
+                  title={t('impact.quality.title')}
+                  description={t('impact.quality.description')}
                 />
-              )}
-            </article>
+                <div className="grid gap-3">
+                  {impact.qualityItems.map(item => (
+                    <QualityItem key={item.label} item={item} />
+                  ))}
+                </div>
+              </article>
 
-            <article className="rounded-xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-950/5">
-              <SectionHeader
-                icon="ClipboardList"
-                title={t('impact.quality.title')}
-                description={t('impact.quality.description')}
-              />
-              <div className="grid gap-3">
-                {impact.qualityItems.map(item => (
-                  <QualityItem key={item.label} item={item} />
-                ))}
-              </div>
-            </article>
-          </section>
+              <div className="grid gap-4">
+                <article className="rounded-lg border border-slate-100 bg-slate-50/70 p-4">
+                  <SectionHeader
+                    icon="MapPin"
+                    title={t('impact.map.title')}
+                    description={t('impact.map.description')}
+                  />
+                  {impact.mapPoints.length > 0 ? (
+                    <>
+                      <div
+                        ref={mapContainerRef}
+                        className="h-[320px] overflow-hidden rounded-lg border border-slate-100"
+                        aria-label={t('impact.map.aria')}
+                      />
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
+                        <LegendDot color="bg-blue-700" label={t('impact.map.activities')} />
+                        <LegendDot color="bg-teal-700" label={t('impact.map.groups')} />
+                      </div>
+                    </>
+                  ) : (
+                    <p className="rounded-lg border border-dashed border-slate-200 bg-white px-4 py-5 text-sm font-semibold text-slate-500">
+                      {t('impact.map.emptyDescription')}
+                    </p>
+                  )}
+                </article>
 
-          <section className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide text-blue-700">{t('impact.limits.eyebrow')}</p>
-                <h2 className="mt-1 text-lg font-black text-blue-950">{t('impact.limits.title')}</h2>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-blue-900/70">{t('impact.limits.description')}</p>
-                <p className="mt-2 text-xs font-bold text-blue-900/60">
-                  {t('impact.exports.generatedAt', { date: formatDateTime(generatedAt, i18n.language) })}
-                </p>
+                <article className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+                  <div className="flex flex-col gap-4">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-wide text-blue-700">{t('impact.limits.eyebrow')}</p>
+                      <h2 className="mt-1 text-lg font-black text-blue-950">{t('impact.limits.title')}</h2>
+                      <p className="mt-2 text-sm leading-6 text-blue-900/70">{t('impact.limits.description')}</p>
+                      <p className="mt-2 text-xs font-bold text-blue-900/60">
+                        {t('impact.exports.generatedAt', { date: formatDateTime(generatedAt, i18n.language) })}
+                      </p>
+                    </div>
+                    <ExportActions
+                      onPdf={() => exportImpactPdf({ ...exportProps, generatedAt: new Date() })}
+                      onExcel={() => exportImpactExcel({ ...exportProps, generatedAt: new Date() })}
+                      t={t}
+                    />
+                  </div>
+                </article>
               </div>
-              <AppIcon name="Lightbulb" className="h-8 w-8 shrink-0 text-blue-700" />
             </div>
-          </section>
+          </ImpactSection>
         </>
       )}
     </CollaborativeDashboardLayout>
   )
 }
 
-function PartnerImpactSection({ impact, t, language }) {
+function PartnerImpactSection({ impact, supportStatusData, t, language }) {
+  const charts = [
+    { key: 'partnerTypes', title: t('impact.partners.charts.byType'), data: impact.partnerTypeData, type: 'pie' },
+    { key: 'linkTypes', title: t('impact.partners.charts.linkTypes'), data: impact.linkTypeData, type: 'pie' },
+    { key: 'supportTargets', title: t('impact.partners.charts.supportsByTarget'), data: impact.supportTargetData, type: 'bar' },
+    { key: 'supportStatuses', title: t('impact.charts.supportsByStatus'), data: supportStatusData, type: 'pie' },
+  ].filter(chart => chart.data.length > 0)
+
   return (
-    <section className="mb-4 rounded-xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-950/5">
+    <ImpactSection
+      icon="Handshake"
+      title={t('impact.sections.partners.title')}
+      description={t('impact.sections.partners.description')}
+    >
       <SectionHeader
         icon="Handshake"
         title={t('impact.partners.title')}
@@ -419,8 +381,14 @@ function PartnerImpactSection({ impact, t, language }) {
 
       <CompactKpiRow
         accent="green"
-        className="mb-4 lg:grid-cols-2 xl:grid-cols-4"
+        className="mb-4 lg:grid-cols-3 xl:grid-cols-5"
         items={[
+          { icon: 'Handshake', label: t('impact.partners.kpis.active'), value: impact.kpis.activePartners, tone: 'green' },
+          { icon: 'XCircle', label: t('impact.partners.kpis.inactive'), value: impact.kpis.inactivePartners, tone: 'slate' },
+          { icon: 'User', label: t('impact.partners.kpis.withReferent'), value: impact.kpis.withReferent, tone: 'blue' },
+          { icon: 'AlertTriangle', label: t('impact.partners.kpis.withoutReferent'), value: impact.kpis.withoutReferent, tone: impact.kpis.withoutReferent > 0 ? 'amber' : 'green' },
+          { icon: 'Users', label: t('impact.partners.kpis.withGroup'), value: impact.kpis.withGroup, tone: 'teal' },
+          { icon: 'AlertTriangle', label: t('impact.partners.kpis.withoutGroup'), value: impact.kpis.withoutGroup, tone: impact.kpis.withoutGroup > 0 ? 'amber' : 'green' },
           { icon: 'DollarSign', label: t('impact.partners.kpis.supportedAmount'), value: formatCurrency(impact.kpis.supportedAmount, language), tone: 'amber' },
           { icon: 'Rocket', label: t('impact.partners.kpis.supportedProjects'), value: impact.kpis.supportedProjects, tone: 'violet' },
           { icon: 'Calendar', label: t('impact.partners.kpis.supportedActivities'), value: impact.kpis.supportedActivities, tone: 'blue' },
@@ -429,17 +397,7 @@ function PartnerImpactSection({ impact, t, language }) {
       />
 
       {impact.hasData ? (
-        <div className="grid gap-4 xl:grid-cols-3">
-          <ChartPanel title={t('impact.partners.charts.byType')} empty={!impact.partnerTypeData.length} emptyLabel={t('impact.charts.noData')}>
-            <StatusPieChart data={impact.partnerTypeData} />
-          </ChartPanel>
-          <ChartPanel title={t('impact.partners.charts.linkTypes')} empty={!impact.linkTypeData.length} emptyLabel={t('impact.charts.noData')}>
-            <StatusPieChart data={impact.linkTypeData} />
-          </ChartPanel>
-          <ChartPanel title={t('impact.partners.charts.supportsByTarget')} empty={!impact.supportTargetData.length} emptyLabel={t('impact.charts.noData')}>
-            <StatusBarChart data={impact.supportTargetData} />
-          </ChartPanel>
-        </div>
+        <ChartGrid charts={charts} t={t} />
       ) : (
         <EmptyState
           icon="Handshake"
@@ -447,7 +405,61 @@ function PartnerImpactSection({ impact, t, language }) {
           description={t('impact.partners.emptyDescription')}
         />
       )}
+    </ImpactSection>
+  )
+}
+
+function ImpactSection({ icon, title, description, children }) {
+  return (
+    <section className="mb-4 rounded-xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-950/5">
+      <SectionHeader icon={icon} title={title} description={description} />
+      {children}
     </section>
+  )
+}
+
+function ChartGrid({ charts, t }) {
+  if (!charts.length) {
+    return (
+      <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm font-semibold text-slate-500">
+        {t('impact.charts.emptySection')}
+      </p>
+    )
+  }
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-3">
+      {charts.map(chart => (
+        <ChartPanel key={chart.key} title={chart.title}>
+          {chart.type === 'pie'
+            ? <StatusPieChart data={chart.data} />
+            : <StatusBarChart data={chart.data} unit={chart.unit} />}
+        </ChartPanel>
+      ))}
+    </div>
+  )
+}
+
+function ExportActions({ onPdf, onExcel, t }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <button
+        type="button"
+        onClick={onPdf}
+        className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-black text-white transition hover:bg-blue-600"
+      >
+        <AppIcon name="FileText" className="h-4 w-4" />
+        {t('impact.exports.pdf')}
+      </button>
+      <button
+        type="button"
+        onClick={onExcel}
+        className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-black text-blue-800 transition hover:bg-blue-100"
+      >
+        <AppIcon name="Archive" className="h-4 w-4" />
+        {t('impact.exports.excel')}
+      </button>
+    </div>
   )
 }
 
@@ -476,14 +488,14 @@ function ChartPanel({ title, empty, emptyLabel, children }) {
   )
 }
 
-function StatusBarChart({ data }) {
+function StatusBarChart({ data, unit = '' }) {
   return (
     <div className="h-48">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
           <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} height={52} />
           <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-          <Tooltip />
+          <Tooltip formatter={value => [`${value}${unit}`, '']} />
           <Bar dataKey="value" radius={[8, 8, 0, 0]}>
             {data.map((entry, index) => (
               <Cell key={entry.key} fill={CHART_COLORS[index % CHART_COLORS.length]} />

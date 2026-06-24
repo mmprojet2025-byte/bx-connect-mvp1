@@ -1205,7 +1205,10 @@
       "projects": "Projets",
       "activities": "Activités",
       "supports": "Soutiens financiers",
-      "opportunities": "Opportunités"
+      "opportunities": "Opportunités",
+      "localImpact": "Impact local",
+      "profile": "Profil partenaire",
+      "projectsActivities": "Projets / Activités"
     },
     "opportunities": "Opportunities",
     "opportunity": "Opportunité",
@@ -1215,6 +1218,27 @@
     "opportunitySubmitted": "Opportunité envoyée à l’administration pour validation.",
     "dashboardSubtitle": "Dashboard Subtitle",
     "pendingSupports": "En attente",
+    "pendingOpportunities": "Opportunités en attente",
+    "profileFallbackOrganization": "Organisation partenaire",
+    "profileFallbackContact": "Contact non renseigné",
+    "dashboardFocus": {
+      "eyebrow": "À traiter maintenant",
+      "title": "Tableau de bord partenaire",
+      "subtitle": "Les priorités utiles avant les statistiques détaillées.",
+      "profileTitle": "Compléter le profil partenaire",
+      "profileDescription": "Un profil complet améliore votre visibilité publique et la lisibilité de votre impact.",
+      "profileAction": "Ouvrir le profil",
+      "opportunitiesTitle": "{{count}} opportunité(s) en modération",
+      "opportunitiesDescription": "Suivez les publications envoyées à l’administration avant leur mise en ligne.",
+      "opportunitiesAction": "Voir les opportunités",
+      "supportsTitle": "Suivre les soutiens récents",
+      "supportsDescription": "{{count}} soutien(s) récent(s) à consulter dans l’historique.",
+      "noSupportsDescription": "Aucun soutien récent. Vous pouvez cibler un projet ou une activité ouverte.",
+      "supportsAction": "Voir les soutiens",
+      "impactTitle": "Lire l’impact local",
+      "impactDescription": "{{groups}} groupe(s) lié(s) · {{referents}} référent(s) associé(s).",
+      "impactAction": "Voir l’impact"
+    },
     "opportunitiesHint": "Vos publications restent en attente jusqu’à validation par un administrateur.",
     "newOpportunity": "Nouvelle opportunité",
     "opportunityTitle": "Titre",
@@ -1721,6 +1745,24 @@
     "partialError": "Certaines sources n’ont pas répondu. Les indicateurs affichés utilisent les données disponibles.",
     "emptyTitle": "Aucune donnée d’impact disponible",
     "emptyDescription": "Les indicateurs apparaîtront dès que des activités, groupes, projets ou soutiens seront disponibles.",
+    "sections": {
+      "summary": {
+        "title": "Synthèse",
+        "description": "Les indicateurs essentiels pour comprendre l’impact en quelques secondes."
+      },
+      "participation": {
+        "title": "Participation réelle",
+        "description": "Présences, activités et projets regroupés dans une lecture terrain."
+      },
+      "partners": {
+        "title": "Partenaires",
+        "description": "Partenaires, affectations et soutiens réunis dans un bloc unique."
+      },
+      "qualityExports": {
+        "title": "Qualité & Exports",
+        "description": "Fiabilité des données, carte, limites connues et génération de rapports."
+      }
+    },
     "kpis": {
       "activeMembers": "Membres actifs",
       "completedActivities": "Activités réalisées",
@@ -1761,6 +1803,7 @@
       "presenceEvolution": "Évolution des présences",
       "topActivitiesByAttendance": "Activités les plus fréquentées",
       "attendanceRateByActivity": "Taux de présence par activité",
+      "emptySection": "Aucune donnée graphique exploitable pour cette section.",
       "noData": "Aucune donnée"
     },
     "presence": {

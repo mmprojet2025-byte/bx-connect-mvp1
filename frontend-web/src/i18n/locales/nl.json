@@ -1205,7 +1205,10 @@
       "projects": "Projecten",
       "activities": "Activiteiten",
       "supports": "Financiële steun",
-      "opportunities": "Opportunités"
+      "opportunities": "Opportuniteiten",
+      "localImpact": "Lokale impact",
+      "profile": "Partnerprofiel",
+      "projectsActivities": "Projecten / Activiteiten"
     },
     "opportunities": "Opportunities",
     "opportunity": "Opportunité",
@@ -1215,6 +1218,27 @@
     "opportunitySubmitted": "Opportunité envoyée à l’administration pour validation.",
     "dashboardSubtitle": "Dashboard Subtitle",
     "pendingSupports": "En attente",
+    "pendingOpportunities": "Opportuniteiten in afwachting",
+    "profileFallbackOrganization": "Partnerorganisatie",
+    "profileFallbackContact": "Contact niet ingevuld",
+    "dashboardFocus": {
+      "eyebrow": "Nu te behandelen",
+      "title": "Partnerdashboard",
+      "subtitle": "Nuttige prioriteiten vóór de gedetailleerde statistieken.",
+      "profileTitle": "Partnerprofiel aanvullen",
+      "profileDescription": "Een volledig profiel verbetert je publieke zichtbaarheid en maakt je impact duidelijker.",
+      "profileAction": "Profiel openen",
+      "opportunitiesTitle": "{{count}} opportuniteit(en) in moderatie",
+      "opportunitiesDescription": "Volg publicaties die naar de administratie zijn gestuurd vóór publicatie.",
+      "opportunitiesAction": "Opportuniteiten bekijken",
+      "supportsTitle": "Recente steun opvolgen",
+      "supportsDescription": "{{count}} recente steunitem(s) om in de historiek te bekijken.",
+      "noSupportsDescription": "Nog geen recente steun. Je kunt een open project of activiteit kiezen.",
+      "supportsAction": "Steun bekijken",
+      "impactTitle": "Lokale impact bekijken",
+      "impactDescription": "{{groups}} gekoppelde groep(en) · {{referents}} gekoppelde referent(en).",
+      "impactAction": "Impact bekijken"
+    },
     "opportunitiesHint": "Vos publications restent en attente jusqu’à validation par un administrateur.",
     "newOpportunity": "Nouvelle opportunité",
     "opportunityTitle": "Titre",
@@ -1721,6 +1745,24 @@
     "partialError": "Sommige bronnen hebben niet geantwoord. De getoonde indicatoren gebruiken de beschikbare gegevens.",
     "emptyTitle": "Geen impactgegevens beschikbaar",
     "emptyDescription": "Indicatoren verschijnen zodra activiteiten, groepen, projecten of steunrecords beschikbaar zijn.",
+    "sections": {
+      "summary": {
+        "title": "Synthese",
+        "description": "De belangrijkste indicatoren om de impact in enkele seconden te begrijpen."
+      },
+      "participation": {
+        "title": "Reële deelname",
+        "description": "Aanwezigheden, activiteiten en projecten samengebracht in één terreinbeeld."
+      },
+      "partners": {
+        "title": "Partners",
+        "description": "Partners, toewijzingen en steun in één coherent blok."
+      },
+      "qualityExports": {
+        "title": "Kwaliteit & Exports",
+        "description": "Databetrouwbaarheid, kaart, bekende limieten en rapportgeneratie."
+      }
+    },
     "kpis": {
       "activeMembers": "Actieve leden",
       "completedActivities": "Uitgevoerde activiteiten",
@@ -1761,6 +1803,7 @@
       "presenceEvolution": "Evolutie van aanwezigheden",
       "topActivitiesByAttendance": "Meest bezochte activiteiten",
       "attendanceRateByActivity": "Aanwezigheidsgraad per activiteit",
+      "emptySection": "Geen bruikbare grafiekgegevens voor deze sectie.",
       "noData": "Geen gegevens"
     },
     "presence": {

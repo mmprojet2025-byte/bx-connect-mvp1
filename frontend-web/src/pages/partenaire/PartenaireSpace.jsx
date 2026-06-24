@@ -27,7 +27,11 @@ import { CollaborativeDashboardLayout } from '../../components/dashboard/Collabo
 import ActivityFeed from '../../components/dashboard/ActivityFeed';
 import CompactKpiRow from '../../components/dashboard/CompactKpiRow';
 
-const PARTNER_TABS = new Set(['dashboard', 'projets', 'activites', 'soutiens', 'opportunites']);
+const PARTNER_TABS = new Set(['dashboard', 'soutiens', 'opportunites', 'impact', 'profil', 'projets-activites']);
+const PARTNER_TAB_ALIASES = {
+  projets: 'projets-activites',
+  activites: 'projets-activites',
+};
 const OPPORTUNITY_CATEGORIES = ['EMPLOI', 'STAGE', 'FORMATION', 'EVENEMENT', 'APPEL_PROJET', 'PUBLICITE'];
 const OPPORTUNITY_APPLICATION_MODES = ['LIEN_EXTERNE', 'CONTACT_PARTENAIRE', 'INFORMATION'];
 const OPPORTUNITY_TARGETS = ['TOUS', 'MEMBRES', 'REFERENTS', 'GROUPES', 'PUBLIC'];
@@ -54,7 +58,8 @@ export default function PartenaireSpace() {
   const [error, setError] = useState('');
   const [sectionErrors, setSectionErrors] = useState({});
   const requestedTab = searchParams.get('tab');
-  const onglet = PARTNER_TABS.has(requestedTab) ? requestedTab : 'dashboard';
+  const normalizedTab = PARTNER_TAB_ALIASES[requestedTab] || requestedTab;
+  const onglet = PARTNER_TABS.has(normalizedTab) ? normalizedTab : 'dashboard';
   const focusedSupportId = searchParams.get('soutien');
 
   // Formulaire soutien
@@ -282,10 +287,11 @@ export default function PartenaireSpace() {
 
   const ONGLETS = [
     { id: 'dashboard',  label: t('partnerSpace.tabs.dashboard'), icon: 'BarChart' },
-    { id: 'projets',    label: t('partnerSpace.tabs.projects'), icon: 'Rocket' },
-    { id: 'activites',  label: t('partnerSpace.tabs.activities'), icon: 'Folder' },
     { id: 'soutiens',   label: t('partnerSpace.tabs.supports'), icon: 'Wallet' },
     { id: 'opportunites', label: t('partnerSpace.tabs.opportunities', { defaultValue: 'Opportunités' }), icon: 'Megaphone' },
+    { id: 'impact', label: t('partnerSpace.tabs.localImpact', { defaultValue: 'Impact local' }), icon: 'Activity' },
+    { id: 'profil', label: t('partnerSpace.tabs.profile', { defaultValue: 'Profil partenaire' }), icon: 'User' },
+    { id: 'projets-activites', label: t('partnerSpace.tabs.projectsActivities', { defaultValue: 'Projets / Activités' }), icon: 'Folder' },
   ];
 
   const setOnglet = (tab) => {
@@ -422,32 +428,27 @@ export default function PartenaireSpace() {
               accent="orange"
               className="mb-4"
               items={[
-                { icon: 'Rocket', label: t('partnerSpace.openProjects'), value: projetsOuverts.length },
-                { icon: 'Calendar', label: t('partnerSpace.openActivities'), value: activitesOuvertes.length },
                 { icon: 'Wallet', label: t('partnerSpace.mySupports'), value: mesSoutiens.length },
-                { icon: 'Megaphone', label: t('partnerSpace.opportunities', { defaultValue: 'Opportunités' }), value: mesOpportunites.length },
                 { icon: 'Clock', label: t('partnerSpace.pendingSupports', { defaultValue: 'En attente' }), value: mesSoutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE').length, tone: mesSoutiens.some(soutien => soutien.statutPaiement === 'EN_ATTENTE') ? 'amber' : 'green' },
+                { icon: 'Megaphone', label: t('partnerSpace.pendingOpportunities', { defaultValue: 'Opportunités en attente' }), value: mesOpportunites.filter(opportunite => opportunite.statutModeration === 'EN_ATTENTE').length, tone: mesOpportunites.some(opportunite => opportunite.statutModeration === 'EN_ATTENTE') ? 'amber' : 'green' },
+                { icon: 'Users', label: t('partnerSpace.localImpact.kpis.groups'), value: localImpact.kpis.groupesSoutenus },
+                { icon: 'User', label: t('partnerSpace.localImpact.kpis.referents'), value: localImpact.kpis.referentsAssocies },
               ]}
             />
 
-            <PartnerActions
+            <PartnerDashboardFocus
+              profil={profilInstitutionnel}
               mesSoutiens={mesSoutiens}
-              onSupport={() => setShowSoutienForm(true)}
-              t={t}
-            />
-
-            {impact.totalSoutiens > 0 && <PartnerImpactSummary impact={impact} t={t} />}
-
-            <PartnerLocalImpactSection
-              impact={localImpact}
               referents={mesReferents}
               groupes={mesGroupesLies}
-              sectionErrors={sectionErrors}
-              language={i18n.language}
+              opportunites={mesOpportunites}
+              impact={localImpact}
+              onProfile={() => setOnglet('profil')}
+              onSupports={() => setOnglet('soutiens')}
+              onOpportunities={() => setOnglet('opportunites')}
+              onImpact={() => setOnglet('impact')}
               t={t}
             />
-
-            <PartnerCharts data={partnerChartData} t={t} />
 
             {partnerActivityItems.length > 0 && (
             <div>
@@ -466,95 +467,6 @@ export default function PartenaireSpace() {
           </div>
         )}
 
-        {/* ── Projets ouverts ── */}
-        {onglet === 'projets' && (
-          <div>
-            <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900 mb-4">
-              <AppIcon name="Rocket" className="h-5 w-5 text-orange-600" />
-              {t('partnerSpace.openProjects')}
-            </h2>
-            {sectionErrors.projets && <SectionLoadError message={sectionErrors.projets} />}
-            {projetsOuverts.length === 0 ? (
-              <div className="text-center py-12 text-gray-400 bg-white rounded-lg shadow">
-                <AppIcon name="Rocket" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
-                <p>{t('partnerSpace.noOpenProjects')}</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {projetsOuverts.map(p => (
-                  <div key={p.id} className="bg-white rounded-lg shadow p-5">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <ProjectVisibilityBadge visibility={p.visibilite} className="mb-2" />
-                        <h3 className="font-bold text-blue-900">{p.titre}</h3>
-                      </div>
-                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                        {t(`statuses.${p.statut}`, { defaultValue: p.statut })}
-                      </span>
-                    </div>
-                    {p.description && <p className="text-gray-500 text-sm mb-3 line-clamp-2">{p.description}</p>}
-                    <div className="flex justify-between items-center text-xs text-gray-400 mb-3">
-                      <InlineIconLabel icon="Wallet">{t('partnerSpace.budget')}: {p.budgetDemande ? `${p.budgetDemande} €` : t('partnerSpace.notDefined')}</InlineIconLabel>
-                      <InlineIconLabel icon="CheckCircle">{t('partnerSpace.received')}: {p.totalSoutiensRecus || 0} €</InlineIconLabel>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setSoutienForm({ ...soutienForm, type: 'projet', projetId: p.id });
-                        setShowSoutienForm(true);
-                      }}
-                      className="inline-flex w-full items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white text-sm font-semibold py-2 rounded-xl transition"
-                    >
-                      <AppIcon name="Wallet" className="h-4 w-4" />
-                      {t('partnerSpace.proposeSupport')}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Activités ouvertes ── */}
-        {onglet === 'activites' && (
-          <div>
-            <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900 mb-4">
-              <AppIcon name="Folder" className="h-5 w-5 text-orange-600" />
-              {t('partnerSpace.openActivities')}
-            </h2>
-            {sectionErrors.activites && <SectionLoadError message={sectionErrors.activites} />}
-            {activitesOuvertes.length === 0 ? (
-              <div className="text-center py-12 text-gray-400 bg-white rounded-lg shadow">
-                <AppIcon name="Folder" className="mx-auto mb-3 h-10 w-10 text-orange-300" />
-                <p>{t('partnerSpace.noOpenActivities')}</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {activitesOuvertes.map(a => (
-                  <div key={a.id} className="bg-white rounded-lg shadow p-5">
-                    <h3 className="font-bold text-blue-900 mb-1">{a.titre}</h3>
-                    {a.description && <p className="text-gray-500 text-sm mb-2 line-clamp-2">{a.description}</p>}
-                    <div className="text-xs text-gray-400 mb-3 space-y-1">
-                      {a.lieu && <InlineIconLabel icon="Folder">{a.lieu}</InlineIconLabel>}
-                      {a.dateDebut && <InlineIconLabel icon="Calendar">{new Date(a.dateDebut).toLocaleDateString(i18n.language)}</InlineIconLabel>}
-                      <InlineIconLabel icon="CheckCircle">{t('partnerSpace.receivedSupports')}: {a.totalSoutiensRecus || 0} €</InlineIconLabel>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setSoutienForm({ ...soutienForm, type: 'activite', activiteId: a.id });
-                        setShowSoutienForm(true);
-                      }}
-                      className="inline-flex w-full items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white text-sm font-semibold py-2 rounded-xl transition"
-                    >
-                      <AppIcon name="Wallet" className="h-4 w-4" />
-                      {t('partnerSpace.proposeSupport')}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
         {/* ── Mes soutiens ── */}
         {onglet === 'soutiens' && (
           <div>
@@ -562,6 +474,13 @@ export default function PartenaireSpace() {
               <AppIcon name="Wallet" className="h-5 w-5 text-orange-600" />
               {t('partnerSpace.mySupports')}
             </h2>
+            <PartnerActions
+              mesSoutiens={mesSoutiens}
+              onSupport={() => setShowSoutienForm(true)}
+              t={t}
+            />
+            {impact.totalSoutiens > 0 && <PartnerImpactSummary impact={impact} t={t} />}
+            <PartnerCharts data={partnerChartData} t={t} />
             {sectionErrors.soutiens && <SectionLoadError message={sectionErrors.soutiens} />}
             {mesSoutiens.length === 0 ? (
               <div className="text-center py-12 text-gray-400 bg-white rounded-lg shadow">
@@ -753,6 +672,43 @@ export default function PartenaireSpace() {
               </div>
             )}
           </div>
+        )}
+
+        {/* ── Impact local ── */}
+        {onglet === 'impact' && (
+          <PartnerLocalImpactSection
+            impact={localImpact}
+            referents={mesReferents}
+            groupes={mesGroupesLies}
+            sectionErrors={sectionErrors}
+            language={i18n.language}
+            t={t}
+          />
+        )}
+
+        {/* ── Profil partenaire ── */}
+        {onglet === 'profil' && (
+          <PartnerProfilePanel
+            profil={profilInstitutionnel}
+            user={user}
+            onEdit={() => setShowProfileForm(true)}
+            sectionError={sectionErrors.profil}
+            t={t}
+          />
+        )}
+
+        {/* ── Projets / Activités ── */}
+        {onglet === 'projets-activites' && (
+          <ProjectsActivitiesPanel
+            projets={projetsOuverts}
+            activites={activitesOuvertes}
+            sectionErrors={sectionErrors}
+            soutienForm={soutienForm}
+            setSoutienForm={setSoutienForm}
+            setShowSoutienForm={setShowSoutienForm}
+            language={i18n.language}
+            t={t}
+          />
         )}
 
         {/* ── Modal formulaire soutien ── */}
@@ -997,6 +953,285 @@ export default function PartenaireSpace() {
         )}
 
     </CollaborativeDashboardLayout>
+  );
+}
+
+function PartnerDashboardFocus({
+  profil,
+  mesSoutiens,
+  referents,
+  groupes,
+  opportunites,
+  impact,
+  onProfile,
+  onSupports,
+  onOpportunities,
+  onImpact,
+  t,
+}) {
+  const profileIncomplete = !profil?.nomOrganisation || !profil?.description || !profil?.siteWeb;
+  const pendingOpportunities = opportunites.filter(opportunite => opportunite.statutModeration === 'EN_ATTENTE').length;
+  const recentSupports = [...mesSoutiens]
+    .sort((a, b) => new Date(b.dateCreation || b.datePaiement || 0) - new Date(a.dateCreation || a.datePaiement || 0))
+    .slice(0, 3);
+  const cards = [
+    profileIncomplete && {
+      key: 'profile',
+      icon: 'User',
+      title: t('partnerSpace.dashboardFocus.profileTitle'),
+      description: t('partnerSpace.dashboardFocus.profileDescription'),
+      action: t('partnerSpace.dashboardFocus.profileAction'),
+      onClick: onProfile,
+      tone: 'amber',
+    },
+    pendingOpportunities > 0 && {
+      key: 'opportunities',
+      icon: 'Megaphone',
+      title: t('partnerSpace.dashboardFocus.opportunitiesTitle', { count: pendingOpportunities }),
+      description: t('partnerSpace.dashboardFocus.opportunitiesDescription'),
+      action: t('partnerSpace.dashboardFocus.opportunitiesAction'),
+      onClick: onOpportunities,
+      tone: 'orange',
+    },
+    {
+      key: 'supports',
+      icon: 'Wallet',
+      title: t('partnerSpace.dashboardFocus.supportsTitle'),
+      description: recentSupports.length > 0
+        ? t('partnerSpace.dashboardFocus.supportsDescription', { count: recentSupports.length })
+        : t('partnerSpace.dashboardFocus.noSupportsDescription'),
+      action: t('partnerSpace.dashboardFocus.supportsAction'),
+      onClick: onSupports,
+      tone: 'slate',
+    },
+    {
+      key: 'impact',
+      icon: 'Activity',
+      title: t('partnerSpace.dashboardFocus.impactTitle'),
+      description: t('partnerSpace.dashboardFocus.impactDescription', {
+        groups: impact.kpis.groupesSoutenus,
+        referents: impact.kpis.referentsAssocies,
+      }),
+      action: t('partnerSpace.dashboardFocus.impactAction'),
+      onClick: onImpact,
+      tone: 'green',
+    },
+  ].filter(Boolean);
+
+  return (
+    <section className="mb-6 rounded-xl border border-orange-100 bg-white p-5 shadow-sm">
+      <div className="mb-4">
+        <p className="text-xs font-black uppercase tracking-wide text-orange-600">
+          {t('partnerSpace.dashboardFocus.eyebrow')}
+        </p>
+        <h2 className="text-xl font-black text-slate-950">
+          {t('partnerSpace.dashboardFocus.title')}
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">
+          {t('partnerSpace.dashboardFocus.subtitle')}
+        </p>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        {cards.map(card => (
+          <button
+            key={card.key}
+            type="button"
+            onClick={card.onClick}
+            className="group flex h-full items-start gap-3 rounded-lg border border-slate-100 bg-slate-50 p-4 text-left transition hover:border-orange-200 hover:bg-orange-50"
+          >
+            <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${card.tone === 'amber' ? 'bg-amber-100 text-amber-700' : card.tone === 'green' ? 'bg-green-100 text-green-700' : card.tone === 'orange' ? 'bg-orange-100 text-orange-700' : 'bg-white text-slate-600'}`}>
+              <AppIcon name={card.icon} className="h-5 w-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-black text-slate-950">{card.title}</span>
+              <span className="mt-1 block text-sm leading-6 text-slate-500">{card.description}</span>
+              <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-black text-orange-700">
+                {card.action}
+                <AppIcon name="ArrowRight" className="h-4 w-4 transition group-hover:translate-x-0.5" />
+              </span>
+            </span>
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <MiniRelationSummary
+          icon="User"
+          title={t('partnerSpace.localImpact.myReferent')}
+          count={referents.length}
+          empty={t('partnerSpace.localImpact.noReferent')}
+        />
+        <MiniRelationSummary
+          icon="Users"
+          title={t('partnerSpace.localImpact.linkedGroups')}
+          count={groupes.length}
+          empty={t('partnerSpace.localImpact.noGroup')}
+        />
+      </div>
+    </section>
+  );
+}
+
+function MiniRelationSummary({ icon, title, count, empty }) {
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-slate-100 bg-white px-4 py-3">
+      <span className="inline-flex items-center gap-2 text-sm font-bold text-slate-700">
+        <AppIcon name={icon} className="h-4 w-4 text-orange-600" />
+        {title}
+      </span>
+      <span className={`rounded-full px-2.5 py-1 text-xs font-black ${count > 0 ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800'}`}>
+        {count > 0 ? count : empty}
+      </span>
+    </div>
+  );
+}
+
+function PartnerProfilePanel({ profil, user, onEdit, sectionError, t }) {
+  const organization = profil?.nomOrganisation || t('partnerSpace.profileFallbackOrganization');
+  const contact = profil?.personneContact || [user?.prenom, user?.nom].filter(Boolean).join(' ') || t('partnerSpace.profileFallbackContact');
+  const details = [
+    { icon: 'Building', label: t('partnerInstitution.organization'), value: organization },
+    { icon: 'Handshake', label: t('partnerInstitution.type'), value: t(`partnerInstitution.types.${profil?.typePartenaire || 'AUTRE'}`) },
+    { icon: 'User', label: t('partnerInstitution.contactPerson'), value: contact },
+    { icon: 'Mail', label: t('partnerInstitution.contactEmail'), value: profil?.emailContact },
+    { icon: 'Phone', label: t('partnerInstitution.phone'), value: profil?.telephone },
+    { icon: 'Globe', label: t('partnerInstitution.website'), value: profil?.siteWeb },
+  ];
+
+  return (
+    <section className="rounded-xl border border-orange-100 bg-white p-5 shadow-sm">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-center gap-4">
+          <PartnerLogo logoUrl={profil?.logoUrl} name={organization} />
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase tracking-wide text-orange-600">
+              {t('partnerSpace.tabs.profile')}
+            </p>
+            <h2 className="truncate text-xl font-black text-slate-950">{organization}</h2>
+            {profil?.description && <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-500">{profil.description}</p>}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onEdit}
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+        >
+          <AppIcon name="Edit" className="h-4 w-4" />
+          {t('partnerInstitution.editProfile')}
+        </button>
+      </div>
+
+      {sectionError && <SectionLoadError message={sectionError} />}
+
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {details.map(detail => (
+          <div key={detail.label} className="rounded-lg border border-slate-100 bg-slate-50 p-4">
+            <p className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-slate-400">
+              <AppIcon name={detail.icon} className="h-4 w-4 text-orange-500" />
+              {detail.label}
+            </p>
+            <p className="mt-2 break-words text-sm font-bold text-slate-800">
+              {detail.value || t('partnerSpace.notDefined')}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ProjectsActivitiesPanel({
+  projets,
+  activites,
+  sectionErrors,
+  soutienForm,
+  setSoutienForm,
+  setShowSoutienForm,
+  language,
+  t,
+}) {
+  return (
+    <div className="grid gap-6 xl:grid-cols-2">
+      <section className="rounded-xl border border-orange-100 bg-white p-5 shadow-sm">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-blue-900">
+          <AppIcon name="Rocket" className="h-5 w-5 text-orange-600" />
+          {t('partnerSpace.openProjects')}
+        </h2>
+        {sectionErrors.projets && <SectionLoadError message={sectionErrors.projets} />}
+        {projets.length === 0 ? (
+          <EmptyState icon="Rocket" title={t('partnerSpace.noOpenProjects')} />
+        ) : (
+          <div className="grid gap-4">
+            {projets.map(p => (
+              <div key={p.id} className="rounded-lg border border-slate-100 bg-slate-50 p-4">
+                <div className="flex justify-between items-start mb-2 gap-3">
+                  <div>
+                    <ProjectVisibilityBadge visibility={p.visibilite} className="mb-2" />
+                    <h3 className="font-bold text-blue-900">{p.titre}</h3>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-bold text-green-700">
+                    {t(`statuses.${p.statut}`, { defaultValue: p.statut })}
+                  </span>
+                </div>
+                {p.description && <p className="text-gray-500 text-sm mb-3 line-clamp-2">{p.description}</p>}
+                <div className="flex flex-wrap gap-3 text-xs text-gray-400 mb-3">
+                  <InlineIconLabel icon="Wallet">{t('partnerSpace.budget')}: {p.budgetDemande ? `${p.budgetDemande} €` : t('partnerSpace.notDefined')}</InlineIconLabel>
+                  <InlineIconLabel icon="CheckCircle">{t('partnerSpace.received')}: {p.totalSoutiensRecus || 0} €</InlineIconLabel>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSoutienForm({ ...soutienForm, type: 'projet', projetId: p.id });
+                    setShowSoutienForm(true);
+                  }}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-orange-600 py-2 text-sm font-semibold text-white transition hover:bg-orange-500"
+                >
+                  <AppIcon name="Wallet" className="h-4 w-4" />
+                  {t('partnerSpace.proposeSupport')}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-xl border border-orange-100 bg-white p-5 shadow-sm">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-blue-900">
+          <AppIcon name="Folder" className="h-5 w-5 text-orange-600" />
+          {t('partnerSpace.openActivities')}
+        </h2>
+        {sectionErrors.activites && <SectionLoadError message={sectionErrors.activites} />}
+        {activites.length === 0 ? (
+          <EmptyState icon="Folder" title={t('partnerSpace.noOpenActivities')} />
+        ) : (
+          <div className="grid gap-4">
+            {activites.map(a => (
+              <div key={a.id} className="rounded-lg border border-slate-100 bg-slate-50 p-4">
+                <h3 className="font-bold text-blue-900 mb-1">{a.titre}</h3>
+                {a.description && <p className="text-gray-500 text-sm mb-2 line-clamp-2">{a.description}</p>}
+                <div className="mb-3 flex flex-wrap gap-3 text-xs text-gray-400">
+                  {a.lieu && <InlineIconLabel icon="Folder">{a.lieu}</InlineIconLabel>}
+                  {a.dateDebut && <InlineIconLabel icon="Calendar">{new Date(a.dateDebut).toLocaleDateString(language)}</InlineIconLabel>}
+                  <InlineIconLabel icon="CheckCircle">{t('partnerSpace.receivedSupports')}: {a.totalSoutiensRecus || 0} €</InlineIconLabel>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSoutienForm({ ...soutienForm, type: 'activite', activiteId: a.id });
+                    setShowSoutienForm(true);
+                  }}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-orange-600 py-2 text-sm font-semibold text-white transition hover:bg-orange-500"
+                >
+                  <AppIcon name="Wallet" className="h-4 w-4" />
+                  {t('partnerSpace.proposeSupport')}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
 
@@ -1778,7 +2013,7 @@ function buildPartnerActivityItems({ mesSoutiens, projetsOuverts, activitesOuver
     title: projet.titre,
     description: projet.budgetDemande ? `${t('partnerSpace.budget')}: ${projet.budgetDemande} €` : t('partnerSpace.openProjects'),
     date: projet.dateModification || projet.dateCreation,
-    to: '/partenaire?tab=projets',
+    to: '/partenaire?tab=projets-activites',
   }));
 
   const activityItems = activitesOuvertes.map(activite => ({
@@ -1787,7 +2022,7 @@ function buildPartnerActivityItems({ mesSoutiens, projetsOuverts, activitesOuver
     title: activite.titre,
     description: activite.lieu || t('partnerSpace.openActivities'),
     date: activite.dateModification || activite.dateCreation || activite.dateDebut,
-    to: '/partenaire?tab=activites',
+    to: '/partenaire?tab=projets-activites',
   }));
 
   return [...supportItems, ...projectItems, ...activityItems];
