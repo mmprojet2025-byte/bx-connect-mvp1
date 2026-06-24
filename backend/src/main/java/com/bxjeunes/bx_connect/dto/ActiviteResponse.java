@@ -2,6 +2,7 @@ package com.bxjeunes.bx_connect.dto;
 
 import com.bxjeunes.bx_connect.entity.Activite;
 import com.bxjeunes.bx_connect.entity.StatutActivite;
+import com.bxjeunes.bx_connect.entity.StatutInscription;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -30,6 +31,11 @@ public class ActiviteResponse {
     private int nombreInscrits;
     private int placesRestantes;
     private boolean complete;
+    private boolean inscrit;
+    private Long inscriptionId;
+    private StatutInscription statutInscription;
+    private boolean peutSInscrire;
+    private String raisonIndisponible;
 
     // ─── Constructeur depuis entité ──────────────────────────────────────────
 
@@ -96,4 +102,15 @@ public class ActiviteResponse {
     public int getNombreInscrits() { return nombreInscrits; }
     public int getPlacesRestantes() { return placesRestantes; }
     public boolean isComplete() { return complete; }
+    public boolean isInscrit() { return inscrit; }
+    public Long getInscriptionId() { return inscriptionId; }
+    public StatutInscription getStatutInscription() { return statutInscription; }
+    public boolean isPeutSInscrire() { return peutSInscrire; }
+    public String getRaisonIndisponible() { return raisonIndisponible; }
+
+    public void setInscrit(boolean inscrit) { this.inscrit = inscrit; }
+    public void setInscriptionId(Long inscriptionId) { this.inscriptionId = inscriptionId; }
+    public void setStatutInscription(StatutInscription statutInscription) { this.statutInscription = statutInscription; }
+    public void setPeutSInscrire(boolean peutSInscrire) { this.peutSInscrire = peutSInscrire; }
+    public void setRaisonIndisponible(String raisonIndisponible) { this.raisonIndisponible = raisonIndisponible; }
 }

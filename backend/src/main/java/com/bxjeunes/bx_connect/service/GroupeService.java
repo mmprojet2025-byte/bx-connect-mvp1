@@ -314,7 +314,7 @@ public class GroupeService {
         MembreGroupe saved = membreGroupeRepository.save(mg);
         notificationService.creer(groupe.getReferent(), "Nouvelle demande d'adhesion",
             membre.getPrenom() + " souhaite rejoindre " + groupe.getNom(),
-            "ADHESION", "/referent/adhesions");
+            "ADHESION", "/referent/demandes");
         auditerStatut(membre, "GROUP_JOIN_REQUESTED", groupe, null, saved.getStatut().name(),
                 "Demande d'adhesion creee.",
                 metadata("adhesionId", saved.getId(), "membreId", membre.getId()));

@@ -34,25 +34,20 @@ public class ActiviteController {
 
     // ─── PUBLIC : Lister les activités publiées (V02) ─────────────────────────
     @GetMapping
-    public ResponseEntity<List<ActiviteResponse>> listerPubliees() {
-        return ResponseEntity.ok(activiteService.listerPubliees());
+    public ResponseEntity<List<ActiviteResponse>> listerPubliees(Authentication authentication) {
+        return ResponseEntity.ok(activiteService.listerPubliees(emailConnecte(authentication)));
     }
 
     // ─── PUBLIC : Détail d'une activité (V04) ────────────────────────────────
     @GetMapping("/{id}")
     public ResponseEntity<ActiviteResponse> getById(@PathVariable Long id, Authentication authentication) {
-        String email = authentication != null
-                && authentication.isAuthenticated()
-                && !(authentication instanceof AnonymousAuthenticationToken)
-                ? authentication.getName()
-                : null;
-        return ResponseEntity.ok(activiteService.getById(id, email));
+        return ResponseEntity.ok(activiteService.getById(id, emailConnecte(authentication)));
     }
 
     // ─── PUBLIC : Recherche par mot-clé (V06 / M16) ──────────────────────────
     @GetMapping("/recherche")
-    public ResponseEntity<List<ActiviteResponse>> rechercher(@RequestParam String q) {
-        return ResponseEntity.ok(activiteService.rechercher(q));
+    public ResponseEntity<List<ActiviteResponse>> rechercher(@RequestParam String q, Authentication authentication) {
+        return ResponseEntity.ok(activiteService.rechercher(q, emailConnecte(authentication)));
     }
 
     // ─── PUBLIC : Filtres avancés (V03) ──────────────────────────────────────
@@ -65,7 +60,8 @@ public class ActiviteController {
             @RequestParam(required = false) String lieu,
             @RequestParam(required = false) Boolean gratuite,
             @RequestParam(required = false) String dateDebut,
-            @RequestParam(required = false) String dateFin) {
+            @RequestParam(required = false) String dateFin,
+            Authentication authentication) {
 
         ActiviteFiltreRequest filtre = new ActiviteFiltreRequest();
         filtre.setQ(q);
@@ -81,7 +77,7 @@ public class ActiviteController {
             filtre.setDateFin(java.time.LocalDateTime.parse(dateFin));
         }
 
-        return ResponseEntity.ok(activiteService.filtrer(filtre));
+        return ResponseEntity.ok(activiteService.filtrer(filtre, emailConnecte(authentication)));
     }
 
     // ─── PUBLIC : Options de filtres (catégories, thèmes, lieux) ─────────────
@@ -186,5 +182,13 @@ public class ActiviteController {
             @PathVariable Long id,
             Authentication authentication) {
         return ResponseEntity.ok(presenceService.cloturerPresences(id, authentication.getName()));
+    }
+
+    private String emailConnecte(Authentication authentication) {
+        return authentication != null
+                && authentication.isAuthenticated()
+                && !(authentication instanceof AnonymousAuthenticationToken)
+                ? authentication.getName()
+                : null;
     }
 }

@@ -234,6 +234,23 @@ class MessagerieSecurityTest {
         verify(filRepository, never()).save(any(FilDiscussion.class));
     }
 
+    @Test
+    @DisplayName("Un referent recupere le fil actif existant au lieu de creer un doublon")
+    void referent_ne_duplique_pas_fil_actif_groupe() {
+        when(userRepository.findByEmail(referentA.getEmail())).thenReturn(Optional.of(referentA));
+        when(groupeRepository.findById(10L)).thenReturn(Optional.of(groupeA));
+        when(filRepository.findFirstByGroupeIdAndActifTrueOrderByDateCreationDesc(10L))
+                .thenReturn(Optional.of(filA));
+
+        com.bxjeunes.bx_connect.dto.FilDiscussionRequest request =
+                new com.bxjeunes.bx_connect.dto.FilDiscussionRequest();
+        request.setTitre("Nouveau fil");
+        request.setGroupeId(10L);
+
+        assertThat(messagerieService.creerFil(request, referentA.getEmail()).getId()).isEqualTo(100L);
+        verify(filRepository, never()).save(any(FilDiscussion.class));
+    }
+
     private User user(Long id, String email, Role role) {
         User user = new User();
         user.setId(id);

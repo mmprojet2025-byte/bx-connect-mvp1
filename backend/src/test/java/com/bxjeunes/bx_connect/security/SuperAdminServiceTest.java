@@ -23,6 +23,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -127,6 +128,30 @@ class SuperAdminServiceTest {
         assertThat(admin.getMotDePasse()).isEqualTo("$2a$newhash");
         verify(auditLogService).log(superAdmin, "RESET_ADMIN_PASSWORD", "USER", admin,
                 "Reinitialisation du mot de passe d'un compte ADMIN.");
+    }
+
+    @Test
+    @DisplayName("Echec AuditLog ne bloque pas la creation d'un ADMIN")
+    void echec_audit_log_ne_bloque_pas_creation_admin() {
+        User superAdmin = user(1L, "root@test.be", Role.SUPER_ADMIN, true);
+        when(userRepository.findByEmail("root@test.be")).thenReturn(Optional.of(superAdmin));
+        when(userRepository.existsByEmail("admin@test.be")).thenReturn(false);
+        when(passwordEncoder.encode("Temp12345!")).thenReturn("$2a$hashed");
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+        doThrow(new RuntimeException("audit indisponible"))
+                .when(auditLogService)
+                .log(any(User.class), any(String.class), any(String.class), any(User.class), any(String.class));
+
+        CreateAdminRequest request = new CreateAdminRequest();
+        request.setPrenom("Ada");
+        request.setNom("Admin");
+        request.setEmail("admin@test.be");
+        request.setMotDePasseTemporaire("Temp12345!");
+
+        var response = superAdminService.creerAdmin(request, "root@test.be");
+
+        assertThat(response.getEmail()).isEqualTo("admin@test.be");
+        verify(userRepository).save(any(User.class));
     }
 
     private User user(Long id, String email, Role role, boolean actif) {

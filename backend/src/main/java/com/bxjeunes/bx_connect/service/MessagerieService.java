@@ -101,6 +101,10 @@ public class MessagerieService {
         }
 
         Groupe groupe = verifierAccesGroupeMessagerie(emailCreateur, request.getGroupeId());
+        var filExistant = filRepository.findFirstByGroupeIdAndActifTrueOrderByDateCreationDesc(groupe.getId());
+        if (filExistant.isPresent()) {
+            return FilDiscussionResponse.fromEntity(filExistant.get());
+        }
 
         FilDiscussion fil = new FilDiscussion();
         fil.setTitre(request.getTitre());

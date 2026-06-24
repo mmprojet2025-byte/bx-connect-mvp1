@@ -25,6 +25,8 @@ public interface InscriptionRepository extends JpaRepository<Inscription, Long> 
     // Vérifier si un membre est déjà inscrit à une activité
     Optional<Inscription> findByMembreIdAndActiviteId(Long membreId, Long activiteId);
 
+    List<Inscription> findByMembreIdAndActiviteIdOrderByDateInscriptionDesc(Long membreId, Long activiteId);
+
     // Compter les inscriptions confirmées/payées pour une activité (vérif capacité)
     long countByActiviteIdAndStatutIn(Long activiteId, List<StatutInscription> statuts);
 }

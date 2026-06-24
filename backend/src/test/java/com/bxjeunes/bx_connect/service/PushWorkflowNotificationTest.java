@@ -84,7 +84,7 @@ class PushWorkflowNotificationTest {
 
         when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
         when(activiteRepository.findById(8L)).thenReturn(Optional.of(activite));
-        when(inscriptionRepository.findByMembreIdAndActiviteId(2L, 8L)).thenReturn(Optional.empty());
+        when(inscriptionRepository.findByMembreIdAndActiviteIdOrderByDateInscriptionDesc(2L, 8L)).thenReturn(List.of());
         when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);
         when(inscriptionRepository.save(any(Inscription.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -117,7 +117,7 @@ class PushWorkflowNotificationTest {
 
         when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
         when(activiteRepository.findById(8L)).thenReturn(Optional.of(activite));
-        when(inscriptionRepository.findByMembreIdAndActiviteId(2L, 8L)).thenReturn(Optional.empty());
+        when(inscriptionRepository.findByMembreIdAndActiviteIdOrderByDateInscriptionDesc(2L, 8L)).thenReturn(List.of());
         when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);
         when(inscriptionRepository.save(any(Inscription.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));

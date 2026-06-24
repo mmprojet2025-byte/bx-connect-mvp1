@@ -24,7 +24,6 @@ export default function Navbar() {
   const navigate = useNavigate()
   const navRef = useRef(null)
   const [notifCount, setNotifCount] = useState(0)
-  const [mobileOpen, setMobileOpen] = useState(false)
   const [openDropdown, setOpenDropdown] = useState(null)
 
   useEffect(() => {
@@ -39,7 +38,6 @@ export default function Navbar() {
   }, [isAuthenticated])
 
   useEffect(() => {
-    setMobileOpen(false)
     setOpenDropdown(null)
   }, [location.pathname, location.search])
 
@@ -52,7 +50,6 @@ export default function Navbar() {
     const closeOnEscape = event => {
       if (event.key === 'Escape') {
         setOpenDropdown(null)
-        setMobileOpen(false)
       }
     }
 
@@ -64,11 +61,9 @@ export default function Navbar() {
     }
   }, [])
 
-  const navigation = getPublicNavigation(t)
   const notificationItem = isAuthenticated
     ? { to: '/notifications', label: t('nav.notifications'), icon: 'Bell' }
-    : navigation.communication.find(item => item.to === '/notifications')
-  const communicationItems = navigation.communication.filter(item => item.to !== '/notifications')
+    : null
   const homeRoute = isAuthenticated ? getDefaultRouteForRole(user?.role) : '/'
 
   const changeLanguage = code => {
@@ -78,9 +73,8 @@ export default function Navbar() {
 
   const handleLogout = () => {
     logout()
-    setMobileOpen(false)
     setOpenDropdown(null)
-    navigate('/')
+    navigate('/', { replace: true })
   }
 
   const toggleDropdown = name => {
@@ -100,54 +94,18 @@ export default function Navbar() {
             className="w-[150px] max-w-[42vw] shrink-0 object-contain sm:w-[190px]"
           />
           <span className="ml-2 hidden text-[10px] font-semibold tracking-wide text-orange-600 2xl:block">
-            Connecter • Inspirer • Impacter
+            {t('nav.tagline')}
           </span>
         </Link>
 
         <div className="hidden items-center justify-center gap-1 lg:flex">
-          {!isAuthenticated && (
-            <>
-              {navigation.space && (
-                <NavItem
-                  item={navigation.space}
-                  active={isLinkActive(navigation.space.to, location)}
-                />
-              )}
-
-              {navigation.management.length > 0 && (
-                <Dropdown
-                  name="management"
-                  label={t('nav.management')}
-                  icon="Folder"
-                  items={navigation.management}
-                  open={openDropdown === 'management'}
-                  active={navigation.management.some(item => isLinkActive(item.to, location))}
-                  onToggle={toggleDropdown}
-                  location={location}
-                />
-              )}
-
-              {communicationItems.length > 0 && (
-                <Dropdown
-                  name="communication"
-                  label={t('nav.communication')}
-                  icon="MessageCircle"
-                  items={communicationItems}
-                  open={openDropdown === 'communication'}
-                  active={communicationItems.some(item => isLinkActive(item.to, location))}
-                  onToggle={toggleDropdown}
-                  location={location}
-                />
-              )}
-            </>
-          )}
           {isAuthenticated && (
             <GlobalSearch navigate={navigate} />
           )}
         </div>
 
         <div className="flex items-center justify-end gap-1">
-          <div className={`${isAuthenticated ? 'flex' : 'hidden lg:flex'} items-center gap-1`}>
+          <div className="flex items-center gap-1">
             {notificationItem && (
               <NotificationLink
                 item={notificationItem}
@@ -163,6 +121,14 @@ export default function Navbar() {
               onLanguageChange={changeLanguage}
               t={t}
             />
+            {!isAuthenticated && (
+              <Link
+                to="/register"
+                className="hidden h-9 items-center rounded-lg bg-blue-700 px-3 text-sm font-semibold text-white transition hover:bg-blue-800 sm:inline-flex"
+              >
+                {t('nav.register')}
+              </Link>
+            )}
             <AccountDropdown
               open={openDropdown === 'account'}
               active={location.pathname === '/profil'}
@@ -175,125 +141,9 @@ export default function Navbar() {
             />
           </div>
 
-          {!isAuthenticated && (
-            <button
-              type="button"
-              onClick={() => setMobileOpen(open => !open)}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 lg:hidden"
-              aria-expanded={mobileOpen}
-              aria-controls="mobile-navigation"
-              aria-label={t('nav.openMenu')}
-            >
-              {mobileOpen ? t('nav.close') : t('nav.menu')}
-            </button>
-          )}
         </div>
       </div>
-
-      {mobileOpen && !isAuthenticated && (
-        <div id="mobile-navigation" className="mx-auto max-w-7xl border-t border-slate-100 py-3 lg:hidden">
-          <div className="grid gap-2">
-            {navigation.space && (
-              <MobileSection title={t('nav.space')}>
-                <NavItem
-                  item={navigation.space}
-                  active={isLinkActive(navigation.space.to, location)}
-                  mobile
-                />
-              </MobileSection>
-            )}
-
-            {navigation.management.length > 0 && (
-              <MobileSection title={t('nav.management')}>
-                {navigation.management.map(item => (
-                  <NavItem
-                    key={item.to}
-                    item={item}
-                    active={isLinkActive(item.to, location)}
-                    mobile
-                  />
-                ))}
-              </MobileSection>
-            )}
-
-            {navigation.communication.length > 0 && (
-              <MobileSection title={t('nav.communication')}>
-                {navigation.communication.map(item => (
-                  <NavItem
-                    key={item.to}
-                    item={item}
-                    active={isLinkActive(item.to, location)}
-                    mobile
-                    badge={item.to === '/notifications' ? notifCount : 0}
-                  />
-                ))}
-              </MobileSection>
-            )}
-
-            <MobileAccount
-              isAuthenticated={isAuthenticated}
-              user={user}
-              i18n={i18n}
-              onLanguageChange={changeLanguage}
-              onLogout={handleLogout}
-              t={t}
-              profileActive={location.pathname === '/profil'}
-            />
-          </div>
-        </div>
-      )}
     </nav>
-  )
-}
-
-function getPublicNavigation(t) {
-  return {
-    space: { to: '/', label: t('nav.home'), icon: 'Home' },
-    management: [
-      { to: '/activites', label: t('nav.activities'), icon: 'Calendar' },
-      { to: '/groupes', label: t('nav.groups'), icon: 'Users' },
-      { to: '/projets', label: t('nav.projects'), icon: 'Rocket' },
-      { to: '/a-propos', label: t('nav.about'), icon: 'Building' },
-    ],
-    communication: [],
-  }
-}
-
-function Dropdown({ name, label, icon, items, open, active, onToggle, location }) {
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => onToggle(name)}
-        className={`relative flex items-center gap-1.5 px-3 py-5 text-sm font-semibold transition ${
-          active || open
-            ? 'text-blue-700 after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-blue-600'
-            : 'text-slate-600 hover:text-slate-950'
-        }`}
-        aria-expanded={open}
-        aria-haspopup="menu"
-      >
-        <AppIcon name={icon} className="h-3.5 w-3.5" />
-        <span>{label}</span>
-        <ChevronIcon open={open} />
-      </button>
-
-      {open && (
-        <div
-          role="menu"
-          className="absolute left-0 top-full mt-1 w-56 rounded-lg border border-slate-200 bg-white p-1.5 shadow-lg shadow-slate-900/8"
-        >
-          {items.map(item => (
-            <NavItem
-              key={item.to}
-              item={item}
-              active={isLinkActive(item.to, location)}
-              dropdown
-            />
-          ))}
-        </div>
-      )}
-    </div>
   )
 }
 
@@ -403,71 +253,6 @@ function AccountDropdown({ open, active, notificationsActive, onToggle, isAuthen
         </div>
       )}
     </div>
-  )
-}
-
-function MobileAccount({ isAuthenticated, user, i18n, onLanguageChange, onLogout, t, profileActive }) {
-  return (
-    <MobileSection title={t('nav.account')}>
-      {isAuthenticated && (
-        <div className="mb-1 rounded-xl bg-slate-50 px-3 py-2">
-          <p className="text-sm font-black text-slate-950">{user?.prenom} {user?.nom}</p>
-          <p className="truncate text-xs text-slate-500">{user?.email}</p>
-        </div>
-      )}
-      <LanguageMenu i18n={i18n} onChange={onLanguageChange} t={t} mobile />
-      {isAuthenticated ? (
-        <>
-          <NavItem item={{ to: '/profil', label: t('nav.profile'), icon: 'User' }} active={profileActive} mobile />
-          <button
-            type="button"
-            onClick={onLogout}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-red-700 transition hover:bg-red-50"
-          >
-            <AppIcon name="LogOut" className="h-4 w-4" />
-            {t('nav.logout')}
-          </button>
-        </>
-      ) : (
-        <>
-          <NavItem item={{ to: '/login', label: t('nav.login'), icon: 'User' }} mobile />
-          <NavItem item={{ to: '/register', label: t('nav.register'), icon: 'PlusCircle' }} mobile />
-        </>
-      )}
-    </MobileSection>
-  )
-}
-
-function LanguageMenu({ i18n, onChange, t, mobile = false }) {
-  return (
-    <div className={`${mobile ? 'px-3 py-2' : 'border-b border-slate-100 px-3 py-3'}`}>
-      <p className="mb-2 text-[11px] font-black uppercase tracking-wide text-slate-400">{t('nav.language')}</p>
-      <div className="flex gap-1 rounded-xl bg-slate-50 p-1">
-        {LANGUAGES.map(language => (
-          <button
-            key={language.code}
-            type="button"
-            onClick={() => onChange(language.code)}
-            className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-bold transition ${
-              i18n.language === language.code
-                ? 'bg-white text-blue-700 shadow-sm'
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            {language.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function MobileSection({ title, children }) {
-  return (
-    <section className="rounded-xl border border-slate-100 bg-white p-1.5">
-      <h2 className="px-2.5 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">{title}</h2>
-      <div className="grid gap-1">{children}</div>
-    </section>
   )
 }
 

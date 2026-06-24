@@ -81,7 +81,7 @@ export default function Messagerie() {
       })
       setNouveauMessage('')
       await fetchMessages(fil.id)
-      toast.success(t('messaging.messageSent', { defaultValue: 'Message envoyé.' }))
+      toast.success(t('messaging.messageSent'))
     } catch (err) {
       setError(getAccessError(err, t))
       toast.error(getAccessError(err, t))
@@ -124,7 +124,7 @@ export default function Messagerie() {
               <div className="border-b border-slate-100 px-4 py-3">
                 <h2 className="flex items-center gap-2 text-sm font-black text-slate-950">
                   <AppIcon name="MessageCircle" className="h-4 w-4 text-blue-700" />
-                  Conversations
+                  {t('messaging.conversations')}
                 </h2>
               </div>
               <div className="p-3">
@@ -188,7 +188,7 @@ export default function Messagerie() {
 }
 
 function MessageBubble({ message, currentUser, language }) {
-  const estMoi = message.auteurPrenom === currentUser?.prenom && message.auteurNom === currentUser?.nom
+  const estMoi = message.auteurId != null && currentUser?.id != null && Number(message.auteurId) === Number(currentUser.id)
   return (
     <div className={`flex items-end gap-2 ${estMoi ? 'flex-row-reverse' : 'flex-row'}`}>
       <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl text-xs font-bold shadow-sm ${estMoi ? 'bg-indigo-100 text-indigo-900' : 'bg-white text-slate-950 ring-1 ring-slate-100'}`}>

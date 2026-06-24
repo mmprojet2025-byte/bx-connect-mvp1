@@ -542,7 +542,7 @@ public class ProjetService {
                     "Projet soumis",
                     "Le projet \"" + projet.getTitre() + "\" attend une validation.",
                     "PROJET",
-                    "/projets/" + projet.getId());
+                    "/admin/projets");
         }
     }
 

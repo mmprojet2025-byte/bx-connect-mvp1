@@ -70,13 +70,24 @@ export default function Notifications() {
   };
 
   const typeIcon = (type) => {
-    switch (type) {
+    const normalizedType = String(type || '').toUpperCase();
+    if (normalizedType.startsWith('PRESTATION_')) return normalizedType.includes('REFUSE') ? 'XCircle' : 'ClipboardList';
+    if (normalizedType.includes('SOUTIEN') || normalizedType.includes('SUPPORT')) return 'Handshake';
+    if (normalizedType.includes('OPPORTUNITE') || normalizedType.includes('OPPORTUNITY')) return 'Megaphone';
+    if (normalizedType.includes('PRESENCE') || normalizedType.includes('ATTENDANCE')) return 'ClipboardList';
+
+    switch (normalizedType) {
       case 'VALIDATION_GROUPE':  return 'CheckCircle';
       case 'REFUS_GROUPE':       return 'XCircle';
       case 'VALIDATION_PROJET':  return 'Rocket';
       case 'REFUS_PROJET':       return 'XCircle';
+      case 'VALIDATION_REFERENT_PROJET': return 'CheckCircle';
+      case 'REFUS_REFERENT_PROJET': return 'XCircle';
       case 'PAIEMENT':           return 'Wallet';
-      case 'ANNONCE':            return 'Bell';
+      case 'ANNONCE':            return 'Megaphone';
+      case 'MESSAGE':            return 'MessageCircle';
+      case 'ACTIVITE_PUBLIEE':   return 'Calendar';
+      case 'INSCRIPTION_CONFIRMEE': return 'Calendar';
       case 'ADHESION':           return 'Users';
       case 'ADHESION_ACCEPTEE':  return 'CheckCircle';
       case 'ADHESION_REFUSEE':   return 'XCircle';
@@ -87,7 +98,25 @@ export default function Notifications() {
   };
 
   const nonLues = notifications.filter(n => !n.lue).length;
-  const importantes = notifications.filter(n => !n.lue && ['VALIDATION_GROUPE', 'VALIDATION_PROJET', 'ADHESION', 'PAIEMENT'].includes(n.type)).length;
+  const isImportantNotification = (type) => {
+    const normalizedType = String(type || '').toUpperCase();
+    return [
+      'VALIDATION_GROUPE',
+      'VALIDATION_PROJET',
+      'VALIDATION_REFERENT_PROJET',
+      'REFUS_REFERENT_PROJET',
+      'ADHESION',
+      'PAIEMENT',
+      'MESSAGE',
+      'ACTIVITE_PUBLIEE',
+    ].includes(normalizedType)
+      || normalizedType.startsWith('PRESTATION_')
+      || normalizedType.includes('SOUTIEN')
+      || normalizedType.includes('SUPPORT')
+      || normalizedType.includes('OPPORTUNITE')
+      || normalizedType.includes('OPPORTUNITY');
+  };
+  const importantes = notifications.filter(n => !n.lue && isImportantNotification(n.type)).length;
   const lues = notifications.length - nonLues;
 
   return (

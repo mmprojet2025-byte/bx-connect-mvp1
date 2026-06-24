@@ -96,14 +96,19 @@ function exactRouteFromAction(actionPath, role) {
   if (!actionPath) return ''
 
   const routes = ROLE_ROUTES[role] || ROLE_ROUTES.MEMBRE
+  const isAdmin = role === 'ADMIN'
+  const isReferent = role === 'REFERENT'
 
   if (/\/activites\/\d+/.test(actionPath)) {
+    if (isAdmin || isReferent) return routes.activity || routes.dashboard
     return actionPath.match(/\/activites\/\d+/)?.[0] || ''
   }
   if (/\/projets\/\d+/.test(actionPath)) {
+    if (isAdmin || isReferent) return routes.project || routes.dashboard
     return actionPath.match(/\/projets\/\d+/)?.[0] || ''
   }
   if (/\/groupes\/\d+/.test(actionPath)) {
+    if (isAdmin || isReferent) return routes.group || routes.dashboard
     return actionPath.match(/\/groupes\/\d+/)?.[0] || ''
   }
   if (actionPath.includes('/messagerie') || actionPath.includes('/messages')) return routes.message || routes.dashboard

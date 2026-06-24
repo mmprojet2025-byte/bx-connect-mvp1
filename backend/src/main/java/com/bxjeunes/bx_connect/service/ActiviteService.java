@@ -4,6 +4,7 @@ import com.bxjeunes.bx_connect.dto.ActiviteFiltreRequest;
 import com.bxjeunes.bx_connect.dto.ActiviteRequest;
 import com.bxjeunes.bx_connect.dto.ActiviteResponse;
 import com.bxjeunes.bx_connect.entity.Activite;
+import com.bxjeunes.bx_connect.entity.Inscription;
 import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.StatutActivite;
 import com.bxjeunes.bx_connect.entity.StatutInscription;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -76,10 +78,10 @@ public class ActiviteService {
     }
 
     // ─── Lister activités publiées (public) ───────────────────────────────────
-    public List<ActiviteResponse> listerPubliees() {
+    public List<ActiviteResponse> listerPubliees(String emailUtilisateur) {
         return activiteRepository.findByStatut(StatutActivite.PUBLIEE)
                 .stream()
-                .map(this::toResponse)
+                .map(activite -> toResponse(activite, emailUtilisateur))
                 .collect(Collectors.toList());
     }
 
@@ -100,20 +102,20 @@ public class ActiviteService {
             if (activite.getStatut() != StatutActivite.PUBLIEE) {
                 throw new RuntimeException("Activité introuvable : " + id);
             }
-            return toResponse(activite);
+            return toResponse(activite, null);
         }
 
         User utilisateur = userRepository.findByEmail(emailUtilisateur)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + emailUtilisateur));
 
         if (utilisateur.getRole() == Role.ADMIN) {
-            return toResponse(activite);
+            return toResponse(activite, emailUtilisateur);
         }
 
         if (utilisateur.getRole() == Role.REFERENT) {
             if (activite.getCreateur() != null &&
                     activite.getCreateur().getId().equals(utilisateur.getId())) {
-                return toResponse(activite);
+                return toResponse(activite, emailUtilisateur);
             }
             throw new AccessDeniedException("Vous ne pouvez consulter que vos propres activites.");
         }
@@ -121,20 +123,20 @@ public class ActiviteService {
         if (activite.getStatut() != StatutActivite.PUBLIEE) {
             throw new RuntimeException("Activité introuvable : " + id);
         }
-        return toResponse(activite);
+        return toResponse(activite, emailUtilisateur);
     }
 
     // ─── Recherche par mot-clé (V06 / M16) ───────────────────────────────────
-    public List<ActiviteResponse> rechercher(String motCle) {
+    public List<ActiviteResponse> rechercher(String motCle, String emailUtilisateur) {
         return activiteRepository
                 .rechercherMultiChamps(StatutActivite.PUBLIEE, motCle)
                 .stream()
-                .map(this::toResponse)
+                .map(activite -> toResponse(activite, emailUtilisateur))
                 .collect(Collectors.toList());
     }
 
     // ─── Filtres avancés (V03) ────────────────────────────────────────────────
-    public List<ActiviteResponse> filtrer(ActiviteFiltreRequest filtre) {
+    public List<ActiviteResponse> filtrer(ActiviteFiltreRequest filtre, String emailUtilisateur) {
         List<Activite> resultats;
 
         // Recherche mot-clé multi-champs
@@ -189,7 +191,7 @@ public class ActiviteService {
         }
 
         return resultats.stream()
-                .map(this::toResponse)
+                .map(activite -> toResponse(activite, emailUtilisateur))
                 .collect(Collectors.toList());
     }
 
@@ -370,5 +372,76 @@ public class ActiviteService {
                 List.of(StatutInscription.CONFIRMEE, StatutInscription.PAYEE)
         );
         return ActiviteResponse.fromEntity(activite, nombreInscrits);
+    }
+
+    private ActiviteResponse toResponse(Activite activite, String emailUtilisateur) {
+        ActiviteResponse response = toResponse(activite);
+        enrichirEtatInscription(response, activite, emailUtilisateur);
+        return response;
+    }
+
+    private void enrichirEtatInscription(ActiviteResponse response, Activite activite, String emailUtilisateur) {
+        User utilisateur = null;
+        if (emailUtilisateur != null) {
+            utilisateur = userRepository.findByEmail(emailUtilisateur).orElse(null);
+        }
+
+        Inscription inscriptionActive = null;
+        if (utilisateur != null && utilisateur.getRole() == Role.MEMBRE) {
+            inscriptionActive = inscriptionRepository
+                    .findByMembreIdAndActiviteIdOrderByDateInscriptionDesc(utilisateur.getId(), activite.getId())
+                    .stream()
+                    .filter(inscription -> inscription.getStatut() != StatutInscription.ANNULEE)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        if (inscriptionActive != null) {
+            response.setInscrit(true);
+            response.setInscriptionId(inscriptionActive.getId());
+            response.setStatutInscription(inscriptionActive.getStatut());
+            response.setPeutSInscrire(false);
+            response.setRaisonIndisponible("DEJA_INSCRIT");
+            return;
+        }
+
+        String raison = raisonInscriptionIndisponible(activite, utilisateur);
+        response.setInscrit(false);
+        response.setPeutSInscrire(raison == null);
+        response.setRaisonIndisponible(raison);
+    }
+
+    private String raisonInscriptionIndisponible(Activite activite, User utilisateur) {
+        if (utilisateur != null && utilisateur.getRole() != Role.MEMBRE) {
+            return "ROLE_NON_MEMBRE";
+        }
+        if (activite.getStatut() == StatutActivite.ANNULEE) {
+            return "ANNULEE";
+        }
+        if (activite.getStatut() == StatutActivite.TERMINEE) {
+            return "TERMINEE";
+        }
+        if (activite.getStatut() != StatutActivite.PUBLIEE) {
+            return "NON_PUBLIEE";
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (activite.getDateFin() != null && activite.getDateFin().isBefore(now)) {
+            return "PASSEE";
+        }
+        if (activite.getDateFin() == null && activite.getDateDebut() != null && activite.getDateDebut().isBefore(now)) {
+            return "PASSEE";
+        }
+        if (activite.getCapaciteMax() > 0 && responseComplete(activite)) {
+            return "COMPLETE";
+        }
+        return null;
+    }
+
+    private boolean responseComplete(Activite activite) {
+        long nbInscrits = inscriptionRepository.countByActiviteIdAndStatutIn(
+                activite.getId(),
+                List.of(StatutInscription.CONFIRMEE, StatutInscription.PAYEE)
+        );
+        return nbInscrits >= activite.getCapaciteMax();
     }
 }

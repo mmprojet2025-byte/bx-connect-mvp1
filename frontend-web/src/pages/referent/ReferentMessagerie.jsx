@@ -88,7 +88,7 @@ export default function ReferentMessagerie() {
     setError('')
     try {
       const res = await api.post('/messagerie/fils', {
-        titre: `Discussion - ${groupeActif.nom}`,
+        titre: t('messaging.discussionForGroup', { group: groupeActif.nom }),
         description: t('messaging.groupDescription', { group: groupeActif.nom }),
         type: 'GENERAL',
         groupeId: groupeActif.id,
@@ -114,7 +114,7 @@ export default function ReferentMessagerie() {
       })
       setNouveauMessage('')
       await fetchMessages(filActif.id)
-      toast.success(t('messaging.messageSent', { defaultValue: 'Message envoyé.' }))
+      toast.success(t('messaging.messageSent'))
     } catch (err) {
       setError(getAccessError(err, t))
       toast.error(getAccessError(err, t))
@@ -242,7 +242,7 @@ export default function ReferentMessagerie() {
 }
 
 function MessageBubble({ message, currentUser, language }) {
-  const estMoi = message.auteurPrenom === currentUser?.prenom && message.auteurNom === currentUser?.nom
+  const estMoi = message.auteurId != null && currentUser?.id != null && Number(message.auteurId) === Number(currentUser.id)
   return (
     <div className={`flex items-end gap-2 ${estMoi ? 'flex-row-reverse' : 'flex-row'}`}>
       <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl text-xs font-bold shadow-sm ${estMoi ? 'bg-teal-100 text-teal-900' : 'bg-white text-teal-900 ring-1 ring-slate-100'}`}>

@@ -11,15 +11,28 @@ import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.repository.AuditLogRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class SuperAdminService {
+
+    private static final Logger log = LoggerFactory.getLogger(SuperAdminService.class);
+    private static final Set<String> ACTIONS_CRITIQUES = Set.of(
+            "CREATE_ADMIN",
+            "DISABLE_ADMIN",
+            "ENABLE_ADMIN",
+            "RESET_ADMIN_PASSWORD",
+            "DELETE_USER",
+            "CHANGE_USER_ROLE",
+            "UPDATE_USER_ROLE");
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -30,10 +43,11 @@ public class SuperAdminService {
         long adminsActifs = userRepository.countByRoleAndActifTrue(Role.ADMIN);
         long totalAdmins = userRepository.countByRole(Role.ADMIN);
         long adminsInactifs = totalAdmins - adminsActifs;
+        long totalActionsCritiques = auditLogRepository.countByActionIn(ACTIONS_CRITIQUES);
         return new SuperAdminDashboardResponse(
                 adminsActifs,
                 adminsInactifs,
-                auditLogRepository.count(),
+                totalActionsCritiques,
                 auditLogService.derniersLogs());
     }
 
@@ -68,7 +82,7 @@ public class SuperAdminService {
                 .build();
 
         User saved = userRepository.save(admin);
-        auditLogService.log(acteur, "CREATE_ADMIN", "USER", saved, "Creation d'un compte ADMIN.");
+        auditerSuperAdmin(acteur, "CREATE_ADMIN", saved, "Creation d'un compte ADMIN.");
         return AdminResponse.fromEntity(saved);
     }
 
@@ -86,7 +100,7 @@ public class SuperAdminService {
 
         admin.setActif(false);
         User saved = userRepository.save(admin);
-        auditLogService.log(acteur, "DISABLE_ADMIN", "USER", saved, "Desactivation d'un compte ADMIN.");
+        auditerSuperAdmin(acteur, "DISABLE_ADMIN", saved, "Desactivation d'un compte ADMIN.");
         return AdminResponse.fromEntity(saved);
     }
 
@@ -100,7 +114,7 @@ public class SuperAdminService {
 
         admin.setActif(true);
         User saved = userRepository.save(admin);
-        auditLogService.log(acteur, "ENABLE_ADMIN", "USER", saved, "Reactivation d'un compte ADMIN.");
+        auditerSuperAdmin(acteur, "ENABLE_ADMIN", saved, "Reactivation d'un compte ADMIN.");
         return AdminResponse.fromEntity(saved);
     }
 
@@ -113,9 +127,20 @@ public class SuperAdminService {
 
         admin.setMotDePasse(passwordEncoder.encode(request.getNouveauMotDePasseTemporaire()));
         User saved = userRepository.save(admin);
-        auditLogService.log(acteur, "RESET_ADMIN_PASSWORD", "USER", saved,
+        auditerSuperAdmin(acteur, "RESET_ADMIN_PASSWORD", saved,
                 "Reinitialisation du mot de passe d'un compte ADMIN.");
         return AdminResponse.fromEntity(saved);
+    }
+
+    private void auditerSuperAdmin(User acteur, String action, User cible, String details) {
+        try {
+            auditLogService.log(acteur, action, "USER", cible, details);
+        } catch (RuntimeException ex) {
+            log.warn("AuditLog non bloquant impossible pour l'action SUPER_ADMIN {} sur l'utilisateur {}: {}",
+                    action,
+                    cible != null ? cible.getId() : null,
+                    ex.getMessage());
+        }
     }
 
     private User getSuperAdmin(String email) {

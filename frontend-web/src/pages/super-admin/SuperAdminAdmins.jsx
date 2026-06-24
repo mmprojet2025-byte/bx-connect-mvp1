@@ -85,6 +85,7 @@ export default function SuperAdminAdmins() {
   const resetPassword = async (e) => {
     e.preventDefault()
     if (!resetTarget) return
+    if (!confirmSensitiveAction(t('superAdmin.confirmResetPassword', { email: resetTarget.email }))) return
     clearFeedback()
     try {
       await api.patch(`/super-admin/admins/${resetTarget.id}/reset-password`, {
@@ -183,6 +184,8 @@ export default function SuperAdminAdmins() {
                   {admin.actif ? (
                     <button
                       onClick={() => disableAdmin(admin)}
+                      disabled={stats.actifs <= 1}
+                      title={stats.actifs <= 1 ? t('superAdmin.lastAdminActiveHint') : undefined}
                       className="inline-flex items-center gap-1.5 rounded-xl bg-yellow-100 px-3 py-2 text-xs font-medium text-yellow-700 transition hover:bg-yellow-200"
                     >
                       <AppIcon name="Clock" className="h-3.5 w-3.5" />
@@ -239,6 +242,8 @@ export default function SuperAdminAdmins() {
                         {admin.actif ? (
                           <button
                             onClick={() => disableAdmin(admin)}
+                            disabled={stats.actifs <= 1}
+                            title={stats.actifs <= 1 ? t('superAdmin.lastAdminActiveHint') : undefined}
                             className="inline-flex items-center gap-1.5 rounded-lg bg-yellow-100 px-3 py-1.5 text-xs font-medium text-yellow-700 transition hover:bg-yellow-200"
                           >
                             <AppIcon name="Clock" className="h-3.5 w-3.5" />

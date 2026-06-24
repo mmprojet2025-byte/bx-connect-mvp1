@@ -7,17 +7,25 @@ import SectionCard from '../../components/ui/SectionCard'
 import ErrorState from '../../components/ui/ErrorState'
 import LoadingState from '../../components/ui/LoadingState'
 
-const ACTION_LABELS = {
-  PROJECT_APPROVED: 'Projet validé',
-  GROUP_ADHESION_ACCEPTED: 'Adhésion acceptée',
-  SUPPORT_APPROVED: 'Soutien validé',
-  OPPORTUNITY_PUBLISHED: 'Opportunité publiée',
-  PROJECT_REJECTED: 'Projet refusé',
-  GROUP_VALIDATED: 'Groupe validé',
-  GROUP_REJECTED: 'Groupe refusé',
-  SUPPORT_REJECTED: 'Soutien refusé',
-  OPPORTUNITY_REJECTED: 'Opportunité refusée',
-  ACTIVITY_PUBLISHED: 'Activité publiée',
+const ACTION_LABEL_KEYS = {
+  CREATE_ADMIN: 'createAdmin',
+  DISABLE_ADMIN: 'disableAdmin',
+  ENABLE_ADMIN: 'enableAdmin',
+  RESET_ADMIN_PASSWORD: 'resetAdminPassword',
+  PROJECT_APPROVED: 'projectApproved',
+  PROJECT_REJECTED: 'projectRejected',
+  PROJECT_REFERENT_APPROVED: 'projectReferentApproved',
+  PROJECT_REFERENT_REJECTED: 'projectReferentRejected',
+  GROUP_ADHESION_ACCEPTED: 'groupAdhesionAccepted',
+  GROUP_VALIDATED: 'groupValidated',
+  GROUP_REJECTED: 'groupRejected',
+  SUPPORT_APPROVED: 'supportApproved',
+  SUPPORT_REJECTED: 'supportRejected',
+  OPPORTUNITY_PUBLISHED: 'opportunityPublished',
+  OPPORTUNITY_REJECTED: 'opportunityRejected',
+  ACTIVITY_PUBLISHED: 'activityPublished',
+  ACTIVITY_ATTENDANCE_UPDATED: 'attendanceUpdated',
+  ACTIVITY_ATTENDANCE_VALIDATED: 'attendanceValidated',
 }
 
 export default function SuperAdminLogs() {
@@ -92,7 +100,7 @@ export default function SuperAdminLogs() {
             label={t('audit.action')}
             value={filters.action}
             options={filterOptions.actions}
-            formatOption={formatAction}
+            formatOption={option => formatAction(option, t)}
             onChange={value => setFilters(current => ({ ...current, action: value }))}
             t={t}
           />
@@ -117,7 +125,7 @@ export default function SuperAdminLogs() {
               className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
             >
               <AppIcon name="X" className="h-4 w-4" />
-              Réinitialiser
+              {t('common.reset')}
             </button>
           </div>
         </div>
@@ -136,7 +144,7 @@ export default function SuperAdminLogs() {
             {logs.length === 0 ? (
               <ModernEmpty icon="ClipboardList" title={t('audit.noCriticalLog')} />
             ) : logs.map(log => (
-              <LogMobileCard key={log.id} log={log} language={i18n.language} />
+              <LogMobileCard key={log.id} log={log} language={i18n.language} t={t} />
             ))}
           </div>
 
@@ -172,7 +180,7 @@ export default function SuperAdminLogs() {
                         <RoleBadge role={log.acteurRole} />
                       </td>
                       <td className="px-4 py-3">
-                        <ActionBadge action={log.action} />
+                        <ActionBadge action={log.action} t={t} />
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600">
                         <div className="font-medium text-slate-800">{formatTarget(log)}</div>
@@ -181,7 +189,7 @@ export default function SuperAdminLogs() {
                       <td className="px-4 py-3"><StatusBadge value={log.ancienStatut} /></td>
                       <td className="px-4 py-3"><StatusBadge value={log.nouveauStatut} strong /></td>
                       <td className="px-4 py-3">
-                        <LogDetails log={log} />
+                        <LogDetails log={log} t={t} />
                       </td>
                     </tr>
                   ))}
@@ -221,11 +229,11 @@ function FilterSelect({ label, value, options, onChange, formatOption = value =>
   )
 }
 
-function LogMobileCard({ log, language }) {
+function LogMobileCard({ log, language, t }) {
   return (
     <article className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
       <div className="mb-3 flex items-start justify-between gap-3">
-        <ActionBadge action={log.action} />
+        <ActionBadge action={log.action} t={t} />
         <span className="text-xs text-gray-400">{formatDate(log.dateAction, language)}</span>
       </div>
       <p className="text-sm font-semibold text-slate-900">{log.acteurEmail || '-'}</p>
@@ -235,16 +243,16 @@ function LogMobileCard({ log, language }) {
         <StatusBadge value={log.nouveauStatut} strong />
       </div>
       <p className="mt-3 text-sm text-slate-600">{formatTarget(log)}</p>
-      <LogDetails log={log} compact />
+      <LogDetails log={log} compact t={t} />
     </article>
   )
 }
 
-function ActionBadge({ action }) {
+function ActionBadge({ action, t }) {
   return (
     <span className="inline-flex max-w-[240px] items-center gap-1.5 rounded-lg bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800">
       <AppIcon name="Shield" className="h-3.5 w-3.5 shrink-0" />
-      <span className="truncate">{formatAction(action)}</span>
+      <span className="truncate">{formatAction(action, t)}</span>
     </span>
   )
 }
@@ -268,7 +276,7 @@ function StatusBadge({ value, strong = false }) {
   )
 }
 
-function LogDetails({ log, compact = false }) {
+function LogDetails({ log, compact = false, t }) {
   const metadata = parseMetadata(log.metadataJson)
   const entries = Object.entries(metadata)
 
@@ -279,7 +287,7 @@ function LogDetails({ log, compact = false }) {
   return (
     <details className={compact ? 'mt-3' : ''}>
       <summary className="cursor-pointer text-xs font-semibold text-blue-700 hover:text-blue-900">
-        Voir les détails
+        {t('audit.viewDetails')}
       </summary>
       <div className="mt-2 rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs text-slate-600">
         {log.details && <p className="mb-2">{log.details}</p>}
@@ -324,8 +332,9 @@ function ModernEmpty({ icon, title }) {
   )
 }
 
-function formatAction(action) {
-  return ACTION_LABELS[action] || humanize(action)
+function formatAction(action, t) {
+  const key = ACTION_LABEL_KEYS[action]
+  return key ? t(`audit.actions.${key}`) : t('audit.unknownAction', { action: humanize(action) })
 }
 
 function formatTarget(log) {

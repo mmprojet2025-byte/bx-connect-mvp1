@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -19,6 +20,8 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
     List<AuditLog> findByCibleTypeOrderByDateActionDesc(String cibleType);
 
     List<AuditLog> findByActeurRoleOrderByDateActionDesc(String acteurRole);
+
+    long countByActionIn(Collection<String> actions);
 
     List<AuditLog> findByDateActionBetweenOrderByDateActionDesc(
             LocalDateTime dateDebut,

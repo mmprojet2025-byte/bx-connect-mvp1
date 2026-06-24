@@ -20,7 +20,7 @@ import ErrorState from '../../components/ui/ErrorState'
 import AppIcon from '../../components/ui/AppIcons'
 
 const MEMBER_VISIBILITIES = ['GROUPE', 'COMMUNAUTE']
-const PROJECT_STATUSES = ['BROUILLON', 'SOUMIS', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE']
+const PROJECT_STATUSES = ['BROUILLON', 'SOUMIS', 'VALIDE_REFERENT', 'REFUSE_REFERENT', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE', 'REFUSE', 'ARCHIVE']
 const PROJECT_VISIBILITIES = ['GROUPE', 'COMMUNAUTE', 'PARTENAIRES', 'PUBLIC']
 
 export default function Projets() {
@@ -114,7 +114,7 @@ export default function Projets() {
       .sort((a, b) => new Date(b.dateSoumission || b.dateCreation || 0) - new Date(a.dateSoumission || a.dateCreation || 0))
       .slice(0, 3)
   }, [projets])
-  const projetsEnAction = (projetsParStatut.SOUMIS || 0) + (projetsParStatut.APPROUVE || 0) + (projetsParStatut.EN_COURS || 0)
+  const projetsEnAction = (projetsParStatut.SOUMIS || 0) + (projetsParStatut.VALIDE_REFERENT || 0) + (projetsParStatut.APPROUVE || 0) + (projetsParStatut.EN_COURS || 0)
   const projetsFiltres = useMemo(() => {
     return projets.filter(projet => {
       if (focusedProjectId && String(projet.id) !== String(focusedProjectId)) return false
@@ -162,28 +162,6 @@ export default function Projets() {
       const feedback = userFriendlyError(err, t('projects.error_submit'))
       setError(feedback)
       toast.error(feedback)
-    }
-  }
-
-  const handleStatusChange = async (projet, statut) => {
-    setActionLoading(`${projet.id}-${statut}`)
-    setError('')
-    setMessage('')
-    try {
-      const response = await api.patch(`/projets/${projet.id}/statut?statut=${statut}`)
-      setProjets(current => current.map(item => item.id === projet.id ? response.data : item))
-      const feedback = t('admin.statusUpdatedWithValue', {
-        status: t(`statuses.${statut}`, { defaultValue: statut }),
-        defaultValue: `Statut mis à jour : ${statut}`,
-      })
-      setMessage(feedback)
-      toast.success(feedback)
-    } catch (err) {
-      const feedback = userFriendlyError(err, t('admin.errorStatusChange', { defaultValue: 'Erreur lors du changement de statut.' }))
-      setError(feedback)
-      toast.error(feedback)
-    } finally {
-      setActionLoading(null)
     }
   }
 
@@ -258,6 +236,8 @@ export default function Projets() {
     setFiltreGroupe('')
     setFiltreVisibilite('')
   }
+
+  const focusedProjectMissing = focusedProjectId && !loading && !error && !projets.some(projet => String(projet.id) === String(focusedProjectId))
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -420,6 +400,14 @@ export default function Projets() {
             actionLabel={t('common.retry')}
             action={fetchProjets}
           />
+        ) : focusedProjectMissing ? (
+          <EmptyState
+            icon="Search"
+            title={t('projects.projectNotFoundTitle')}
+            description={t('projects.projectNotFoundDesc')}
+            actionLabel={t('common.showAll', { defaultValue: 'Voir tous' })}
+            actionTo="/projets"
+          />
         ) : projets.length === 0 ? (
           <EmptyState
             icon="Rocket"
@@ -444,7 +432,6 @@ export default function Projets() {
                 projet={projet}
                 isAuthenticated={isAuthenticated}
                 isMembre={isMembre}
-                isAdmin={isAdmin}
                 isPartenaire={isPartenaire}
                 expanded={expandedProjectId === projet.id}
                 actionLoading={actionLoading}
@@ -457,8 +444,6 @@ export default function Projets() {
                 onJoin={() => handleJoinProject(projet)}
                 onCommentChange={(value) => setCommentDrafts(current => ({ ...current, [projet.id]: value }))}
                 onCommentSubmit={() => handleCommentSubmit(projet)}
-                onApprove={() => handleStatusChange(projet, 'APPROUVE')}
-                onReject={() => handleStatusChange(projet, 'REJETE')}
                 t={t}
               />
             ))}
@@ -474,11 +459,13 @@ function WorkflowStepper({ counts, activeStatus, onSelectStatus, t }) {
   const steps = [
     { label: t('projects.workflowSteps.created'), status: 'BROUILLON', icon: 'PlusCircle' },
     { label: t('projects.workflowSteps.submitted'), status: 'SOUMIS', icon: 'Clock' },
-    { label: t('projects.workflowSteps.validation'), status: 'SOUMIS', icon: 'Shield' },
-    { label: t('projects.workflowSteps.approved'), status: 'APPROUVE', icon: 'CheckCircle' },
-    { label: t('projects.workflowSteps.visible'), status: 'EN_COURS', icon: 'Eye' },
-    { label: t('projects.workflowSteps.supported'), status: 'EN_COURS', icon: 'Handshake' },
+    { label: t('projects.workflowSteps.referentValidation'), status: 'VALIDE_REFERENT', icon: 'Shield' },
+    { label: t('projects.workflowSteps.referentRejected'), status: 'REFUSE_REFERENT', icon: 'XCircle' },
+    { label: t('projects.workflowSteps.adminValidation'), status: 'APPROUVE', icon: 'CheckCircle' },
+    { label: t('projects.workflowSteps.adminRejected'), status: 'REJETE', icon: 'XCircle' },
+    { label: t('projects.workflowSteps.running'), status: 'EN_COURS', icon: 'Activity' },
     { label: t('projects.workflowSteps.done'), status: 'TERMINE', icon: 'Rocket' },
+    { label: t('projects.workflowSteps.archived'), status: 'ARCHIVE', icon: 'Archive' },
   ]
 
   return (
@@ -526,7 +513,6 @@ function ProjectCard({
   projet,
   isAuthenticated,
   isMembre,
-  isAdmin,
   isPartenaire,
   expanded,
   actionLoading,
@@ -539,13 +525,10 @@ function ProjectCard({
   onJoin,
   onCommentChange,
   onCommentSubmit,
-  onApprove,
-  onReject,
   t,
 }) {
   const besoinSoutien = Number(projet.budgetDemande) > 0
-  const peutValider = isAdmin && projet.statut === 'SOUMIS'
-  const nextStep = projectNextStep(projet, isAdmin, isPartenaire, isMembre, isParticipant, t)
+  const nextStep = projectNextStep(projet, isPartenaire, isMembre, isParticipant, t)
 
   return (
     <article className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition flex flex-col">
@@ -613,14 +596,11 @@ function ProjectCard({
           isAuthenticated={isAuthenticated}
           isMembre={isMembre}
           isPartenaire={isPartenaire}
-          peutValider={peutValider}
           isParticipant={isParticipant}
           actionLoading={actionLoading}
           onToggleDetails={onToggleDetails}
           onFollow={onFollow}
           onJoin={onJoin}
-          onApprove={onApprove}
-          onReject={onReject}
           t={t}
         />
       </div>
@@ -725,7 +705,7 @@ function ProjectStat({ icon, label, value, tone = 'slate' }) {
   )
 }
 
-function ProjectActions({ projet, isAuthenticated, isMembre, isPartenaire, peutValider, isParticipant, actionLoading, onToggleDetails, onFollow, onJoin, onApprove, onReject, t }) {
+function ProjectActions({ projet, isAuthenticated, isMembre, isPartenaire, isParticipant, actionLoading, onToggleDetails, onFollow, onJoin, t }) {
   return (
     <div className="mt-auto flex flex-wrap gap-2 pt-4">
       <button type="button" onClick={onToggleDetails} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-200">
@@ -752,18 +732,6 @@ function ProjectActions({ projet, isAuthenticated, isMembre, isPartenaire, peutV
           <AppIcon name="Handshake" className="h-3.5 w-3.5" />
           {t('partnerSpace.proposeSupport')}
         </Link>
-      )}
-      {peutValider && (
-        <>
-          <button type="button" disabled={actionLoading === `${projet.id}-APPROUVE`} onClick={onApprove} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-500 disabled:opacity-60">
-            <AppIcon name="CheckCircle" className="h-3.5 w-3.5" />
-            {t('admin.approve', { defaultValue: 'Approuver' })}
-          </button>
-          <button type="button" disabled={actionLoading === `${projet.id}-REJETE`} onClick={onReject} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-xs font-black text-red-700 transition hover:bg-red-50 disabled:opacity-60">
-            <AppIcon name="XCircle" className="h-3.5 w-3.5" />
-            {t('admin.reject', { defaultValue: 'Refuser' })}
-          </button>
-        </>
       )}
       {!isAuthenticated && (
         <Link to="/login" className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-black text-white transition hover:bg-blue-500">
@@ -806,7 +774,11 @@ function projectWorkflowText(projet, t) {
     case 'BROUILLON':
       return t('projects.workflowDraft', { defaultValue: 'Ce projet est encore en préparation.' })
     case 'SOUMIS':
-      return t('projects.workflowSubmitted', { defaultValue: 'Ce projet attend une validation administrative.' })
+      return t('projects.workflowSubmitted', { defaultValue: 'Ce projet attend la relecture du référent.' })
+    case 'VALIDE_REFERENT':
+      return t('projects.workflowReferentApproved', { defaultValue: 'Ce projet a été validé par le référent et attend la décision admin.' })
+    case 'REFUSE_REFERENT':
+      return t('projects.workflowReferentRejected', { defaultValue: 'Ce projet a été refusé par le référent.' })
     case 'APPROUVE':
       return t('projects.workflowApproved', { defaultValue: 'Ce projet est approuvé et peut être visible ou soutenu selon sa visibilité.' })
     case 'EN_COURS':
@@ -814,15 +786,18 @@ function projectWorkflowText(projet, t) {
     case 'TERMINE':
       return t('projects.workflowDone', { defaultValue: 'Ce projet est terminé.' })
     case 'REJETE':
+    case 'REFUSE':
       return t('projects.workflowRejected', { defaultValue: 'Ce projet a été refusé.' })
+    case 'ARCHIVE':
+      return t('projects.workflowArchived', { defaultValue: 'Ce projet est archivé.' })
     default:
       return t('projects.workflowUnknown', { defaultValue: 'Statut du projet à vérifier.' })
   }
 }
 
-function projectNextStep(projet, isAdmin, isPartenaire, isMembre, isParticipant, t) {
-  if (isAdmin && projet.statut === 'SOUMIS') {
-    return t('projects.nextAdminValidation', { defaultValue: 'Relire le projet puis approuver ou refuser.' })
+function projectNextStep(projet, isPartenaire, isMembre, isParticipant, t) {
+  if (projet.statut === 'VALIDE_REFERENT') {
+    return t('projects.nextAdminValidation', { defaultValue: 'Validation finale par l’administration dans l’espace admin.' })
   }
   if (isPartenaire && projet.statut === 'APPROUVE') {
     return t('projects.nextPartnerSupport', { defaultValue: 'Évaluer le besoin et proposer un soutien si le projet correspond à vos priorités.' })
@@ -837,13 +812,19 @@ function projectNextStep(projet, isAdmin, isPartenaire, isMembre, isParticipant,
     return t('projects.nextDraft', { defaultValue: 'Compléter le projet avant soumission.' })
   }
   if (projet.statut === 'SOUMIS') {
-    return t('projects.nextSubmitted', { defaultValue: 'Attendre la validation administrative.' })
+    return t('projects.nextSubmitted', { defaultValue: 'Attendre la relecture du référent.' })
+  }
+  if (projet.statut === 'REFUSE_REFERENT') {
+    return t('projects.nextReferentRejected', { defaultValue: 'Consulter le commentaire du référent et revoir la proposition.' })
   }
   if (projet.statut === 'TERMINE') {
     return t('projects.nextDone', { defaultValue: 'Consulter le bilan et les contributions.' })
   }
-  if (projet.statut === 'REJETE') {
+  if (['REJETE', 'REFUSE'].includes(projet.statut)) {
     return t('projects.nextRejected', { defaultValue: 'Consulter le motif ou revoir la proposition.' })
+  }
+  if (projet.statut === 'ARCHIVE') {
+    return t('projects.nextArchived', { defaultValue: 'Consulter l’historique du projet.' })
   }
   return t('projects.nextDefault', { defaultValue: 'Suivre l’évolution du projet.' })
 }

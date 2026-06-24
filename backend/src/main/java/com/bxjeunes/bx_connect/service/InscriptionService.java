@@ -58,12 +58,13 @@ public class InscriptionService {
         }
 
         // 4. Vérifier que le membre n'est pas déjà inscrit
-        inscriptionRepository.findByMembreIdAndActiviteId(membre.getId(), activite.getId())
-                .ifPresent(i -> {
-                    if (i.getStatut() != StatutInscription.ANNULEE) {
-                        throw new RuntimeException("Vous êtes déjà inscrit à cette activité.");
-                    }
-                });
+        boolean dejaInscrit = inscriptionRepository
+                .findByMembreIdAndActiviteIdOrderByDateInscriptionDesc(membre.getId(), activite.getId())
+                .stream()
+                .anyMatch(i -> i.getStatut() != StatutInscription.ANNULEE);
+        if (dejaInscrit) {
+            throw new RuntimeException("Vous êtes déjà inscrit à cette activité.");
+        }
 
         // 5. Vérifier la capacité maximale (si limitée)
         if (activite.getCapaciteMax() > 0) {

@@ -17,7 +17,7 @@ import ErrorState from '../../components/ui/ErrorState';
 import AppIcon from '../../components/ui/AppIcons';
 
 export default function Activites() {
-  const { isAuthenticated, isAdmin, isReferent } = useAuth();
+  const { isAuthenticated, isAdmin, isReferent, isMembre } = useAuth();
   const { t, i18n } = useTranslation();
 
   const [activites, setActivites] = useState([]);
@@ -161,8 +161,9 @@ export default function Activites() {
   const handleInscrire = async (activiteId) => {
     setActionLoading(activiteId);
     try {
-      await api.post('/inscriptions', { activiteId });
-      const feedback = t('activities.success_register');
+      const response = await api.post('/inscriptions', { activiteId });
+      const activity = activites.find(item => item.id === activiteId);
+      const feedback = registrationSuccessMessage(response.data, activity, t);
       setMessage(feedback);
       toast.success(feedback);
       setActivites(current => current.map(activite => activite.id === activiteId
@@ -170,6 +171,10 @@ export default function Activites() {
             ...activite,
             inscrit: true,
             dejaInscrit: true,
+            inscriptionId: response.data?.id || activite.inscriptionId,
+            statutInscription: response.data?.statut || activite.statutInscription,
+            peutSInscrire: false,
+            raisonIndisponible: 'DEJA_INSCRIT',
             nombreInscrits: typeof activite.nombreInscrits === 'number' ? activite.nombreInscrits + 1 : activite.nombreInscrits,
           }
         : activite
@@ -178,6 +183,39 @@ export default function Activites() {
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       const feedback = userFriendlyError(err, t('activities.error_register'));
+      setError(feedback);
+      toast.error(feedback);
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleAnnulerInscription = async (activity) => {
+    if (!activity.inscriptionId) return;
+    setActionLoading(activity.id);
+    try {
+      await api.delete(`/inscriptions/${activity.inscriptionId}`);
+      const feedback = t('activities.success_cancel_registration');
+      setMessage(feedback);
+      toast.success(feedback);
+      setActivites(current => current.map(activite => activite.id === activity.id
+        ? {
+            ...activite,
+            inscrit: false,
+            dejaInscrit: false,
+            inscriptionId: null,
+            statutInscription: null,
+            peutSInscrire: activite.raisonIndisponible === 'DEJA_INSCRIT',
+            raisonIndisponible: activite.raisonIndisponible === 'DEJA_INSCRIT' ? null : activite.raisonIndisponible,
+            nombreInscrits: typeof activite.nombreInscrits === 'number' ? Math.max(activite.nombreInscrits - 1, 0) : activite.nombreInscrits,
+          }
+        : activite
+      ));
+      fetchActivites();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      const feedback = userFriendlyError(err, t('activities.error_cancel_registration'));
       setError(feedback);
       toast.error(feedback);
       setTimeout(() => setError(''), 3000);
@@ -345,8 +383,10 @@ export default function Activites() {
                 key={a.id}
                 activity={a}
                 isAuthenticated={isAuthenticated}
+                isMembre={isMembre}
                 actionLoading={actionLoading === a.id}
                 onRegister={() => handleInscrire(a.id)}
+                onCancelRegistration={() => handleAnnulerInscription(a)}
                 t={t}
                 language={i18n.language}
               />
@@ -401,7 +441,7 @@ function UpcomingActivitiesStrip({ activities, registrationsCount, t, language }
   )
 }
 
-function ActivityCard({ activity, isAuthenticated, actionLoading, onRegister, t, language }) {
+function ActivityCard({ activity, isAuthenticated, isMembre, actionLoading, onRegister, onCancelRegistration, t, language }) {
   const situation = getActivitySituation(activity, t)
   return (
     <article className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition flex flex-col">
@@ -473,14 +513,37 @@ function ActivityCard({ activity, isAuthenticated, actionLoading, onRegister, t,
             {t('activities.view_detail')}
           </Link>
 
-          {renderActivityAction({ isAuthenticated, situation, actionLoading, onRegister, t })}
+          {renderActivityAction({ isAuthenticated, isMembre, situation, actionLoading, onRegister, onCancelRegistration, t })}
         </div>
       </div>
     </article>
   )
 }
 
-function renderActivityAction({ isAuthenticated, situation, actionLoading, onRegister, t }) {
+function renderActivityAction({ isAuthenticated, isMembre, situation, actionLoading, onRegister, onCancelRegistration, t }) {
+  if (situation.key === 'registered') {
+    return (
+      <button
+        type="button"
+        disabled={actionLoading}
+        onClick={onCancelRegistration}
+        className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-100 px-3 py-2 text-xs font-black text-amber-800 transition hover:bg-amber-200 disabled:opacity-60"
+      >
+        <AppIcon name="XCircle" className="h-3.5 w-3.5" />
+        {t('activities.cancel_registration')}
+      </button>
+    )
+  }
+
+  if (situation.key !== 'open') {
+    return (
+      <button type="button" disabled className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-500">
+        <AppIcon name={situation.key === 'done' ? 'Clock' : 'XCircle'} className="h-3.5 w-3.5" />
+        {situation.label}
+      </button>
+    )
+  }
+
   if (!isAuthenticated) {
     return (
       <Link to="/login" className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-black text-white transition hover:bg-blue-500">
@@ -490,16 +553,7 @@ function renderActivityAction({ isAuthenticated, situation, actionLoading, onReg
     )
   }
 
-  if (situation.key === 'registered') {
-    return (
-      <button type="button" disabled className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-100 px-3 py-2 text-xs font-black text-amber-800">
-        <AppIcon name="CheckCircle" className="h-3.5 w-3.5" />
-        {t('activities.already_registered')}
-      </button>
-    )
-  }
-
-  if (situation.key === 'open') {
+  if (situation.key === 'open' && isMembre) {
     return (
       <button type="button" disabled={actionLoading} onClick={onRegister} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-black text-white transition hover:bg-blue-500 disabled:opacity-60">
         <AppIcon name="PlusCircle" className="h-3.5 w-3.5" />
@@ -508,17 +562,37 @@ function renderActivityAction({ isAuthenticated, situation, actionLoading, onReg
     )
   }
 
+  if (situation.key === 'open') {
+    return (
+      <button type="button" disabled className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-500">
+        <AppIcon name="User" className="h-3.5 w-3.5" />
+        {t('activities.memberOnlyRegistration')}
+      </button>
+    )
+  }
+
   return (
     <button type="button" disabled className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-500">
-      <AppIcon name={situation.key === 'done' ? 'Clock' : 'XCircle'} className="h-3.5 w-3.5" />
-      {situation.label}
+      <AppIcon name="User" className="h-3.5 w-3.5" />
+      {t('activities.memberOnlyRegistration')}
     </button>
   )
 }
 
 function getActivitySituation(activity, t) {
   if (activity.inscrit || activity.dejaInscrit || activity.inscriptionId || activity.statutInscription) {
-    return { key: 'registered', label: t('activities.already_registered'), dot: '🟡', className: 'bg-amber-50 text-amber-800' }
+    const label = activity.statutInscription === 'EN_ATTENTE_PAIEMENT'
+      ? t('activities.payment_required')
+      : t('activities.already_registered')
+    return { key: 'registered', label, dot: '🟡', className: 'bg-amber-50 text-amber-800' }
+  }
+  if (activity.peutSInscrire === false && activity.raisonIndisponible) {
+    return {
+      key: reasonToSituationKey(activity.raisonIndisponible),
+      label: unavailableReasonLabel(activity.raisonIndisponible, t),
+      dot: reasonToDot(activity.raisonIndisponible),
+      className: reasonToClassName(activity.raisonIndisponible),
+    }
   }
   if (['TERMINEE', 'TERMINE'].includes(activity.statut) || (activity.dateFin && new Date(activity.dateFin) < new Date())) {
     return { key: 'done', label: t('activities.done', { defaultValue: 'Terminé' }), dot: '⚫', className: 'bg-slate-100 text-slate-700' }
@@ -530,6 +604,41 @@ function getActivitySituation(activity, t) {
     return { key: 'open', label: t('activities.registrationOpen', { defaultValue: 'Inscription possible' }), dot: '🟢', className: 'bg-emerald-50 text-emerald-700' }
   }
   return { key: 'closed', label: t(`statuses.${activity.statut}`, { defaultValue: activity.statut || 'Indisponible' }), dot: '⚪', className: 'bg-slate-100 text-slate-600' }
+}
+
+function registrationSuccessMessage(inscription, activity, t) {
+  if (inscription?.statut === 'EN_ATTENTE_PAIEMENT' || activity?.gratuite === false) {
+    return t('activities.success_register_payment_required')
+  }
+  return t('activities.success_register')
+}
+
+function unavailableReasonLabel(reason, t) {
+  return t(`activities.unavailableReasons.${reason}`, {
+    defaultValue: t('activities.registrationUnavailable'),
+  })
+}
+
+function reasonToSituationKey(reason) {
+  if (reason === 'DEJA_INSCRIT') return 'registered'
+  if (reason === 'COMPLETE') return 'full'
+  if (['PASSEE', 'TERMINEE'].includes(reason)) return 'done'
+  if (reason === 'ANNULEE') return 'cancelled'
+  return 'closed'
+}
+
+function reasonToDot(reason) {
+  if (reason === 'COMPLETE') return '🔴'
+  if (['PASSEE', 'TERMINEE'].includes(reason)) return '⚫'
+  if (reason === 'ANNULEE') return '⚪'
+  return '⚪'
+}
+
+function reasonToClassName(reason) {
+  if (reason === 'COMPLETE') return 'bg-red-50 text-red-700'
+  if (['PASSEE', 'TERMINEE'].includes(reason)) return 'bg-slate-100 text-slate-700'
+  if (reason === 'ANNULEE') return 'bg-slate-100 text-slate-600'
+  return 'bg-slate-100 text-slate-600'
 }
 
 function isActivityFull(activity) {

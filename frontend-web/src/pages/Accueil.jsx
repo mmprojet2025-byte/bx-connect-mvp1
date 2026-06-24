@@ -9,137 +9,15 @@ import logoBxConnect from '../assets/images/logo-bx-connect.png'
 import communityGroupPhoto from '../assets/images/home/community-group.jpg'
 import communityMealPhoto from '../assets/images/home/community-meal.jpg'
 import solidarityProjectPhoto from '../assets/images/home/solidarity-project.jpg'
-import environmentActionPhoto from '../assets/images/home/environment-action.jpg'
-
-const PLATFORM_CARDS = [
-  {
-    icon: 'Calendar',
-    title: 'Centraliser les activités',
-    description: 'Rassembler les ateliers, rencontres et événements au même endroit.',
-  },
-  {
-    icon: 'CheckCircle',
-    title: 'Faciliter les inscriptions',
-    description: 'Aider les membres à suivre les opportunités et leur participation.',
-  },
-  {
-    icon: 'Users',
-    title: 'Rejoindre des groupes',
-    description: 'Créer un lien clair entre les jeunes, les groupes et les référents.',
-  },
-  {
-    icon: 'Rocket',
-    title: 'Suivre des projets collaboratifs',
-    description: 'Valoriser les initiatives et rendre leur évolution plus lisible.',
-  },
-]
-
-const FEATURES = [
-  {
-    icon: 'Calendar',
-    title: 'Découvrir des activités',
-    description: 'Consulte les activités publiées, repère les dates importantes et trouve les événements qui te correspondent.',
-  },
-  {
-    icon: 'Users',
-    title: 'Rejoindre un groupe',
-    description: 'Découvre les groupes disponibles et demande à rejoindre une communauté accompagnée par un référent.',
-  },
-  {
-    icon: 'Rocket',
-    title: 'Participer à des projets',
-    description: 'Suis les projets collaboratifs, comprends leur statut et contribue à leur progression.',
-  },
-  {
-    icon: 'MessageCircle',
-    title: 'Échanger avec la communauté',
-    description: 'Garde un canal clair avec les membres et référents lorsque ton parcours dans un groupe est actif.',
-  },
-]
-
-const BENEFITS = [
-  {
-    icon: 'Search',
-    title: 'Un accès simple aux activités',
-    description: 'Les informations utiles sont regroupées pour aider chacun à passer rapidement de la découverte à l’inscription.',
-  },
-  {
-    icon: 'MessageCircle',
-    title: 'Une meilleure communication',
-    description: 'Les jeunes et référents disposent d’un espace commun pour mieux suivre la vie des groupes.',
-  },
-  {
-    icon: 'Folder',
-    title: 'Un suivi plus clair',
-    description: 'Les groupes et projets deviennent plus faciles à comprendre, gérer et valoriser.',
-  },
-]
-
-const GALLERY = [
-  {
-    image: communityGroupPhoto,
-    title: 'Communauté',
-    description: 'Des jeunes réunis autour d’un moment collectif.',
-  },
-  {
-    image: communityMealPhoto,
-    title: 'Rencontres',
-    description: 'Des échanges informels pour créer du lien.',
-  },
-  {
-    image: environmentActionPhoto,
-    title: 'Engagement citoyen',
-    description: 'Des actions concrètes portées sur le terrain.',
-  },
-  {
-    image: solidarityProjectPhoto,
-    title: 'Solidarité',
-    description: 'Des projets qui organisent l’aide et la participation.',
-  },
-]
-
-const STEPS = [
-  {
-    title: 'Crée ton compte',
-    description: 'Accède à ton espace et commence ton parcours dans la communauté.',
-  },
-  {
-    title: 'Rejoins un groupe',
-    description: 'Trouve un groupe actif et fais une demande d’adhésion.',
-  },
-  {
-    title: 'Participe aux activités',
-    description: 'Découvre les activités publiées et suis les opportunités disponibles.',
-  },
-  {
-    title: 'Lance ou soutiens un projet',
-    description: 'Contribue à transformer une idée collective en action concrète.',
-  },
-]
-
-const PARTNER_TYPE_LABELS = {
-  COMMUNE: 'Commune',
-  BIJ: 'BIJ',
-  ECOLE: 'École',
-  HAUTE_ECOLE: 'Haute école',
-  ENTREPRISE: 'Entreprise',
-  SPONSOR: 'Sponsor',
-  ASSOCIATION: 'Association',
-  ONG: 'ONG',
-  FONDATION: 'Fondation',
-  AUTRE: 'Partenaire',
-}
 
 export default function Accueil() {
   const [activites, setActivites] = useState([])
   const [projets, setProjets] = useState([])
-  const [partenaires, setPartenaires] = useState([])
   const [loadingActivites, setLoadingActivites] = useState(true)
   const [loadingProjets, setLoadingProjets] = useState(true)
-  const [loadingPartenaires, setLoadingPartenaires] = useState(true)
   const { t, i18n } = useTranslation()
 
-  useRevealOnScroll()
+  useRevealOnScroll(i18n.language)
 
   useEffect(() => {
     api.get('/activites')
@@ -155,64 +33,125 @@ export default function Accueil() {
       .finally(() => setLoadingProjets(false))
   }, [])
 
-  useEffect(() => {
-    api.get('/partenaire/publics')
-      .then(res => setPartenaires(Array.isArray(res.data) ? res.data.slice(0, 6) : []))
-      .catch(() => setPartenaires([]))
-      .finally(() => setLoadingPartenaires(false))
-  }, [])
+  const actions = [
+    {
+      id: 'activities',
+      icon: 'Calendar',
+      title: t('home.actionActivitiesTitle'),
+      description: t('home.actionActivitiesDescription'),
+    },
+    {
+      id: 'groups',
+      icon: 'Users',
+      title: t('home.actionGroupsTitle'),
+      description: t('home.actionGroupsDescription'),
+    },
+    {
+      id: 'projects',
+      icon: 'Rocket',
+      title: t('home.actionProjectsTitle'),
+      description: t('home.actionProjectsDescription'),
+    },
+    {
+      id: 'community',
+      icon: 'MessageCircle',
+      title: t('home.actionCommunityTitle'),
+      description: t('home.actionCommunityDescription'),
+    },
+  ]
+
+  const steps = [
+    {
+      id: 'account',
+      title: t('home.stepAccountTitle'),
+      description: t('home.stepAccountDescription'),
+    },
+    {
+      id: 'group',
+      title: t('home.stepGroupTitle'),
+      description: t('home.stepGroupDescription'),
+    },
+    {
+      id: 'activities',
+      title: t('home.stepActivitiesTitle'),
+      description: t('home.stepActivitiesDescription'),
+    },
+    {
+      id: 'projects',
+      title: t('home.stepProjectsTitle'),
+      description: t('home.stepProjectsDescription'),
+    },
+  ]
+
+  const visualMoments = [
+    {
+      id: 'community',
+      image: communityMealPhoto,
+      title: t('home.visualCommunityTitle'),
+      description: t('home.visualCommunityDescription'),
+      alt: t('home.visualCommunityAlt'),
+    },
+    {
+      id: 'solidarity',
+      image: solidarityProjectPhoto,
+      title: t('home.visualSolidarityTitle'),
+      description: t('home.visualSolidarityDescription'),
+      alt: t('home.visualSolidarityAlt'),
+    },
+  ]
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-slate-900">
       <Navbar />
 
       <main className="flex-1">
-        <section className="relative isolate overflow-hidden border-b border-slate-100 bg-white">
-          <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_15%,rgba(37,99,235,0.10),transparent_32%),radial-gradient(circle_at_85%_30%,rgba(14,165,233,0.12),transparent_30%)]" aria-hidden="true" />
+        <section className="relative isolate scroll-mt-20 overflow-hidden border-b border-slate-100 bg-white">
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_18%_15%,rgba(37,99,235,0.10),transparent_30%),radial-gradient(circle_at_82%_28%,rgba(14,165,233,0.12),transparent_28%)]" aria-hidden="true" />
 
-          <div className="mx-auto grid max-w-7xl gap-12 px-5 py-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.95fr)] lg:items-center lg:px-8 lg:py-24">
+          <div className="mx-auto grid max-w-7xl gap-10 px-5 py-12 lg:grid-cols-[minmax(0,1fr)_minmax(330px,0.85fr)] lg:items-center lg:px-8 lg:py-18">
             <div>
               <img
                 src={logoBxConnect}
                 alt="BX-CONNECT"
-                className="landing-fade-up mb-10 w-[260px] max-w-full object-contain sm:w-[360px]"
+                className="landing-fade-up mb-5 w-[170px] max-w-full object-contain sm:w-[220px]"
               />
-              <p className="landing-fade-up landing-delay-1 mb-4 inline-flex rounded-full bg-blue-50 px-4 py-2 text-xs font-bold uppercase tracking-wide text-blue-700">
-                Connecter les jeunes et les initiatives locales
+              <p className="landing-fade-up landing-delay-1 mb-4 inline-flex rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-blue-700">
+                {t('home.heroBadge')}
               </p>
-              <h1 className="landing-fade-up landing-delay-2 max-w-4xl text-4xl font-black leading-tight text-slate-950 sm:text-5xl lg:text-6xl">
-                Bienvenue sur BX-Connect
+              <h1 className="landing-fade-up landing-delay-2 max-w-3xl text-4xl font-black leading-tight text-slate-950 sm:text-5xl lg:text-6xl">
+                {t('home.heroTitle')}
               </h1>
-              <p className="landing-fade-up landing-delay-3 mt-6 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl">
-                La plateforme qui connecte les jeunes, les associations et les projets à Bruxelles.
+              <p className="landing-fade-up landing-delay-3 mt-5 max-w-2xl text-lg leading-8 text-slate-600">
+                {t('home.heroSubtitle')}
               </p>
-              <div className="landing-fade-up landing-delay-4 mt-9 flex flex-col gap-3 sm:flex-row">
+              <div className="landing-fade-up landing-delay-4 mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
                   to="/register"
-                  className="landing-button inline-flex h-12 items-center justify-center rounded-xl bg-blue-700 px-6 text-base font-bold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-100"
+                  className="landing-button inline-flex h-11 items-center justify-center rounded-lg bg-blue-700 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-100"
                 >
-                  Rejoindre la communauté
+                  {t('home.createAccount')}
                 </Link>
                 <Link
                   to="/activites"
-                  className="landing-button inline-flex h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-6 text-base font-bold text-slate-800 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-100"
+                  className="landing-button inline-flex h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-5 text-sm font-bold text-slate-800 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-100"
                 >
-                  Voir les activités
+                  {t('home.viewActivities')}
                 </Link>
               </div>
             </div>
 
-            <div className="landing-hero-media landing-fade-up landing-delay-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-xl shadow-blue-950/10">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-900">
+            <div className="landing-hero-media landing-fade-up landing-delay-3 rounded-xl border border-slate-200 bg-white p-3 shadow-xl shadow-blue-950/10">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-slate-900">
                 <img
                   src={communityGroupPhoto}
-                  alt="Groupe communautaire BX-Connect"
+                  alt={t('home.heroImageAlt')}
                   className="landing-hero-photo h-full w-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-950/15 to-transparent" aria-hidden="true" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-950/10 to-transparent" aria-hidden="true" />
                 <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
-                  <p className="text-sm font-semibold text-blue-100">Aperçu communauté</p>
-                  <p className="mt-1 text-2xl font-black">Activités, groupes, projets</p>
+                  <p className="text-sm font-semibold text-blue-100">{t('home.heroVisualEyebrow')}</p>
+                  <p className="mt-1 text-2xl font-black">{t('home.heroVisualTitle')}</p>
+                  <p className="mt-2 max-w-md text-sm leading-6 text-blue-50">{t('home.heroVisualDescription')}</p>
                 </div>
               </div>
             </div>
@@ -220,71 +159,43 @@ export default function Accueil() {
         </section>
 
         <SectionHeader
-          eyebrow={t('home.objectiveEyebrow')}
-          title={t('home.platformDesignedFor')}
-          description={t('home.platformDesignedDescription')}
+          eyebrow={t('home.actionsEyebrow')}
+          title={t('home.actionsTitle')}
+          description={t('home.actionsDescription')}
         />
-        <section className="mx-auto grid max-w-7xl gap-5 px-5 pb-16 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
-          {PLATFORM_CARDS.map((card, index) => (
-            <InfoCard key={card.title} item={card} index={index} />
+        <section className="mx-auto grid max-w-7xl scroll-mt-20 gap-4 px-5 pb-12 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
+          {actions.map((action, index) => (
+            <InfoCard key={action.id} item={action} index={index} />
           ))}
         </section>
 
-        {(loadingPartenaires || partenaires.length > 0) && (
-          <section className="bg-slate-50 py-16">
-            <div className="mx-auto max-w-7xl px-5 lg:px-8">
-              <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-sm font-bold uppercase tracking-wide text-blue-700">Réseau local</p>
-                  <h2 className="mt-2 text-3xl font-black text-slate-950">Nos partenaires</h2>
-                  <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
-                    Des organisations locales qui soutiennent les initiatives et renforcent la communauté BX-Connect.
-                  </p>
-                </div>
-              </div>
-
-              {loadingPartenaires ? (
-                <LoadingBlock label={t('common.loading')} />
-              ) : (
-                <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-                  {partenaires.map((partenaire, index) => (
-                    <PartnerCard key={partenaire.id || partenaire.nomOrganisation} partner={partenaire} index={index} />
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
-        <SectionHeader
-          eyebrow={t('home.mainActionsEyebrow')}
-          title={t('home.features_title')}
-          description={t('home.mainActionsDescription')}
-        />
-        <section className="mx-auto grid max-w-7xl gap-5 px-5 pb-16 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
-          {FEATURES.map((feature, index) => (
-            <InfoCard key={feature.title} item={feature} index={index} compact />
-          ))}
+        <section className="mx-auto grid max-w-7xl scroll-mt-20 gap-4 px-5 pb-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-stretch lg:px-8">
+          <div className="reveal fade-up rounded-xl border border-blue-100 bg-blue-50 p-6">
+            <p className="text-sm font-bold uppercase tracking-wide text-blue-700">{t('home.visualEyebrow')}</p>
+            <h2 className="mt-2 text-2xl font-black text-slate-950">{t('home.visualTitle')}</h2>
+            <p className="mt-3 text-sm leading-6 text-slate-600">{t('home.visualDescription')}</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {visualMoments.map((moment, index) => (
+              <VisualMomentCard key={moment.id} moment={moment} index={index} />
+            ))}
+          </div>
         </section>
 
-        <section className="bg-slate-50 py-16">
+        <section className="scroll-mt-20 bg-slate-50 py-12">
           <div className="mx-auto max-w-7xl px-5 lg:px-8">
-            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-sm font-bold uppercase tracking-wide text-blue-700">Événements</p>
-                <h2 className="mt-2 text-3xl font-black text-slate-950">Activités récentes</h2>
-              </div>
-              <Link to="/activites" className="font-bold text-blue-700 hover:text-blue-800 hover:underline">
-                Voir toutes les activités
-              </Link>
-            </div>
+            <SectionTitle
+              eyebrow={t('home.recentActivitiesEyebrow')}
+              title={t('home.recentActivitiesTitle')}
+              action={{ to: '/activites', label: t('home.viewAllActivities') }}
+            />
 
             {loadingActivites ? (
               <LoadingBlock label={t('common.loading')} />
             ) : activites.length === 0 ? (
-              <EmptyLandingState text="Aucune activité publiée pour le moment." />
+              <EmptyLandingState text={t('home.noRecentActivities')} />
             ) : (
-              <div className="grid gap-5 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-3">
                 {activites.map(activity => (
                   <ActivityCard
                     key={activity.id}
@@ -298,35 +209,20 @@ export default function Accueil() {
           </div>
         </section>
 
-        <section className="py-16">
+        <section className="scroll-mt-20 py-12">
           <div className="mx-auto max-w-7xl px-5 lg:px-8">
-            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-sm font-bold uppercase tracking-wide text-blue-700">Initiatives</p>
-                <h2 className="mt-2 text-3xl font-black text-slate-950">Projets en vedette</h2>
-              </div>
-              <Link to="/projets" className="font-bold text-blue-700 hover:text-blue-800 hover:underline">
-                Explorer les projets
-              </Link>
-            </div>
+            <SectionTitle
+              eyebrow={t('home.featuredProjectsEyebrow')}
+              title={t('home.featuredProjectsTitle')}
+              action={{ to: '/projets', label: t('home.viewProjects') }}
+            />
 
             {loadingProjets ? (
               <LoadingBlock label={t('common.loading')} />
             ) : projets.length === 0 ? (
-              <EmptyLandingState text="Aucun projet mis en avant pour le moment." />
-            ) : projets.length === 1 ? (
-              <div className="grid gap-5 lg:grid-cols-[1fr_0.9fr]">
-                <ProjectCard project={projets[0]} t={t} />
-                <aside className="reveal fade-up rounded-2xl border border-blue-100 bg-blue-50 p-6">
-                  <p className="text-sm font-bold uppercase tracking-wide text-blue-700">À retenir</p>
-                  <h3 className="mt-3 text-2xl font-black text-slate-950">Chaque projet peut devenir une action concrète grâce au soutien de la communauté.</h3>
-                  <p className="mt-4 text-sm leading-6 text-slate-600">
-                    BX-Connect aide à rendre les initiatives visibles, compréhensibles et plus faciles à soutenir.
-                  </p>
-                </aside>
-              </div>
+              <EmptyLandingState text={t('home.noFeaturedProjects')} />
             ) : (
-              <div className="grid gap-5 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-3">
                 {projets.map(project => (
                   <ProjectCard key={project.id} project={project} t={t} />
                 ))}
@@ -335,114 +231,41 @@ export default function Accueil() {
           </div>
         </section>
 
-        <section className="bg-blue-950 py-16 text-white">
+        <section className="scroll-mt-20 bg-blue-950 py-12 text-white">
           <div className="mx-auto max-w-7xl px-5 lg:px-8">
             <div className="max-w-2xl">
-              <p className="text-sm font-bold uppercase tracking-wide text-blue-200">Parcours simple</p>
-              <h2 className="mt-2 text-3xl font-black">Comment ça marche ?</h2>
+              <p className="text-sm font-bold uppercase tracking-wide text-blue-200">{t('home.howItWorksEyebrow')}</p>
+              <h2 className="mt-2 text-3xl font-black">{t('home.howItWorksTitle')}</h2>
             </div>
-            <div className="mt-10 grid gap-4 md:grid-cols-4">
-              {STEPS.map((step, index) => (
-                <article key={step.title} className="reveal fade-up stagger rounded-2xl border border-white/10 bg-white/5 p-5" style={{ '--stagger-delay': `${index * 90}ms` }}>
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-sm font-black text-blue-950">
+            <div className="mt-8 grid gap-4 md:grid-cols-4">
+              {steps.map((step, index) => (
+                <article
+                  key={step.id}
+                  className="reveal fade-up stagger rounded-lg border border-white/10 bg-white/5 p-5"
+                  style={{ '--stagger-delay': `${index * 90}ms` }}
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-sm font-black text-blue-950">
                     {index + 1}
                   </span>
-                  <h3 className="mt-5 text-lg font-bold">{step.title}</h3>
-                  <p className="mt-3 text-sm leading-6 text-blue-100">{step.description}</p>
+                  <h3 className="mt-4 text-base font-bold">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-blue-100">{step.description}</p>
                 </article>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="bg-white py-16">
-          <div className="mx-auto max-w-7xl px-5 lg:px-8">
-            <div className="mb-8 max-w-2xl">
-              <p className="text-sm font-bold uppercase tracking-wide text-blue-700">Galerie</p>
-              <h2 className="mt-2 text-3xl font-black text-slate-950">La communauté en action</h2>
-              <p className="mt-3 text-base leading-7 text-slate-600">
-                Des photos réelles pour illustrer les rencontres, l’engagement citoyen et les projets solidaires.
-              </p>
-            </div>
-            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-              {GALLERY.map((photo, index) => (
-                <article
-                  key={photo.title}
-                  className={`landing-gallery-card reveal fade-up stagger overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5 ${index === 0 ? 'lg:col-span-2' : ''}`}
-                  style={{ '--stagger-delay': `${index * 80}ms` }}
-                >
-                  <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
-                    <img
-                      src={photo.image}
-                      alt={photo.title}
-                      loading={index === 0 ? 'eager' : 'lazy'}
-                      className="h-full w-full object-cover transition duration-700 hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent" aria-hidden="true" />
-                    <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
-                      <h3 className="font-black">{photo.title}</h3>
-                      <p className="mt-1 text-sm text-blue-50">{photo.description}</p>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-slate-50 py-16">
-          <div className="mx-auto grid max-w-7xl gap-10 px-5 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:px-8">
-            <div className="reveal fade-up overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-sm shadow-slate-900/5">
-              <img
-                src={communityMealPhoto}
-                alt="Rencontre communautaire BX-Connect"
-                loading="lazy"
-                className="h-full min-h-[320px] w-full object-cover"
-              />
-            </div>
-            <div className="reveal fade-up">
-              <p className="text-sm font-bold uppercase tracking-wide text-blue-700">À propos</p>
-              <h2 className="mt-2 text-3xl font-black text-slate-950">BX-Connect rapproche les personnes, les idées et les actions.</h2>
-              <p className="mt-5 text-base leading-8 text-slate-600">
-                La plateforme aide les jeunes à découvrir des activités, rejoindre des groupes, participer à des projets et rester connectés à leur communauté. Elle donne aussi aux référents et partenaires une vue plus claire sur les initiatives en cours.
-              </p>
-              <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                {['Activités visibles', 'Groupes structurés', 'Projets suivis', 'Communication facilitée'].map(item => (
-                  <div key={item} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700">
-                    <AppIcon name="CheckCircle" className="h-4 w-4 text-blue-700" />
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="py-16">
-          <div className="mx-auto max-w-7xl px-5 lg:px-8">
-            <div className="mb-8 max-w-2xl">
-              <p className="text-sm font-bold uppercase tracking-wide text-blue-700">Bénéfices</p>
-              <h2 className="mt-2 text-3xl font-black text-slate-950">Pourquoi BX-Connect ?</h2>
-            </div>
-            <div className="grid gap-5 md:grid-cols-3">
-              {BENEFITS.map((benefit, index) => (
-                <InfoCard key={benefit.title} item={benefit} index={index} />
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-white px-5 py-16 lg:px-8">
-          <div className="reveal fade-up mx-auto flex max-w-5xl flex-col items-center rounded-3xl border border-slate-200 bg-slate-50 px-6 py-12 text-center shadow-sm shadow-slate-900/5">
-            <h2 className="text-3xl font-black text-slate-950 sm:text-4xl">Prêt à rejoindre BX-Connect ?</h2>
+        <section className="scroll-mt-20 bg-white px-5 py-12 lg:px-8">
+          <div className="reveal fade-up mx-auto flex max-w-5xl flex-col items-center rounded-xl border border-slate-200 bg-slate-50 px-6 py-10 text-center shadow-sm shadow-slate-900/5">
+            <h2 className="text-3xl font-black text-slate-950 sm:text-4xl">{t('home.finalCtaTitle')}</h2>
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-              Crée ton compte et participe à la vie de la communauté.
+              {t('home.finalCtaDescription')}
             </p>
             <Link
               to="/register"
-              className="landing-button mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-blue-700 px-6 text-base font-bold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-100"
+              className="landing-button mt-7 inline-flex h-11 items-center justify-center rounded-lg bg-blue-700 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-100"
             >
-              Créer un compte
+              {t('home.createAccount')}
             </Link>
           </div>
         </section>
@@ -453,11 +276,11 @@ export default function Accueil() {
   )
 }
 
-function useRevealOnScroll() {
+function useRevealOnScroll(language) {
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
 
-    const elements = document.querySelectorAll('.reveal')
+    const elements = document.querySelectorAll('.reveal:not(.reveal-visible)')
     const observer = new IntersectionObserver(
       entries => {
         entries.forEach(entry => {
@@ -472,12 +295,12 @@ function useRevealOnScroll() {
 
     elements.forEach(element => observer.observe(element))
     return () => observer.disconnect()
-  }, [])
+  }, [language])
 }
 
 function SectionHeader({ eyebrow, title, description }) {
   return (
-    <section className="reveal fade-up mx-auto max-w-7xl px-5 pb-8 pt-16 lg:px-8">
+    <section className="reveal fade-up mx-auto max-w-7xl scroll-mt-20 px-5 pb-7 pt-12 lg:px-8">
       <p className="text-sm font-bold uppercase tracking-wide text-blue-700">{eyebrow}</p>
       <h2 className="mt-2 text-3xl font-black text-slate-950">{title}</h2>
       <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">{description}</p>
@@ -485,17 +308,54 @@ function SectionHeader({ eyebrow, title, description }) {
   )
 }
 
-function InfoCard({ item, index, compact = false }) {
+function SectionTitle({ eyebrow, title, action }) {
+  return (
+    <div className="mb-7 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p className="text-sm font-bold uppercase tracking-wide text-blue-700">{eyebrow}</p>
+        <h2 className="mt-2 text-3xl font-black text-slate-950">{title}</h2>
+      </div>
+      <Link to={action.to} className="text-sm font-bold text-blue-700 hover:text-blue-800 hover:underline">
+        {action.label}
+      </Link>
+    </div>
+  )
+}
+
+function InfoCard({ item, index }) {
   return (
     <article
-      className={`landing-feature-card reveal fade-up stagger rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-950/10 ${compact ? 'p-5' : 'p-6'}`}
+      className="landing-feature-card reveal fade-up stagger rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-950/10"
       style={{ '--stagger-delay': `${index * 80}ms` }}
     >
-      <div className={`${compact ? 'mb-4 h-10 w-10' : 'mb-5 h-11 w-11'} flex items-center justify-center rounded-xl bg-blue-50 text-blue-700`}>
+      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
         <AppIcon name={item.icon} className="h-5 w-5" />
       </div>
-      <h3 className={`${compact ? 'text-base' : 'text-lg'} font-black text-slate-950`}>{item.title}</h3>
-      <p className="mt-3 text-sm leading-6 text-slate-600">{item.description}</p>
+      <h3 className="text-base font-black text-slate-950">{item.title}</h3>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{item.description}</p>
+    </article>
+  )
+}
+
+function VisualMomentCard({ moment, index }) {
+  return (
+    <article
+      className="group reveal fade-up stagger overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-950/10"
+      style={{ '--stagger-delay': `${index * 90}ms` }}
+    >
+      <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
+        <img
+          src={moment.image}
+          alt={moment.alt}
+          loading="lazy"
+          className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.035]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" aria-hidden="true" />
+        <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+          <h3 className="text-base font-black">{moment.title}</h3>
+          <p className="mt-1 line-clamp-2 text-sm leading-5 text-blue-50">{moment.description}</p>
+        </div>
+      </div>
     </article>
   )
 }
@@ -504,23 +364,23 @@ function ActivityCard({ activity, language, t }) {
   const status = activity.statut || 'PUBLIEE'
 
   return (
-    <article className="reveal fade-up flex min-h-[250px] flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-950/10">
-      <div className="flex items-start justify-between gap-4">
+    <article className="reveal fade-up flex min-h-[220px] flex-col rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-950/10">
+      <div className="flex items-start justify-between gap-3">
         <StatusPill status={status} t={t} />
-        <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">
-          {activity.categorie || 'Activité'}
+        <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-bold text-orange-700">
+          {activity.categorie || t('home.activityFallbackCategory')}
         </span>
       </div>
-      <h3 className="mt-5 text-xl font-black leading-snug text-slate-950">{activity.titre}</h3>
-      <div className="mt-5 grid gap-3 text-sm text-slate-600">
-        <IconLine icon="Calendar" value={formatDate(activity.dateDebut, language)} />
-        <IconLine icon="MapPin" value={activity.lieu || 'Bruxelles'} />
+      <h3 className="mt-4 line-clamp-2 text-lg font-black leading-snug text-slate-950">{activity.titre}</h3>
+      <div className="mt-4 grid gap-2 text-sm text-slate-600">
+        <IconLine icon="Calendar" value={formatDate(activity.dateDebut, language, t)} />
+        <IconLine icon="MapPin" value={activity.lieu || activity.commune || t('home.activityFallbackLocation')} />
       </div>
       <Link
         to={typeof activity.id === 'number' ? `/activites/${activity.id}` : '/activites'}
-        className="landing-button mt-auto inline-flex h-10 items-center justify-center rounded-xl bg-blue-700 px-4 text-sm font-bold text-white transition hover:bg-blue-800"
+        className="landing-button mt-auto inline-flex h-9 items-center justify-center rounded-lg bg-blue-700 px-4 text-sm font-bold text-white transition hover:bg-blue-800"
       >
-        Voir
+        {t('common.open')}
       </Link>
     </article>
   )
@@ -530,69 +390,25 @@ function ProjectCard({ project, t }) {
   const status = project.statut || 'EN_COURS'
 
   return (
-    <article className="reveal fade-up flex min-h-[250px] flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-950/10">
+    <article className="reveal fade-up flex min-h-[220px] flex-col rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-950/10">
       <StatusPill status={status} t={t} />
-      <h3 className="mt-5 text-xl font-black leading-snug text-slate-950">{project.titre}</h3>
-      <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600">
-        {project.description || 'Description à venir.'}
+      <h3 className="mt-4 line-clamp-2 text-lg font-black leading-snug text-slate-950">{project.titre}</h3>
+      <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
+        {project.description || t('home.projectFallbackDescription')}
       </p>
       <Link
         to="/projets"
-        className="landing-button mt-auto inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-4 text-sm font-bold text-blue-800 transition hover:border-blue-700 hover:bg-blue-700 hover:text-white"
+        className="landing-button mt-auto inline-flex h-9 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-4 text-sm font-bold text-blue-800 transition hover:border-blue-700 hover:bg-blue-700 hover:text-white"
       >
-        Découvrir
+        {t('home.projectDiscover')}
       </Link>
-    </article>
-  )
-}
-
-function PartnerCard({ partner, index }) {
-  const typeLabel = PARTNER_TYPE_LABELS[partner.typePartenaire] || PARTNER_TYPE_LABELS.AUTRE
-  const description = partner.description || 'Partenaire engagé auprès de la communauté BX-Connect.'
-  const website = normalizeExternalUrl(partner.siteWeb)
-
-  return (
-    <article
-      className="reveal fade-up stagger flex min-h-[230px] flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-950/10"
-      style={{ '--stagger-delay': `${index * 80}ms` }}
-    >
-      <div className="flex items-start gap-4">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-          {partner.logoUrl ? (
-            <img src={partner.logoUrl} alt="" loading="lazy" className="h-full w-full object-contain p-2" />
-          ) : (
-            <AppIcon name="Building" className="h-6 w-6 text-blue-700" />
-          )}
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs font-bold uppercase tracking-wide text-blue-700">{typeLabel}</p>
-          <h3 className="mt-1 line-clamp-2 text-lg font-black leading-snug text-slate-950">
-            {partner.nomOrganisation}
-          </h3>
-        </div>
-      </div>
-      <p className="mt-5 line-clamp-3 text-sm leading-6 text-slate-600">{description}</p>
-      {website ? (
-        <a
-          href={website}
-          target="_blank"
-          rel="noreferrer"
-          className="landing-button mt-auto inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-4 text-sm font-bold text-blue-800 transition hover:border-blue-700 hover:bg-blue-700 hover:text-white"
-        >
-          Site web
-        </a>
-      ) : (
-        <span className="mt-auto inline-flex h-10 items-center justify-center rounded-xl bg-slate-100 px-4 text-sm font-bold text-slate-600">
-          Découvrir
-        </span>
-      )}
     </article>
   )
 }
 
 function EmptyLandingState({ text }) {
   return (
-    <div className="reveal fade-up rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm font-semibold text-slate-500 shadow-sm shadow-slate-900/5">
+    <div className="reveal fade-up rounded-lg border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-500 shadow-sm shadow-slate-900/5">
       {text}
     </div>
   )
@@ -610,28 +426,21 @@ function IconLine({ icon, value }) {
   return (
     <p className="flex items-center gap-2">
       <AppIcon name={icon} className="h-4 w-4 text-blue-700" />
-      <span>{value}</span>
+      <span className="line-clamp-1">{value}</span>
     </p>
   )
 }
 
 function LoadingBlock({ label }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm font-semibold text-slate-500 shadow-sm shadow-slate-900/5">
+    <div className="rounded-lg border border-slate-200 bg-white p-6 text-center text-sm font-semibold text-slate-500 shadow-sm shadow-slate-900/5">
       {label}
     </div>
   )
 }
 
-function normalizeExternalUrl(value) {
-  if (!value) return null
-  const trimmed = String(value).trim()
-  if (!trimmed) return null
-  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
-}
-
-function formatDate(value, language = 'fr') {
-  if (!value) return 'Date à confirmer'
+function formatDate(value, language = 'fr', t) {
+  if (!value) return t('home.dateToConfirm')
 
   try {
     return new Date(value).toLocaleDateString(language || 'fr-BE', {
@@ -640,12 +449,12 @@ function formatDate(value, language = 'fr') {
       year: 'numeric',
     })
   } catch {
-    return 'Date à confirmer'
+    return t('home.dateToConfirm')
   }
 }
 
 function formatStatus(status) {
-  return String(status || 'En cours').replaceAll('_', ' ')
+  return String(status || '').replaceAll('_', ' ')
 }
 
 function statusStyle(status) {

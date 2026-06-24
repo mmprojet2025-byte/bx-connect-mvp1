@@ -11,11 +11,13 @@ import { userFriendlyError } from '../../utils/userFriendlyError';
 import StatusBadge from '../../components/StatusBadge';
 import ActivityCover from '../../components/ActivityCover';
 import AppIcon from '../../components/ui/AppIcons';
+import LoadingState from '../../components/ui/LoadingState';
+import ErrorState from '../../components/ui/ErrorState';
 
 export default function ActiviteDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isMembre } = useAuth();
   const { t, i18n } = useTranslation();
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
@@ -24,7 +26,7 @@ export default function ActiviteDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [inscrit, setInscrit] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     fetchActivite();
@@ -81,20 +83,42 @@ export default function ActiviteDetail() {
       navigate('/login');
       return;
     }
+    if (!isMembre || !activite?.peutSInscrire) return;
+    setActionLoading(true);
+    setError('');
+    setMessage('');
     try {
-      await api.post('/inscriptions', { activiteId: parseInt(id) });
-      setMessage(t('activities.success_register'));
-      setInscrit(true);
+      const response = await api.post('/inscriptions', { activiteId: parseInt(id) });
+      setMessage(registrationSuccessMessage(response.data, activite, t));
+      await fetchActivite();
     } catch (err) {
       setError(userFriendlyError(err, t('activities.error_register')));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleAnnulerInscription = async () => {
+    if (!activite?.inscriptionId) return;
+    setActionLoading(true);
+    setError('');
+    setMessage('');
+    try {
+      await api.delete(`/inscriptions/${activite.inscriptionId}`);
+      setMessage(t('activities.success_cancel_registration'));
+      await fetchActivite();
+    } catch (err) {
+      setError(userFriendlyError(err, t('activities.error_cancel_registration')));
+    } finally {
+      setActionLoading(false);
     }
   };
 
   if (loading) return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
-      <main className="flex-1 flex items-center justify-center">
-        <p className="text-gray-400">{t('common.loading')}</p>
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
+        <LoadingState label={t('common.loading')} />
       </main>
       <Footer />
     </div>
@@ -103,14 +127,13 @@ export default function ActiviteDetail() {
   if (error && !activite) return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
-      <main className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <AppIcon name="AlertTriangle" className="mx-auto mb-4 h-12 w-12 text-orange-300" />
-          <p className="text-gray-500">{error}</p>
-          <button onClick={() => navigate('/activites')} className="mt-4 text-blue-700 hover:underline text-sm">
-            {t('activities.back_to_activities')}
-          </button>
-        </div>
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
+        <ErrorState
+          title={t('activities.not_found')}
+          description={error}
+          actionLabel={t('activities.back_to_activities')}
+          action={() => navigate('/activites')}
+        />
       </main>
       <Footer />
     </div>
@@ -271,20 +294,15 @@ export default function ActiviteDetail() {
               )}
 
               <div className="flex flex-col gap-3 mt-5">
-              {/* S'inscrire */}
-              {activite.statut === 'PUBLIEE' && !inscrit && (
-                <button
-                  onClick={handleInscrire}
-                  className="bg-blue-700 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl transition text-center"
-                >
-                  {isAuthenticated ? t('activities.register_this') : t('activities.login_to_register')}
-                </button>
-              )}
-              {inscrit && (
-                <div className="bg-green-50 border border-green-200 text-green-700 px-6 py-3 rounded-xl text-sm font-semibold">
-                  {t('activities.already_registered')}
-                </div>
-              )}
+              <DetailActivityAction
+                activite={activite}
+                isAuthenticated={isAuthenticated}
+                isMembre={isMembre}
+                loading={actionLoading}
+                onRegister={handleInscrire}
+                onCancelRegistration={handleAnnulerInscription}
+                t={t}
+              />
 
               {/* Retour */}
               <button
@@ -306,6 +324,67 @@ export default function ActiviteDetail() {
 
 function InfoBlock({ children }) {
   return <div className="border-b border-white pb-3 last:border-0 last:pb-0">{children}</div>;
+}
+
+function DetailActivityAction({ activite, isAuthenticated, isMembre, loading, onRegister, onCancelRegistration, t }) {
+  const situation = getActivitySituation(activite, t);
+
+  if (situation.key === 'registered') {
+    return (
+      <div className="space-y-2">
+        <div className="bg-green-50 border border-green-200 text-green-700 px-6 py-3 rounded-xl text-sm font-semibold">
+          {situation.label}
+        </div>
+        <button
+          type="button"
+          disabled={loading}
+          onClick={onCancelRegistration}
+          className="w-full rounded-xl border border-amber-200 bg-amber-50 px-6 py-3 text-sm font-semibold text-amber-800 transition hover:bg-amber-100 disabled:opacity-60"
+        >
+          {t('activities.cancel_registration')}
+        </button>
+      </div>
+    );
+  }
+
+  if (situation.key !== 'open') {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-600">
+        {situation.label}
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <button
+        type="button"
+        onClick={onRegister}
+        className="bg-blue-700 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl transition text-center"
+      >
+        {t('activities.login_to_register')}
+      </button>
+    );
+  }
+
+  if (situation.key === 'open' && isMembre) {
+    return (
+      <button
+        type="button"
+        disabled={loading}
+        onClick={onRegister}
+        className="bg-blue-700 hover:bg-blue-600 disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-xl transition text-center"
+      >
+        {loading ? t('common.saving') : t('activities.register_this')}
+      </button>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-600">
+      {t('activities.memberOnlyRegistration')}
+    </div>
+  );
 }
 
 function buildLocationDetails(activite) {
@@ -336,4 +415,56 @@ function buildLocationDetails(activite) {
     label,
     routeUrl: `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(routeQuery)}`,
   };
+}
+
+function getActivitySituation(activity, t) {
+  if (activity?.inscrit || activity?.inscriptionId || activity?.statutInscription) {
+    const label = activity.statutInscription === 'EN_ATTENTE_PAIEMENT'
+      ? t('activities.payment_required')
+      : t('activities.already_registered');
+    return { key: 'registered', label };
+  }
+  if (activity?.peutSInscrire === false && activity?.raisonIndisponible) {
+    return {
+      key: reasonToSituationKey(activity.raisonIndisponible),
+      label: unavailableReasonLabel(activity.raisonIndisponible, t),
+    };
+  }
+  if (['TERMINEE', 'TERMINE'].includes(activity?.statut) || (activity?.dateFin && new Date(activity.dateFin) < new Date())) {
+    return { key: 'done', label: t('activities.done') };
+  }
+  if (isActivityFull(activity)) {
+    return { key: 'full', label: t('activities.full') };
+  }
+  if (activity?.statut === 'PUBLIEE') {
+    return { key: 'open', label: t('activities.registrationOpen') };
+  }
+  return { key: 'closed', label: t(`statuses.${activity?.statut}`, { defaultValue: activity?.statut || t('activities.registrationUnavailable') }) };
+}
+
+function isActivityFull(activity) {
+  const capacity = Number(activity?.capaciteMax);
+  const registered = Number(activity?.nombreInscrits ?? activity?.nombreParticipants ?? activity?.inscriptionsCount);
+  return capacity > 0 && registered >= capacity;
+}
+
+function registrationSuccessMessage(inscription, activity, t) {
+  if (inscription?.statut === 'EN_ATTENTE_PAIEMENT' || activity?.gratuite === false) {
+    return t('activities.success_register_payment_required');
+  }
+  return t('activities.success_register');
+}
+
+function unavailableReasonLabel(reason, t) {
+  return t(`activities.unavailableReasons.${reason}`, {
+    defaultValue: t('activities.registrationUnavailable'),
+  });
+}
+
+function reasonToSituationKey(reason) {
+  if (reason === 'DEJA_INSCRIT') return 'registered';
+  if (reason === 'COMPLETE') return 'full';
+  if (['PASSEE', 'TERMINEE'].includes(reason)) return 'done';
+  if (reason === 'ANNULEE') return 'cancelled';
+  return 'closed';
 }
