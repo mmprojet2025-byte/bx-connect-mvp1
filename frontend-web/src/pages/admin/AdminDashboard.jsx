@@ -1,24 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import {
-  Bar,
-  BarChart,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
 import api from '../../api/axios'
 import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
 import ErrorState from '../../components/ui/ErrorState'
 import LoadingState from '../../components/ui/LoadingState'
 import AppIcon from '../../components/ui/AppIcons'
-import ActivityFeed from '../../components/dashboard/ActivityFeed'
 import CompactKpiRow from '../../components/dashboard/CompactKpiRow'
 import {
   CollaborativeDashboardLayout,
@@ -30,6 +18,7 @@ export default function AdminDashboard() {
   const [projets, setProjets] = useState([])
   const [soutiens, setSoutiens] = useState([])
   const [activites, setActivites] = useState([])
+  const [opportunites, setOpportunites] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const { t } = useTranslation()
@@ -38,18 +27,20 @@ export default function AdminDashboard() {
     setLoading(true)
     setError('')
     try {
-      const [groupesRes, attenteRes, projetsRes, soutiensRes, activitesRes] = await Promise.all([
+      const [groupesRes, attenteRes, projetsRes, soutiensRes, activitesRes, opportunitesRes] = await Promise.all([
         api.get('/admin/groupes'),
         api.get('/admin/groupes/en-attente'),
         api.get('/projets/admin/tous').catch(() => ({ data: [] })),
         api.get('/partenaire/admin/tous').catch(() => ({ data: [] })),
         api.get('/activites/admin/toutes').catch(() => ({ data: [] })),
+        api.get('/annonces/admin/opportunites').catch(() => ({ data: [] })),
       ])
       setGroupes(groupesRes.data)
       setGroupesEnAttente(attenteRes.data)
       setProjets(Array.isArray(projetsRes.data) ? projetsRes.data : [])
       setSoutiens(Array.isArray(soutiensRes.data) ? soutiensRes.data : [])
       setActivites(Array.isArray(activitesRes.data) ? activitesRes.data : [])
+      setOpportunites(Array.isArray(opportunitesRes.data) ? opportunitesRes.data : [])
     } catch {
       setError(t('admin.error_load'))
     } finally {
@@ -66,24 +57,14 @@ export default function AdminDashboard() {
   const projetsSoumis = projets.filter(projet => ['VALIDE_REFERENT', 'SOUMIS'].includes(projet.statut))
   const soutiensEnAttente = soutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE')
   const activitesAPublier = activites.filter(activite => activite.statut === 'BROUILLON')
-  const pendingTotal = groupesEnAttente.length + projetsSoumis.length + soutiensEnAttente.length + activitesAPublier.length
-  const projectStatusData = useMemo(
-    () => buildStatusData(projets, 'statut', t),
-    [projets, t]
-  )
-  const activityStatusData = useMemo(
-    () => buildStatusData(activites, 'statut', t),
-    [activites, t]
-  )
-  const supportStatusData = useMemo(
-    () => buildStatusData(soutiens, 'statutPaiement', t),
-    [soutiens, t]
-  )
+  const opportunitesEnAttente = opportunites.filter(opportunite => opportunite.statutModeration === 'EN_ATTENTE')
+  const pendingTotal = groupesEnAttente.length + projetsSoumis.length + soutiensEnAttente.length + opportunitesEnAttente.length
   const hasDashboardData = groupes.length > 0
     || groupesEnAttente.length > 0
     || projets.length > 0
     || soutiens.length > 0
     || activites.length > 0
+    || opportunites.length > 0
 
   return (
     <CollaborativeDashboardLayout
@@ -114,6 +95,7 @@ export default function AdminDashboard() {
                 { icon: 'TriangleAlert', label: t('ux.adminDashboard.priority'), value: pendingTotal, tone: pendingTotal > 0 ? 'amber' : 'green' },
                 { icon: 'Clock', label: t('ux.adminDashboard.pendingGroups'), value: groupesEnAttente.length, tone: groupesEnAttente.length > 0 ? 'amber' : 'blue' },
                 { icon: 'Rocket', label: t('admin.projectsToValidate'), value: projetsSoumis.length, tone: projetsSoumis.length > 0 ? 'amber' : 'blue' },
+                { icon: 'Megaphone', label: t('admin.opportunitiesToModerate', { defaultValue: 'Opportunités à modérer' }), value: opportunitesEnAttente.length, tone: opportunitesEnAttente.length > 0 ? 'amber' : 'blue' },
                 { icon: 'Handshake', label: t('nav.supports', { defaultValue: 'Soutiens' }), value: soutiensEnAttente.length, tone: soutiensEnAttente.length > 0 ? 'amber' : 'blue' },
               ]}
             />
@@ -123,24 +105,16 @@ export default function AdminDashboard() {
               groupesEnAttente={groupesEnAttente}
               projetsSoumis={projetsSoumis}
               soutiensEnAttente={soutiensEnAttente}
+              opportunitesEnAttente={opportunitesEnAttente}
               activitesAPublier={activitesAPublier}
               t={t}
             />
 
-            <AdminCharts
-              projectStatusData={projectStatusData}
-              activityStatusData={activityStatusData}
-              supportStatusData={supportStatusData}
+            <AdminImpactCta
+              groupsWithoutReferent={groupesSansReferent.length}
+              activitiesToPublish={activitesAPublier.length}
+              pendingTotal={pendingTotal}
               t={t}
-            />
-
-            <ActivityFeed
-              title={t('activityFeed.title', { defaultValue: 'Mon fil d’activité' })}
-              subtitle={t('activityFeed.adminSubtitle', { defaultValue: 'Validations, créations et changements de statut à surveiller.' })}
-              emptyLabel={t('admin.noRecentActivity', { defaultValue: 'Aucune activité récente à afficher.' })}
-              items={buildAdminActivityItems({ groupesEnAttente, groupesSansReferent, projets, soutiens, activites, t })}
-              accent="blue"
-              limit={5}
             />
 
             {groupes.length === 0 && (
@@ -159,149 +133,7 @@ export default function AdminDashboard() {
   )
 }
 
-const CHART_COLORS = ['#2563eb', '#0f766e', '#d97706', '#7c3aed', '#dc2626', '#64748b']
-
-function buildStatusData(items, field, t) {
-  const counts = items.reduce((acc, item) => {
-    const status = item[field] || 'UNKNOWN'
-    acc[status] = (acc[status] || 0) + 1
-    return acc
-  }, {})
-
-  return Object.entries(counts).map(([status, value]) => ({
-    status,
-    label: t(`statuses.${status}`, { defaultValue: status.replaceAll('_', ' ') }),
-    value,
-  }))
-}
-
-function AdminCharts({ projectStatusData, activityStatusData, supportStatusData, t }) {
-  const hasProjects = projectStatusData.length > 0
-  const hasActivities = activityStatusData.length > 0
-  const hasSupports = supportStatusData.length > 0
-
-  if (!hasProjects && !hasActivities && !hasSupports) return null
-
-  return (
-    <section className="mb-6 rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-lg shadow-slate-950/5">
-      <SectionHeader icon="BarChart" title={t('dashboardCharts.title')} subtitle={t('dashboardCharts.adminSubtitle')} />
-      <div className="grid gap-4 xl:grid-cols-3">
-        {hasProjects && (
-          <ChartPanel title={t('dashboardCharts.projectsByStatus')}>
-            <StatusBarChart data={projectStatusData} />
-          </ChartPanel>
-        )}
-        {hasActivities && (
-          <ChartPanel title={t('dashboardCharts.activitiesByStatus')}>
-            <StatusPieChart data={activityStatusData} />
-          </ChartPanel>
-        )}
-        {hasSupports && (
-          <ChartPanel title={t('dashboardCharts.supportsByStatus')}>
-            <StatusPieChart data={supportStatusData} />
-          </ChartPanel>
-        )}
-      </div>
-    </section>
-  )
-}
-
-function ChartPanel({ title, children }) {
-  return (
-    <article className="min-h-[240px] rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
-      <h3 className="mb-3 text-sm font-black text-slate-800">{title}</h3>
-      {children}
-    </article>
-  )
-}
-
-function StatusBarChart({ data }) {
-  return (
-    <div className="h-48">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
-          <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} height={52} />
-          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-          <Tooltip />
-          <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-            {data.map((entry, index) => (
-              <Cell key={entry.status} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  )
-}
-
-function StatusPieChart({ data }) {
-  return (
-    <div className="h-48">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie data={data} dataKey="value" nameKey="label" innerRadius={42} outerRadius={72} paddingAngle={3}>
-            {data.map((entry, index) => (
-              <Cell key={entry.status} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip />
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
-  )
-}
-
-function buildAdminActivityItems({ groupesEnAttente, groupesSansReferent, projets, soutiens, activites, t }) {
-  const groupItems = [
-    ...groupesEnAttente.map(groupe => ({
-      key: `groupe-attente-${groupe.id}`,
-      icon: 'Users',
-      title: t('ux.adminDashboard.pendingGroups'),
-      description: groupe.nom,
-      date: groupe.dateCreation || groupe.dateDemande,
-      to: '/admin/groupes',
-    })),
-    ...groupesSansReferent.map(groupe => ({
-      key: `groupe-sans-referent-${groupe.id}`,
-      icon: 'User',
-      title: t('ux.adminDashboard.groupsWithoutReferent'),
-      description: groupe.nom,
-      date: groupe.dateModification || groupe.dateCreation,
-      to: '/admin/groupes',
-    })),
-  ]
-
-  const projectItems = projets.map(projet => ({
-    key: `projet-${projet.id}`,
-    icon: 'Rocket',
-    title: projet.titre,
-    description: projet.statut ? t(`statuses.${projet.statut}`, { defaultValue: projet.statut }) : t('nav.projects'),
-    date: projet.dateModification || projet.dateCreation,
-    to: '/admin/projets',
-  }))
-
-  const supportItems = soutiens.map(soutien => ({
-    key: `soutien-${soutien.id}`,
-    icon: 'Handshake',
-    title: soutien.projetTitre || soutien.activiteTitre || t('nav.supports', { defaultValue: 'Soutien partenaire' }),
-    description: soutien.statutPaiement || t('partnerSupport.admin.title'),
-    date: soutien.dateCreation || soutien.datePaiement,
-    to: `/admin/soutiens?soutien=${soutien.id}`,
-  }))
-
-  const activityItems = activites.map(activite => ({
-    key: `activite-${activite.id}`,
-    icon: 'Calendar',
-    title: activite.titre,
-    description: activite.statut ? t(`statuses.${activite.statut}`, { defaultValue: activite.statut }) : t('nav.activities'),
-    date: activite.dateModification || activite.dateCreation || activite.dateDebut,
-    to: '/admin/activites',
-  }))
-
-  return [...groupItems, ...projectItems, ...supportItems, ...activityItems]
-}
-
-function AdminQueue({ groupesSansReferent, groupesEnAttente, projetsSoumis, soutiensEnAttente, activitesAPublier, t }) {
+function AdminQueue({ groupesSansReferent, groupesEnAttente, projetsSoumis, soutiensEnAttente, opportunitesEnAttente, activitesAPublier, t }) {
   const items = [
     {
       icon: 'User',
@@ -323,6 +155,13 @@ function AdminQueue({ groupesSansReferent, groupesEnAttente, projetsSoumis, sout
       value: projetsSoumis.length,
       description: t('admin.submittedProjectsDesc', { defaultValue: 'Projets à relire ou orienter.' }),
       to: '/admin/projets',
+    },
+    {
+      icon: 'Megaphone',
+      label: t('admin.opportunitiesToModerate', { defaultValue: 'Opportunités à modérer' }),
+      value: opportunitesEnAttente.length,
+      description: t('admin.opportunitiesToModerateDesc', { defaultValue: 'Publications partenaires à publier ou refuser.' }),
+      to: '/admin/annonces',
     },
     {
       icon: 'Handshake',
@@ -354,6 +193,40 @@ function AdminQueue({ groupesSansReferent, groupesEnAttente, projetsSoumis, sout
           {activeItems.slice(0, 5).map(item => <PriorityCard key={item.label} {...item} />)}
         </div>
       )}
+    </section>
+  )
+}
+
+function AdminImpactCta({ groupsWithoutReferent, activitiesToPublish, pendingTotal, t }) {
+  return (
+    <section className="mb-6 rounded-xl border border-blue-100 bg-white p-5 shadow-lg shadow-blue-950/5">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-start gap-3">
+          <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+            <AppIcon name="BarChart3" className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="text-lg font-black text-slate-950">
+              {t('impact.title', { defaultValue: 'Centre d’Impact' })}
+            </h2>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+              {t('admin.impactCtaDescription', {
+                pending: pendingTotal,
+                groups: groupsWithoutReferent,
+                activities: activitiesToPublish,
+                defaultValue: `${pendingTotal} action(s) à suivre · ${groupsWithoutReferent} groupe(s) sans référent · ${activitiesToPublish} activité(s) à publier.`,
+              })}
+            </p>
+          </div>
+        </div>
+        <Link
+          to="/impact"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-black text-white transition hover:bg-blue-600"
+        >
+          {t('admin.openImpactCenter', { defaultValue: 'Ouvrir le Centre d’Impact' })}
+          <AppIcon name="ArrowRight" className="h-4 w-4" />
+        </Link>
+      </div>
     </section>
   )
 }

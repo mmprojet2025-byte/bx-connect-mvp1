@@ -8,7 +8,6 @@ import AppIcon from '../../components/ui/AppIcons'
 import ErrorState from '../../components/ui/ErrorState'
 import LoadingState from '../../components/ui/LoadingState'
 import { CollaborativeDashboardLayout } from '../../components/dashboard/CollaborativeDashboard'
-import ActivityFeed from '../../components/dashboard/ActivityFeed'
 import CompactKpiRow from '../../components/dashboard/CompactKpiRow'
 
 export default function ReferentDashboard() {
@@ -62,13 +61,10 @@ export default function ReferentDashboard() {
     () => detailsGroupes.flatMap(item => item.demandes.map(demande => ({ ...demande, groupeNom: item.groupe.nom }))).slice(0, 5),
     [detailsGroupes]
   )
-  const membresRecents = useMemo(
-    () => detailsGroupes.flatMap(item => item.membres.map(membre => ({ ...membre, groupeNom: item.groupe.nom }))).slice(0, 5),
-    [detailsGroupes]
-  )
   const activitesAPublier = activites.filter(activite => activite.statut === 'BROUILLON')
-  const projetsASuivre = projets.filter(projet => ['SOUMIS', 'EN_COURS'].includes(projet.statut)).slice(0, 3)
-  const activityItems = buildReferentActivityItems({ demandes: demandesRecentes, membres: membresRecents, activites, projets, t })
+  const activitesAPreparer = activites.filter(activite => isUpcomingActivity(activite)).slice(0, 3)
+  const presencesAEncoder = activites.filter(activite => isPastActivity(activite)).slice(0, 3)
+  const projetsARelire = projets.filter(projet => projet.statut === 'SOUMIS').slice(0, 3)
   const hasDashboardData = detailsGroupes.length > 0 || activites.length > 0 || projets.length > 0
 
   return (
@@ -99,113 +95,76 @@ export default function ReferentDashboard() {
               className="mb-4"
               items={[
                 { icon: 'Users', label: t('ux.referentDashboard.assignedGroups'), value: stats.groupes },
-                { icon: 'User', label: t('ux.referentDashboard.members'), value: stats.membres },
                 { icon: 'Clock', label: t('ux.referentDashboard.pendingRequests'), value: stats.demandes, tone: stats.demandes > 0 ? 'amber' : 'green' },
-                { icon: 'Calendar', label: t('nav.activities'), value: stats.activites },
+                { icon: 'Rocket', label: t('referent.projectsToReview', { defaultValue: 'Projets à relire' }), value: projetsARelire.length, tone: projetsARelire.length > 0 ? 'amber' : 'green' },
+                { icon: 'ClipboardList', label: t('referent.presencesToEncode', { defaultValue: 'Présences à encoder' }), value: presencesAEncoder.length, tone: presencesAEncoder.length > 0 ? 'amber' : 'green' },
               ]}
             />
-
-            <ReferentImpactCta stats={stats} projectsCount={projets.length} t={t} />
 
             <ReferentWorkQueue
               demandes={demandesRecentes}
               activitesAPublier={activitesAPublier}
-              projets={projetsASuivre}
+              activitesAPreparer={activitesAPreparer}
+              presencesAEncoder={presencesAEncoder}
+              projets={projetsARelire}
               t={t}
               language={i18n.language}
             />
 
-            {activityItems.length > 0 && (
-            <div className="mb-5">
-              <ActivityFeed
-                title={t('activityFeed.title', { defaultValue: 'Mon fil d’activité' })}
-                subtitle={t('activityFeed.referentSubtitle', { defaultValue: 'Demandes, membres, activités et projets liés à vos groupes.' })}
-                emptyLabel={t('activityFeed.empty', { defaultValue: 'Aucune activité récente pour le moment.' })}
-                items={activityItems}
-                language={i18n.language}
-                accent="teal"
-                limit={5}
-              />
-            </div>
-            )}
+            <ReferentQuickAccess stats={stats} projectsCount={projets.length} t={t} />
           </>
         )}
     </CollaborativeDashboardLayout>
   )
 }
 
-function buildReferentActivityItems({ demandes, membres, activites, projets, t }) {
-  const requestItems = demandes.map(demande => ({
-    key: `demande-${demande.id}`,
-    icon: 'ClipboardList',
-    title: t('referent.requestToReview', { defaultValue: 'Demande à valider' }),
-    description: `${demande.prenom} ${demande.nom} · ${demande.groupeNom}`,
-    date: demande.dateAdhesion || demande.dateCreation,
-    to: '/referent/demandes',
-  }))
-
-  const memberItems = membres.map(membre => ({
-    key: `membre-${membre.groupeNom}-${membre.id}`,
-    icon: 'User',
-    title: t('referent.memberToWelcome', { defaultValue: 'Nouveau membre à accueillir' }),
-    description: `${membre.prenom} ${membre.nom} · ${membre.groupeNom}`,
-    date: membre.dateAdhesion || membre.dateCreation,
-    to: '/referent/membres',
-  }))
-
-  const activityItems = activites.map(activite => ({
-    key: `activite-${activite.id}`,
-    icon: 'Calendar',
-    title: activite.titre,
-    description: activite.statut ? t(`statuses.${activite.statut}`, { defaultValue: activite.statut }) : t('nav.activities'),
-    date: activite.dateModification || activite.dateCreation || activite.dateDebut,
-    to: activite.id ? `/activites/${activite.id}` : '/referent/activites',
-  }))
-
-  const projectItems = projets.map(projet => ({
-    key: `projet-${projet.id}`,
-    icon: 'Rocket',
-    title: projet.titre,
-    description: projet.statut ? t(`statuses.${projet.statut}`, { defaultValue: projet.statut }) : t('nav.projects'),
-    date: projet.dateModification || projet.dateCreation,
-    to: projet.id ? `/projets/${projet.id}` : '/referent/projets',
-  }))
-
-  return [...requestItems, ...memberItems, ...activityItems, ...projectItems]
-}
-
-function ReferentImpactCta({ stats, projectsCount, t }) {
+function ReferentQuickAccess({ stats, projectsCount, t }) {
   return (
     <section className="mb-6 rounded-xl border border-teal-100 bg-white p-5 shadow-lg shadow-teal-950/5">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-start gap-3">
-          <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+      <SectionHeader
+        icon="BarChart3"
+        title={t('referent.quickAccessTitle', { defaultValue: 'Pilotage de mes groupes' })}
+        subtitle={t('referent.quickAccessSubtitle', { defaultValue: 'Accès rapides aux vues d’analyse et aux rapports.' })}
+      />
+      <div className="grid gap-3 md:grid-cols-2">
+        <Link
+          to="/referent/impact"
+          className="flex items-start gap-3 rounded-lg border border-teal-100 bg-teal-50 p-4 transition hover:bg-teal-100"
+        >
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-teal-700">
             <AppIcon name="BarChart3" className="h-5 w-5" />
           </span>
-          <div>
-            <h2 className="text-lg font-black text-slate-950">{t('referentImpact.cta.title')}</h2>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+          <span>
+            <span className="block font-black text-slate-950">{t('referentImpact.cta.title')}</span>
+            <span className="mt-1 block text-sm leading-6 text-slate-500">
               {t('referentImpact.cta.description', {
                 groups: stats.groupes,
                 activities: stats.activites,
                 projects: projectsCount,
               })}
-            </p>
-          </div>
-        </div>
+            </span>
+          </span>
+        </Link>
         <Link
-          to="/referent/impact"
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2 text-sm font-black text-white transition hover:bg-teal-600"
+          to="/referent/rapports"
+          className="flex items-start gap-3 rounded-lg border border-slate-100 bg-slate-50 p-4 transition hover:bg-white hover:shadow-md"
         >
-          {t('referentImpact.cta.action')}
-          <AppIcon name="ArrowRight" className="h-4 w-4" />
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-slate-700">
+            <AppIcon name="FileText" className="h-5 w-5" />
+          </span>
+          <span>
+            <span className="block font-black text-slate-950">{t('referent.reportsQuickAccess', { defaultValue: 'Rapports de groupe' })}</span>
+            <span className="mt-1 block text-sm leading-6 text-slate-500">
+              {t('referent.reportsQuickAccessDesc', { defaultValue: 'Exporter les données terrain de vos groupes en PDF ou Excel.' })}
+            </span>
+          </span>
         </Link>
       </div>
     </section>
   )
 }
 
-function ReferentWorkQueue({ demandes, activitesAPublier, projets, t, language }) {
+function ReferentWorkQueue({ demandes, activitesAPublier, activitesAPreparer, presencesAEncoder, projets, t, language }) {
   const actions = [
     ...demandes.map(demande => ({
       key: `demande-${demande.id}`,
@@ -225,10 +184,28 @@ function ReferentWorkQueue({ demandes, activitesAPublier, projets, t, language }
       to: '/referent/activites',
       tone: 'teal',
     })),
+    ...activitesAPreparer.map(activite => ({
+      key: `activite-preparer-${activite.id}`,
+      icon: 'Calendar',
+      title: t('referent.activityToPrepare', { defaultValue: 'Activité à préparer' }),
+      description: activite.titre,
+      meta: activite.dateDebut ? formatDate(activite.dateDebut, language) : '',
+      to: '/referent/activites',
+      tone: 'teal',
+    })),
+    ...presencesAEncoder.map(activite => ({
+      key: `presence-${activite.id}`,
+      icon: 'ClipboardList',
+      title: t('referent.presencesToEncodeOne', { defaultValue: 'Présences à encoder' }),
+      description: activite.titre,
+      meta: activite.dateDebut ? formatDate(activite.dateDebut, language) : '',
+      to: activite.id ? `/referent/activites/${activite.id}/presences` : '/referent/activites',
+      tone: 'amber',
+    })),
     ...projets.map(projet => ({
       key: `projet-${projet.id}`,
       icon: 'Rocket',
-      title: t('referent.projectToFollow', { defaultValue: 'Projet à suivre' }),
+      title: t('referent.projectToReview', { defaultValue: 'Projet à relire' }),
       description: projet.titre,
       meta: projet.statut,
       to: '/referent/projets',
@@ -297,4 +274,18 @@ function SectionHeader({ icon, title, subtitle }) {
 
 function formatDate(value, language = 'fr') {
   return value ? new Date(value).toLocaleDateString(language) : '-'
+}
+
+function isUpcomingActivity(activite) {
+  if (!activite.dateDebut) return activite.statut === 'PUBLIEE'
+  const date = new Date(activite.dateDebut)
+  if (Number.isNaN(date.getTime())) return false
+  return date >= new Date() && activite.statut !== 'BROUILLON'
+}
+
+function isPastActivity(activite) {
+  if (!activite.dateDebut) return false
+  const date = new Date(activite.dateDebut)
+  if (Number.isNaN(date.getTime())) return false
+  return date < new Date() && !['BROUILLON', 'ANNULEE', 'ANNULE'].includes(activite.statut)
 }
