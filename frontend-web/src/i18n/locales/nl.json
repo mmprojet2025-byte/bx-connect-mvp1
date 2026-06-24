@@ -1260,7 +1260,63 @@
     "chartsActivitiesByStatus": "Open activiteiten per status",
     "chartsProjects": "Projecten",
     "chartsActivities": "Activiteiten",
-    "chartsOtherTargets": "Andere"
+    "chartsOtherTargets": "Andere",
+    "localImpact": {
+      "eyebrow": "Lokaal ecosysteem",
+      "title": "Mijn referent & lokale impact",
+      "subtitle": "Bekijk de referenten, groepen en bijdragen die aan je organisatie gekoppeld zijn.",
+      "connected": "Actieve relaties",
+      "toComplete": "Aan te vullen",
+      "sectionLoadError": "Deze lokale impactgegevens zijn tijdelijk niet beschikbaar.",
+      "myReferent": "Mijn referent",
+      "linkedGroups": "Mijn gekoppelde groepen",
+      "noReferent": "Geen referent gekoppeld",
+      "noReferentDesc": "Een administrator kan je organisatie aan een lokale referent koppelen.",
+      "noGroup": "Geen gekoppelde groep",
+      "noGroupDesc": "Gekoppelde groepen verschijnen hier na administratieve toewijzing.",
+      "unknownReferent": "Referent niet ingevuld",
+      "unknownGroup": "Groep niet ingevuld",
+      "startedAt": "Sinds",
+      "referent": "Referent",
+      "qualityTitle": "Datakwaliteit",
+      "kpis": {
+        "groups": "Gesteunde groepen",
+        "projects": "Gesteunde projecten",
+        "activities": "Gesteunde activiteiten",
+        "opportunities": "Gepubliceerde opportuniteiten",
+        "amount": "Gesteund bedrag",
+        "referents": "Gekoppelde referenten"
+      },
+      "charts": {
+        "groups": "Gesteunde groepen",
+        "linkTypes": "Types koppelingen",
+        "supportEvolution": "Evolutie van steun",
+        "emptyTitle": "Geen lokale grafiekgegevens",
+        "emptyDescription": "Grafieken verschijnen zodra groepen of steun gekoppeld zijn."
+      },
+      "statuses": {
+        "ACTIF": "Actief",
+        "INACTIF": "Inactief"
+      },
+      "linkTypes": {
+        "SOUTIEN": "Steun",
+        "MENTORAT": "Mentoring",
+        "FORMATION": "Opleiding",
+        "EMPLOI": "Job",
+        "LOGISTIQUE": "Logistiek",
+        "AUTRE": "Andere"
+      },
+      "quality": {
+        "noReferent": "Geen referent",
+        "noReferentDesc": "Lokale opvolging is minder duidelijk zonder gekoppelde referent.",
+        "noGroup": "Geen groep",
+        "noGroupDesc": "Gekoppelde groepen maken territoriale impact duidelijker.",
+        "inactiveProfile": "Inactief profiel",
+        "inactiveProfileDesc": "Een inactief profiel kan de publieke zichtbaarheid beperken.",
+        "noRecentSupport": "Geen recente steun",
+        "noRecentSupportDesc": "Recente steun helpt om lokale betrokkenheid aan te tonen."
+      }
+    }
   },
   "partnerSupport": {
     "financial": "Financiële steun",

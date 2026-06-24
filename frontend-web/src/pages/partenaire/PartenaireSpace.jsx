@@ -17,6 +17,8 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import { userFriendlyError } from '../../utils/userFriendlyError';
 import AppIcon from '../../components/ui/AppIcons';
+import LoadingState from '../../components/ui/LoadingState';
+import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 import ProjectVisibilityBadge from '../../components/ProjectVisibilityBadge';
 import { SUPPORT_STATUS_STYLES, supportStatusLabel } from '../../utils/supportStatus';
@@ -39,6 +41,9 @@ export default function PartenaireSpace() {
   const [activitesOuvertes, setActivitesOuvertes] = useState([]);
   const [profilInstitutionnel, setProfilInstitutionnel] = useState(null);
   const [statistiques, setStatistiques] = useState(null);
+  const [mesReferents, setMesReferents] = useState([]);
+  const [mesGroupesLies, setMesGroupesLies] = useState([]);
+  const [impactLocal, setImpactLocal] = useState(null);
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState(emptyPartnerProfile());
@@ -74,8 +79,21 @@ export default function PartenaireSpace() {
         api.get('/partenaire/profil'),
         api.get('/partenaire/statistiques'),
         api.get('/annonces/partenaire/mes-opportunites'),
+        api.get('/partenaire/mes-referents'),
+        api.get('/partenaire/mes-groupes-lies'),
+        api.get('/partenaire/impact-local'),
       ]);
-      const [soutiensRes, projetsRes, activitesRes, profilRes, statsRes, opportunitesRes] = results;
+      const [
+        soutiensRes,
+        projetsRes,
+        activitesRes,
+        profilRes,
+        statsRes,
+        opportunitesRes,
+        referentsRes,
+        groupesLiesRes,
+        impactLocalRes,
+      ] = results;
       const errors = {};
 
       applySettled(soutiensRes, data => setMesSoutiens(data || []), () => { errors.soutiens = t('partnerSpace.sectionLoadError'); });
@@ -87,6 +105,9 @@ export default function PartenaireSpace() {
       }, () => { errors.profil = t('partnerSpace.profileLoadError'); });
       applySettled(statsRes, data => setStatistiques(data || null), () => { errors.stats = t('partnerSpace.sectionLoadError'); });
       applySettled(opportunitesRes, data => setMesOpportunites(data || []), () => { errors.opportunites = t('partnerSpace.sectionLoadError'); });
+      applySettled(referentsRes, data => setMesReferents(data || []), () => { errors.referents = t('partnerSpace.localImpact.sectionLoadError'); });
+      applySettled(groupesLiesRes, data => setMesGroupesLies(data || []), () => { errors.groupesLies = t('partnerSpace.localImpact.sectionLoadError'); });
+      applySettled(impactLocalRes, data => setImpactLocal(data || null), () => { errors.impactLocal = t('partnerSpace.localImpact.sectionLoadError'); });
 
       setSectionErrors(errors);
       if (results.every(result => result.status === 'rejected')) {
@@ -274,6 +295,18 @@ export default function PartenaireSpace() {
     () => buildPartnerChartData({ mesSoutiens, activitesOuvertes, t }),
     [activitesOuvertes, mesSoutiens, t]
   );
+  const localImpact = useMemo(
+    () => buildPartnerLocalImpact({
+      impactLocal,
+      mesReferents,
+      mesGroupesLies,
+      mesSoutiens,
+      mesOpportunites,
+      profilInstitutionnel,
+      t,
+    }),
+    [impactLocal, mesGroupesLies, mesOpportunites, mesReferents, mesSoutiens, profilInstitutionnel, t]
+  );
 
   const displayedPartnerSupports = useMemo(() => {
     if (!focusedSupportId) return mesSoutiens;
@@ -290,7 +323,7 @@ export default function PartenaireSpace() {
       title={t('partnerSpace.title')}
       subtitle={t('partnerSpace.loading')}
     >
-      <p className="rounded-xl bg-white p-10 text-center text-gray-400 shadow-sm">{t('partnerSpace.loading')}</p>
+      <LoadingState label={t('partnerSpace.loading')} />
     </CollaborativeDashboardLayout>
   );
 
@@ -346,6 +379,14 @@ export default function PartenaireSpace() {
         {/* Messages */}
         {message && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>}
         {error   && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>}
+        {error && mesSoutiens.length === 0 && projetsOuverts.length === 0 && activitesOuvertes.length === 0 && (
+          <div className="mb-6">
+            <ErrorState
+              title={t('partnerSpace.loadError')}
+              description={error}
+            />
+          </div>
+        )}
 
         {/* Onglets */}
         <div className="flex gap-2 mb-6 flex-wrap">
@@ -387,6 +428,15 @@ export default function PartenaireSpace() {
             />
 
             {impact.totalSoutiens > 0 && <PartnerImpactSummary impact={impact} t={t} />}
+
+            <PartnerLocalImpactSection
+              impact={localImpact}
+              referents={mesReferents}
+              groupes={mesGroupesLies}
+              sectionErrors={sectionErrors}
+              language={i18n.language}
+              t={t}
+            />
 
             <PartnerCharts data={partnerChartData} t={t} />
 
@@ -898,6 +948,235 @@ export default function PartenaireSpace() {
   );
 }
 
+function PartnerLocalImpactSection({ impact, referents, groupes, sectionErrors, language, t }) {
+  const mainReferent = referents.find(referent => referent.statut === 'ACTIF') || referents[0];
+  const hasReferents = referents.length > 0;
+  const hasGroups = groupes.length > 0;
+
+  return (
+    <section className="mb-6 rounded-xl border border-orange-100 bg-white p-5 shadow-sm">
+      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-orange-600">
+            {t('partnerSpace.localImpact.eyebrow')}
+          </p>
+          <h2 className="text-xl font-black text-slate-950">
+            {t('partnerSpace.localImpact.title')}
+          </h2>
+          <p className="mt-1 text-sm text-slate-500">
+            {t('partnerSpace.localImpact.subtitle')}
+          </p>
+        </div>
+        <span className={`rounded-full px-3 py-1 text-xs font-black ${hasReferents || hasGroups ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+          {hasReferents || hasGroups
+            ? t('partnerSpace.localImpact.connected')
+            : t('partnerSpace.localImpact.toComplete')}
+        </span>
+      </div>
+
+      {(sectionErrors.referents || sectionErrors.groupesLies || sectionErrors.impactLocal) && (
+        <div className="mb-4 grid gap-2 md:grid-cols-3">
+          {sectionErrors.referents && <SectionLoadError message={sectionErrors.referents} />}
+          {sectionErrors.groupesLies && <SectionLoadError message={sectionErrors.groupesLies} />}
+          {sectionErrors.impactLocal && <SectionLoadError message={sectionErrors.impactLocal} />}
+        </div>
+      )}
+
+      <div className="mb-4 grid gap-4 lg:grid-cols-2">
+        <LocalRelationsPanel
+          icon="User"
+          title={t('partnerSpace.localImpact.myReferent')}
+          emptyTitle={t('partnerSpace.localImpact.noReferent')}
+          emptyDescription={t('partnerSpace.localImpact.noReferentDesc')}
+          isEmpty={!hasReferents}
+        >
+          {mainReferent ? (
+            <ReferentCard referent={mainReferent} primary language={language} t={t} />
+          ) : null}
+          {referents.filter(referent => referent.id !== mainReferent?.id).length > 0 && (
+            <div className="mt-3 grid gap-2">
+              {referents.filter(referent => referent.id !== mainReferent?.id).map(referent => (
+                <ReferentCard key={referent.id} referent={referent} language={language} t={t} />
+              ))}
+            </div>
+          )}
+        </LocalRelationsPanel>
+
+        <LocalRelationsPanel
+          icon="Users"
+          title={t('partnerSpace.localImpact.linkedGroups')}
+          emptyTitle={t('partnerSpace.localImpact.noGroup')}
+          emptyDescription={t('partnerSpace.localImpact.noGroupDesc')}
+          isEmpty={!hasGroups}
+        >
+          {groupes.length > 0 ? (
+            <div className="grid gap-2">
+              {groupes.map(groupe => (
+                <LinkedGroupCard key={groupe.id} groupe={groupe} language={language} t={t} />
+              ))}
+            </div>
+          ) : null}
+        </LocalRelationsPanel>
+      </div>
+
+      <CompactKpiRow
+        accent="orange"
+        className="mb-4"
+        items={[
+          { icon: 'Users', label: t('partnerSpace.localImpact.kpis.groups'), value: impact.kpis.groupesSoutenus },
+          { icon: 'Rocket', label: t('partnerSpace.localImpact.kpis.projects'), value: impact.kpis.projetsSoutenus },
+          { icon: 'Calendar', label: t('partnerSpace.localImpact.kpis.activities'), value: impact.kpis.activitesSoutenues },
+          { icon: 'Megaphone', label: t('partnerSpace.localImpact.kpis.opportunities'), value: impact.kpis.opportunitesPubliees },
+          { icon: 'Wallet', label: t('partnerSpace.localImpact.kpis.amount'), value: `${impact.kpis.montantsSoutenus} €` },
+          { icon: 'User', label: t('partnerSpace.localImpact.kpis.referents'), value: impact.kpis.referentsAssocies },
+        ]}
+      />
+
+      <PartnerLocalCharts impact={impact} t={t} />
+
+      <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50 p-4">
+        <h3 className="text-sm font-black text-slate-950">{t('partnerSpace.localImpact.qualityTitle')}</h3>
+        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {impact.quality.map(item => (
+            <LocalQualityItem key={item.key} item={item} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LocalRelationsPanel({ icon, title, emptyTitle, emptyDescription, isEmpty, children }) {
+  return (
+    <article className="rounded-lg border border-slate-100 bg-slate-50 p-4">
+      <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-slate-950">
+        <AppIcon name={icon} className="h-4 w-4 text-orange-600" />
+        {title}
+      </h3>
+      {!isEmpty ? children : (
+        <EmptyState
+          icon={icon}
+          title={emptyTitle}
+          description={emptyDescription}
+        />
+      )}
+    </article>
+  );
+}
+
+function ReferentCard({ referent, primary = false, language, t }) {
+  const fullName = [referent.referentPrenom, referent.referentNom].filter(Boolean).join(' ') || referent.referentEmail || t('partnerSpace.localImpact.unknownReferent');
+
+  return (
+    <div className={`rounded-lg border bg-white p-3 ${primary ? 'border-orange-200 ring-2 ring-orange-50' : 'border-slate-100'}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-black text-slate-950">{fullName}</p>
+          {referent.referentEmail && <p className="mt-0.5 truncate text-xs font-semibold text-slate-500">{referent.referentEmail}</p>}
+        </div>
+        <RelationStatusBadge status={referent.statut} t={t} />
+      </div>
+      {referent.dateDebut && (
+        <p className="mt-2 text-xs font-semibold text-slate-400">
+          {t('partnerSpace.localImpact.startedAt')}: {new Date(referent.dateDebut).toLocaleDateString(language || 'fr-BE')}
+        </p>
+      )}
+      {referent.commentaire && <p className="mt-2 text-sm leading-6 text-slate-600">{referent.commentaire}</p>}
+    </div>
+  );
+}
+
+function LinkedGroupCard({ groupe, language, t }) {
+  const referentName = [groupe.referentPrenom, groupe.referentNom].filter(Boolean).join(' ');
+
+  return (
+    <div className="rounded-lg border border-slate-100 bg-white p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-black text-slate-950">{groupe.groupeNom || t('partnerSpace.localImpact.unknownGroup')}</p>
+          <p className="mt-0.5 text-xs font-semibold text-orange-700">
+            {t(`partnerSpace.localImpact.linkTypes.${groupe.typeLien || 'AUTRE'}`)}
+          </p>
+        </div>
+        <RelationStatusBadge status={groupe.statut} t={t} />
+      </div>
+      <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold text-slate-400">
+        {groupe.dateDebut && (
+          <span>{t('partnerSpace.localImpact.startedAt')}: {new Date(groupe.dateDebut).toLocaleDateString(language || 'fr-BE')}</span>
+        )}
+        {referentName && <span>{t('partnerSpace.localImpact.referent')}: {referentName}</span>}
+      </div>
+      {groupe.commentaire && <p className="mt-2 text-sm leading-6 text-slate-600">{groupe.commentaire}</p>}
+    </div>
+  );
+}
+
+function RelationStatusBadge({ status, t }) {
+  const active = status === 'ACTIF';
+  return (
+    <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-black ${active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
+      {t(`partnerSpace.localImpact.statuses.${status || 'INACTIF'}`)}
+    </span>
+  );
+}
+
+function PartnerLocalCharts({ impact, t }) {
+  const panels = [
+    impact.groupDistribution.length > 0 && {
+      key: 'groups',
+      title: t('partnerSpace.localImpact.charts.groups'),
+      kind: 'bar',
+      data: impact.groupDistribution,
+    },
+    impact.linkTypeDistribution.length > 0 && {
+      key: 'link-types',
+      title: t('partnerSpace.localImpact.charts.linkTypes'),
+      kind: 'pie',
+      data: impact.linkTypeDistribution,
+    },
+    impact.supportEvolution.length > 0 && {
+      key: 'supports-evolution',
+      title: t('partnerSpace.localImpact.charts.supportEvolution'),
+      kind: 'bar',
+      data: impact.supportEvolution,
+    },
+  ].filter(Boolean);
+
+  if (panels.length === 0) {
+    return (
+      <EmptyState
+        icon="BarChart"
+        title={t('partnerSpace.localImpact.charts.emptyTitle')}
+        description={t('partnerSpace.localImpact.charts.emptyDescription')}
+      />
+    );
+  }
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-3">
+      {panels.map(panel => (
+        <ChartPanel key={panel.key} title={panel.title}>
+          {panel.kind === 'pie' ? <PartnerPieChart data={panel.data} /> : <PartnerBarChart data={panel.data} />}
+        </ChartPanel>
+      ))}
+    </div>
+  );
+}
+
+function LocalQualityItem({ item }) {
+  return (
+    <div className="rounded-lg border border-slate-100 bg-white p-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-black text-slate-950">{item.label}</p>
+        <span className={`rounded-full px-2.5 py-1 text-xs font-black ${item.value > 0 ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-700'}`}>
+          {item.value}
+        </span>
+      </div>
+      <p className="mt-2 text-xs font-semibold leading-5 text-slate-500">{item.description}</p>
+    </div>
+  );
+}
+
 function PartnerCharts({ data, t }) {
   const panels = [
     data.supportsByStatus.length > 0 && {
@@ -1256,6 +1535,94 @@ function ImpactMetric({ icon, label, value }) {
 }
 
 const CHART_COLORS = ['#f97316', '#2563eb', '#0f766e', '#d97706', '#7c3aed', '#dc2626', '#64748b'];
+
+function buildPartnerLocalImpact({ impactLocal, mesReferents, mesGroupesLies, mesSoutiens, mesOpportunites, profilInstitutionnel, t }) {
+  const referents = Array.isArray(impactLocal?.referents) ? impactLocal.referents : mesReferents;
+  const groupes = Array.isArray(impactLocal?.groupes) ? impactLocal.groupes : mesGroupesLies;
+  const activeReferents = referents.filter(referent => referent.statut === 'ACTIF' || !referent.statut);
+  const activeGroups = groupes.filter(groupe => groupe.statut === 'ACTIF' || !groupe.statut);
+  const paidSupports = mesSoutiens.filter(soutien => soutien.statutPaiement === 'PAYE');
+  const totalAmount = Number(impactLocal?.totalMontant ?? 0) || mesSoutiens.reduce((sum, soutien) => sum + Number(soutien.montant || 0), 0);
+  const lastSupportDate = mesSoutiens
+    .map(soutien => soutien.datePaiement || soutien.dateCreation)
+    .filter(Boolean)
+    .map(date => new Date(date))
+    .filter(date => !Number.isNaN(date.getTime()))
+    .sort((a, b) => b - a)[0];
+  const hasRecentSupport = lastSupportDate
+    ? Date.now() - lastSupportDate.getTime() <= 1000 * 60 * 60 * 24 * 180
+    : false;
+
+  return {
+    kpis: {
+      groupesSoutenus: Number(impactLocal?.groupesSoutenus ?? impactLocal?.groupesLies ?? activeGroups.length),
+      projetsSoutenus: Number(impactLocal?.projetsSoutenus ?? new Set(mesSoutiens.map(soutien => soutien.projetId).filter(Boolean)).size),
+      activitesSoutenues: Number(impactLocal?.activitesSoutenues ?? new Set(mesSoutiens.map(soutien => soutien.activiteId).filter(Boolean)).size),
+      opportunitesPubliees: Number(impactLocal?.opportunitesPubliees ?? mesOpportunites.filter(opportunite => opportunite.statutModeration === 'PUBLIEE').length),
+      montantsSoutenus: totalAmount,
+      referentsAssocies: Number(impactLocal?.referentsAssocies ?? activeReferents.length),
+    },
+    groupDistribution: activeGroups.map(groupe => ({
+      key: String(groupe.groupeId || groupe.id),
+      label: groupe.groupeNom || t('partnerSpace.localImpact.unknownGroup'),
+      value: 1,
+    })),
+    linkTypeDistribution: buildStatusChartData(
+      activeGroups,
+      groupe => groupe.typeLien || 'AUTRE',
+      type => t(`partnerSpace.localImpact.linkTypes.${type}`, { defaultValue: type })
+    ),
+    supportEvolution: buildSupportEvolutionData(paidSupports.length > 0 ? paidSupports : mesSoutiens, t),
+    quality: [
+      {
+        key: 'no-referent',
+        label: t('partnerSpace.localImpact.quality.noReferent'),
+        description: t('partnerSpace.localImpact.quality.noReferentDesc'),
+        value: activeReferents.length === 0 ? 1 : 0,
+      },
+      {
+        key: 'no-group',
+        label: t('partnerSpace.localImpact.quality.noGroup'),
+        description: t('partnerSpace.localImpact.quality.noGroupDesc'),
+        value: activeGroups.length === 0 ? 1 : 0,
+      },
+      {
+        key: 'inactive-profile',
+        label: t('partnerSpace.localImpact.quality.inactiveProfile'),
+        description: t('partnerSpace.localImpact.quality.inactiveProfileDesc'),
+        value: profilInstitutionnel?.actif === false ? 1 : 0,
+      },
+      {
+        key: 'no-recent-support',
+        label: t('partnerSpace.localImpact.quality.noRecentSupport'),
+        description: t('partnerSpace.localImpact.quality.noRecentSupportDesc'),
+        value: mesSoutiens.length > 0 && !hasRecentSupport ? 1 : 0,
+      },
+    ],
+  };
+}
+
+function buildSupportEvolutionData(soutiens, t) {
+  const monthlyTotals = new Map();
+  soutiens.forEach(soutien => {
+    const rawDate = soutien.datePaiement || soutien.dateCreation;
+    if (!rawDate) return;
+    const date = new Date(rawDate);
+    if (Number.isNaN(date.getTime())) return;
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    monthlyTotals.set(key, (monthlyTotals.get(key) || 0) + Number(soutien.montant || 0));
+  });
+
+  return Array.from(monthlyTotals.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-6)
+    .map(([key, value]) => ({
+      key,
+      label: key,
+      value: Math.round(value),
+      name: t('partnerSpace.localImpact.charts.supportEvolution'),
+    }));
+}
 
 function buildPartnerChartData({ mesSoutiens, activitesOuvertes, t }) {
   return {

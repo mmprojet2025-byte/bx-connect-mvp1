@@ -1260,7 +1260,63 @@
     "chartsActivitiesByStatus": "Open activities by status",
     "chartsProjects": "Projects",
     "chartsActivities": "Activities",
-    "chartsOtherTargets": "Other"
+    "chartsOtherTargets": "Other",
+    "localImpact": {
+      "eyebrow": "Local ecosystem",
+      "title": "My referent & local impact",
+      "subtitle": "View the referents, groups and contributions linked to your organization.",
+      "connected": "Active relations",
+      "toComplete": "To complete",
+      "sectionLoadError": "This local impact data is temporarily unavailable.",
+      "myReferent": "My referent",
+      "linkedGroups": "My linked groups",
+      "noReferent": "No referent linked",
+      "noReferentDesc": "An administrator can link your organization to a local referent.",
+      "noGroup": "No linked group",
+      "noGroupDesc": "Linked groups will appear here after administrative assignment.",
+      "unknownReferent": "Referent not specified",
+      "unknownGroup": "Group not specified",
+      "startedAt": "Since",
+      "referent": "Referent",
+      "qualityTitle": "Data quality",
+      "kpis": {
+        "groups": "Supported groups",
+        "projects": "Supported projects",
+        "activities": "Supported activities",
+        "opportunities": "Published opportunities",
+        "amount": "Supported amount",
+        "referents": "Linked referents"
+      },
+      "charts": {
+        "groups": "Supported groups",
+        "linkTypes": "Link types",
+        "supportEvolution": "Support evolution",
+        "emptyTitle": "No local chart data",
+        "emptyDescription": "Charts will appear once groups or support are linked."
+      },
+      "statuses": {
+        "ACTIF": "Active",
+        "INACTIF": "Inactive"
+      },
+      "linkTypes": {
+        "SOUTIEN": "Support",
+        "MENTORAT": "Mentoring",
+        "FORMATION": "Training",
+        "EMPLOI": "Job",
+        "LOGISTIQUE": "Logistics",
+        "AUTRE": "Other"
+      },
+      "quality": {
+        "noReferent": "No referent",
+        "noReferentDesc": "Local follow-up is less clear without a linked referent.",
+        "noGroup": "No group",
+        "noGroupDesc": "Linked groups make territorial impact easier to read.",
+        "inactiveProfile": "Inactive profile",
+        "inactiveProfileDesc": "An inactive profile may limit public visibility.",
+        "noRecentSupport": "No recent support",
+        "noRecentSupportDesc": "Recent support helps demonstrate local engagement."
+      }
+    }
   },
   "partnerSupport": {
     "financial": "Financial support",

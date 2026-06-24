@@ -1260,7 +1260,63 @@
     "chartsActivitiesByStatus": "Activités ouvertes par statut",
     "chartsProjects": "Projets",
     "chartsActivities": "Activités",
-    "chartsOtherTargets": "Autres"
+    "chartsOtherTargets": "Autres",
+    "localImpact": {
+      "eyebrow": "Écosystème local",
+      "title": "Mon référent & impact local",
+      "subtitle": "Visualisez les référents, groupes et contributions liés à votre organisation.",
+      "connected": "Relations actives",
+      "toComplete": "À compléter",
+      "sectionLoadError": "Cette donnée d’impact local est temporairement indisponible.",
+      "myReferent": "Mon référent",
+      "linkedGroups": "Mes groupes liés",
+      "noReferent": "Aucun référent associé",
+      "noReferentDesc": "Un administrateur peut associer votre organisation à un référent local.",
+      "noGroup": "Aucun groupe associé",
+      "noGroupDesc": "Les groupes liés apparaîtront ici après affectation administrative.",
+      "unknownReferent": "Référent non renseigné",
+      "unknownGroup": "Groupe non renseigné",
+      "startedAt": "Depuis",
+      "referent": "Référent",
+      "qualityTitle": "Qualité des données",
+      "kpis": {
+        "groups": "Groupes soutenus",
+        "projects": "Projets soutenus",
+        "activities": "Activités soutenues",
+        "opportunities": "Opportunités publiées",
+        "amount": "Montants soutenus",
+        "referents": "Référents associés"
+      },
+      "charts": {
+        "groups": "Groupes soutenus",
+        "linkTypes": "Types de liens",
+        "supportEvolution": "Évolution des soutiens",
+        "emptyTitle": "Aucune donnée graphique locale",
+        "emptyDescription": "Les graphiques apparaîtront dès que des groupes ou soutiens seront associés."
+      },
+      "statuses": {
+        "ACTIF": "Actif",
+        "INACTIF": "Inactif"
+      },
+      "linkTypes": {
+        "SOUTIEN": "Soutien",
+        "MENTORAT": "Mentorat",
+        "FORMATION": "Formation",
+        "EMPLOI": "Emploi",
+        "LOGISTIQUE": "Logistique",
+        "AUTRE": "Autre"
+      },
+      "quality": {
+        "noReferent": "Aucun référent",
+        "noReferentDesc": "Le suivi local est moins clair sans référent associé.",
+        "noGroup": "Aucun groupe",
+        "noGroupDesc": "Les groupes liés rendent l’impact territorial plus lisible.",
+        "inactiveProfile": "Profil inactif",
+        "inactiveProfileDesc": "Un profil inactif peut limiter la visibilité publique.",
+        "noRecentSupport": "Pas de soutien récent",
+        "noRecentSupportDesc": "Un soutien récent aide à démontrer l’engagement local."
+      }
+    }
   },
   "partnerSupport": {
     "financial": "Soutien financier",
