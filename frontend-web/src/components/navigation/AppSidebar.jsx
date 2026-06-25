@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { getDefaultRouteForRole } from '../../routes/roleRoutes'
-import api from '../../api/axios'
 import AppIcon from '../ui/AppIcons'
 import logoBxConnect from '../../assets/images/logo-bx-connect.png'
 import { useTranslation } from 'react-i18next'
@@ -47,10 +46,9 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
   const role = user?.role || 'MEMBRE'
   const routes = ROLE_ROUTES[role] || ROLE_ROUTES.MEMBRE
   const recentItems = useRecentWorkspaceItems(location, user)
-  const workQueue = useSidebarWorkQueue(role)
   const mainSections = getMainSections(role, t)
   const spaceSections = getSpaceSections(role, t)
-  const workSections = getWorkSections(role, workQueue, t)
+  const workSections = getWorkSections(role, t)
   const sidebarSections = [...mainSections, ...spaceSections, ...workSections]
   const homeRoute = routes.home || getDefaultRouteForRole(role)
 
@@ -120,7 +118,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
 
         {contextCollapsed ? (
           <div className="flex min-h-0 flex-1 flex-col items-center px-2 py-3">
-            <nav className="flex min-h-0 flex-col items-center gap-1.5 overflow-y-auto" aria-label="Navigation BX-Connect compacte">
+            <nav className="flex min-h-0 flex-col items-center gap-1.5 overflow-y-auto" aria-label={t('sidebar.compactNavigation')}>
               {sidebarSections.flatMap(section => section.items).map(item => (
                 <CollapsedSidebarLink key={`${item.label}-${item.to}`} item={item} location={location} />
               ))}
@@ -128,7 +126,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col">
-            <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Navigation BX-Connect">
+            <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label={t('sidebar.mainNavigation')}>
               <div className="space-y-5">
                 {mainSections.map(section => (
                   <ContextSection
@@ -171,7 +169,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                     {fullName(user) || roleLabel(role)}
                   </span>
                   <span className="block truncate text-xs font-semibold text-slate-500">
-                    {user?.email || t('profile.userProfile', { defaultValue: 'Profil utilisateur' })}
+                    {user?.email || t('profile.userProfile', { defaultValue: t('sidebar.userProfile') })}
                   </span>
                 </span>
                 <AppIcon name="Settings" className="h-4 w-4 text-slate-400" />
@@ -231,7 +229,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
             </button>
           </div>
 
-          <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Navigation BX-Connect mobile">
+          <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label={t('sidebar.mobileNavigation')}>
             <div className="space-y-5">
               {mainSections.map(section => (
                 <ContextSection
@@ -278,7 +276,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                   {fullName(user) || roleLabel(role)}
                 </span>
                 <span className="block truncate text-xs font-semibold text-slate-500">
-                  {user?.email || 'Profil utilisateur'}
+                    {user?.email || t('profile.userProfile', { defaultValue: t('sidebar.userProfile') })}
                 </span>
               </span>
               <AppIcon name="Settings" className="h-4 w-4 text-slate-400" />
@@ -315,142 +313,62 @@ function useRecentWorkspaceItems(location, user) {
   return items
 }
 
-function useSidebarWorkQueue(role) {
-  const [queue, setQueue] = useState({
-    groupesEnAttente: 0,
-    projetsSoumis: 0,
-    soutiensEnAttente: 0,
-    demandes: 0,
-    activites: 0,
-    membres: 0,
-  })
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function fetchQueue() {
-      if (role === 'ADMIN') {
-        const [groupesRes, projetsRes, soutiensRes] = await Promise.all([
-          api.get('/admin/groupes/en-attente').catch(() => ({ data: [] })),
-          api.get('/projets/admin/tous').catch(() => ({ data: [] })),
-          api.get('/partenaire/admin/tous').catch(() => ({ data: [] })),
-        ])
-        if (cancelled) return
-        const projets = Array.isArray(projetsRes.data) ? projetsRes.data : []
-        const soutiens = Array.isArray(soutiensRes.data) ? soutiensRes.data : []
-        setQueue({
-          groupesEnAttente: Array.isArray(groupesRes.data) ? groupesRes.data.length : 0,
-          projetsSoumis: projets.filter(projet => ['VALIDE_REFERENT', 'SOUMIS'].includes(projet.statut)).length,
-          soutiensEnAttente: soutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE').length,
-          demandes: 0,
-          activites: 0,
-          membres: 0,
-        })
-        return
-      }
-
-      if (role === 'REFERENT') {
-        const [groupesRes, activitesRes] = await Promise.all([
-          api.get('/referent/groupes').catch(() => ({ data: [] })),
-          api.get('/referent/mes-activites').catch(() => ({ data: [] })),
-        ])
-        const groupes = Array.isArray(groupesRes.data) ? groupesRes.data : []
-        const details = await Promise.all(groupes.map(async (groupe) => {
-          const [membresRes, demandesRes] = await Promise.all([
-            api.get(`/referent/groupes/${groupe.id}/membres`).catch(() => ({ data: [] })),
-            api.get(`/referent/groupes/${groupe.id}/demandes`).catch(() => ({ data: [] })),
-          ])
-          return {
-            membres: Array.isArray(membresRes.data) ? membresRes.data : [],
-            demandes: Array.isArray(demandesRes.data) ? demandesRes.data : [],
-          }
-        }))
-        if (cancelled) return
-        const activites = Array.isArray(activitesRes.data) ? activitesRes.data : []
-        setQueue({
-          groupesEnAttente: 0,
-          projetsSoumis: 0,
-          soutiensEnAttente: 0,
-          demandes: details.reduce((total, item) => total + item.demandes.length, 0),
-          activites: activites.filter(activite => activite.statut === 'BROUILLON').length,
-          membres: 0,
-        })
-        return
-      }
-
-      setQueue({
-        groupesEnAttente: 0,
-        projetsSoumis: 0,
-        soutiensEnAttente: 0,
-        demandes: 0,
-        activites: 0,
-        membres: 0,
-      })
-    }
-
-    fetchQueue()
-    return () => { cancelled = true }
-  }, [role])
-
-  return queue
-}
-
 function getMainSections(role, t) {
   if (role === 'ADMIN') {
     return sections([
-      group('Pilotage', [
-        link('Tableau de bord', '/admin/dashboard', 'Home'),
+      group(t('sidebar.sections.pilotage'), [
+        link(t('nav.dashboard'), '/admin/dashboard', 'Home'),
         link(t('impact.nav'), '/impact', 'BarChart'),
-        link('Notifications', '/notifications', 'Bell'),
+        link(t('nav.notifications'), '/notifications', 'Bell'),
       ]),
     ])
   }
 
   if (role === 'PARTENAIRE') {
     return sections([
-      group('Vue d’ensemble', [
-        link('Tableau de bord', '/partenaire?tab=dashboard', 'Home'),
+      group(t('sidebar.sections.overview'), [
+        link(t('nav.dashboard'), '/partenaire?tab=dashboard', 'Home'),
       ]),
-      group('Communication', [
-        link('Notifications', '/notifications', 'Bell'),
+      group(t('sidebar.sections.communication'), [
+        link(t('nav.notifications'), '/notifications', 'Bell'),
       ]),
     ])
   }
 
   if (role === 'REFERENT') {
     return sections([
-      group('Vue d’ensemble', [
-        link('Tableau de bord', '/referent/dashboard', 'Home'),
-        link('Messages', '/referent/messagerie', 'MessageCircle'),
+      group(t('sidebar.sections.overview'), [
+        link(t('nav.dashboard'), '/referent/dashboard', 'Home'),
+        link(t('nav.messaging'), '/referent/messagerie', 'MessageCircle'),
       ]),
-      group('Communication', [
-        link('Notifications', '/notifications', 'Bell'),
-        link('Annonces', '/referent/annonces', 'Megaphone'),
+      group(t('sidebar.sections.communication'), [
+        link(t('nav.notifications'), '/notifications', 'Bell'),
+        link(t('nav.announcements'), '/referent/annonces', 'Megaphone'),
       ]),
     ])
   }
 
   if (role === 'SUPER_ADMIN') {
     return sections([
-      group('Supervision', [
-        link('Tableau de bord', '/super-admin/dashboard', 'Home'),
+      group(t('sidebar.sections.supervision'), [
+        link(t('nav.dashboard'), '/super-admin/dashboard', 'Home'),
       ]),
-      group('Sécurité', [
-        link('Administrateurs', '/super-admin/admins', 'Lock'),
-        link('Logs', '/super-admin/logs', 'ClipboardList'),
+      group(t('sidebar.sections.security'), [
+        link(t('nav.admins'), '/super-admin/admins', 'Lock'),
+        link(t('nav.logs'), '/super-admin/logs', 'ClipboardList'),
       ]),
-      group('Communication', [
-        link('Notifications', '/notifications', 'Bell'),
+      group(t('sidebar.sections.communication'), [
+        link(t('nav.notifications'), '/notifications', 'Bell'),
       ]),
     ])
   }
 
   return sections([
-    group('Vue d’ensemble', [
-      link('Tableau de bord', '/dashboard', 'Home'),
-      link('Messages', '/messagerie', 'MessageCircle'),
-      link('Notifications', '/notifications', 'Bell'),
-      link('Annonces', '/annonces', 'Megaphone'),
+    group(t('sidebar.sections.overview'), [
+      link(t('nav.dashboard'), '/dashboard', 'Home'),
+      link(t('nav.messaging'), '/messagerie', 'MessageCircle'),
+      link(t('nav.notifications'), '/notifications', 'Bell'),
+      link(t('nav.announcements'), '/annonces', 'Megaphone'),
     ]),
   ])
 }
@@ -458,34 +376,34 @@ function getMainSections(role, t) {
 function getSpaceSections(role, t) {
   if (role === 'ADMIN') {
     return sections([
-      group('Gestion', [
-        link('Utilisateurs', '/admin/utilisateurs', 'Users'),
-        link('Référents', '/admin/referents', 'User'),
-        link('Activités', '/admin/activites', 'Calendar'),
-        link('Prestations', '/admin/prestations', 'CheckCircle'),
-        link('Annonces', '/admin/annonces', 'Megaphone'),
+      group(t('sidebar.sections.management'), [
+        link(t('nav.users'), '/admin/utilisateurs', 'Users'),
+        link(t('nav.referents'), '/admin/referents', 'User'),
+        link(t('nav.activities'), '/admin/activites', 'Calendar'),
+        link(t('nav.prestations'), '/admin/prestations', 'CheckCircle'),
+        link(t('nav.announcements'), '/admin/annonces', 'Megaphone'),
       ]),
     ])
   }
 
   if (role === 'PARTENAIRE') {
     return sections([
-      group('Opportunités', [
-        link('Projets ouverts', '/partenaire?tab=projets', 'Rocket'),
-        link('Activités ouvertes', '/partenaire?tab=activites', 'Calendar'),
+      group(t('sidebar.sections.opportunities'), [
+        link(t('partnerSpace.openProjects'), '/partenaire?tab=projets', 'Rocket'),
+        link(t('partnerSpace.openActivities'), '/partenaire?tab=activites', 'Calendar'),
       ]),
     ])
   }
 
   if (role === 'REFERENT') {
     return sections([
-      group('Vie du groupe', [
-        link('Mes groupes', '/referent/groupes', 'Users'),
-        link('Membres', '/referent/membres', 'User'),
-        link('Projets', '/referent/projets', 'Rocket'),
-        link('Prestations', '/referent/prestations', 'CheckCircle'),
+      group(t('sidebar.sections.groupLife'), [
+        link(t('nav.myGroups'), '/referent/groupes', 'Users'),
+        link(t('nav.members'), '/referent/membres', 'User'),
+        link(t('nav.projects'), '/referent/projets', 'Rocket'),
+        link(t('nav.prestations'), '/referent/prestations', 'CheckCircle'),
       ]),
-      group('Pilotage', [
+      group(t('sidebar.sections.pilotage'), [
         link(t('referentImpact.nav'), '/referent/impact', 'BarChart3'),
         link(t('referentPartners.nav'), '/referent/partenaires', 'Handshake'),
         link(t('referentReports.nav'), '/referent/rapports', 'FileText'),
@@ -496,24 +414,24 @@ function getSpaceSections(role, t) {
   if (role === 'SUPER_ADMIN') return []
 
   return sections([
-    group('Participation', [
-      link('Mes groupes', '/groupes', 'Users'),
-      link('Mes activités', '/activites', 'Calendar'),
-      link('Mes projets', '/projets', 'Rocket'),
-      link('Prestations', '/prestations', 'CheckCircle'),
+    group(t('sidebar.sections.participation'), [
+      link(t('nav.myGroups'), '/groupes', 'Users'),
+      link(t('sidebar.labels.myActivities'), '/activites', 'Calendar'),
+      link(t('sidebar.labels.myProjects'), '/projets', 'Rocket'),
+      link(t('nav.prestations'), '/prestations', 'CheckCircle'),
     ]),
   ])
 }
 
-function getWorkSections(role, queue, t) {
+function getWorkSections(role, t) {
   if (role === 'ADMIN') {
     return sections([
-      group('Validation', [
-        link('Groupes en attente', '/admin/groupes', 'ClipboardList', queue.groupesEnAttente),
-        link(t('admin.projectsToValidate'), '/admin/projets', 'Rocket', queue.projetsSoumis),
+      group(t('sidebar.sections.validation'), [
+        link(t('sidebar.labels.pendingGroups'), '/admin/groupes', 'ClipboardList'),
+        link(t('admin.projectsToValidate'), '/admin/projets', 'Rocket'),
       ]),
-      group('Partenaires', [
-        link('Soutiens partenaires', '/admin/soutiens', 'Handshake', queue.soutiensEnAttente),
+      group(t('sidebar.sections.partners'), [
+        link(t('sidebar.labels.partnerSupports'), '/admin/soutiens', 'Handshake'),
         link(t('partnerAssignments.nav'), '/admin/partenaires/affectations', 'Handshake'),
       ]),
     ])
@@ -521,17 +439,17 @@ function getWorkSections(role, queue, t) {
 
   if (role === 'REFERENT') {
     return sections([
-      group('Actions prioritaires', [
-        link('Demandes d’adhésion', '/referent/demandes', 'ClipboardList', queue.demandes),
-        link('Activités à préparer', '/referent/activites', 'Calendar', queue.activites),
+      group(t('sidebar.sections.priorityActions'), [
+        link(t('sidebar.labels.membershipRequests'), '/referent/demandes', 'ClipboardList'),
+        link(t('sidebar.labels.activitiesToPrepare'), '/referent/activites', 'Calendar'),
       ]),
     ])
   }
 
   if (role === 'PARTENAIRE') {
     return sections([
-      group('Actions prioritaires', [
-        link('Mes soutiens', '/partenaire?tab=soutiens', 'Handshake'),
+      group(t('sidebar.sections.priorityActions'), [
+        link(t('partnerSpace.mySupports'), '/partenaire?tab=soutiens', 'Handshake'),
       ]),
     ])
   }
@@ -575,15 +493,17 @@ function CollapsedSidebarLink({ item, location }) {
 }
 
 function RecentSection({ items, location, onNavigate }) {
+  const { t } = useTranslation()
+
   return (
     <section>
       <p className="mb-1.5 px-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
-        Récents
+        {t('sidebar.recent')}
       </p>
       {items.length === 0 ? (
         <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-3">
           <p className="text-xs font-semibold leading-relaxed text-slate-500">
-            Les groupes, projets et activités consultés apparaîtront ici.
+            {t('sidebar.recentEmpty')}
           </p>
         </div>
       ) : (

@@ -420,11 +420,7 @@ function ImpactSection({ icon, title, description, children }) {
 
 function ChartGrid({ charts, t }) {
   if (!charts.length) {
-    return (
-      <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm font-semibold text-slate-500">
-        {t('impact.charts.emptySection')}
-      </p>
-    )
+    return null
   }
 
   return (

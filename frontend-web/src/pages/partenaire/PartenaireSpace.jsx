@@ -67,6 +67,7 @@ export default function PartenaireSpace() {
   const [soutienForm, setSoutienForm] = useState({
     montant: '', message: '', projetId: null, activiteId: null, type: 'projet'
   });
+  const [submittingSupport, setSubmittingSupport] = useState(false);
   const [editingSupport, setEditingSupport] = useState(null);
   const [editSupportForm, setEditSupportForm] = useState({ montant: '', message: '' });
   const [supportActionLoading, setSupportActionLoading] = useState(null);
@@ -155,6 +156,8 @@ export default function PartenaireSpace() {
 
   const handleSoumettreSoutien = async (e) => {
     e.preventDefault();
+    if (submittingSupport) return;
+    setSubmittingSupport(true);
     setMessage(''); setError('');
     try {
       const payload = {
@@ -179,6 +182,8 @@ export default function PartenaireSpace() {
       const feedback = userFriendlyError(err, t('partnerSpace.actionError'));
       setError(feedback);
       toast.error(feedback);
+    } finally {
+      setSubmittingSupport(false);
     }
   };
 
@@ -424,18 +429,6 @@ export default function PartenaireSpace() {
         {/* ── Dashboard ── */}
         {onglet === 'dashboard' && (
           <div>
-            <CompactKpiRow
-              accent="orange"
-              className="mb-4"
-              items={[
-                { icon: 'Wallet', label: t('partnerSpace.mySupports'), value: mesSoutiens.length },
-                { icon: 'Clock', label: t('partnerSpace.pendingSupports', { defaultValue: 'En attente' }), value: mesSoutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE').length, tone: mesSoutiens.some(soutien => soutien.statutPaiement === 'EN_ATTENTE') ? 'amber' : 'green' },
-                { icon: 'Megaphone', label: t('partnerSpace.pendingOpportunities', { defaultValue: 'Opportunités en attente' }), value: mesOpportunites.filter(opportunite => opportunite.statutModeration === 'EN_ATTENTE').length, tone: mesOpportunites.some(opportunite => opportunite.statutModeration === 'EN_ATTENTE') ? 'amber' : 'green' },
-                { icon: 'Users', label: t('partnerSpace.localImpact.kpis.groups'), value: localImpact.kpis.groupesSoutenus },
-                { icon: 'User', label: t('partnerSpace.localImpact.kpis.referents'), value: localImpact.kpis.referentsAssocies },
-              ]}
-            />
-
             <PartnerDashboardFocus
               profil={profilInstitutionnel}
               mesSoutiens={mesSoutiens}
@@ -446,6 +439,11 @@ export default function PartenaireSpace() {
               onProfile={() => setOnglet('profil')}
               onSupports={() => setOnglet('soutiens')}
               onOpportunities={() => setOnglet('opportunites')}
+              onSupport={() => setShowSoutienForm(true)}
+              onCreateOpportunity={() => {
+                setOnglet('opportunites');
+                setShowOpportunityForm(true);
+              }}
               onImpact={() => setOnglet('impact')}
               t={t}
             />
@@ -516,7 +514,7 @@ export default function PartenaireSpace() {
                   {t('partnerSpace.opportunities', { defaultValue: 'Mes opportunités' })}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  {t('partnerSpace.opportunitiesHint', { defaultValue: 'Vos publications restent en attente jusqu’à validation par un administrateur.' })}
+                  {t('partnerSpace.opportunitiesHint')}
                 </p>
               </div>
               <button
@@ -527,7 +525,7 @@ export default function PartenaireSpace() {
                 <AppIcon name={showOpportunityForm ? 'XCircle' : 'PlusCircle'} className="h-4 w-4" />
                 {showOpportunityForm
                   ? t('common.cancel')
-                  : t('partnerSpace.newOpportunity', { defaultValue: 'Nouvelle opportunité' })}
+                  : t('partnerSpace.newOpportunity')}
               </button>
             </div>
 
@@ -653,7 +651,7 @@ export default function PartenaireSpace() {
                     disabled={savingOpportunity}
                     className="rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-orange-500 disabled:opacity-50"
                   >
-                    {savingOpportunity ? t('common.saving') : t('partnerSpace.submitForReview', { defaultValue: 'Envoyer pour validation' })}
+                    {savingOpportunity ? t('common.saving') : t('partnerSpace.submitForReview')}
                   </button>
                 </div>
               </form>
@@ -806,9 +804,10 @@ export default function PartenaireSpace() {
                 <div className="flex gap-3">
                   <button
                     type="submit"
-                    className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-bold py-2.5 rounded-xl transition"
+                    disabled={submittingSupport}
+                    className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-bold py-2.5 rounded-xl transition disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {t('partnerSpace.submit')}
+                    {submittingSupport ? t('common.saving') : t('partnerSpace.submit')}
                   </button>
                   <button
                     type="button"
@@ -966,6 +965,8 @@ function PartnerDashboardFocus({
   onProfile,
   onSupports,
   onOpportunities,
+  onSupport,
+  onCreateOpportunity,
   onImpact,
   t,
 }) {
@@ -994,6 +995,15 @@ function PartnerDashboardFocus({
       tone: 'orange',
     },
     {
+      key: 'support-action',
+      icon: 'Handshake',
+      title: t('partnerSpace.dashboardFocus.supportActionTitle'),
+      description: t('partnerSpace.dashboardFocus.supportActionDescription'),
+      action: t('partnerSpace.dashboardFocus.supportActionButton'),
+      onClick: onSupport,
+      tone: 'orange',
+    },
+    {
       key: 'supports',
       icon: 'Wallet',
       title: t('partnerSpace.dashboardFocus.supportsTitle'),
@@ -1003,6 +1013,15 @@ function PartnerDashboardFocus({
       action: t('partnerSpace.dashboardFocus.supportsAction'),
       onClick: onSupports,
       tone: 'slate',
+    },
+    {
+      key: 'publish-opportunity',
+      icon: 'Megaphone',
+      title: t('partnerSpace.dashboardFocus.publishOpportunityTitle'),
+      description: t('partnerSpace.dashboardFocus.publishOpportunityDescription'),
+      action: t('partnerSpace.dashboardFocus.publishOpportunityButton'),
+      onClick: onCreateOpportunity,
+      tone: 'orange',
     },
     {
       key: 'impact',

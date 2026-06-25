@@ -38,17 +38,6 @@ public class SecurityConfig {
         // Auth
         "/api/auth/**",
 
-        // Activités — lecture publique (V02, V03, V04, V06)
-        "/api/activites",
-        "/api/activites/**",
-        "/api/activites/recherche",
-        "/api/activites/filtrer",
-        "/api/activites/options-filtres",
-
-        // Projets — lecture publique
-        "/api/projets",
-        "/api/projets/**",
-
         // Partenaire — lecture publique (P03, P04)
         "/api/partenaire/activites-ouvertes",
         "/api/partenaire/publics",
@@ -83,6 +72,16 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.GET,
+                    "/api/activites",
+                    "/api/activites/*",
+                    "/api/activites/recherche",
+                    "/api/activites/filtrer",
+                    "/api/activites/options-filtres",
+                    "/api/projets",
+                    "/api/projets/*",
+                    "/api/projets/*/commentaires"
+                ).permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/groupes", "/api/groupes/*").permitAll()
                 .requestMatchers(PUBLIC_URLS).permitAll()
                 .anyRequest().authenticated()
