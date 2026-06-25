@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
 import api from '../../api/axios';
 import AppIcon from '../../components/ui/AppIcons';
 import EmptyState from '../../components/ui/EmptyState';
@@ -12,12 +11,11 @@ import LoadingState from '../../components/ui/LoadingState';
 const OPPORTUNITY_CATEGORIES = ['EMPLOI', 'STAGE', 'FORMATION', 'EVENEMENT', 'APPEL_PROJET', 'PUBLICITE'];
 
 export default function Annonces() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, isAuthenticated, isAdmin, isReferent } = useAuth();
   const [annonces, setAnnonces] = useState([]);
   const [adminOpportunities, setAdminOpportunities] = useState([]);
-  const [contentFilter, setContentFilter] = useState('TOUT');
-  const [categoryFilter, setCategoryFilter] = useState('TOUTES');
+  const [activeFilter, setActiveFilter] = useState('TOUT');
   const [loading, setLoading] = useState(true);
   const [loadingOpportunities, setLoadingOpportunities] = useState(false);
   const [opportunityActionId, setOpportunityActionId] = useState(null);
@@ -30,20 +28,13 @@ export default function Annonces() {
   });
 
   const peutPublier = isAdmin || isReferent;
-  const hasOpportunities = annonces.some(a => a.categorieOpportunite);
   const filteredAnnonces = annonces.filter(a => {
-    const matchesContent = contentFilter === 'TOUT'
-      || (contentFilter === 'ANNONCES' && !a.categorieOpportunite)
-      || (contentFilter === 'OPPORTUNITES' && a.categorieOpportunite);
-    const matchesCategory = categoryFilter === 'TOUTES' || a.categorieOpportunite === categoryFilter;
-    return matchesContent && matchesCategory;
+    return activeFilter === 'TOUT'
+      || (activeFilter === 'ANNONCES' && !a.categorieOpportunite)
+      || (activeFilter === 'OPPORTUNITES' && a.categorieOpportunite)
+      || a.categorieOpportunite === activeFilter;
   });
-  const annonceStats = {
-    total: annonces.length,
-    globales: annonces.filter(a => a.type === 'GLOBALE').length,
-    groupes: annonces.filter(a => a.type === 'GROUPE').length,
-    opportunites: annonces.filter(a => a.categorieOpportunite).length,
-  };
+  const filters = buildAnnouncementFilters(t, annonces);
 
   useEffect(() => {
     fetchAnnonces();
@@ -146,15 +137,6 @@ export default function Annonces() {
     }
   };
 
-  const typeStyle = (type) => {
-    switch (type) {
-      case 'GLOBALE': return 'bg-blue-100 text-blue-700';
-      case 'GROUPE':  return 'bg-purple-100 text-purple-700';
-      case 'SYSTEME': return 'bg-gray-100 text-gray-600';
-      default:        return 'bg-gray-100 text-gray-600';
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
@@ -172,13 +154,6 @@ export default function Annonces() {
               {showForm ? t('common.cancel') : t('announcements.new')}
             </button>
           )}
-        </div>
-
-        <div className="mb-5 grid gap-3 sm:grid-cols-4">
-          <AnnouncementKpi icon="Megaphone" label={t('nav.announcements')} value={annonceStats.total} />
-          <AnnouncementKpi icon="Globe" label={t('announcements.globalPlural')} value={annonceStats.globales} tone="blue" />
-          <AnnouncementKpi icon="Users" label={t('nav.groups')} value={annonceStats.groupes} tone="purple" />
-          <AnnouncementKpi icon="Handshake" label={t('partnerSpace.opportunities')} value={annonceStats.opportunites} tone="orange" />
         </div>
 
         {message && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>}
@@ -269,52 +244,35 @@ export default function Annonces() {
           </section>
         )}
 
-        <section className="mb-5 rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
-          <div className="mb-3 flex flex-wrap gap-2">
-            {[
-              { id: 'TOUT', label: t('announcements.filters.all', { defaultValue: 'Annonces et opportunités' }) },
-              { id: 'ANNONCES', label: t('announcements.filters.announcements', { defaultValue: 'Annonces' }) },
-              { id: 'OPPORTUNITES', label: t('announcements.filters.opportunities', { defaultValue: 'Opportunités' }) },
-            ].map(filter => (
-              <button
-                key={filter.id}
-                type="button"
-                onClick={() => {
-                  setContentFilter(filter.id);
-                  if (filter.id !== 'OPPORTUNITES') setCategoryFilter('TOUTES');
-                }}
-                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${contentFilter === filter.id ? 'bg-blue-700 text-white' : 'bg-slate-50 text-slate-600 hover:bg-blue-50'}`}
-              >
-                {filter.label}
-              </button>
-            ))}
-            {isAdmin && (
-              <a href="#moderation-opportunites" className="rounded-lg px-3 py-1.5 text-xs font-bold text-amber-700 transition hover:bg-amber-50">
-                {t('announcements.filters.moderation', { defaultValue: 'À modérer' })}
-              </a>
-            )}
+        <section className="mb-3 rounded-xl border border-slate-100 bg-white p-1.5 shadow-sm">
+          <div className="messaging-scroll flex gap-1 overflow-x-auto">
+              {filters.map(filter => (
+                <button
+                  key={filter.id}
+                  type="button"
+                  onClick={() => setActiveFilter(filter.id)}
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-black transition ${
+                    activeFilter === filter.id
+                      ? 'bg-blue-700 text-white shadow-sm'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                  }`}
+                >
+                  {filter.label}
+                  {annonces.length >= 10 && filter.count > 0 && (
+                    <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                      activeFilter === filter.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {filter.count}
+                    </span>
+                  )}
+                </button>
+              ))}
+              {isAdmin && (
+                <a href="#moderation-opportunites" className="inline-flex shrink-0 items-center rounded-lg px-2.5 py-1.5 text-xs font-black text-amber-700 transition hover:bg-amber-50">
+                  {t('announcements.filters.moderation')}
+                </a>
+              )}
           </div>
-          {hasOpportunities && contentFilter !== 'ANNONCES' && (
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setCategoryFilter('TOUTES')}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${categoryFilter === 'TOUTES' ? 'bg-orange-600 text-white' : 'bg-slate-50 text-slate-600 hover:bg-orange-50'}`}
-            >
-              {t('common.all')}
-            </button>
-            {OPPORTUNITY_CATEGORIES.map(category => (
-              <button
-                key={category}
-                type="button"
-                onClick={() => setCategoryFilter(category)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${categoryFilter === category ? 'bg-orange-600 text-white' : 'bg-slate-50 text-slate-600 hover:bg-orange-50'}`}
-              >
-                {opportunityCategoryLabel(category, t)}
-              </button>
-            ))}
-          </div>
-          )}
         </section>
 
         {/* Formulaire */}
@@ -385,108 +343,36 @@ export default function Annonces() {
             icon={annonces.length === 0 ? 'Megaphone' : 'Search'}
             title={annonces.length === 0
               ? t('announcements.empty')
-              : t('common.noResults', { defaultValue: 'Aucun résultat trouvé.' })}
+              : t('announcements.noResults')}
           />
         ) : (
-          <div className="space-y-2.5">
+          <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm">
             {filteredAnnonces.map(a => (
-              <div key={a.id} className={`bg-white rounded-xl border border-slate-100 shadow-sm p-3.5 ${a.epinglee ? 'border-l-4 border-blue-500' : ''}`}>
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {a.epinglee && <AppIcon name="Pin" className="h-4 w-4 text-blue-500" />}
-                    <h3 className="font-bold text-blue-900">{a.titre}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${typeStyle(a.type)}`}>
-                      {a.type === 'GLOBALE' ? t('announcements.global') : a.type === 'GROUPE' ? a.groupeNom : t('announcements.system')}
-                    </span>
-                    {a.categorieOpportunite && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-bold text-orange-700">
-                        <AppIcon name="Megaphone" className="h-3 w-3" />
-                        {opportunityCategoryLabel(a.categorieOpportunite, t)}
-                      </span>
-                    )}
-                    {a.statutModeration && a.categorieOpportunite && (
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${opportunityStatusStyle(a.statutModeration)}`}>
-                        {opportunityStatusLabel(a.statutModeration, t)}
-                      </span>
-                    )}
-                  </div>
-                  {(isAdmin || (isReferent && a.auteurEmail === user?.email)) && (
-                    <div className="flex gap-2">
-                      {isAdmin && (
-                        <button onClick={() => handleEpingler(a.id)}
-                          className="text-xs text-blue-600 hover:underline">
-                          {a.epinglee ? t('announcements.unpin') : t('announcements.pin')}
-                        </button>
-                      )}
-                      <button onClick={() => handleSupprimer(a.id)}
-                        className="text-xs text-red-500 hover:underline">
-                        {t('common.delete')}
-                      </button>
-                    </div>
-                  )}
-                </div>
-                {a.descriptionCourte && (
-                  <p className="mb-2 text-sm font-semibold leading-relaxed text-slate-700">{a.descriptionCourte}</p>
-                )}
-                <p className="text-gray-600 text-sm leading-relaxed mb-2 whitespace-pre-line line-clamp-3">{a.contenu}</p>
-                {a.categorieOpportunite && <OpportunityMeta opportunity={a} t={t} />}
-                {a.lienExterne && (
-                  <a
-                    href={normalizeExternalUrl(a.lienExterne)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mb-3 inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800 transition hover:border-blue-700 hover:bg-blue-700 hover:text-white"
-                  >
-                    <AppIcon name="Globe" className="h-3.5 w-3.5" />
-                    {t('announcements.openLink')}
-                  </a>
-                )}
-                <p className="text-xs text-gray-400">
-                  {t('common.by')} {a.auteurPrenom} {a.auteurNom} ({a.auteurRole}) ·{' '}
-                  {new Date(a.dateCreation).toLocaleDateString('fr-BE', {
-                    day: '2-digit', month: '2-digit', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
-                  })}
-                </p>
-              </div>
+              <AnnouncementFeedItem
+                key={a.id}
+                announcement={a}
+                canManage={isAdmin || (isReferent && a.auteurEmail === user?.email)}
+                isAdmin={isAdmin}
+                onPin={handleEpingler}
+                onDelete={handleSupprimer}
+                language={i18n.language}
+                t={t}
+              />
             ))}
           </div>
         )}
       </main>
-      <Footer />
     </div>
   );
 }
 
-function AnnouncementKpi({ icon, label, value, tone = 'slate' }) {
-  const tones = {
-    slate: 'bg-slate-50 text-slate-700',
-    blue: 'bg-blue-50 text-blue-700',
-    purple: 'bg-purple-50 text-purple-700',
-    orange: 'bg-orange-50 text-orange-700',
-  };
-  return (
-    <div className="rounded-lg border border-slate-100 bg-white p-3 shadow-sm">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</p>
-          <p className="mt-1 text-xl font-black text-slate-950">{value}</p>
-        </div>
-        <span className={`grid h-9 w-9 place-items-center rounded-xl ${tones[tone] || tones.slate}`}>
-          <AppIcon name={icon} className="h-4 w-4" />
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function OpportunityMeta({ opportunity, t }) {
+function OpportunityMeta({ opportunity, t, compact = false }) {
   const deadline = opportunity.dateLimite || opportunity.dateExpiration;
   const items = [
     opportunity.nombrePlaces
       ? { icon: 'Users', label: t('opportunityFields.placesValue', { count: opportunity.nombrePlaces }) }
       : null,
-    deadline
+    deadline && !compact
       ? {
           icon: 'Clock',
           label: `${t('opportunityFields.deadlineShort')} ${new Date(deadline).toLocaleDateString('fr-BE')}`,
@@ -506,17 +392,113 @@ function OpportunityMeta({ opportunity, t }) {
   if (items.length === 0) return null;
 
   return (
-    <div className="mb-3 mt-2 flex flex-wrap gap-2">
+    <div className={`${compact ? 'mt-1' : 'mb-3 mt-2'} flex flex-wrap gap-1.5`}>
       {items.map(item => (
         <span
           key={`${item.icon}-${item.label}`}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-600"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-bold text-slate-600"
         >
           <AppIcon name={item.icon} className="h-3.5 w-3.5 text-orange-500" />
           {item.label}
         </span>
       ))}
     </div>
+  );
+}
+
+function AnnouncementFeedItem({ announcement, canManage, isAdmin, onPin, onDelete, language, t }) {
+  const isOpportunity = Boolean(announcement.categorieOpportunite);
+  const externalUrl = announcement.lienExterne ? normalizeExternalUrl(announcement.lienExterne) : '';
+  const deadline = announcement.dateLimite || announcement.dateExpiration;
+  const deadlineLabel = deadline ? formatDeadline(deadline, language, t) : '';
+  const author = [announcement.auteurPrenom, announcement.auteurNom].filter(Boolean).join(' ').trim();
+  const meta = [
+    author || t('announcements.unknownAuthor'),
+    announcement.auteurRole,
+    formatShortDate(announcement.dateCreation, language),
+  ].filter(Boolean).join(' · ');
+  const accent = isOpportunity ? 'bg-orange-500' : announcement.type === 'GROUPE' ? 'bg-teal-500' : 'bg-blue-500';
+
+  const handleOpen = () => {
+    if (externalUrl) window.open(externalUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  return (
+    <article
+      role={externalUrl ? 'link' : undefined}
+      tabIndex={externalUrl ? 0 : undefined}
+      onClick={externalUrl ? handleOpen : undefined}
+      onKeyDown={event => {
+        if (externalUrl && (event.key === 'Enter' || event.key === ' ')) {
+          event.preventDefault();
+          handleOpen();
+        }
+      }}
+      className={`group relative border-b border-slate-100 bg-white px-3 py-2 transition hover:border-blue-100 hover:bg-slate-50 ${externalUrl ? 'cursor-pointer' : ''}`}
+    >
+      <span className={`absolute inset-y-0 left-0 w-[3px] ${accent}`} />
+      <div className="flex items-start gap-2.5 pl-1">
+        <div className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg ${isOpportunity ? 'bg-orange-50 text-orange-700' : 'bg-blue-50 text-blue-700'}`}>
+          <AppIcon name={isOpportunity ? 'Megaphone' : 'FileText'} className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            {announcement.epinglee && <AppIcon name="Pin" className="h-3.5 w-3.5 text-blue-600" />}
+            <h3 className="truncate text-sm font-black text-slate-950">{announcement.titre}</h3>
+            {isOpportunity && (
+              <span className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+                {opportunityCategoryLabel(announcement.categorieOpportunite, t)}
+              </span>
+            )}
+            {!isOpportunity && announcement.type === 'GROUPE' && announcement.groupeNom && (
+              <span className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+                {announcement.groupeNom}
+              </span>
+            )}
+            {deadlineLabel && (
+              <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-black text-orange-700">
+                {deadlineLabel}
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 line-clamp-1 text-xs leading-4 text-slate-600">
+            {announcement.descriptionCourte || announcement.contenu}
+          </p>
+          {isOpportunity && <OpportunityMeta opportunity={announcement} t={t} compact />}
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-400">
+            <span>{meta}</span>
+            {externalUrl && (
+              <span className="inline-flex items-center gap-1 text-blue-700">
+                <AppIcon name="Globe" className="h-3 w-3" />
+                {t('announcements.openLink')}
+              </span>
+            )}
+          </div>
+        </div>
+        {canManage && (
+          <div className="flex shrink-0 items-center gap-1 opacity-100 sm:opacity-0 sm:transition sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={event => { event.stopPropagation(); onPin(announcement.id); }}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-blue-50 hover:text-blue-700"
+                aria-label={announcement.epinglee ? t('announcements.unpin') : t('announcements.pin')}
+              >
+                <AppIcon name="Pin" className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={event => { event.stopPropagation(); onDelete(announcement.id); }}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-300 transition hover:bg-red-50 hover:text-red-600"
+              aria-label={t('common.delete')}
+            >
+              <AppIcon name="XCircle" className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
+    </article>
   );
 }
 
@@ -556,6 +538,42 @@ function opportunityStatusStyle(status) {
     REFUSEE: 'bg-red-100 text-red-700',
   };
   return styles[status] || 'bg-slate-100 text-slate-700';
+}
+
+function buildAnnouncementFilters(t, annonces) {
+  return [
+    { id: 'TOUT', label: t('announcements.filters.all'), count: annonces.length },
+    { id: 'ANNONCES', label: t('announcements.filters.announcements'), count: annonces.filter(a => !a.categorieOpportunite).length },
+    { id: 'OPPORTUNITES', label: t('announcements.filters.opportunities'), count: annonces.filter(a => a.categorieOpportunite).length },
+    ...OPPORTUNITY_CATEGORIES.map(category => ({
+      id: category,
+      label: opportunityCategoryLabel(category, t),
+      count: annonces.filter(a => a.categorieOpportunite === category).length,
+    })),
+  ];
+}
+
+function formatDeadline(value, language, t) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const today = startOfDay(new Date());
+  const target = startOfDay(date);
+  const days = Math.round((target.getTime() - today.getTime()) / 86400000);
+  if (days === 0) return t('announcements.deadlineToday');
+  if (days === 1) return t('announcements.deadlineTomorrow');
+  if (days > 1 && days <= 30) return t('announcements.deadlineInDays', { count: days });
+  return date.toLocaleDateString(language || 'fr-BE', { day: '2-digit', month: 'short' });
+}
+
+function formatShortDate(value, language) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString(language || 'fr-BE', { day: '2-digit', month: 'short' });
+}
+
+function startOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 function normalizeExternalUrl(value) {

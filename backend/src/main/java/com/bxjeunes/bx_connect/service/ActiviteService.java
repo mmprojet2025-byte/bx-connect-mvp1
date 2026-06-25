@@ -245,9 +245,6 @@ public class ActiviteService {
         activite.setStatut(nouveauStatut);
         Activite activiteSauvee = activiteRepository.save(activite);
 
-        if (ancienStatut != StatutActivite.PUBLIEE && nouveauStatut == StatutActivite.PUBLIEE) {
-            notifierPublication(activiteSauvee);
-        }
         auditerStatut(
                 acteur,
                 ancienStatut != StatutActivite.PUBLIEE && nouveauStatut == StatutActivite.PUBLIEE
@@ -290,18 +287,6 @@ public class ActiviteService {
         activite.setCommune(request.getCommune());
         activite.setLatitude(request.getLatitude());
         activite.setLongitude(request.getLongitude());
-    }
-
-    private void notifierPublication(Activite activite) {
-        for (User membre : userRepository.findByRoleAndActifTrue(Role.MEMBRE)) {
-            notificationService.creer(
-                    membre,
-                    "Nouvelle activité publiée",
-                    activite.getTitre() + " est maintenant disponible.",
-                    "ACTIVITE_PUBLIEE",
-                    "/activites/" + activite.getId()
-            );
-        }
     }
 
     private void auditerAction(User acteur, String action, Activite activite, String details) {

@@ -46,9 +46,9 @@ export default function Messagerie() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-100">
+    <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-slate-100">
       <Navbar />
-      <main className="mx-auto flex h-[calc(100vh-72px)] w-full max-w-7xl flex-1 flex-col px-3 py-3 lg:px-5">
+      <main className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col overflow-hidden px-3 py-3 lg:px-5">
         {error && <Alert type="error">{error}</Alert>}
 
         {loading ? (
@@ -79,7 +79,7 @@ export default function Messagerie() {
                   {t('messaging.conversations')}
                 </h2>
               </div>
-              <div className="min-h-0 flex-1 p-2">
+              <div className="messaging-scroll min-h-0 flex-1 overflow-y-auto p-2">
                 <button type="button" className="flex w-full items-center gap-3 rounded-lg bg-blue-50 px-3 py-2.5 text-left text-sm transition hover:bg-blue-100">
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-700 to-teal-600 text-white">
                     {getGroupInitial(groupe?.nom)}
@@ -97,7 +97,7 @@ export default function Messagerie() {
               </div>
             </aside>
 
-            <div className="flex min-h-0 flex-col">
+            <div className="flex min-h-0 overflow-hidden flex-col">
               <div className="shrink-0 border-b border-gray-100 bg-gradient-to-r from-blue-50/70 via-white to-emerald-50/50 px-4 py-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-700 to-teal-600 text-sm font-black text-white">

@@ -46,15 +46,13 @@ class PushWorkflowNotificationTest {
     @Mock private MembreGroupeRepository membreGroupeRepository;
 
     @Test
-    void publier_une_activite_notifie_les_membres_actifs() {
+    void publier_une_activite_ne_notifie_pas_tous_les_membres() {
         User admin = user(1L, "admin@test.be", Role.ADMIN);
-        User membre = user(2L, "membre@test.be", Role.MEMBRE);
         Activite activite = activite(8L, admin, true);
 
         when(activiteRepository.findById(8L)).thenReturn(Optional.of(activite));
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
         when(activiteRepository.save(activite)).thenReturn(activite);
-        when(userRepository.findByRoleAndActifTrue(Role.MEMBRE)).thenReturn(List.of(membre));
         when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);
 
         new ActiviteService(
@@ -65,12 +63,12 @@ class PushWorkflowNotificationTest {
                 auditLogService
         ).changerStatut(8L, StatutActivite.PUBLIEE, admin.getEmail());
 
-        verify(notificationService).creer(
-                membre,
-                "Nouvelle activité publiée",
-                "Atelier est maintenant disponible.",
-                "ACTIVITE_PUBLIEE",
-                "/activites/8"
+        verify(notificationService, never()).creer(
+                any(User.class),
+                any(),
+                any(),
+                any(),
+                any()
         );
     }
 

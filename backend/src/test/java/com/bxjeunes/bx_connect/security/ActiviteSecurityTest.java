@@ -338,7 +338,6 @@ class ActiviteSecurityTest {
         when(activiteRepository.findById(30L)).thenReturn(Optional.of(activite));
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
         when(activiteRepository.save(activite)).thenReturn(activite);
-        when(userRepository.findByRoleAndActifTrue(Role.MEMBRE)).thenReturn(List.of());
         when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);
 
         var response = activiteService.changerStatut(30L, StatutActivite.PUBLIEE, admin.getEmail());
