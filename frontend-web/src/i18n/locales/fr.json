@@ -484,6 +484,8 @@
     "writeInGroup": "Écrire dans ce groupe...",
     "groupDescription": "Messagerie du groupe {{group}}",
     "messagesCount": "{{count}} message(s)",
+    "membersCount": "{{count}} membre(s)",
+    "activeStatus": "Actif",
     "groupReserved": "La messagerie groupe est réservée aux membres et référents.",
     "unavailableTitle": "Messagerie indisponible",
     "groupDiscussionReserved": "Discussion réservée à votre groupe",
@@ -493,7 +495,52 @@
     "errorActiveGroup": "Impossible de charger votre groupe actif.",
     "openMessaging": "Ouvrir la messagerie",
     "messageSent": "Message envoyé.",
-    "addEmoji": "Ajouter un emoji"
+    "addEmoji": "Ajouter un emoji",
+    "addAttachment": "Ajouter une pièce jointe",
+    "removeAttachment": "Retirer la pièce jointe",
+    "attachmentLocalOnly": "Aperçu local uniquement. L’envoi de fichiers sera activé plus tard.",
+    "dropAttachment": "Déposez le fichier ici",
+    "copyMessage": "Copier le message",
+    "copied": "Message copié.",
+    "copyFailed": "Impossible de copier le message.",
+    "replyUnavailable": "Réponse bientôt disponible",
+    "systemMessage": "Information du groupe",
+    "business": {
+      "activity": "Activité",
+      "project": "Projet",
+      "opportunity": "Opportunité",
+      "support": "Soutien partenaire",
+      "group": "Information de groupe",
+      "info": "Information",
+      "view": "Voir",
+      "open": "Ouvrir",
+      "opportunityTypes": {
+        "EMPLOI": "Emploi",
+        "STAGE": "Stage",
+        "FORMATION": "Formation",
+        "MENTORAT": "Mentorat",
+        "BENEVOLAT": "Bénévolat",
+        "EVENEMENT_PARTENAIRE": "Événement partenaire",
+        "APPEL_A_PROJET": "Appel à projet",
+        "DON_MATERIEL": "Don matériel",
+        "FINANCEMENT": "Financement",
+        "AUTRE": "Autre"
+      },
+      "publicTargets": {
+        "TOUS": "Tous publics",
+        "PUBLIC": "Public",
+        "MEMBRES": "Membres",
+        "JEUNES": "Jeunes",
+        "REFERENTS": "Référents",
+        "GROUPES": "Groupes",
+        "PARTENAIRES": "Partenaires"
+      }
+    },
+    "days": {
+      "today": "Aujourd’hui",
+      "yesterday": "Hier",
+      "earlier": "Plus tôt"
+    }
   },
   "notifications": {
     "title": "Notifications",
@@ -817,7 +864,7 @@
       "noActiveGroup": "Vous n'avez pas encore de groupe actif.",
       "messagingAvailable": "Messagerie disponible pour votre groupe.",
       "messagingUnavailable": "Messagerie disponible après acceptation dans un groupe.",
-      "currentWithName": "Current With Name",
+      "currentWithName": "Tu es membre du groupe {{group}}.",
       "noGroup": "Rejoindre un groupe"
     },
     "referent": {
@@ -919,6 +966,7 @@
       "viewNotifications": "Voir les notifications",
       "viewAll": "Voir tout",
       "open": "Ouvrir",
+      "message": "Message",
       "retry": "Réessayer"
     },
     "statuses": {
@@ -932,7 +980,9 @@
       },
       "project": {
         "BROUILLON": "Brouillon",
-        "SOUMIS": "En validation",
+        "SOUMIS": "Soumis",
+        "VALIDE_REFERENT": "Validé par le référent",
+        "REFUSE_REFERENT": "Refusé par le référent",
         "APPROUVE": "Approuvé",
         "EN_COURS": "En cours",
         "TERMINE": "Terminé",
@@ -947,8 +997,12 @@
     },
     "workspaceEyebrow": "Travail en cours",
     "workspaceTitle": "Mon espace de travail",
-    "unreadNotifications": "Unread Notifications",
+    "unreadNotifications": "{{count}} notification(s) à lire",
     "projectToFollow": "Projet à suivre",
+    "quickAccess": "Accès rapides",
+    "paymentRequired": "Paiement requis",
+    "activitySoon": "Activité imminente",
+    "projectNeedsAction": "Projet à traiter",
     "today": {
       "eyebrow": "Priorités",
       "title": "Ce que je dois faire maintenant"
@@ -1841,12 +1895,19 @@
   },
   "activityFeed": {
     "title": "Mon fil d’activité",
+    "subtitle": "Ce qui a changé récemment.",
     "adminSubtitle": "Validations, créations et changements de statut à surveiller.",
     "memberSubtitle": "Messages, activités, projets et notifications importantes.",
     "empty": "Aucune activité récente pour le moment.",
-    "activityDate": "Activity Date",
+    "activityDate": "Prévue le {{date}}",
     "projectTracked": "Projet suivi",
     "currentGroup": "Groupe actuel",
+    "viewAll": "Voir tout",
+    "days": {
+      "today": "Aujourd’hui",
+      "yesterday": "Hier",
+      "earlier": "Plus tôt"
+    },
     "partnerSubtitle": "Soutiens, projets ouverts et activités disponibles.",
     "referentSubtitle": "Demandes, membres, activités et projets liés à vos groupes.",
     "superAdminSubtitle": "Actions sensibles, sécurité et activité administrative."

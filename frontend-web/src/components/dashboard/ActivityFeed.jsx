@@ -1,73 +1,99 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import AppIcon from '../ui/AppIcons'
 
 export default function ActivityFeed({
-  title = 'Activité récente',
-  subtitle = 'Ce qui a changé récemment.',
+  title,
+  subtitle,
   items = [],
-  emptyLabel = 'Aucune activité récente pour le moment.',
+  emptyLabel,
   language = 'fr-BE',
   accent = 'blue',
   limit = 5,
+  actionTo,
+  actionLabel,
 }) {
+  const { t } = useTranslation()
   const visibleItems = normalizeItems(items).slice(0, limit)
-  const groupedItems = groupItemsByDay(visibleItems, language)
+  const groupedItems = groupItemsByDay(visibleItems, language, t)
   const accentClass = getAccentClass(accent)
+  const feedTitle = title || t('activityFeed.title')
+  const feedSubtitle = subtitle || t('activityFeed.subtitle')
+  const feedEmptyLabel = emptyLabel || t('activityFeed.empty')
 
   return (
-    <section className="rounded-xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-900/5">
-      <div className="mb-4">
-        <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
-          <AppIcon name="Activity" className={`h-5 w-5 ${accentClass}`} />
-          {title}
-        </h2>
-        {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+    <section className="collab-reveal flex h-[340px] flex-col rounded-xl border border-slate-100 bg-white p-4 shadow-lg shadow-slate-900/5">
+      <div className="mb-3 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
+            <AppIcon name="Activity" className={`h-5 w-5 ${accentClass}`} />
+            {feedTitle}
+          </h2>
+          {feedSubtitle && <p className="mt-1 text-sm text-slate-500">{feedSubtitle}</p>}
+        </div>
+        {actionTo && actionLabel && (
+          <Link to={actionTo} className="text-sm font-bold text-blue-700 transition hover:text-blue-900 hover:underline">
+            {actionLabel}
+          </Link>
+        )}
       </div>
 
       {visibleItems.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-center">
+        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-center">
           <AppIcon name="CheckCircle" className="mx-auto mb-2 h-8 w-8 text-emerald-500" />
-          <p className="text-sm font-black text-slate-700">{emptyLabel}</p>
+          <p className="text-sm font-black text-slate-700">{feedEmptyLabel}</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {groupedItems.map(group => (
-            <div key={group.label}>
-              <p className="mb-2 text-[11px] font-black uppercase tracking-wide text-slate-400">{group.label}</p>
-              <div className="divide-y divide-slate-100 rounded-lg border border-slate-100 bg-slate-50/60">
-                {group.items.map(item => <ActivityItem key={item.key} item={item} language={language} accent={accent} />)}
+        <div className="relative min-h-0 flex-1">
+          <div className="activity-feed-scroll h-full space-y-3 overflow-y-auto rounded-lg pr-1">
+            {groupedItems.map(group => (
+              <div key={group.label}>
+                <p className="mb-2 text-[11px] font-black uppercase tracking-wide text-slate-400">{group.label}</p>
+                <div className="divide-y divide-slate-100 rounded-lg border border-slate-100 bg-slate-50/60">
+                  {group.items.map((item, index) => (
+                    <ActivityItem
+                      key={item.key}
+                      item={item}
+                      language={language}
+                      accent={accent}
+                      index={index}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 rounded-b-lg bg-gradient-to-t from-white via-white/80 to-transparent" />
         </div>
       )}
     </section>
   )
 }
 
-function ActivityItem({ item, language, accent }) {
+function ActivityItem({ item, language, accent, index = 0 }) {
+  const style = { animationDelay: `${Math.min(index, 6) * 35}ms` }
   const content = (
     <>
-      <span className={`mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${getIconTone(accent)}`}>
+      <span className={`mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${getIconTone(accent)}`}>
         <AppIcon name={item.icon || 'Bell'} className="h-4 w-4" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-black text-slate-950">{item.title}</span>
-        {item.description && <span className="mt-0.5 block truncate text-sm text-slate-500">{item.description}</span>}
+        <span className="block truncate text-sm font-black leading-5 text-slate-950">{item.title}</span>
+        {item.description && <span className="mt-0.5 block truncate text-xs leading-5 text-slate-500">{item.description}</span>}
       </span>
-      <span className="shrink-0 text-xs font-bold text-slate-400">{formatTime(item.date, language)}</span>
+      <span className="ml-2 shrink-0 pt-0.5 text-right text-xs font-bold text-slate-400">{formatTime(item.date, language)}</span>
     </>
   )
 
   if (item.to) {
     return (
-      <Link to={item.to} className="flex items-start gap-3 px-4 py-3 transition hover:bg-white">
+      <Link to={item.to} style={style} className="activity-feed-item flex items-start gap-2.5 px-3 py-2 transition hover:bg-white">
         {content}
       </Link>
     )
   }
 
-  return <div className="flex items-start gap-3 px-4 py-3">{content}</div>
+  return <div style={style} className="activity-feed-item flex items-start gap-2.5 px-3 py-2">{content}</div>
 }
 
 function normalizeItems(items) {
@@ -86,14 +112,14 @@ function normalizeItems(items) {
     })
 }
 
-function groupItemsByDay(items, language) {
+function groupItemsByDay(items, language, t) {
   const today = new Date()
   const yesterday = new Date()
   yesterday.setDate(today.getDate() - 1)
 
   const groups = []
   items.forEach(item => {
-    const label = getDayLabel(item.date, today, yesterday, language)
+    const label = getDayLabel(item.date, today, yesterday, language, t)
     let group = groups.find(candidate => candidate.label === label)
     if (!group) {
       group = { label, items: [] }
@@ -104,10 +130,10 @@ function groupItemsByDay(items, language) {
   return groups
 }
 
-function getDayLabel(date, today, yesterday, language) {
-  if (!date) return 'Plus tôt'
-  if (isSameDay(date, today)) return 'Aujourd’hui'
-  if (isSameDay(date, yesterday)) return 'Hier'
+function getDayLabel(date, today, yesterday, language, t) {
+  if (!date) return t('activityFeed.days.earlier')
+  if (isSameDay(date, today)) return t('activityFeed.days.today')
+  if (isSameDay(date, yesterday)) return t('activityFeed.days.yesterday')
   return date.toLocaleDateString(language || 'fr-BE', { day: '2-digit', month: 'short' })
 }
 

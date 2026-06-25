@@ -1,11 +1,13 @@
+import { Link } from 'react-router-dom';
 import AppIcon from '../ui/AppIcons';
 
 export default function CompactKpiRow({ items = [], accent = 'blue', className = '' }) {
   const visibleItems = items.filter(Boolean);
   if (visibleItems.length === 0) return null;
+  const desktopColumns = visibleItems.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4';
 
   return (
-    <section className={`grid gap-2 sm:grid-cols-2 lg:grid-cols-4 ${className}`}>
+    <section className={`grid gap-2 sm:grid-cols-2 ${desktopColumns} ${className}`}>
       {visibleItems.map(item => (
         <CompactKpi key={item.label} item={item} accent={accent} />
       ))}
@@ -14,8 +16,8 @@ export default function CompactKpiRow({ items = [], accent = 'blue', className =
 }
 
 function CompactKpi({ item, accent }) {
-  return (
-    <div className="rounded-lg border border-slate-100 bg-white px-4 py-3 shadow-sm">
+  const className = "rounded-lg border border-slate-100 bg-white px-4 py-3 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-100 hover:shadow-md";
+  const content = (
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-[11px] font-black uppercase tracking-wide text-slate-400">{item.label}</p>
@@ -25,8 +27,13 @@ function CompactKpi({ item, accent }) {
           <AppIcon name={item.icon || 'BarChart3'} className="h-4 w-4" />
         </span>
       </div>
-    </div>
   );
+
+  if (item.to) {
+    return <Link to={item.to} className={`${className} block cursor-pointer`}>{content}</Link>;
+  }
+
+  return <div className={className}>{content}</div>;
 }
 
 function toneClass(accent, tone) {

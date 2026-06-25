@@ -484,6 +484,8 @@
     "writeInGroup": "Write in this group...",
     "groupDescription": "Messaging for {{group}}",
     "messagesCount": "{{count}} message(s)",
+    "membersCount": "{{count}} member(s)",
+    "activeStatus": "Active",
     "groupReserved": "Group messaging is reserved for members and mentors.",
     "unavailableTitle": "Messaging unavailable",
     "groupDiscussionReserved": "Discussion reserved for your group",
@@ -493,7 +495,52 @@
     "errorActiveGroup": "Unable to load your active group.",
     "openMessaging": "Open messaging",
     "messageSent": "Message sent.",
-    "addEmoji": "Add emoji"
+    "addEmoji": "Add emoji",
+    "addAttachment": "Add attachment",
+    "removeAttachment": "Remove attachment",
+    "attachmentLocalOnly": "Local preview only. File sending will be enabled later.",
+    "dropAttachment": "Drop the file here",
+    "copyMessage": "Copy message",
+    "copied": "Message copied.",
+    "copyFailed": "Unable to copy the message.",
+    "replyUnavailable": "Reply coming soon",
+    "systemMessage": "Group update",
+    "business": {
+      "activity": "Activity",
+      "project": "Project",
+      "opportunity": "Opportunity",
+      "support": "Partner support",
+      "group": "Group information",
+      "info": "Information",
+      "view": "View",
+      "open": "Open",
+      "opportunityTypes": {
+        "EMPLOI": "Job",
+        "STAGE": "Internship",
+        "FORMATION": "Training",
+        "MENTORAT": "Mentoring",
+        "BENEVOLAT": "Volunteering",
+        "EVENEMENT_PARTENAIRE": "Partner event",
+        "APPEL_A_PROJET": "Call for projects",
+        "DON_MATERIEL": "Material donation",
+        "FINANCEMENT": "Funding",
+        "AUTRE": "Other"
+      },
+      "publicTargets": {
+        "TOUS": "All audiences",
+        "PUBLIC": "Public",
+        "MEMBRES": "Members",
+        "JEUNES": "Young people",
+        "REFERENTS": "Mentors",
+        "GROUPES": "Groups",
+        "PARTENAIRES": "Partners"
+      }
+    },
+    "days": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "earlier": "Earlier"
+    }
   },
   "notifications": {
     "title": "Notifications",
@@ -817,8 +864,8 @@
       "noActiveGroup": "You do not have an active group yet.",
       "messagingAvailable": "Messaging is available for your group.",
       "messagingUnavailable": "Messaging is available once you are accepted into a group.",
-      "currentWithName": "Current With Name",
-      "noGroup": "Rejoindre un groupe"
+      "currentWithName": "You are a member of {{group}}.",
+      "noGroup": "Join a group"
     },
     "referent": {
       "title": "My mentor",
@@ -836,7 +883,7 @@
       "fallbackTitle": "Activity",
       "upcomingDate": "Upcoming date",
       "dateToConfirm": "Date to be confirmed",
-      "next": "Prochaine activité"
+      "next": "Next activity"
     },
     "messaging": {
       "title": "Messaging",
@@ -919,6 +966,7 @@
       "viewNotifications": "View notifications",
       "viewAll": "See all",
       "open": "Open",
+      "message": "Message",
       "retry": "Retry"
     },
     "statuses": {
@@ -932,7 +980,9 @@
       },
       "project": {
         "BROUILLON": "Draft",
-        "SOUMIS": "Under review",
+        "SOUMIS": "Submitted",
+        "VALIDE_REFERENT": "Approved by mentor",
+        "REFUSE_REFERENT": "Rejected by mentor",
         "APPROUVE": "Approved",
         "EN_COURS": "In progress",
         "TERMINE": "Completed",
@@ -945,15 +995,19 @@
         "MEMBRE_ENGAGE": "Engaged member"
       }
     },
-    "workspaceEyebrow": "Travail en cours",
-    "workspaceTitle": "Mon espace de travail",
-    "unreadNotifications": "Unread Notifications",
-    "projectToFollow": "Projet à suivre",
+    "workspaceEyebrow": "In progress",
+    "workspaceTitle": "My workspace",
+    "unreadNotifications": "{{count}} unread notification(s)",
+    "projectToFollow": "Project to follow",
+    "quickAccess": "Quick access",
+    "paymentRequired": "Payment required",
+    "activitySoon": "Upcoming activity",
+    "projectNeedsAction": "Project needs action",
     "today": {
-      "eyebrow": "Priorités",
-      "title": "Ce que je dois faire maintenant"
+      "eyebrow": "Priorities",
+      "title": "What I should do now"
     },
-    "noPriorityToday": "Aucune action urgente aujourd’hui"
+    "noPriorityToday": "No urgent action today"
   },
   "statuses": {
     "BROUILLON": "Draft",
@@ -1106,7 +1160,7 @@
     "dashboardSummary": "Dashboard Summary",
     "requestToReview": "Demande à valider",
     "memberToWelcome": "Nouveau membre à accueillir",
-    "projectToFollow": "Projet à suivre",
+    "projectToFollow": "Project to follow",
     "todayActions": "À traiter aujourd’hui",
     "todayActionsSubtitle": "Uniquement les éléments qui nécessitent une action.",
     "noActionToday": "Aucune action en attente aujourd’hui",
@@ -1840,16 +1894,23 @@
     "bxSupport": "BX-CONNECT support"
   },
   "activityFeed": {
-    "title": "Mon fil d’activité",
-    "adminSubtitle": "Validations, créations et changements de statut à surveiller.",
-    "memberSubtitle": "Messages, activités, projets et notifications importantes.",
-    "empty": "Aucune activité récente pour le moment.",
-    "activityDate": "Activity Date",
-    "projectTracked": "Projet suivi",
-    "currentGroup": "Groupe actuel",
-    "partnerSubtitle": "Soutiens, projets ouverts et activités disponibles.",
-    "referentSubtitle": "Demandes, membres, activités et projets liés à vos groupes.",
-    "superAdminSubtitle": "Actions sensibles, sécurité et activité administrative."
+    "title": "My activity feed",
+    "subtitle": "What changed recently.",
+    "adminSubtitle": "Validations, creations and status changes to monitor.",
+    "memberSubtitle": "Messages, activities, projects and important notifications.",
+    "empty": "No recent activity yet.",
+    "activityDate": "Scheduled on {{date}}",
+    "projectTracked": "Project followed",
+    "currentGroup": "Current group",
+    "viewAll": "See all",
+    "days": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "earlier": "Earlier"
+    },
+    "partnerSubtitle": "Support, open projects and available activities.",
+    "referentSubtitle": "Requests, members, activities and projects linked to your groups.",
+    "superAdminSubtitle": "Sensitive actions, security and administrative activity."
   },
   "adminMobile": {
     "opportunitiesTitle": "Opportunités à modérer"

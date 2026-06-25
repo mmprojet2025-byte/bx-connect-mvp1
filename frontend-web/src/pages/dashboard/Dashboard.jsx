@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import MemberGroupCard from '../../components/member/MemberGroupCard'
-import MemberReferentCard from '../../components/member/MemberReferentCard'
 import MemberActivitiesCard from '../../components/member/MemberActivitiesCard'
 import MemberProjectsCard from '../../components/member/MemberProjectsCard'
 import api from '../../api/axios'
@@ -16,7 +15,6 @@ import LoadingState from '../../components/ui/LoadingState'
 import {
   CollaborativeDashboardLayout,
   WorkspaceEmpty,
-  WorkspaceSection,
 } from '../../components/dashboard/CollaborativeDashboard'
 
 export default function Dashboard() {
@@ -45,13 +43,15 @@ export default function Dashboard() {
   const referent = dashboard?.referent
   const messagerieDisponible = dashboard?.messagerieDisponible || false
   const unreadNotifications = (dashboard?.notifications || []).filter(notification => !notification.lue).length
-  const memberActivityItems = dashboard ? buildMemberActivityItems({ dashboard, groupe, t }) : []
+  const memberActivityItems = dashboard ? buildMemberActivityItems({ dashboard, groupe, t, language: i18n.language }) : []
 
   return (
     <CollaborativeDashboardLayout
       emoji="👋"
       title={t('memberDashboard.hello', { name: user?.prenom || t('memberDashboard.memberFallback') })}
       subtitle={groupe?.nom ? t('memberDashboard.group.currentWithName', { group: groupe.nom, defaultValue: `Espace de travail : ${groupe.nom}` }) : t('memberDashboard.group.noGroupDescription')}
+      accentHeader
+      compact
     >
         {error && dashboard && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 text-sm">
@@ -70,86 +70,63 @@ export default function Dashboard() {
           />
         ) : dashboard ? (
           <>
-            <CompactKpiRow
-              accent="blue"
-              className="mb-4"
-              items={[
-                { icon: 'Users', label: t('nav.myGroups'), value: groupe?.nom || t('groups.no_group_joined'), tone: groupe ? 'blue' : 'amber' },
-                { icon: 'Calendar', label: t('nav.activities'), value: (dashboard.inscriptions || []).length },
-                { icon: 'Rocket', label: t('nav.projects'), value: (dashboard.projets || []).length },
-                { icon: 'Bell', label: t('nav.notifications'), value: unreadNotifications, tone: unreadNotifications > 0 ? 'amber' : 'green' },
-              ]}
-            />
-
             <MemberPrioritySection
               groupe={groupe}
               inscriptions={dashboard.inscriptions || []}
               notifications={dashboard.notifications || []}
               projets={dashboard.projets || []}
-              messagerieDisponible={messagerieDisponible}
               t={t}
             />
 
-            <WorkspaceSection
-              eyebrow={t('memberDashboard.workspaceEyebrow', { defaultValue: 'Travail en cours' })}
-              title={t('memberDashboard.workspaceTitle', { defaultValue: 'Mon espace de travail' })}
-              emoji="Folder"
-            >
-              {groupe ? (
-                <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-                  <MemberGroupCard
-                    groupe={groupe}
-                    referent={referent}
-                    messagerieDisponible={messagerieDisponible}
-                  />
-                  <MemberReferentCard
-                    referent={referent}
-                    groupe={groupe}
-                    messagerieDisponible={messagerieDisponible}
-                  />
-                </div>
-              ) : (
-                <WorkspaceEmpty
-                  emoji="👥"
-                  title={t('groups.no_group_joined')}
-                  description={t('groups.choose_group')}
-                  actionTo="/groupes"
-                  actionLabel={t('groups.discover')}
-                />
-              )}
-            </WorkspaceSection>
-
-            {((dashboard.inscriptions || []).length > 0 || (dashboard.projets || []).length > 0) && (
-            <section className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-              {(dashboard.inscriptions || []).length > 0 && (
-              <CompactPanel
-                icon="Calendar"
-                title={t('memberDashboard.activities.title', { defaultValue: 'Activités à venir' })}
-              >
-                <MemberActivitiesCard inscriptions={dashboard.inscriptions || []} />
-              </CompactPanel>
-              )}
-              {(dashboard.projets || []).length > 0 && (
-              <CompactPanel
-                icon="Rocket"
-                title={t('memberDashboard.projects.title', { defaultValue: 'Projets suivis ou proposés' })}
-              >
-                <MemberProjectsCard projets={dashboard.projets || []} />
-              </CompactPanel>
-              )}
+            <section className="collab-reveal">
+              <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-500">
+                {t('memberDashboard.quickAccess')}
+              </p>
+              <CompactKpiRow
+                accent="blue"
+                items={[
+                  { icon: 'Calendar', label: t('nav.activities'), value: (dashboard.inscriptions || []).length, to: '/activites' },
+                  { icon: 'Rocket', label: t('nav.projects'), value: (dashboard.projets || []).length, to: '/projets' },
+                  { icon: 'Bell', label: t('nav.notifications'), value: unreadNotifications, tone: unreadNotifications > 0 ? 'amber' : 'green', to: '/notifications' },
+                ]}
+              />
             </section>
+
+            {groupe ? (
+              <MemberGroupCard
+                groupe={groupe}
+                referent={referent}
+                messagerieDisponible={messagerieDisponible}
+              />
+            ) : (
+              <WorkspaceEmpty
+                emoji="👥"
+                title={t('groups.no_group_joined')}
+                description={t('groups.choose_group')}
+                actionTo="/groupes"
+                actionLabel={t('groups.discover')}
+              />
             )}
+
+              {((dashboard.inscriptions || []).length > 0 || (dashboard.projets || []).length > 0) && (
+              <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+                {(dashboard.inscriptions || []).length > 0 && <MemberActivitiesCard inscriptions={dashboard.inscriptions || []} />}
+                {(dashboard.projets || []).length > 0 && <MemberProjectsCard projets={dashboard.projets || []} />}
+              </section>
+              )}
 
             {memberActivityItems.length > 0 && (
             <ActivityFeed
-              title={t('activityFeed.title', { defaultValue: 'Mon fil d’activité' })}
-              subtitle={t('activityFeed.memberSubtitle', { defaultValue: 'Messages, activités, projets et notifications importantes.' })}
-              emptyLabel={t('activityFeed.empty', { defaultValue: 'Aucune activité récente pour le moment.' })}
-              items={memberActivityItems}
-              language={i18n.language}
-              accent="blue"
-              limit={5}
-            />
+              title={t('activityFeed.title')}
+              subtitle={t('activityFeed.memberSubtitle')}
+              emptyLabel={t('activityFeed.empty')}
+                items={memberActivityItems}
+                language={i18n.language}
+                accent="blue"
+                limit={10}
+                actionTo="/notifications"
+                actionLabel={t('activityFeed.viewAll')}
+              />
             )}
           </>
         ) : (
@@ -163,7 +140,7 @@ export default function Dashboard() {
   )
 }
 
-function buildMemberActivityItems({ dashboard, groupe, t }) {
+function buildMemberActivityItems({ dashboard, groupe, t, language }) {
   const notifications = (dashboard.notifications || []).map(notification => ({
     key: `notification-${notification.id}`,
     icon: notification.lue ? 'Bell' : 'TriangleAlert',
@@ -176,11 +153,11 @@ function buildMemberActivityItems({ dashboard, groupe, t }) {
   const inscriptions = (dashboard.inscriptions || []).map(inscription => ({
     key: `inscription-${inscription.id || inscription.activiteId || inscription.titre}`,
     icon: 'Calendar',
-    title: inscription.titre || inscription.activiteTitre || t('memberDashboard.activities.title', { defaultValue: 'Activité à venir' }),
-    description: inscription.dateDebut
-      ? t('activityFeed.activityDate', { date: new Date(inscription.dateDebut).toLocaleDateString('fr-BE'), defaultValue: `Prévue le ${new Date(inscription.dateDebut).toLocaleDateString('fr-BE')}` })
-      : t('memberDashboard.activities.dateToConfirm', { defaultValue: 'Date à confirmer' }),
-    date: inscription.dateInscription || inscription.dateCreation || inscription.dateDebut,
+    title: inscription.titre || inscription.activiteTitre || t('memberDashboard.activities.title'),
+    description: (inscription.activiteDateDebut || inscription.dateDebut)
+      ? t('activityFeed.activityDate', { date: new Date(inscription.activiteDateDebut || inscription.dateDebut).toLocaleDateString(language || 'fr-BE') })
+      : t('memberDashboard.activities.dateToConfirm'),
+    date: inscription.dateInscription || inscription.dateCreation || inscription.activiteDateDebut || inscription.dateDebut,
     to: '/activites',
   }))
 
@@ -188,7 +165,7 @@ function buildMemberActivityItems({ dashboard, groupe, t }) {
     key: `projet-${projet.id || projet.titre}`,
     icon: 'Rocket',
     title: projet.titre || t('nav.projects'),
-    description: projet.statut ? t(`statuses.${projet.statut}`, { defaultValue: projet.statut }) : t('activityFeed.projectTracked', { defaultValue: 'Projet suivi' }),
+    description: projet.statut ? t(`statuses.${projet.statut}`, { defaultValue: projet.statut }) : t('activityFeed.projectTracked'),
     date: projet.dateModification || projet.dateCreation,
     to: projet.id ? `/projets/${projet.id}` : '/projets',
   }))
@@ -196,7 +173,7 @@ function buildMemberActivityItems({ dashboard, groupe, t }) {
   const groupItem = groupe && {
     key: `groupe-${groupe.id || groupe.nom}`,
     icon: 'Users',
-    title: t('activityFeed.currentGroup', { defaultValue: 'Groupe actuel' }),
+    title: t('activityFeed.currentGroup'),
     description: groupe.nom,
     date: groupe.dateAdhesion || groupe.dateCreation,
     to: groupe.id ? `/groupes/${groupe.id}` : '/groupes',
@@ -205,25 +182,19 @@ function buildMemberActivityItems({ dashboard, groupe, t }) {
   return [groupItem, ...notifications, ...inscriptions, ...projets]
 }
 
-function MemberPrioritySection({ groupe, inscriptions, notifications, projets, messagerieDisponible, t }) {
+function MemberPrioritySection({ groupe, inscriptions, notifications, projets, t }) {
   const hasGroup = !!groupe
   const unreadNotifications = notifications.filter(notification => !notification.lue).length
-  const nextInscription = inscriptions[0]
-  const latestProject = projets[0]
+  const paymentPending = inscriptions.find(inscription => inscription.statut === 'EN_ATTENTE_PAIEMENT')
+  const imminentInscription = inscriptions.find(inscription => inscription.statut !== 'EN_ATTENTE_PAIEMENT' && isImminentInscription(inscription))
+  const projectNeedingAction = projets.find(projet => ['BROUILLON', 'REFUSE_REFERENT', 'REJETE'].includes(projet.statut))
   const priorities = [
     !hasGroup && {
-      title: t('memberDashboard.group.noGroup', { defaultValue: 'Rejoindre un groupe' }),
+      title: t('memberDashboard.group.noGroup'),
       description: t('memberDashboard.group.noGroupDescription'),
       to: '/groupes',
       tone: 'blue',
       icon: 'Users',
-    },
-    nextInscription && {
-      title: t('memberDashboard.activities.next', { defaultValue: 'Prochaine activité' }),
-      description: nextInscription.titre || nextInscription.activiteTitre || t('memberDashboard.activities.title'),
-      to: '/activites',
-      tone: 'teal',
-      icon: 'Calendar',
     },
     unreadNotifications > 0 && {
       title: t('nav.notifications'),
@@ -232,47 +203,64 @@ function MemberPrioritySection({ groupe, inscriptions, notifications, projets, m
       tone: 'amber',
       icon: 'Bell',
     },
-    latestProject && {
-      title: t('memberDashboard.projectToFollow', { defaultValue: 'Projet à suivre' }),
-      description: latestProject.titre || t('nav.projects'),
+    paymentPending && {
+      title: t('memberDashboard.paymentRequired'),
+      description: paymentPending.titre || paymentPending.activiteTitre || t('memberDashboard.activities.title'),
+      to: '/activites',
+      tone: 'amber',
+      icon: 'CreditCard',
+    },
+    imminentInscription && {
+      title: t('memberDashboard.activitySoon'),
+      description: imminentInscription.titre || imminentInscription.activiteTitre || t('memberDashboard.activities.title'),
+      to: '/activites',
+      tone: 'teal',
+      icon: 'Calendar',
+    },
+    projectNeedingAction && {
+      title: t('memberDashboard.projectNeedsAction'),
+      description: projectNeedingAction.titre || t('nav.projects'),
       to: '/projets',
       tone: 'violet',
       icon: 'Rocket',
     },
-    hasGroup && messagerieDisponible && {
-      title: t('nav.messaging'),
-      description: t('memberDashboard.nextActions.openGroupMessaging'),
-      to: '/messagerie',
-      tone: 'blue',
-      icon: 'MessageCircle',
-    },
   ].filter(Boolean).slice(0, 5)
 
   return (
-    <section className="rounded-[1.5rem] border border-blue-100 bg-white p-5 shadow-lg shadow-blue-950/5">
-      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+    <section className="collab-reveal rounded-xl border border-blue-100 bg-white p-4 shadow-lg shadow-blue-950/5">
+      <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-wide text-blue-700">
-            {t('memberDashboard.today.eyebrow', { defaultValue: 'Priorités' })}
+            {t('memberDashboard.today.eyebrow')}
           </p>
-          <h2 className="text-xl font-black text-slate-950">
-            {t('memberDashboard.today.title', { defaultValue: 'Ce que je dois faire maintenant' })}
+          <h2 className="text-lg font-black text-slate-950">
+            {t('memberDashboard.today.title')}
           </h2>
         </div>
       </div>
 
       {priorities.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-center">
-          <AppIcon name="CheckCircle" className="mx-auto mb-2 h-8 w-8 text-emerald-500" />
-          <p className="text-sm font-black text-slate-700">{t('memberDashboard.noPriorityToday', { defaultValue: 'Aucune action urgente aujourd’hui' })}</p>
+        <div className="flex items-center gap-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-3">
+          <AppIcon name="CheckCircle" className="h-5 w-5 shrink-0 text-emerald-500" />
+          <p className="text-sm font-black text-slate-700">{t('memberDashboard.noPriorityToday')}</p>
         </div>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           {priorities.map(priority => <TodayCard key={`${priority.to}-${priority.title}`} {...priority} />)}
         </div>
       )}
     </section>
   )
+}
+
+function isImminentInscription(inscription) {
+  const dateValue = inscription.activiteDateDebut || inscription.dateDebut
+  if (!dateValue) return false
+  const date = new Date(dateValue)
+  if (Number.isNaN(date.getTime())) return false
+  const now = new Date()
+  const sevenDays = 7 * 24 * 60 * 60 * 1000
+  return date.getTime() >= now.getTime() && date.getTime() - now.getTime() <= sevenDays
 }
 
 function TodayCard({ title, description, to, tone = 'blue', icon = 'Folder' }) {
@@ -285,8 +273,8 @@ function TodayCard({ title, description, to, tone = 'blue', icon = 'Folder' }) {
   }
 
   return (
-    <Link to={to} className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md">
-      <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tones[tone] || tones.blue}`}>
+    <Link to={to} className="flex items-start gap-3 rounded-lg border border-slate-100 bg-slate-50 p-3 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md">
+      <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${tones[tone] || tones.blue}`}>
         <AppIcon name={icon} className="h-5 w-5" />
       </span>
       <span className="min-w-0">
@@ -294,17 +282,5 @@ function TodayCard({ title, description, to, tone = 'blue', icon = 'Folder' }) {
         <span className="mt-0.5 block truncate text-sm text-slate-500">{description}</span>
       </span>
     </Link>
-  )
-}
-
-function CompactPanel({ icon, title, children }) {
-  return (
-    <section className="rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-lg shadow-slate-900/5">
-      <h2 className="mb-4 flex items-center gap-2 text-lg font-black text-slate-950">
-        <AppIcon name={icon} className="h-5 w-5 text-blue-700" />
-        {title}
-      </h2>
-      {children}
-    </section>
   )
 }

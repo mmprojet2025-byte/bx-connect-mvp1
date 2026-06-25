@@ -3,15 +3,17 @@ import Navbar from '../Navbar'
 import Footer from '../Footer'
 import AppIcon from '../ui/AppIcons'
 
-export function CollaborativeDashboardLayout({ title, subtitle, emoji = '🏠', actions, children }) {
+export function CollaborativeDashboardLayout({ title, subtitle, emoji = '🏠', actions, children, accentHeader = false, compact = false }) {
   return (
     <div className="flex min-h-screen flex-col bg-[#f5f7fb]">
       <Navbar />
       <main className="flex-1">
-        <div className="mx-auto max-w-[1440px] px-3 py-4 lg:px-5 lg:py-5">
+        <div className={`mx-auto max-w-[1440px] px-3 lg:px-5 ${compact ? 'py-3 lg:py-4' : 'py-4 lg:py-5'}`}>
           <section className="min-w-0">
-            <header className="collab-reveal mb-4 rounded-xl border border-white bg-white p-5 shadow-lg shadow-blue-950/5">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <header className={`collab-reveal relative mb-3 overflow-hidden rounded-xl border border-white bg-white ${compact ? 'p-4' : 'p-5'} shadow-lg shadow-blue-950/5`}>
+              {accentHeader && <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-700 via-teal-600 to-emerald-500" />}
+              {accentHeader && <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-blue-50/80 via-white to-emerald-50/50" />}
+              <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <p className="mb-2 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-700">
                     <IconMarker icon={emoji} className="h-4 w-4" />

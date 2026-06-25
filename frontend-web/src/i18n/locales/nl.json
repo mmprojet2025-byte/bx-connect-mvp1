@@ -484,6 +484,8 @@
     "writeInGroup": "Schrijf in deze groep...",
     "groupDescription": "Berichten voor {{group}}",
     "messagesCount": "{{count}} bericht(en)",
+    "membersCount": "{{count}} lid/leden",
+    "activeStatus": "Actief",
     "groupReserved": "Groepsberichten zijn voorbehouden aan leden en begeleiders.",
     "unavailableTitle": "Berichten niet beschikbaar",
     "groupDiscussionReserved": "Discussie voorbehouden aan je groep",
@@ -493,7 +495,52 @@
     "errorActiveGroup": "Kan je actieve groep niet laden.",
     "openMessaging": "Berichten openen",
     "messageSent": "Bericht verzonden.",
-    "addEmoji": "Emoji toevoegen"
+    "addEmoji": "Emoji toevoegen",
+    "addAttachment": "Bijlage toevoegen",
+    "removeAttachment": "Bijlage verwijderen",
+    "attachmentLocalOnly": "Alleen lokale voorbeeldweergave. Bestanden verzenden wordt later geactiveerd.",
+    "dropAttachment": "Zet het bestand hier neer",
+    "copyMessage": "Bericht kopiëren",
+    "copied": "Bericht gekopieerd.",
+    "copyFailed": "Kan het bericht niet kopiëren.",
+    "replyUnavailable": "Antwoorden binnenkort beschikbaar",
+    "systemMessage": "Groepsupdate",
+    "business": {
+      "activity": "Activiteit",
+      "project": "Project",
+      "opportunity": "Opportuniteit",
+      "support": "Partnersteun",
+      "group": "Groepsinformatie",
+      "info": "Informatie",
+      "view": "Bekijken",
+      "open": "Openen",
+      "opportunityTypes": {
+        "EMPLOI": "Job",
+        "STAGE": "Stage",
+        "FORMATION": "Opleiding",
+        "MENTORAT": "Mentorschap",
+        "BENEVOLAT": "Vrijwilligerswerk",
+        "EVENEMENT_PARTENAIRE": "Partnerevenement",
+        "APPEL_A_PROJET": "Projectoproep",
+        "DON_MATERIEL": "Materiële gift",
+        "FINANCEMENT": "Financiering",
+        "AUTRE": "Andere"
+      },
+      "publicTargets": {
+        "TOUS": "Alle doelgroepen",
+        "PUBLIC": "Publiek",
+        "MEMBRES": "Leden",
+        "JEUNES": "Jongeren",
+        "REFERENTS": "Begeleiders",
+        "GROUPES": "Groepen",
+        "PARTENAIRES": "Partners"
+      }
+    },
+    "days": {
+      "today": "Vandaag",
+      "yesterday": "Gisteren",
+      "earlier": "Eerder"
+    }
   },
   "notifications": {
     "title": "Meldingen",
@@ -817,8 +864,8 @@
       "noActiveGroup": "Je hebt nog geen actieve groep.",
       "messagingAvailable": "Berichten zijn beschikbaar voor je groep.",
       "messagingUnavailable": "Berichten zijn beschikbaar zodra je in een groep bent aanvaard.",
-      "currentWithName": "Current With Name",
-      "noGroup": "Rejoindre un groupe"
+      "currentWithName": "Je bent lid van {{group}}.",
+      "noGroup": "Word lid van een groep"
     },
     "referent": {
       "title": "Mijn begeleider",
@@ -836,7 +883,7 @@
       "fallbackTitle": "Activiteit",
       "upcomingDate": "Komende datum",
       "dateToConfirm": "Datum nog te bevestigen",
-      "next": "Prochaine activité"
+      "next": "Volgende activiteit"
     },
     "messaging": {
       "title": "Berichten",
@@ -919,6 +966,7 @@
       "viewNotifications": "Meldingen bekijken",
       "viewAll": "Alles bekijken",
       "open": "Openen",
+      "message": "Bericht",
       "retry": "Opnieuw proberen"
     },
     "statuses": {
@@ -932,7 +980,9 @@
       },
       "project": {
         "BROUILLON": "Concept",
-        "SOUMIS": "In beoordeling",
+        "SOUMIS": "Ingediend",
+        "VALIDE_REFERENT": "Goedgekeurd door begeleider",
+        "REFUSE_REFERENT": "Geweigerd door begeleider",
         "APPROUVE": "Goedgekeurd",
         "EN_COURS": "Lopend",
         "TERMINE": "Afgerond",
@@ -947,8 +997,12 @@
     },
     "workspaceEyebrow": "Werk in uitvoering",
     "workspaceTitle": "Mijn werkruimte",
-    "unreadNotifications": "Ongelezen meldingen",
+    "unreadNotifications": "{{count}} ongelezen melding(en)",
     "projectToFollow": "Project om op te volgen",
+    "quickAccess": "Snelle toegang",
+    "paymentRequired": "Betaling vereist",
+    "activitySoon": "Activiteit binnenkort",
+    "projectNeedsAction": "Project te behandelen",
     "today": {
       "eyebrow": "Prioriteiten",
       "title": "Wat ik nu moet doen"
@@ -1106,7 +1160,7 @@
     "dashboardSummary": "Dashboard Summary",
     "requestToReview": "Demande à valider",
     "memberToWelcome": "Nouveau membre à accueillir",
-    "projectToFollow": "Projet à suivre",
+    "projectToFollow": "Project om op te volgen",
     "todayActions": "À traiter aujourd’hui",
     "todayActionsSubtitle": "Uniquement les éléments qui nécessitent une action.",
     "noActionToday": "Aucune action en attente aujourd’hui",
@@ -1840,16 +1894,23 @@
     "bxSupport": "BX-CONNECT-steun"
   },
   "activityFeed": {
-    "title": "Mon fil d’activité",
-    "adminSubtitle": "Validations, créations et changements de statut à surveiller.",
-    "memberSubtitle": "Messages, activités, projets et notifications importantes.",
-    "empty": "Aucune activité récente pour le moment.",
-    "activityDate": "Activity Date",
-    "projectTracked": "Projet suivi",
-    "currentGroup": "Groupe actuel",
-    "partnerSubtitle": "Soutiens, projets ouverts et activités disponibles.",
-    "referentSubtitle": "Demandes, membres, activités et projets liés à vos groupes.",
-    "superAdminSubtitle": "Actions sensibles, sécurité et activité administrative."
+    "title": "Mijn activiteitenfeed",
+    "subtitle": "Wat onlangs is veranderd.",
+    "adminSubtitle": "Validaties, creaties en statuswijzigingen om op te volgen.",
+    "memberSubtitle": "Berichten, activiteiten, projecten en belangrijke meldingen.",
+    "empty": "Nog geen recente activiteit.",
+    "activityDate": "Gepland op {{date}}",
+    "projectTracked": "Project opgevolgd",
+    "currentGroup": "Huidige groep",
+    "viewAll": "Alles bekijken",
+    "days": {
+      "today": "Vandaag",
+      "yesterday": "Gisteren",
+      "earlier": "Eerder"
+    },
+    "partnerSubtitle": "Steun, open projecten en beschikbare activiteiten.",
+    "referentSubtitle": "Aanvragen, leden, activiteiten en projecten gekoppeld aan je groepen.",
+    "superAdminSubtitle": "Gevoelige acties, beveiliging en administratieve activiteit."
   },
   "adminMobile": {
     "opportunitiesTitle": "Opportunités à modérer"
