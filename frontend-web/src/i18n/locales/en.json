@@ -289,7 +289,7 @@
       "ROLE_NON_MEMBRE": "Registration is reserved for members"
     },
     "draftsToPublish": "Activities to publish",
-    "draftsToPublishDesc": "Drafts ready to review.",
+    "draftsToPublishDesc": "Drafts ready to publish.",
     "locationMapAria": "Activity location map"
   },
   "projects": {
@@ -658,7 +658,7 @@
     "users_title": "Users",
     "users_desc": "Manage accounts, roles and access",
     "activities_title": "Activities",
-    "activities_desc": "Validate, edit, delete activities",
+    "activities_desc": "Create, publish, edit or delete activities",
     "projects_title": "Projects",
     "projects_desc": "Approve and track projects",
     "loading": "Loading...",
@@ -768,7 +768,7 @@
     "activityPlaceLine": "Place: {{place}}",
     "activityResponsibleLine": "Responsible: {{responsible}}",
     "activityFollowUpStates": {
-      "toReview": "To review",
+      "toReview": "To finalize",
       "ok": "OK",
       "cancelled": "Cancelled",
       "finished": "Finished",
@@ -825,7 +825,7 @@
       "opportunityFallback": "Opportunity to moderate",
       "supportFallback": "Pending support",
       "projectDescription": "Final validation to handle as admin.",
-      "activityDescription": "Draft ready to review before publication.",
+      "activityDescription": "Draft ready to publish.",
       "groupDescription": "Group request to approve or refuse.",
       "opportunityDescription": "Partner publication waiting for moderation.",
       "supportDescription": "Partner support to review."
@@ -2080,7 +2080,7 @@
   "activityFeed": {
     "title": "My activity feed",
     "subtitle": "What changed recently.",
-    "adminSubtitle": "Validations, creations and status changes to monitor.",
+    "adminSubtitle": "Creations, publications and status changes to monitor.",
     "memberSubtitle": "Messages, activities, projects and important notifications.",
     "empty": "No recent activity yet.",
     "activityDate": "Scheduled on {{date}}",

@@ -289,7 +289,7 @@
       "ROLE_NON_MEMBRE": "Inscription réservée aux membres"
     },
     "draftsToPublish": "Activités à publier",
-    "draftsToPublishDesc": "Brouillons prêts à vérifier.",
+    "draftsToPublishDesc": "Brouillons prêts à publier.",
     "locationMapAria": "Carte de localisation de l’activité"
   },
   "projects": {
@@ -658,7 +658,7 @@
     "users_title": "Utilisateurs",
     "users_desc": "Gérer les comptes, rôles et accès",
     "activities_title": "Activités",
-    "activities_desc": "Valider, modifier, supprimer les activités",
+    "activities_desc": "Créer, publier, modifier ou supprimer les activités",
     "projects_title": "Projets",
     "projects_desc": "Approuver et suivre les projets",
     "loading": "Chargement en cours...",
@@ -768,7 +768,7 @@
     "activityPlaceLine": "Lieu : {{place}}",
     "activityResponsibleLine": "Responsable : {{responsible}}",
     "activityFollowUpStates": {
-      "toReview": "À vérifier",
+      "toReview": "À finaliser",
       "ok": "OK",
       "cancelled": "Annulée",
       "finished": "Terminée",
@@ -825,7 +825,7 @@
       "opportunityFallback": "Opportunité à modérer",
       "supportFallback": "Soutien en attente",
       "projectDescription": "Validation finale à effectuer côté admin.",
-      "activityDescription": "Brouillon prêt à vérifier avant publication.",
+      "activityDescription": "Brouillon prêt à publier.",
       "groupDescription": "Demande de groupe à accepter ou refuser.",
       "opportunityDescription": "Publication partenaire en attente de modération.",
       "supportDescription": "Soutien partenaire à examiner."
@@ -2080,7 +2080,7 @@
   "activityFeed": {
     "title": "Mon fil d’activité",
     "subtitle": "Ce qui a changé récemment.",
-    "adminSubtitle": "Validations, créations et changements de statut à surveiller.",
+    "adminSubtitle": "Créations, publications et changements de statut à surveiller.",
     "memberSubtitle": "Messages, activités, projets et notifications importantes.",
     "empty": "Aucune activité récente pour le moment.",
     "activityDate": "Prévue le {{date}}",

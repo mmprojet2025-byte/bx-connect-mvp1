@@ -289,7 +289,7 @@
       "ROLE_NON_MEMBRE": "Inschrijving is voorbehouden aan leden"
     },
     "draftsToPublish": "Activiteiten om te publiceren",
-    "draftsToPublishDesc": "Concepten klaar om na te kijken.",
+    "draftsToPublishDesc": "Concepten klaar om te publiceren.",
     "locationMapAria": "Kaart van de activiteitlocatie"
   },
   "projects": {
@@ -658,7 +658,7 @@
     "users_title": "Gebruikers",
     "users_desc": "Accounts, rollen en toegang beheren",
     "activities_title": "Activiteiten",
-    "activities_desc": "Activiteiten valideren, wijzigen, verwijderen",
+    "activities_desc": "Activiteiten aanmaken, publiceren, wijzigen of verwijderen",
     "projects_title": "Projecten",
     "projects_desc": "Projecten goedkeuren en opvolgen",
     "loading": "Bezig met laden...",
@@ -768,7 +768,7 @@
     "activityPlaceLine": "Plaats: {{place}}",
     "activityResponsibleLine": "Verantwoordelijke: {{responsible}}",
     "activityFollowUpStates": {
-      "toReview": "Te controleren",
+      "toReview": "Af te werken",
       "ok": "OK",
       "cancelled": "Geannuleerd",
       "finished": "Afgelopen",
@@ -825,7 +825,7 @@
       "opportunityFallback": "Opportuniteit te modereren",
       "supportFallback": "Steun in behandeling",
       "projectDescription": "Finale validatie uit te voeren als beheerder.",
-      "activityDescription": "Concept klaar om te controleren voor publicatie.",
+      "activityDescription": "Concept klaar om te publiceren.",
       "groupDescription": "Groepsaanvraag om goed te keuren of te weigeren.",
       "opportunityDescription": "Partnerpublicatie wacht op moderatie.",
       "supportDescription": "Partnersteun om na te kijken."
@@ -2080,7 +2080,7 @@
   "activityFeed": {
     "title": "Mijn activiteitenfeed",
     "subtitle": "Wat onlangs is veranderd.",
-    "adminSubtitle": "Validaties, creaties en statuswijzigingen om op te volgen.",
+    "adminSubtitle": "Creaties, publicaties en statuswijzigingen om op te volgen.",
     "memberSubtitle": "Berichten, activiteiten, projecten en belangrijke meldingen.",
     "empty": "Nog geen recente activiteit.",
     "activityDate": "Gepland op {{date}}",
