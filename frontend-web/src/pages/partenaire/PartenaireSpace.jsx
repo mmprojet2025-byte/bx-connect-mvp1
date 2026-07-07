@@ -20,18 +20,21 @@ import AppIcon from '../../components/ui/AppIcons';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
+import PageHeader from '../../components/ui/PageHeader';
+import SectionCard from '../../components/ui/SectionCard';
+import StatusBadge from '../../components/StatusBadge';
+import ProjectCover from '../../components/ProjectCover';
+import ActivityCover from '../../components/ActivityCover';
 import ProjectVisibilityBadge from '../../components/ProjectVisibilityBadge';
 import { SUPPORT_STATUS_STYLES, supportStatusLabel } from '../../utils/supportStatus';
 import PartnerLogo from '../../components/PartnerLogo';
 import { CollaborativeDashboardLayout } from '../../components/dashboard/CollaborativeDashboard';
-import ActivityFeed from '../../components/dashboard/ActivityFeed';
 import CompactKpiRow from '../../components/dashboard/CompactKpiRow';
 
 // MVP1.5 / masqué volontairement : les onglets avancés restent dans le code mais hors navigation visible.
-const PARTNER_TABS = new Set(['dashboard']);
+const PARTNER_TABS = new Set(['dashboard', 'projets', 'activites', 'soutiens']);
 const PARTNER_TAB_ALIASES = {
-  projets: 'projets-activites',
-  activites: 'projets-activites',
+  'projets-activites': 'projets',
 };
 const OPPORTUNITY_CATEGORIES = ['EMPLOI', 'STAGE', 'FORMATION', 'EVENEMENT', 'APPEL_PROJET', 'PUBLICITE'];
 const OPPORTUNITY_APPLICATION_MODES = ['LIEN_EXTERNE', 'CONTACT_PARTENAIRE', 'INFORMATION'];
@@ -40,7 +43,7 @@ const OPPORTUNITY_TARGETS = ['TOUS', 'MEMBRES', 'REFERENTS', 'GROUPES', 'PUBLIC'
 export default function PartenaireSpace() {
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const [mesSoutiens, setMesSoutiens] = useState([]);
   const [mesOpportunites, setMesOpportunites] = useState([]);
@@ -291,14 +294,6 @@ export default function PartenaireSpace() {
     }
   };
 
-  const ONGLETS = [
-    { id: 'dashboard',  label: t('partnerSpace.tabs.dashboard'), icon: 'BarChart' },
-  ];
-
-  const setOnglet = (tab) => {
-    setSearchParams(tab === 'dashboard' ? {} : { tab });
-  };
-
   const impact = useMemo(
     () => buildPartnerImpact({ statistiques, mesSoutiens }),
     [mesSoutiens, statistiques]
@@ -347,48 +342,32 @@ export default function PartenaireSpace() {
     <CollaborativeDashboardLayout
       emoji="Handshake"
       title={profilInstitutionnel?.nomOrganisation || t('partnerSpace.title')}
-      subtitle={t('partnerSpace.dashboardSubtitle', { defaultValue: `${projetsOuverts.length} projet(s) ouvert(s) · ${mesSoutiens.length} soutien(s) suivi(s)` })}
+      subtitle={t('partnerSpace.dashboardSubtitle', {
+        projects: projetsOuverts.length,
+        supports: mesSoutiens.length,
+        defaultValue: `${projetsOuverts.length} projet(s) ouvert(s) · ${mesSoutiens.length} soutien(s) suivi(s)`,
+      })}
+      actions={(
+        <>
+          <button
+            type="button"
+            onClick={() => setShowProfileForm(true)}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+          >
+            <AppIcon name="Edit" className="h-4 w-4" />
+            {t('partnerInstitution.editProfile')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowSoutienForm(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-500"
+          >
+            <AppIcon name="PlusCircle" className="h-4 w-4" />
+            {t('partnerSpace.financialSupport')}
+          </button>
+        </>
+      )}
     >
-        {/* En-tête */}
-        <div className="mb-6 flex flex-col gap-4 rounded-xl border border-orange-100 bg-white p-5 shadow-lg shadow-orange-950/5 md:flex-row md:items-center md:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
-            <PartnerLogo
-              logoUrl={profilInstitutionnel?.logoUrl}
-              name={profilInstitutionnel?.nomOrganisation}
-            />
-            <div className="min-w-0">
-            <h1 className="flex items-center gap-3 text-xl font-black text-slate-950">
-              <AppIcon name="Handshake" className="h-6 w-6 text-orange-600" />
-              {profilInstitutionnel?.nomOrganisation || t('partnerSpace.title')}
-            </h1>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">
-                  {t(`partnerInstitution.types.${profilInstitutionnel?.typePartenaire || 'AUTRE'}`)}
-                </span>
-                <span className="text-sm text-slate-500">
-                  {profilInstitutionnel?.personneContact || `${user?.prenom || ''} ${user?.nom || ''}`}
-                </span>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setShowProfileForm(true)}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-            >
-              <AppIcon name="Edit" className="h-4 w-4" />
-              {t('partnerInstitution.editProfile')}
-            </button>
-            <button
-              onClick={() => setShowSoutienForm(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-500"
-            >
-              <AppIcon name="PlusCircle" className="h-4 w-4" />
-              {t('partnerSpace.financialSupport')}
-            </button>
-          </div>
-        </div>
-
         {sectionErrors.profil && <SectionLoadError message={sectionErrors.profil} />}
         {sectionErrors.stats && <SectionLoadError message={sectionErrors.stats} />}
 
@@ -404,67 +383,28 @@ export default function PartenaireSpace() {
           </div>
         )}
 
-        {/* MVP1.5 / masqué volontairement : pas d'onglets opportunités, impact ou relations avancées en démo MVP1. */}
-        {ONGLETS.length > 1 && (
-          <div className="flex gap-2 mb-6 flex-wrap">
-            {ONGLETS.map(o => (
-              <button
-                key={o.id}
-                onClick={() => setOnglet(o.id)}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition ${
-                  onglet === o.id
-                    ? 'bg-orange-600 text-white'
-                    : 'bg-white text-gray-600 hover:bg-orange-50 border border-gray-200'
-                }`}
-              >
-                <AppIcon name={o.icon} className="h-4 w-4" />
-                {o.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* ── Dashboard ── */}
-        {onglet === 'dashboard' && (
-          <div>
-            <PartnerMvp1Dashboard
-              mesSoutiens={mesSoutiens}
-              projetsOuverts={projetsOuverts}
-              activitesOuvertes={activitesOuvertes}
-              displayedPartnerSupports={displayedPartnerSupports}
-              focusedSupportId={focusedSupportId}
-              sectionErrors={sectionErrors}
-              soutienForm={soutienForm}
-              setSoutienForm={setSoutienForm}
-              setShowSoutienForm={setShowSoutienForm}
-              impact={impact}
-              partnerChartData={partnerChartData}
-              supportActionLoading={supportActionLoading}
-              openEditSupport={openEditSupport}
-              handleAnnulerSoutien={handleAnnulerSoutien}
-              language={i18n.language}
-              t={t}
-            />
-
-            {partnerActivityItems.length > 0 && (
-            <div>
-              {sectionErrors.soutiens && <SectionLoadError message={sectionErrors.soutiens} />}
-              <ActivityFeed
-                title={t('activityFeed.title', { defaultValue: 'Mon fil d’activité' })}
-                subtitle={t('activityFeed.partnerSubtitle', { defaultValue: 'Soutiens, projets ouverts et activités disponibles.' })}
-                emptyLabel={t('partnerSpace.noSupports')}
-                items={partnerActivityItems}
-                language={i18n.language}
-                accent="orange"
-                limit={5}
-              />
-            </div>
-            )}
-          </div>
-        )}
+        <PartnerWorkspaceShell
+          activeView={onglet}
+          mesSoutiens={mesSoutiens}
+          projetsOuverts={projetsOuverts}
+          activitesOuvertes={activitesOuvertes}
+          displayedPartnerSupports={displayedPartnerSupports}
+          focusedSupportId={focusedSupportId}
+          sectionErrors={sectionErrors}
+          soutienForm={soutienForm}
+          setSoutienForm={setSoutienForm}
+          setShowSoutienForm={setShowSoutienForm}
+          impact={impact}
+          supportActionLoading={supportActionLoading}
+          openEditSupport={openEditSupport}
+          handleAnnulerSoutien={handleAnnulerSoutien}
+          recentItems={partnerActivityItems}
+          language={i18n.language}
+          t={t}
+        />
 
         {/* ── Mes soutiens ── */}
-        {onglet === 'soutiens' && (
+        {isMvp15View(onglet, 'soutiens') && (
           <div>
             <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900 mb-4">
               <AppIcon name="Wallet" className="h-5 w-5 text-orange-600" />
@@ -1091,7 +1031,105 @@ function PartnerDashboardFocus({
   );
 }
 
+function PartnerWorkspaceShell({
+  activeView,
+  ...dashboardProps
+}) {
+  const { t } = dashboardProps;
+  const viewTitles = {
+    dashboard: {
+      eyebrow: t('partnerSpace.tabs.dashboard', { defaultValue: 'Tableau de bord' }),
+      title: t('partnerSpace.mvp1DashboardTitle', { defaultValue: 'Synthèse partenaire' }),
+      description: t('partnerSpace.mvp1DashboardDesc', { defaultValue: 'L’essentiel pour suivre vos soutiens, les projets ouverts et les activités disponibles.' }),
+    },
+    projets: {
+      eyebrow: t('partnerSpace.openProjects'),
+      title: t('partnerSpace.openProjects'),
+      description: t('partnerSpace.openProjectsHint', { defaultValue: 'Projets actuellement ouverts au soutien financier.' }),
+    },
+    activites: {
+      eyebrow: t('partnerSpace.openActivities'),
+      title: t('partnerSpace.openActivities'),
+      description: t('partnerSpace.openActivitiesHint', { defaultValue: 'Activités actuellement ouvertes au soutien financier.' }),
+    },
+    soutiens: {
+      eyebrow: t('partnerSpace.mySupports'),
+      title: t('partnerSpace.mySupports'),
+      description: t('partnerSpace.mvp1SupportsHint', { defaultValue: 'Suivi simple des soutiens financiers.' }),
+    },
+  };
+  const activeTitle = viewTitles[activeView] || viewTitles.dashboard;
+  const soutiensEnAttente = dashboardProps.mesSoutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE').length;
+  const montantSuivi = Number(dashboardProps.impact?.totalMontant || 0);
+
+  return (
+    <section className="min-w-0 space-y-5">
+      <CompactKpiRow
+        accent="orange"
+        items={[
+          { icon: 'Wallet', label: t('partnerSpace.mySupports'), value: dashboardProps.mesSoutiens.length, tone: 'orange' },
+          { icon: 'Wallet', label: t('partnerSpace.supportedAmount', { defaultValue: 'Montant total' }), value: formatEuros(montantSuivi), tone: 'orange' },
+          { icon: 'Rocket', label: t('partnerSpace.openProjects'), value: dashboardProps.projetsOuverts.length, tone: 'violet' },
+          { icon: 'Calendar', label: t('partnerSpace.openActivities'), value: dashboardProps.activitesOuvertes.length, tone: 'green' },
+          { icon: 'Clock', label: t('statuses.EN_ATTENTE', { defaultValue: 'En attente' }), value: soutiensEnAttente, tone: soutiensEnAttente > 0 ? 'amber' : 'green' },
+        ]}
+      />
+      <PageHeader
+        eyebrow={activeTitle.eyebrow}
+        title={activeTitle.title}
+        description={activeTitle.description}
+      />
+      <PartnerMvp1Dashboard activeView={activeView} {...dashboardProps} />
+    </section>
+  );
+}
+
+// MVP1.5 / masqué volontairement : ancienne carte partenaire détaillée conservée hors rendu MVP1.
+// eslint-disable-next-line no-unused-vars
+function PartnerHeaderCard({ profil, user, onEditProfile, onSupport, t }) {
+  const organization = safeText(profil?.nomOrganisation, t('partnerSpace.title'));
+  const contact = safeText(profil?.personneContact || [user?.prenom, user?.nom].filter(Boolean).join(' '), t('partnerSpace.contactFallback', { defaultValue: 'Contact non renseigné' }));
+
+  return (
+    <div className="flex flex-col gap-4 rounded-xl border border-orange-100 bg-white p-5 shadow-lg shadow-orange-950/5 md:flex-row md:items-center md:justify-between">
+      <div className="flex min-w-0 items-center gap-4">
+        <PartnerLogo logoUrl={profil?.logoUrl} name={organization} />
+        <div className="min-w-0">
+          <h1 className="flex items-center gap-3 text-xl font-black text-slate-950">
+            <AppIcon name="Handshake" className="h-6 w-6 text-orange-600" />
+            <span className="truncate">{organization}</span>
+          </h1>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">
+              {t(`partnerInstitution.types.${profil?.typePartenaire || 'AUTRE'}`, { defaultValue: t('partnerInstitution.types.AUTRE', { defaultValue: 'Partenaire' }) })}
+            </span>
+            <span className="text-sm text-slate-500">{contact}</span>
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={onEditProfile}
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+        >
+          <AppIcon name="Edit" className="h-4 w-4" />
+          {t('partnerInstitution.editProfile')}
+        </button>
+        <button
+          type="button"
+          onClick={onSupport}
+          className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-500"
+        >
+          <AppIcon name="PlusCircle" className="h-4 w-4" />
+          {t('partnerSpace.financialSupport')}
+        </button>
+      </div>
+    </div>
+  );
+}
 function PartnerMvp1Dashboard({
+  activeView,
   mesSoutiens,
   projetsOuverts,
   activitesOuvertes,
@@ -1101,90 +1139,203 @@ function PartnerMvp1Dashboard({
   soutienForm,
   setSoutienForm,
   setShowSoutienForm,
-  impact,
-  partnerChartData,
   supportActionLoading,
   openEditSupport,
   handleAnnulerSoutien,
+  recentItems,
   language,
   t,
 }) {
-  const soutiensEnAttente = mesSoutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE').length;
-  const montantSuivi = impact?.totalMontant || 0;
+  const isDashboard = activeView === 'dashboard';
+  const showProjects = activeView === 'projets';
+  const showActivities = activeView === 'activites';
+  const showSupports = activeView === 'soutiens';
 
   return (
-    <div className="space-y-6">
-      <CompactKpiRow
-        accent="orange"
-        items={[
-          { icon: 'Wallet', label: t('partnerSpace.mySupports'), value: mesSoutiens.length, tone: 'orange' },
-          { icon: 'Clock', label: t('statuses.EN_ATTENTE', { defaultValue: 'En attente' }), value: soutiensEnAttente, tone: soutiensEnAttente > 0 ? 'amber' : 'green' },
-          { icon: 'Rocket', label: t('partnerSpace.openProjects'), value: projetsOuverts.length, tone: 'violet' },
-          { icon: 'Calendar', label: t('partnerSpace.openActivities'), value: activitesOuvertes.length, tone: 'green' },
-          { icon: 'Wallet', label: t('partnerSpace.supportedAmount', { defaultValue: 'Montant suivi' }), value: `${montantSuivi} €`, tone: 'orange' },
-        ]}
-      />
+    <div className="space-y-5">
+      {isDashboard && (
+        <PartnerDashboardOverview
+          mesSoutiens={mesSoutiens}
+          projetsOuverts={projetsOuverts}
+          activitesOuvertes={activitesOuvertes}
+          recentItems={recentItems}
+          language={language}
+          t={t}
+        />
+      )}
 
-      <ProjectsActivitiesPanel
-        projets={projetsOuverts}
-        activites={activitesOuvertes}
-        sectionErrors={sectionErrors}
-        soutienForm={soutienForm}
-        setSoutienForm={setSoutienForm}
-        setShowSoutienForm={setShowSoutienForm}
-        language={language}
-        t={t}
-      />
+      {(showProjects || showActivities) && (
+        <ProjectsActivitiesPanel
+          projets={projetsOuverts}
+          activites={activitesOuvertes}
+          sectionErrors={sectionErrors}
+          soutienForm={soutienForm}
+          setSoutienForm={setSoutienForm}
+          setShowSoutienForm={setShowSoutienForm}
+          language={language}
+          t={t}
+          mode={showProjects && showActivities ? 'both' : showProjects ? 'projets' : 'activites'}
+          limit={null}
+        />
+      )}
 
-      <section className="rounded-xl border border-orange-100 bg-white p-5 shadow-sm">
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900">
-              <AppIcon name="Wallet" className="h-5 w-5 text-orange-600" />
-              {t('partnerSpace.mySupports')}
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              {t('partnerSpace.mvp1SupportsHint', { defaultValue: 'Suivi simple des propositions de soutien existantes.' })}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowSoutienForm(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-500"
-          >
-            <AppIcon name="PlusCircle" className="h-4 w-4" />
-            {t('partnerSpace.financialSupport')}
-          </button>
+      {showSupports && (
+        <SectionCard
+          subtitle={t('partnerSpace.mvp1SupportsHint', { defaultValue: 'Suivi simple des soutiens financiers.' })}
+          action={(
+            <button
+              type="button"
+              onClick={() => setShowSoutienForm(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-500"
+            >
+              <AppIcon name="PlusCircle" className="h-4 w-4" />
+              {t('partnerSpace.financialSupport')}
+            </button>
+          )}
+        >
+          {sectionErrors.soutiens && <SectionLoadError message={sectionErrors.soutiens} />}
+          {mesSoutiens.length === 0 ? (
+            <EmptyState
+              icon="Wallet"
+              title={t('partnerSpace.noDeclarations')}
+              description={t('partnerSpace.noSupports')}
+              actionLabel={t('partnerSpace.financialSupport')}
+              action={() => setShowSoutienForm(true)}
+            />
+          ) : (
+            <div className="grid gap-3 lg:grid-cols-2">
+              {displayedPartnerSupports.map(soutien => (
+                <PartnerSupportCard
+                  key={soutien.id}
+                  soutien={soutien}
+                  language={language}
+                  focused={String(soutien.id) === String(focusedSupportId)}
+                  processingKey={supportActionLoading}
+                  onEdit={() => openEditSupport(soutien)}
+                  onCancel={() => handleAnnulerSoutien(soutien)}
+                  t={t}
+                />
+              ))}
+            </div>
+          )}
+        </SectionCard>
+      )}
+    </div>
+  );
+}
+
+function PartnerDashboardOverview({ mesSoutiens, projetsOuverts, activitesOuvertes, recentItems, language, t }) {
+  const recentSupports = [...mesSoutiens]
+    .sort((a, b) => new Date(b.dateCreation || b.datePaiement || 0) - new Date(a.dateCreation || a.datePaiement || 0))
+    .slice(0, 3);
+  const availableItems = [
+    ...projetsOuverts.slice(0, 2).map(projet => ({
+      key: `projet-${projet.id}`,
+      icon: 'Rocket',
+      title: safeText(projet.titre, t('projects.titleFallback', { defaultValue: 'Projet' })),
+      description: projet.budgetDemande ? `${t('partnerSpace.budget')}: ${formatEuros(projet.budgetDemande)}` : t('partnerSpace.openProjects'),
+    })),
+    ...activitesOuvertes.slice(0, 2).map(activite => ({
+      key: `activite-${activite.id}`,
+      icon: 'Calendar',
+      title: safeText(activite.titre, t('activities.titleFallback', { defaultValue: 'Activité' })),
+      description: activite.dateDebut ? formatDate(activite.dateDebut, language) : t('partnerSpace.openActivities'),
+    })),
+  ].slice(0, 4);
+
+  return (
+    <div className="space-y-5">
+      <SectionCard
+        title={t('partnerSpace.dashboardSummaryTitle', { defaultValue: 'À retenir' })}
+        subtitle={t('partnerSpace.dashboardSummarySubtitle', { defaultValue: 'Une vue courte de ce que vous pouvez soutenir et de ce que vous suivez déjà.' })}
+      >
+        <div className="grid gap-3 md:grid-cols-3">
+          <SummaryTile icon="Wallet" title={t('partnerSpace.mySupports')} value={mesSoutiens.length} />
+          <SummaryTile icon="Rocket" title={t('partnerSpace.openProjects')} value={projetsOuverts.length} />
+          <SummaryTile icon="Calendar" title={t('partnerSpace.openActivities')} value={activitesOuvertes.length} />
         </div>
+      </SectionCard>
 
-        {sectionErrors.soutiens && <SectionLoadError message={sectionErrors.soutiens} />}
-        {mesSoutiens.length === 0 ? (
-          <EmptyState
-            icon="Wallet"
-            title={t('partnerSpace.noDeclarations')}
-            description={t('partnerSpace.noSupports')}
-            actionLabel={t('partnerSpace.financialSupport')}
-            action={() => setShowSoutienForm(true)}
-          />
-        ) : (
-          <div className="grid gap-4 lg:grid-cols-2">
-            {displayedPartnerSupports.map(soutien => (
-              <PartnerSupportCard
-                key={soutien.id}
-                soutien={soutien}
-                language={language}
-                focused={String(soutien.id) === String(focusedSupportId)}
-                processingKey={supportActionLoading}
-                onEdit={() => openEditSupport(soutien)}
-                onCancel={() => handleAnnulerSoutien(soutien)}
-                t={t}
-              />
-            ))}
-          </div>
-        )}
-      </section>
+      <div className="grid gap-5 xl:grid-cols-2">
+        <SectionCard
+          title={t('partnerSpace.recentSupports', { defaultValue: 'Derniers soutiens' })}
+          subtitle={t('partnerSpace.recentSupportsHint', { defaultValue: 'Les trois derniers soutiens suivis.' })}
+        >
+          {recentSupports.length === 0 ? (
+            <EmptyState
+              icon="Wallet"
+              title={t('partnerSpace.noDeclarations')}
+              description={t('partnerSpace.noSupports')}
+            />
+          ) : (
+            <div className="grid gap-3">
+              {recentSupports.map(soutien => (
+                <CompactSupportRow key={soutien.id} soutien={soutien} language={language} t={t} />
+              ))}
+            </div>
+          )}
+        </SectionCard>
 
-      <PartnerCharts data={partnerChartData} t={t} />
+        <SectionCard
+          title={t('partnerSpace.availableToSupport', { defaultValue: 'Disponibles au soutien' })}
+          subtitle={t('partnerSpace.availableToSupportHint', { defaultValue: 'Quelques projets et activités ouverts.' })}
+        >
+          {availableItems.length === 0 ? (
+            <EmptyState
+              icon="Rocket"
+              title={t('partnerSpace.noOpenSupports', { defaultValue: 'Aucun soutien disponible' })}
+              description={t('partnerSpace.noOpenSupportsDesc', { defaultValue: 'Les projets et activités ouverts apparaîtront ici.' })}
+            />
+          ) : (
+            <div className="grid gap-3">
+              {availableItems.map(item => (
+                <div key={item.key} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+                    <AppIcon name={item.icon} className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-black text-slate-950">{item.title}</span>
+                    <span className="mt-0.5 block truncate text-xs font-semibold text-slate-500">{item.description}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </SectionCard>
+      </div>
+
+      <SimpleRecentHistory items={recentItems} language={language} t={t} />
+    </div>
+  );
+}
+
+function SummaryTile({ icon, title, value }) {
+  return (
+    <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+      <AppIcon name={icon} className="mb-3 h-5 w-5 text-orange-600" />
+      <p className="text-2xl font-black text-slate-950">{value}</p>
+      <p className="mt-1 text-sm font-bold text-slate-500">{title}</p>
+    </div>
+  );
+}
+
+function CompactSupportRow({ soutien, language, t }) {
+  const target = safeText(soutien.projetTitre || soutien.activiteTitre, t('partnerSpace.supportFallback', { defaultValue: 'Soutien financier' }));
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+        <AppIcon name="Wallet" className="h-4 w-4" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-black text-slate-950">{target}</span>
+        <span className="mt-0.5 block truncate text-xs font-semibold text-slate-500">
+          {formatEuros(soutien.montant)} · {formatDate(soutien.dateCreation || soutien.datePaiement, language)}
+        </span>
+      </span>
+      <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-black ${SUPPORT_STATUS_STYLES[soutien.statutPaiement] || 'bg-slate-100 text-slate-700'}`}>
+        {supportStatusLabel(soutien.statutPaiement, t)}
+      </span>
     </div>
   );
 }
@@ -1266,87 +1417,125 @@ function ProjectsActivitiesPanel({
   setShowSoutienForm,
   language,
   t,
+  mode = 'both',
+  limit = null,
 }) {
+  const showProjects = mode === 'both' || mode === 'projets';
+  const showActivities = mode === 'both' || mode === 'activites';
+  const displayedProjects = limit ? projets.slice(0, limit) : projets;
+  const displayedActivities = limit ? activites.slice(0, limit) : activites;
+
   return (
-    <div className="grid gap-6 xl:grid-cols-2">
-      <section className="rounded-xl border border-orange-100 bg-white p-5 shadow-sm">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-blue-900">
-          <AppIcon name="Rocket" className="h-5 w-5 text-orange-600" />
-          {t('partnerSpace.openProjects')}
-        </h2>
+    <div className={`grid gap-5 ${showProjects && showActivities ? 'xl:grid-cols-2' : ''}`}>
+      {showProjects && <SectionCard
+        title={t('partnerSpace.openProjects')}
+        subtitle={t('partnerSpace.openProjectsHint', { defaultValue: 'Projets actuellement ouverts au soutien financier.' })}
+      >
         {sectionErrors.projets && <SectionLoadError message={sectionErrors.projets} />}
         {projets.length === 0 ? (
-          <EmptyState icon="Rocket" title={t('partnerSpace.noOpenProjects')} />
+          <EmptyState
+            icon="Rocket"
+            title={t('partnerSpace.noOpenProjects')}
+            description={t('partnerSpace.noOpenProjectsDesc', { defaultValue: 'Aucun projet n’est ouvert au soutien pour le moment.' })}
+          />
         ) : (
           <div className="grid gap-4">
-            {projets.map(p => (
-              <div key={p.id} className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-                <div className="flex justify-between items-start mb-2 gap-3">
-                  <div>
-                    <ProjectVisibilityBadge visibility={p.visibilite} className="mb-2" />
-                    <h3 className="font-bold text-blue-900">{p.titre}</h3>
+            {displayedProjects.map(p => (
+              <article key={p.id} className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm">
+                <ProjectCover imageUrl={p.imageUrl} title={safeText(p.titre, t('projects.titleFallback', { defaultValue: 'Projet' }))} className="h-28" />
+                <div className="p-4">
+                  <div className="mb-2 flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <ProjectVisibilityBadge visibility={p.visibilite} className="mb-2" />
+                      <h3 className="truncate font-black text-slate-950">
+                        {safeText(p.titre, t('projects.titleFallback', { defaultValue: 'Projet' }))}
+                      </h3>
+                    </div>
+                    {p.statut && (
+                      <StatusBadge status={p.statut}>
+                        {statusLabel(p.statut, t)}
+                      </StatusBadge>
+                    )}
                   </div>
-                  <span className="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-bold text-green-700">
-                    {t(`statuses.${p.statut}`, { defaultValue: p.statut })}
-                  </span>
+                  {p.description && <p className="mb-3 line-clamp-2 text-sm leading-6 text-slate-500">{p.description}</p>}
+                  <div className="mb-3 flex flex-wrap gap-3 text-xs font-semibold text-slate-500">
+                    <InlineIconLabel icon="Wallet">{t('partnerSpace.budget')}: {formatEuros(p.budgetDemande)}</InlineIconLabel>
+                    <InlineIconLabel icon="CheckCircle">{t('partnerSpace.received')}: {formatEuros(p.totalSoutiensRecus)}</InlineIconLabel>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSoutienForm({ ...soutienForm, type: 'projet', projetId: p.id });
+                      setShowSoutienForm(true);
+                    }}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-orange-600 py-2 text-sm font-semibold text-white transition hover:bg-orange-500"
+                  >
+                    <AppIcon name="Wallet" className="h-4 w-4" />
+                    {t('partnerSpace.proposeSupport')}
+                  </button>
                 </div>
-                {p.description && <p className="text-gray-500 text-sm mb-3 line-clamp-2">{p.description}</p>}
-                <div className="flex flex-wrap gap-3 text-xs text-gray-400 mb-3">
-                  <InlineIconLabel icon="Wallet">{t('partnerSpace.budget')}: {p.budgetDemande ? `${p.budgetDemande} €` : t('partnerSpace.notDefined')}</InlineIconLabel>
-                  <InlineIconLabel icon="CheckCircle">{t('partnerSpace.received')}: {p.totalSoutiensRecus || 0} €</InlineIconLabel>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSoutienForm({ ...soutienForm, type: 'projet', projetId: p.id });
-                    setShowSoutienForm(true);
-                  }}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-orange-600 py-2 text-sm font-semibold text-white transition hover:bg-orange-500"
-                >
-                  <AppIcon name="Wallet" className="h-4 w-4" />
-                  {t('partnerSpace.proposeSupport')}
-                </button>
-              </div>
+              </article>
             ))}
           </div>
         )}
-      </section>
+      </SectionCard>}
 
-      <section className="rounded-xl border border-orange-100 bg-white p-5 shadow-sm">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-blue-900">
-          <AppIcon name="Folder" className="h-5 w-5 text-orange-600" />
-          {t('partnerSpace.openActivities')}
-        </h2>
+      {showActivities && <SectionCard
+        title={t('partnerSpace.openActivities')}
+        subtitle={t('partnerSpace.openActivitiesHint', { defaultValue: 'Activités actuellement ouvertes au soutien financier.' })}
+      >
         {sectionErrors.activites && <SectionLoadError message={sectionErrors.activites} />}
         {activites.length === 0 ? (
-          <EmptyState icon="Folder" title={t('partnerSpace.noOpenActivities')} />
+          <EmptyState
+            icon="Calendar"
+            title={t('partnerSpace.noOpenActivities')}
+            description={t('partnerSpace.noOpenActivitiesDesc', { defaultValue: 'Aucune activité n’est ouverte au soutien pour le moment.' })}
+          />
         ) : (
           <div className="grid gap-4">
-            {activites.map(a => (
-              <div key={a.id} className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-                <h3 className="font-bold text-blue-900 mb-1">{a.titre}</h3>
-                {a.description && <p className="text-gray-500 text-sm mb-2 line-clamp-2">{a.description}</p>}
-                <div className="mb-3 flex flex-wrap gap-3 text-xs text-gray-400">
-                  {a.lieu && <InlineIconLabel icon="Folder">{a.lieu}</InlineIconLabel>}
-                  {a.dateDebut && <InlineIconLabel icon="Calendar">{new Date(a.dateDebut).toLocaleDateString(language)}</InlineIconLabel>}
-                  <InlineIconLabel icon="CheckCircle">{t('partnerSpace.receivedSupports')}: {a.totalSoutiensRecus || 0} €</InlineIconLabel>
+            {displayedActivities.map(a => (
+              <article key={a.id} className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm">
+                <ActivityCover
+                  imageUrl={a.imageUrl}
+                  title={safeText(a.titre, t('activities.titleFallback', { defaultValue: 'Activité' }))}
+                  categorie={a.categorie}
+                  theme={a.theme}
+                  className="h-28"
+                />
+                <div className="p-4">
+                  <div className="mb-2 flex items-start justify-between gap-3">
+                    <h3 className="min-w-0 truncate font-black text-slate-950">
+                      {safeText(a.titre, t('activities.titleFallback', { defaultValue: 'Activité' }))}
+                    </h3>
+                    {a.statut && (
+                      <StatusBadge status={a.statut}>
+                        {statusLabel(a.statut, t)}
+                      </StatusBadge>
+                    )}
+                  </div>
+                  {a.description && <p className="mb-3 line-clamp-2 text-sm leading-6 text-slate-500">{a.description}</p>}
+                  <div className="mb-3 flex flex-wrap gap-3 text-xs font-semibold text-slate-500">
+                    {a.lieu && <InlineIconLabel icon="MapPin">{a.lieu}</InlineIconLabel>}
+                    {a.dateDebut && <InlineIconLabel icon="Calendar">{formatDate(a.dateDebut, language)}</InlineIconLabel>}
+                    <InlineIconLabel icon="CheckCircle">{t('partnerSpace.receivedSupports')}: {formatEuros(a.totalSoutiensRecus)}</InlineIconLabel>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSoutienForm({ ...soutienForm, type: 'activite', activiteId: a.id });
+                      setShowSoutienForm(true);
+                    }}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-orange-600 py-2 text-sm font-semibold text-white transition hover:bg-orange-500"
+                  >
+                    <AppIcon name="Wallet" className="h-4 w-4" />
+                    {t('partnerSpace.proposeSupport')}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSoutienForm({ ...soutienForm, type: 'activite', activiteId: a.id });
-                    setShowSoutienForm(true);
-                  }}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-orange-600 py-2 text-sm font-semibold text-white transition hover:bg-orange-500"
-                >
-                  <AppIcon name="Wallet" className="h-4 w-4" />
-                  {t('partnerSpace.proposeSupport')}
-                </button>
-              </div>
+              </article>
             ))}
           </div>
         )}
-      </section>
+      </SectionCard>}
     </div>
   );
 }
@@ -1851,34 +2040,36 @@ function OpportunityCard({ opportunite, language, t }) {
 }
 
 function PartnerSupportCard({ soutien, language, focused, processingKey, onEdit, onCancel, t }) {
-  const target = soutien.projetTitre || soutien.activiteTitre || t('partnerSpace.supportFallback')
-  const nextStep = partnerSupportNextStep(soutien, t)
+  const target = safeText(soutien.projetTitre || soutien.activiteTitre, t('partnerSpace.supportFallback', { defaultValue: 'Soutien financier' }))
+  const targetType = soutien.projetTitre ? t('partnerSupport.project') : soutien.activiteTitre ? t('partnerSupport.activity') : t('partnerSpace.supportTargetFallback', { defaultValue: 'Soutien' })
   const editable = soutien.statutPaiement === 'EN_ATTENTE'
 
   return (
-    <article className={`rounded-lg border bg-white p-5 shadow-sm ${focused ? 'border-orange-300 ring-2 ring-orange-100' : 'border-slate-100'}`}>
+    <article className={`rounded-xl border bg-white p-4 shadow-sm ${focused ? 'border-orange-300 ring-2 ring-orange-100' : 'border-slate-100'}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-wide text-orange-600">
-            {soutien.projetTitre ? t('partnerSupport.project') : t('partnerSupport.activity')}
+            {targetType}
           </p>
           <h3 className="mt-1 truncate font-black text-slate-950">{target}</h3>
-          <p className="mt-1 text-sm font-black text-orange-600">{soutien.montant} €</p>
+          <p className="mt-1 text-sm font-black text-orange-600">{formatEuros(soutien.montant)}</p>
         </div>
         <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-black ${SUPPORT_STATUS_STYLES[soutien.statutPaiement] || 'bg-slate-100 text-slate-700'}`}>
           {supportStatusLabel(soutien.statutPaiement, t)}
         </span>
       </div>
 
-      <div className="mt-4 rounded-lg border border-orange-100 bg-orange-50 px-4 py-3">
-        <p className="text-xs font-black uppercase tracking-wide text-orange-700">
-          {t('partnerSpace.nextStep', { defaultValue: 'Prochaine étape' })}
-        </p>
-        <p className="mt-1 text-sm font-semibold leading-relaxed text-orange-950">{nextStep}</p>
+      <div className="mt-3 flex flex-wrap gap-3 text-xs font-semibold text-slate-500">
+        {soutien.dateCreation && (
+          <InlineIconLabel icon="Calendar">{formatDate(soutien.dateCreation, language)}</InlineIconLabel>
+        )}
+        {soutien.reponseAdmin && (
+          <InlineIconLabel icon="Shield">{t('partnerSpace.adminReplyAvailable', { defaultValue: 'Réponse admin disponible' })}</InlineIconLabel>
+        )}
       </div>
 
       {editable && (
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
           <button
             type="button"
             onClick={onEdit}
@@ -1901,38 +2092,51 @@ function PartnerSupportCard({ soutien, language, focused, processingKey, onEdit,
           </button>
         </div>
       )}
-
-      <div className="mt-4 rounded-lg bg-slate-50 p-3">
-        <p className="text-xs font-black uppercase tracking-wide text-slate-400">
-          {t('partnerSupport.admin.exchangeHistory', { defaultValue: 'Historique des échanges' })}
-        </p>
-        <div className="mt-3 space-y-3">
-          <SupportExchange
-            icon="Handshake"
-            title={t('partnerSupport.admin.partnerProposal', { defaultValue: 'Proposition partenaire' })}
-            date={soutien.dateCreation}
-            text={soutien.message || t('partnerSpace.noMessage', { defaultValue: 'Aucun message ajouté.' })}
-            language={language}
-          />
-          {soutien.reponseAdmin ? (
-            <SupportExchange
-              icon="Shield"
-              title={t('partnerSupport.admin.adminReply', { defaultValue: 'Réponse admin' })}
-              date={soutien.dateReponseAdmin || soutien.datePaiement}
-              text={soutien.reponseAdmin}
-              language={language}
-            />
-          ) : (
-            <p className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-500">
-              {t('partnerSpace.waitingAdminReply', { defaultValue: 'En attente d’une réponse admin.' })}
-            </p>
-          )}
-        </div>
-      </div>
     </article>
   );
 }
 
+function SimpleRecentHistory({ items, language, t }) {
+  const recentItems = [...items]
+    .filter(item => item.date)
+    .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+    .slice(0, 5);
+
+  return (
+    <SectionCard
+      title={t('partnerSpace.recentHistoryTitle', { defaultValue: 'Historique récent' })}
+      subtitle={t('partnerSpace.recentHistorySubtitle', { defaultValue: 'Derniers soutiens, projets et activités disponibles.' })}
+    >
+      {recentItems.length === 0 ? (
+        <EmptyState
+          icon="Clock"
+          title={t('partnerSpace.noRecentHistory', { defaultValue: 'Aucun historique récent' })}
+          description={t('partnerSpace.noRecentHistoryDesc', { defaultValue: 'Les derniers mouvements apparaîtront ici dès qu’un soutien, projet ou activité sera disponible.' })}
+        />
+      ) : (
+        <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-100 bg-white">
+          {recentItems.map(item => (
+            <div key={item.key} className="flex items-center gap-3 px-4 py-3">
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+                <AppIcon name={item.icon || 'Clock'} className="h-4 w-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-black text-slate-950">{safeText(item.title, t('partnerSpace.historyFallback', { defaultValue: 'Mouvement partenaire' }))}</p>
+                <p className="mt-0.5 truncate text-xs font-semibold text-slate-500">{safeText(item.description, t('partnerSpace.historyDescriptionFallback', { defaultValue: 'Mise à jour récente' }))}</p>
+              </div>
+              <span className="shrink-0 text-xs font-semibold text-slate-400">
+                {formatDate(item.date, language)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
+// MVP1.5 / masqué volontairement : timeline détaillée des échanges conservée pour une version ultérieure.
+// eslint-disable-next-line no-unused-vars
 function SupportExchange({ icon, title, date, text, language }) {
   return (
     <div className="flex gap-3 rounded-xl bg-white px-3 py-3">
@@ -2144,6 +2348,8 @@ function buildPartnerActivityItems({ mesSoutiens, projetsOuverts, activitesOuver
   return [...supportItems, ...projectItems, ...activityItems];
 }
 
+// MVP1.5 / masqué volontairement : prochaines étapes détaillées conservées pour une version ultérieure.
+// eslint-disable-next-line no-unused-vars
 function partnerSupportNextStep(soutien, t) {
   if (soutien.statutPaiement === 'EN_ATTENTE') {
     return t('partnerSpace.nextStepPending', { defaultValue: 'En attente de réponse admin. Vous pourrez suivre ici la décision et le commentaire.' });
@@ -2173,6 +2379,35 @@ function InlineIconLabel({ icon, children }) {
       <span>{children}</span>
     </span>
   );
+}
+
+function safeText(value, fallback) {
+  const text = String(value ?? '').trim();
+  if (!text || ['UNKNOWN', 'UNDEFINED', 'NULL'].includes(text.toUpperCase())) {
+    return fallback;
+  }
+  return text;
+}
+
+function formatEuros(value) {
+  const amount = Number(value || 0);
+  return `${Number.isFinite(amount) ? amount.toLocaleString('fr-BE') : 0} €`;
+}
+
+function formatDate(value, language) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString(language || 'fr-BE');
+}
+
+function statusLabel(status, t) {
+  return t(`statuses.${status}`, { defaultValue: safeText(status, t('common.status', { defaultValue: 'Statut' })) });
+}
+
+function isMvp15View(activeView, expectedView) {
+  // MVP1.5 / masqué volontairement : anciennes vues avancées conservées mais non affichées en MVP1.
+  return activeView === expectedView && PARTNER_TABS.has(expectedView) === false;
 }
 
 const PARTNER_TYPES = ['COMMUNE', 'BIJ', 'ECOLE', 'HAUTE_ECOLE', 'ENTREPRISE', 'SPONSOR', 'ASSOCIATION', 'ONG', 'FONDATION', 'AUTRE'];

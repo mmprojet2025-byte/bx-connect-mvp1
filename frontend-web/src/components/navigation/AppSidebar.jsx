@@ -52,6 +52,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
   const sidebarSections = [...mainSections, ...spaceSections, ...workSections]
   const homeRoute = routes.home || getDefaultRouteForRole(role)
   const showRecentLast = role === 'ADMIN'
+  const showRecentSection = role !== 'PARTENAIRE'
 
   useEffect(() => {
     setMobileOpen(false)
@@ -137,7 +138,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                   />
                 ))}
 
-                {!showRecentLast && <RecentSection items={recentItems} location={location} />}
+                {showRecentSection && !showRecentLast && <RecentSection items={recentItems} location={location} />}
 
                 {spaceSections.map(section => (
                   <ContextSection
@@ -155,7 +156,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                   />
                 ))}
 
-                {showRecentLast && <RecentSection items={recentItems} location={location} />}
+                {showRecentSection && showRecentLast && <RecentSection items={recentItems} location={location} />}
               </div>
             </nav>
 
@@ -244,7 +245,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                 />
               ))}
 
-              {!showRecentLast && <RecentSection items={recentItems} location={location} onNavigate={() => setMobileOpen(false)} />}
+              {showRecentSection && !showRecentLast && <RecentSection items={recentItems} location={location} onNavigate={() => setMobileOpen(false)} />}
 
               {spaceSections.map(section => (
                 <ContextSection
@@ -264,7 +265,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                 />
               ))}
 
-              {showRecentLast && <RecentSection items={recentItems} location={location} onNavigate={() => setMobileOpen(false)} />}
+              {showRecentSection && showRecentLast && <RecentSection items={recentItems} location={location} onNavigate={() => setMobileOpen(false)} />}
             </div>
           </nav>
 
@@ -333,6 +334,9 @@ function getMainSections(role, t) {
     return sections([
       group(t('sidebar.sections.overview'), [
         link(t('nav.dashboard'), '/partenaire?tab=dashboard', 'Home'),
+        link(t('partnerSpace.openProjects', { defaultValue: 'Projets ouverts' }), '/partenaire?tab=projets', 'Rocket'),
+        link(t('partnerSpace.openActivities', { defaultValue: 'Activités ouvertes' }), '/partenaire?tab=activites', 'Calendar'),
+        link(t('partnerSpace.mySupports', { defaultValue: 'Mes soutiens' }), '/partenaire?tab=soutiens', 'Wallet'),
       ]),
       group(t('sidebar.sections.communication'), [
         link(t('nav.notifications'), '/notifications', 'Bell'),
