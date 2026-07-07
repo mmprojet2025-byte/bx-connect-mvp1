@@ -8,6 +8,8 @@ import api from '../../api/axios'
 import AppIcon from '../../components/ui/AppIcons'
 import PageHeader from '../../components/ui/PageHeader'
 import MessageComposer from '../../components/messaging/MessageComposer'
+import UiAlert from '../../components/ui/Alert'
+import UiEmptyState from '../../components/ui/EmptyState'
 import ErrorState from '../../components/ui/ErrorState'
 import LoadingState from '../../components/ui/LoadingState'
 
@@ -131,7 +133,7 @@ export default function ReferentMessagerie() {
           description={t('messaging.referentSubtitle')}
         />
 
-        {error && groupes.length > 0 && <Alert type="error">{error}</Alert>}
+        {error && groupes.length > 0 && <UiAlert type="error">{error}</UiAlert>}
 
         {loading ? (
           <LoadingState label={t('common.loading')} />
@@ -143,7 +145,11 @@ export default function ReferentMessagerie() {
             action={fetchGroupes}
           />
         ) : groupes.length === 0 ? (
-          <EmptyState>{t('messaging.noAssignedGroups')}</EmptyState>
+          <UiEmptyState
+            icon="MessageCircle"
+            title={t('messaging.noAssignedGroups')}
+            description={t('messaging.noAssignedGroupsDesc', { defaultValue: 'Aucun groupe assigné ne permet encore d’ouvrir une conversation.' })}
+          />
         ) : (
           <div className="grid min-h-[360px] grid-cols-1 gap-4 lg:h-[55vh] lg:grid-cols-[320px_1fr]">
             <aside className="bg-white rounded-3xl border border-slate-100 shadow-sm flex flex-col overflow-hidden">
@@ -259,18 +265,6 @@ function MessageBubble({ message, currentUser, language }) {
       </div>
     </div>
   )
-}
-
-function Alert({ type, children }) {
-  const styles = type === 'error'
-    ? 'bg-red-50 border-red-200 text-red-700'
-    : 'bg-green-50 border-green-200 text-green-700'
-
-  return <div className={`border px-4 py-3 rounded-xl mb-5 text-sm ${styles}`}>{children}</div>
-}
-
-function EmptyState({ children }) {
-  return <div className="bg-white rounded-2xl shadow p-10 text-center text-gray-500 text-sm">{children}</div>
 }
 
 function EmptyConversation({ children }) {

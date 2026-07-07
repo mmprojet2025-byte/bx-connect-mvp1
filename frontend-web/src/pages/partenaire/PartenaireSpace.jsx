@@ -27,7 +27,8 @@ import { CollaborativeDashboardLayout } from '../../components/dashboard/Collabo
 import ActivityFeed from '../../components/dashboard/ActivityFeed';
 import CompactKpiRow from '../../components/dashboard/CompactKpiRow';
 
-const PARTNER_TABS = new Set(['dashboard', 'soutiens', 'opportunites', 'impact', 'profil', 'projets-activites']);
+// MVP1.5 / masqué volontairement : les onglets avancés restent dans le code mais hors navigation visible.
+const PARTNER_TABS = new Set(['dashboard']);
 const PARTNER_TAB_ALIASES = {
   projets: 'projets-activites',
   activites: 'projets-activites',
@@ -292,11 +293,6 @@ export default function PartenaireSpace() {
 
   const ONGLETS = [
     { id: 'dashboard',  label: t('partnerSpace.tabs.dashboard'), icon: 'BarChart' },
-    { id: 'soutiens',   label: t('partnerSpace.tabs.supports'), icon: 'Wallet' },
-    { id: 'opportunites', label: t('partnerSpace.tabs.opportunities', { defaultValue: 'Opportunités' }), icon: 'Megaphone' },
-    { id: 'impact', label: t('partnerSpace.tabs.localImpact', { defaultValue: 'Impact local' }), icon: 'Activity' },
-    { id: 'profil', label: t('partnerSpace.tabs.profile', { defaultValue: 'Profil partenaire' }), icon: 'User' },
-    { id: 'projets-activites', label: t('partnerSpace.tabs.projectsActivities', { defaultValue: 'Projets / Activités' }), icon: 'Folder' },
   ];
 
   const setOnglet = (tab) => {
@@ -408,43 +404,45 @@ export default function PartenaireSpace() {
           </div>
         )}
 
-        {/* Onglets */}
-        <div className="flex gap-2 mb-6 flex-wrap">
-          {ONGLETS.map(o => (
-            <button
-              key={o.id}
-              onClick={() => setOnglet(o.id)}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition ${
-                onglet === o.id
-                  ? 'bg-orange-600 text-white'
-                  : 'bg-white text-gray-600 hover:bg-orange-50 border border-gray-200'
-              }`}
-            >
-              <AppIcon name={o.icon} className="h-4 w-4" />
-              {o.label}
-            </button>
-          ))}
-        </div>
+        {/* MVP1.5 / masqué volontairement : pas d'onglets opportunités, impact ou relations avancées en démo MVP1. */}
+        {ONGLETS.length > 1 && (
+          <div className="flex gap-2 mb-6 flex-wrap">
+            {ONGLETS.map(o => (
+              <button
+                key={o.id}
+                onClick={() => setOnglet(o.id)}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition ${
+                  onglet === o.id
+                    ? 'bg-orange-600 text-white'
+                    : 'bg-white text-gray-600 hover:bg-orange-50 border border-gray-200'
+                }`}
+              >
+                <AppIcon name={o.icon} className="h-4 w-4" />
+                {o.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* ── Dashboard ── */}
         {onglet === 'dashboard' && (
           <div>
-            <PartnerDashboardFocus
-              profil={profilInstitutionnel}
+            <PartnerMvp1Dashboard
               mesSoutiens={mesSoutiens}
-              referents={mesReferents}
-              groupes={mesGroupesLies}
-              opportunites={mesOpportunites}
-              impact={localImpact}
-              onProfile={() => setOnglet('profil')}
-              onSupports={() => setOnglet('soutiens')}
-              onOpportunities={() => setOnglet('opportunites')}
-              onSupport={() => setShowSoutienForm(true)}
-              onCreateOpportunity={() => {
-                setOnglet('opportunites');
-                setShowOpportunityForm(true);
-              }}
-              onImpact={() => setOnglet('impact')}
+              projetsOuverts={projetsOuverts}
+              activitesOuvertes={activitesOuvertes}
+              displayedPartnerSupports={displayedPartnerSupports}
+              focusedSupportId={focusedSupportId}
+              sectionErrors={sectionErrors}
+              soutienForm={soutienForm}
+              setSoutienForm={setSoutienForm}
+              setShowSoutienForm={setShowSoutienForm}
+              impact={impact}
+              partnerChartData={partnerChartData}
+              supportActionLoading={supportActionLoading}
+              openEditSupport={openEditSupport}
+              handleAnnulerSoutien={handleAnnulerSoutien}
+              language={i18n.language}
               t={t}
             />
 
@@ -955,6 +953,7 @@ export default function PartenaireSpace() {
   );
 }
 
+// eslint-disable-next-line no-unused-vars
 function PartnerDashboardFocus({
   profil,
   mesSoutiens,
@@ -1089,6 +1088,104 @@ function PartnerDashboardFocus({
         />
       </div>
     </section>
+  );
+}
+
+function PartnerMvp1Dashboard({
+  mesSoutiens,
+  projetsOuverts,
+  activitesOuvertes,
+  displayedPartnerSupports,
+  focusedSupportId,
+  sectionErrors,
+  soutienForm,
+  setSoutienForm,
+  setShowSoutienForm,
+  impact,
+  partnerChartData,
+  supportActionLoading,
+  openEditSupport,
+  handleAnnulerSoutien,
+  language,
+  t,
+}) {
+  const soutiensEnAttente = mesSoutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE').length;
+  const montantSuivi = impact?.totalMontant || 0;
+
+  return (
+    <div className="space-y-6">
+      <CompactKpiRow
+        accent="orange"
+        items={[
+          { icon: 'Wallet', label: t('partnerSpace.mySupports'), value: mesSoutiens.length, tone: 'orange' },
+          { icon: 'Clock', label: t('statuses.EN_ATTENTE', { defaultValue: 'En attente' }), value: soutiensEnAttente, tone: soutiensEnAttente > 0 ? 'amber' : 'green' },
+          { icon: 'Rocket', label: t('partnerSpace.openProjects'), value: projetsOuverts.length, tone: 'violet' },
+          { icon: 'Calendar', label: t('partnerSpace.openActivities'), value: activitesOuvertes.length, tone: 'green' },
+          { icon: 'Wallet', label: t('partnerSpace.supportedAmount', { defaultValue: 'Montant suivi' }), value: `${montantSuivi} €`, tone: 'orange' },
+        ]}
+      />
+
+      <ProjectsActivitiesPanel
+        projets={projetsOuverts}
+        activites={activitesOuvertes}
+        sectionErrors={sectionErrors}
+        soutienForm={soutienForm}
+        setSoutienForm={setSoutienForm}
+        setShowSoutienForm={setShowSoutienForm}
+        language={language}
+        t={t}
+      />
+
+      <section className="rounded-xl border border-orange-100 bg-white p-5 shadow-sm">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900">
+              <AppIcon name="Wallet" className="h-5 w-5 text-orange-600" />
+              {t('partnerSpace.mySupports')}
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {t('partnerSpace.mvp1SupportsHint', { defaultValue: 'Suivi simple des propositions de soutien existantes.' })}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowSoutienForm(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-500"
+          >
+            <AppIcon name="PlusCircle" className="h-4 w-4" />
+            {t('partnerSpace.financialSupport')}
+          </button>
+        </div>
+
+        {sectionErrors.soutiens && <SectionLoadError message={sectionErrors.soutiens} />}
+        {mesSoutiens.length === 0 ? (
+          <EmptyState
+            icon="Wallet"
+            title={t('partnerSpace.noDeclarations')}
+            description={t('partnerSpace.noSupports')}
+            actionLabel={t('partnerSpace.financialSupport')}
+            action={() => setShowSoutienForm(true)}
+          />
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {displayedPartnerSupports.map(soutien => (
+              <PartnerSupportCard
+                key={soutien.id}
+                soutien={soutien}
+                language={language}
+                focused={String(soutien.id) === String(focusedSupportId)}
+                processingKey={supportActionLoading}
+                onEdit={() => openEditSupport(soutien)}
+                onCancel={() => handleAnnulerSoutien(soutien)}
+                t={t}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <PartnerCharts data={partnerChartData} t={t} />
+    </div>
   );
 }
 

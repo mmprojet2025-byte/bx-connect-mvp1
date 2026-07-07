@@ -119,48 +119,83 @@ export default function ReferentDashboard() {
 }
 
 function ReferentQuickAccess({ stats, projectsCount, t }) {
+  const links = [
+    {
+      to: '/referent/groupes',
+      icon: 'Users',
+      tone: 'teal',
+      title: t('nav.myGroups'),
+      description: t('referent.groupsSubtitle', { defaultValue: `${stats.groupes} groupe(s) assigné(s) à suivre.` }),
+    },
+    {
+      to: '/referent/demandes',
+      icon: 'Clock',
+      tone: 'amber',
+      title: t('nav.requests'),
+      description: t('referent.requestsQuickAccessDesc', { defaultValue: `${stats.demandes} demande(s) à traiter dans vos groupes.` }),
+    },
+    {
+      to: '/referent/activites',
+      icon: 'Calendar',
+      tone: 'green',
+      title: t('nav.activities'),
+      description: t('referent.activitiesQuickAccessDesc', { defaultValue: `${stats.activites} activité(s) à préparer, publier ou suivre.` }),
+    },
+    {
+      to: '/referent/projets',
+      icon: 'Rocket',
+      tone: 'violet',
+      title: t('nav.projects'),
+      description: t('referent.projectsQuickAccessDesc', { defaultValue: `${projectsCount} projet(s) à accompagner ou relire.` }),
+    },
+    {
+      to: '/referent/messagerie',
+      icon: 'MessageCircle',
+      tone: 'slate',
+      title: t('nav.messaging'),
+      description: t('referent.messagingQuickAccessDesc', { defaultValue: 'Échanger avec vos groupes et suivre les discussions.' }),
+    },
+  ]
+
   return (
     <section className="mb-6 rounded-xl border border-teal-100 bg-white p-5 shadow-lg shadow-teal-950/5">
       <SectionHeader
-        icon="BarChart3"
+        icon="Navigation"
         title={t('referent.quickAccessTitle', { defaultValue: 'Pilotage de mes groupes' })}
-        subtitle={t('referent.quickAccessSubtitle', { defaultValue: 'Accès rapides aux vues d’analyse et aux rapports.' })}
+        subtitle={t('referent.quickAccessSubtitle', { defaultValue: 'Accès rapides aux actions utiles pour la démo MVP1.' })}
       />
-      <div className="grid gap-3 md:grid-cols-2">
-        <Link
-          to="/referent/impact"
-          className="flex items-start gap-3 rounded-lg border border-teal-100 bg-teal-50 p-4 transition hover:bg-teal-100"
-        >
-          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-teal-700">
-            <AppIcon name="BarChart3" className="h-5 w-5" />
-          </span>
-          <span>
-            <span className="block font-black text-slate-950">{t('referentImpact.cta.title')}</span>
-            <span className="mt-1 block text-sm leading-6 text-slate-500">
-              {t('referentImpact.cta.description', {
-                groups: stats.groupes,
-                activities: stats.activites,
-                projects: projectsCount,
-              })}
-            </span>
-          </span>
-        </Link>
-        <Link
-          to="/referent/rapports"
-          className="flex items-start gap-3 rounded-lg border border-slate-100 bg-slate-50 p-4 transition hover:bg-white hover:shadow-md"
-        >
-          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-slate-700">
-            <AppIcon name="FileText" className="h-5 w-5" />
-          </span>
-          <span>
-            <span className="block font-black text-slate-950">{t('referent.reportsQuickAccess', { defaultValue: 'Rapports de groupe' })}</span>
-            <span className="mt-1 block text-sm leading-6 text-slate-500">
-              {t('referent.reportsQuickAccessDesc', { defaultValue: 'Exporter les données terrain de vos groupes en PDF ou Excel.' })}
-            </span>
-          </span>
-        </Link>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {links.map(link => (
+          <QuickAccessLink key={link.to} {...link} />
+        ))}
       </div>
     </section>
+  )
+}
+
+function QuickAccessLink({ to, icon, tone, title, description }) {
+  const tones = {
+    amber: 'border-amber-100 bg-amber-50 text-amber-700 hover:bg-amber-100',
+    green: 'border-emerald-100 bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+    slate: 'border-slate-100 bg-slate-50 text-slate-700 hover:bg-white',
+    teal: 'border-teal-100 bg-teal-50 text-teal-700 hover:bg-teal-100',
+    violet: 'border-violet-100 bg-violet-50 text-violet-700 hover:bg-violet-100',
+  }
+  const toneClass = tones[tone] || tones.teal
+
+  return (
+    <Link
+      to={to}
+      className={`flex items-start gap-3 rounded-lg border p-4 transition hover:shadow-md ${toneClass}`}
+    >
+      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white">
+        <AppIcon name={icon} className="h-5 w-5" />
+      </span>
+      <span>
+        <span className="block font-black text-slate-950">{title}</span>
+        <span className="mt-1 block text-sm leading-6 text-slate-500">{description}</span>
+      </span>
+    </Link>
   )
 }
 

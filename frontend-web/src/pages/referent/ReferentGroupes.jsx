@@ -8,6 +8,8 @@ import GroupAvatar from '../../components/GroupAvatar'
 import AppIcon from '../../components/ui/AppIcons'
 import PageHeader from '../../components/ui/PageHeader'
 import SectionCard from '../../components/ui/SectionCard'
+import UiAlert from '../../components/ui/Alert'
+import UiEmptyState from '../../components/ui/EmptyState'
 import ErrorState from '../../components/ui/ErrorState'
 import LoadingState from '../../components/ui/LoadingState'
 
@@ -65,7 +67,7 @@ export default function ReferentGroupes() {
           title={t('nav.myGroups')}
           description={t('referent.groupsSubtitle', { defaultValue: 'Suivez vos groupes assignés, leurs membres et leurs demandes.' })}
         />
-        {error && groupes.length > 0 && <Alert type="error">{error}</Alert>}
+        {error && groupes.length > 0 && <UiAlert type="error">{error}</UiAlert>}
 
         {loading ? (
           <LoadingState label={t('common.loading')} />
@@ -77,7 +79,11 @@ export default function ReferentGroupes() {
             action={fetchGroupes}
           />
         ) : groupes.length === 0 ? (
-          <EmptyState>{t('referent.noAssignedGroups')}</EmptyState>
+          <UiEmptyState
+            icon="Users"
+            title={t('referent.noAssignedGroups')}
+            description={t('referent.noAssignedGroupsDesc', { defaultValue: 'Aucun groupe ne vous est assigné pour le moment.' })}
+          />
         ) : (
           <>
           <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -99,7 +105,11 @@ export default function ReferentGroupes() {
           </SectionCard>
 
           {groupesFiltres.length === 0 ? (
-            <EmptyState>{t('common.noResults', { defaultValue: 'Aucun résultat trouvé.' })}</EmptyState>
+            <UiEmptyState
+              icon="Search"
+              title={t('common.noResults', { defaultValue: 'Aucun résultat trouvé.' })}
+              description={t('referent.noGroupSearchResults', { defaultValue: 'Essayez avec un autre nom, thème ou mot-clé.' })}
+            />
           ) : (
           <div className="space-y-5">
             {groupesFiltres.map(groupe => {
@@ -199,21 +209,4 @@ function CompactPeopleList({ items, empty }) {
       ))}
     </ul>
   )
-}
-
-function EmptyState({ children }) {
-  return (
-    <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center text-gray-400 shadow-sm">
-      <AppIcon name="Users" className="mx-auto mb-3 h-10 w-10 text-teal-200" />
-      <p className="text-sm">{children}</p>
-    </div>
-  )
-}
-
-function Alert({ type, children }) {
-  const styles = type === 'error'
-    ? 'bg-red-50 border-red-200 text-red-700'
-    : 'bg-green-50 border-green-200 text-green-700'
-
-  return <div className={`border px-4 py-3 rounded-xl mb-5 text-sm ${styles}`}>{children}</div>
 }

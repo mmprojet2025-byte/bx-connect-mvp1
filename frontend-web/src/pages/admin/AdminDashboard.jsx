@@ -16,9 +16,7 @@ export default function AdminDashboard() {
   const [groupes, setGroupes] = useState([])
   const [groupesEnAttente, setGroupesEnAttente] = useState([])
   const [projets, setProjets] = useState([])
-  const [soutiens, setSoutiens] = useState([])
   const [activites, setActivites] = useState([])
-  const [opportunites, setOpportunites] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const { t } = useTranslation()
@@ -27,20 +25,16 @@ export default function AdminDashboard() {
     setLoading(true)
     setError('')
     try {
-      const [groupesRes, attenteRes, projetsRes, soutiensRes, activitesRes, opportunitesRes] = await Promise.all([
+      const [groupesRes, attenteRes, projetsRes, activitesRes] = await Promise.all([
         api.get('/admin/groupes'),
         api.get('/admin/groupes/en-attente'),
         api.get('/projets/admin/tous').catch(() => ({ data: [] })),
-        api.get('/partenaire/admin/tous').catch(() => ({ data: [] })),
         api.get('/activites/admin/toutes').catch(() => ({ data: [] })),
-        api.get('/annonces/admin/opportunites').catch(() => ({ data: [] })),
       ])
       setGroupes(groupesRes.data)
       setGroupesEnAttente(attenteRes.data)
       setProjets(Array.isArray(projetsRes.data) ? projetsRes.data : [])
-      setSoutiens(Array.isArray(soutiensRes.data) ? soutiensRes.data : [])
       setActivites(Array.isArray(activitesRes.data) ? activitesRes.data : [])
-      setOpportunites(Array.isArray(opportunitesRes.data) ? opportunitesRes.data : [])
     } catch {
       setError(t('admin.error_load'))
     } finally {
@@ -51,19 +45,15 @@ export default function AdminDashboard() {
   useEffect(() => { fetchDashboard() }, [fetchDashboard])
 
   const projetsSoumis = projets.filter(projet => ['VALIDE_REFERENT', 'SOUMIS'].includes(projet.statut))
-  const soutiensEnAttente = soutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE')
   const activitesAPublier = activites.filter(activite => activite.statut === 'BROUILLON')
-  const opportunitesEnAttente = opportunites.filter(opportunite => opportunite.statutModeration === 'EN_ATTENTE')
-  const pendingTotal = groupesEnAttente.length + projetsSoumis.length + soutiensEnAttente.length + opportunitesEnAttente.length
+  const pendingTotal = groupesEnAttente.length + projetsSoumis.length + activitesAPublier.length
   const groupesActifs = groupes.filter(groupe => groupe.statut === 'VALIDE').length
   const activitesPubliees = activites.filter(activite => activite.statut === 'PUBLIEE').length
   const projetsActifs = projets.filter(projet => ['APPROUVE', 'EN_COURS'].includes(projet.statut)).length
   const hasDashboardData = groupes.length > 0
     || groupesEnAttente.length > 0
     || projets.length > 0
-    || soutiens.length > 0
     || activites.length > 0
-    || opportunites.length > 0
 
   return (
     <CollaborativeDashboardLayout
@@ -104,8 +94,6 @@ export default function AdminDashboard() {
               projetsSoumis={projetsSoumis}
               activitesAPublier={activitesAPublier}
               groupesEnAttente={groupesEnAttente}
-              opportunitesEnAttente={opportunitesEnAttente}
-              soutiensEnAttente={soutiensEnAttente}
               t={t}
             />
 
@@ -125,7 +113,7 @@ export default function AdminDashboard() {
   )
 }
 
-function AdminWorkFeed({ projetsSoumis, activitesAPublier, groupesEnAttente, opportunitesEnAttente, soutiensEnAttente, t }) {
+function AdminWorkFeed({ projetsSoumis, activitesAPublier, groupesEnAttente, t }) {
   const items = [
     projetsSoumis[0] && {
       icon: 'Rocket',
@@ -150,22 +138,6 @@ function AdminWorkFeed({ projetsSoumis, activitesAPublier, groupesEnAttente, opp
       description: t('admin.workFeed.groupDescription'),
       actionLabel: t('admin.workFeed.process'),
       to: '/admin/groupes',
-    },
-    opportunitesEnAttente[0] && {
-      icon: 'Megaphone',
-      tone: 'rose',
-      title: getDisplayTitle(opportunitesEnAttente[0], t('admin.workFeed.opportunityFallback')),
-      description: t('admin.workFeed.opportunityDescription'),
-      actionLabel: t('admin.workFeed.moderate'),
-      to: '/admin/annonces',
-    },
-    soutiensEnAttente[0] && {
-      icon: 'Handshake',
-      tone: 'orange',
-      title: getSupportTitle(soutiensEnAttente[0], t('admin.workFeed.supportFallback')),
-      description: t('admin.workFeed.supportDescription'),
-      actionLabel: t('admin.workFeed.review'),
-      to: '/admin/soutiens',
     },
   ].filter(Boolean).slice(0, 5)
 
@@ -224,11 +196,6 @@ function WorkFeedItem({ icon, tone = 'blue', title, description, actionLabel, to
 
 function getDisplayTitle(item, fallback) {
   return item?.titre || item?.nom || item?.name || item?.libelle || fallback
-}
-
-function getSupportTitle(item, fallback) {
-  const partnerName = [item?.partenairePrenom, item?.partenaireNom].filter(Boolean).join(' ').trim()
-  return partnerName || item?.partenaireNomComplet || item?.partenaire || item?.projetTitre || fallback
 }
 
 function SectionHeader({ icon, title, subtitle }) {
