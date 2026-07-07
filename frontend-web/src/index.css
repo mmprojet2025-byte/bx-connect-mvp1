@@ -70,11 +70,23 @@
 
 .collab-dashboard-space {
   display: grid;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .collab-reveal {
   animation: landingFadeUp 520ms ease-out both;
+}
+
+.admin-dashboard-reveal {
+  animation: landingFadeUp 360ms ease-out both;
+}
+
+.admin-dashboard-reveal:nth-of-type(2) {
+  animation-delay: 60ms;
+}
+
+.admin-dashboard-reveal:nth-of-type(3) {
+  animation-delay: 120ms;
 }
 
 .collab-sidebar {
@@ -170,6 +182,7 @@
 
   .landing-fade-up,
   .collab-reveal,
+  .admin-dashboard-reveal,
   .landing-hero-photo,
   .activity-feed-item,
   .messaging-message,

@@ -84,7 +84,7 @@ export default function Navbar() {
   return (
     <nav
       ref={navRef}
-      className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 px-4 text-slate-700 backdrop-blur-xl"
+      className={`sticky top-0 z-40 border-b border-slate-200 bg-white/95 px-4 text-slate-700 backdrop-blur-xl ${isAuthenticated ? 'pl-16 lg:pl-4' : ''}`}
     >
       <div className="mx-auto grid min-h-16 max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-5">
         <Link to={homeRoute} className="flex min-w-0 items-center py-2">
@@ -305,8 +305,7 @@ const SEARCH_GROUPS = [
   { type: 'ACTIVITE', labelKey: 'nav.activities', icon: 'Calendar' },
   { type: 'GROUPE', labelKey: 'nav.groups', icon: 'Users' },
   { type: 'PROJET', labelKey: 'nav.projects', icon: 'Rocket' },
-  { type: 'PARTENAIRE', labelKey: 'nav.partner', icon: 'Handshake' },
-  { type: 'OPPORTUNITE', labelKey: 'partnerSpace.opportunities', icon: 'Megaphone' },
+  // MVP1.5 / masqué volontairement : partenaires et opportunités restent exclus de la recherche visible.
   { type: 'MEMBRE', labelKey: 'nav.members', icon: 'User' },
 ]
 

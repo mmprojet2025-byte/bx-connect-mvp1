@@ -3,24 +3,24 @@ import Navbar from '../Navbar'
 import Footer from '../Footer'
 import AppIcon from '../ui/AppIcons'
 
-export function CollaborativeDashboardLayout({ title, subtitle, emoji = '🏠', actions, children, accentHeader = false, compact = false }) {
+export function CollaborativeDashboardLayout({ title, subtitle, emoji = '🏠', actions, children, accentHeader = false, compact = false, showFooter = false }) {
   return (
     <div className="flex min-h-screen flex-col bg-[#f5f7fb]">
       <Navbar />
       <main className="flex-1">
         <div className={`mx-auto max-w-[1440px] px-3 lg:px-5 ${compact ? 'py-3 lg:py-4' : 'py-4 lg:py-5'}`}>
           <section className="min-w-0">
-            <header className={`collab-reveal relative mb-3 overflow-hidden rounded-xl border border-white bg-white ${compact ? 'p-4' : 'p-5'} shadow-lg shadow-blue-950/5`}>
+            <header className={`collab-reveal relative mb-2 overflow-hidden rounded-xl border border-white bg-white ${compact ? 'p-3 lg:p-4' : 'p-5'} shadow-lg shadow-blue-950/5`}>
               {accentHeader && <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-700 via-teal-600 to-emerald-500" />}
               {accentHeader && <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-blue-50/80 via-white to-emerald-50/50" />}
-              <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className={`relative flex flex-col lg:flex-row lg:items-center lg:justify-between ${compact ? 'gap-2' : 'gap-4'}`}>
                 <div>
-                  <p className="mb-2 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-700">
-                    <IconMarker icon={emoji} className="h-4 w-4" />
+                  <p className={`inline-flex items-center gap-2 rounded-full bg-blue-50 font-black uppercase tracking-wide text-blue-700 ${compact ? 'mb-1 px-2.5 py-0.5 text-[10px]' : 'mb-2 px-3 py-1 text-xs'}`}>
+                    <IconMarker icon={emoji} className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
                     BX-Connect
                   </p>
-                  <h1 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{title}</h1>
-                  {subtitle && <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">{subtitle}</p>}
+                  <h1 className={`font-black tracking-tight text-slate-950 ${compact ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'}`}>{title}</h1>
+                  {subtitle && <p className={`max-w-3xl text-sm text-slate-500 ${compact ? 'mt-1 leading-5' : 'mt-2 leading-6'}`}>{subtitle}</p>}
                 </div>
                 {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
               </div>
@@ -32,7 +32,7 @@ export function CollaborativeDashboardLayout({ title, subtitle, emoji = '🏠', 
           </section>
         </div>
       </main>
-      <Footer />
+      {showFooter && <Footer />}
     </div>
   )
 }

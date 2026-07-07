@@ -51,6 +51,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
   const workSections = getWorkSections(role, t)
   const sidebarSections = [...mainSections, ...spaceSections, ...workSections]
   const homeRoute = routes.home || getDefaultRouteForRole(role)
+  const showRecentLast = role === 'ADMIN'
 
   useEffect(() => {
     setMobileOpen(false)
@@ -88,7 +89,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
             {!contextCollapsed && (
               <span className="min-w-0">
                 <span className="block truncate text-sm font-black text-slate-950">BX-Connect</span>
-                <span className="block truncate text-[10px] font-black uppercase tracking-wide text-slate-400">{roleLabel(role)}</span>
+                <span className="block truncate text-[10px] font-black uppercase tracking-wide text-slate-400">{roleLabel(role, t)}</span>
               </span>
             )}
           </Link>
@@ -136,7 +137,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                   />
                 ))}
 
-                <RecentSection items={recentItems} location={location} />
+                {!showRecentLast && <RecentSection items={recentItems} location={location} />}
 
                 {spaceSections.map(section => (
                   <ContextSection
@@ -153,6 +154,8 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                     location={location}
                   />
                 ))}
+
+                {showRecentLast && <RecentSection items={recentItems} location={location} />}
               </div>
             </nav>
 
@@ -166,7 +169,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-black text-slate-950">
-                    {fullName(user) || roleLabel(role)}
+                    {fullName(user) || roleLabel(role, t)}
                   </span>
                   <span className="block truncate text-xs font-semibold text-slate-500">
                     {user?.email || t('profile.userProfile', { defaultValue: t('sidebar.userProfile') })}
@@ -185,12 +188,13 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
         title={t('nav.openMenu')}
         aria-label={t('nav.openMenu')}
         aria-expanded={mobileOpen}
-        className="fixed left-3 top-3 z-40 grid h-11 w-11 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-lg shadow-slate-950/10 transition hover:bg-blue-50 hover:text-blue-700 lg:hidden"
+        aria-controls="app-sidebar-mobile-drawer"
+        className="fixed left-3 top-3 z-[60] grid h-11 w-11 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-lg shadow-slate-950/10 transition hover:bg-blue-50 hover:text-blue-700 lg:hidden"
       >
         <AppIcon name="Menu" className="h-5 w-5" />
       </button>
 
-      <div className={`fixed inset-0 z-50 lg:hidden ${mobileOpen ? '' : 'pointer-events-none'}`}>
+      <div id="app-sidebar-mobile-drawer" className={`fixed inset-0 z-[70] lg:hidden ${mobileOpen ? '' : 'pointer-events-none'}`}>
         <button
           type="button"
           aria-label={t('nav.close')}
@@ -215,7 +219,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
               </span>
               <span className="min-w-0">
                 <span className="block truncate text-sm font-black text-slate-950">BX-Connect</span>
-                <span className="block truncate text-[10px] font-black uppercase tracking-wide text-slate-400">{roleLabel(role)}</span>
+                <span className="block truncate text-[10px] font-black uppercase tracking-wide text-slate-400">{roleLabel(role, t)}</span>
               </span>
             </Link>
             <button
@@ -240,7 +244,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                 />
               ))}
 
-              <RecentSection items={recentItems} location={location} onNavigate={() => setMobileOpen(false)} />
+              {!showRecentLast && <RecentSection items={recentItems} location={location} onNavigate={() => setMobileOpen(false)} />}
 
               {spaceSections.map(section => (
                 <ContextSection
@@ -259,6 +263,8 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                   onNavigate={() => setMobileOpen(false)}
                 />
               ))}
+
+              {showRecentLast && <RecentSection items={recentItems} location={location} onNavigate={() => setMobileOpen(false)} />}
             </div>
           </nav>
 
@@ -273,7 +279,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-black text-slate-950">
-                  {fullName(user) || roleLabel(role)}
+                  {fullName(user) || roleLabel(role, t)}
                 </span>
                 <span className="block truncate text-xs font-semibold text-slate-500">
                     {user?.email || t('profile.userProfile', { defaultValue: t('sidebar.userProfile') })}
@@ -318,7 +324,6 @@ function getMainSections(role, t) {
     return sections([
       group(t('sidebar.sections.pilotage'), [
         link(t('nav.dashboard'), '/admin/dashboard', 'Home'),
-        link(t('impact.nav'), '/impact', 'BarChart'),
         link(t('nav.notifications'), '/notifications', 'Bell'),
       ]),
     ])
@@ -343,7 +348,6 @@ function getMainSections(role, t) {
       ]),
       group(t('sidebar.sections.communication'), [
         link(t('nav.notifications'), '/notifications', 'Bell'),
-        link(t('nav.announcements'), '/referent/annonces', 'Megaphone'),
       ]),
     ])
   }
@@ -368,7 +372,6 @@ function getMainSections(role, t) {
       link(t('nav.dashboard'), '/dashboard', 'Home'),
       link(t('nav.messaging'), '/messagerie', 'MessageCircle'),
       link(t('nav.notifications'), '/notifications', 'Bell'),
-      link(t('nav.announcements'), '/annonces', 'Megaphone'),
     ]),
   ])
 }
@@ -380,19 +383,13 @@ function getSpaceSections(role, t) {
         link(t('nav.users'), '/admin/utilisateurs', 'Users'),
         link(t('nav.referents'), '/admin/referents', 'User'),
         link(t('nav.activities'), '/admin/activites', 'Calendar'),
-        link(t('nav.prestations'), '/admin/prestations', 'CheckCircle'),
-        link(t('nav.announcements'), '/admin/annonces', 'Megaphone'),
       ]),
     ])
   }
 
   if (role === 'PARTENAIRE') {
-    return sections([
-      group(t('sidebar.sections.opportunities'), [
-        link(t('partnerSpace.openProjects'), '/partenaire?tab=projets', 'Rocket'),
-        link(t('partnerSpace.openActivities'), '/partenaire?tab=activites', 'Calendar'),
-      ]),
-    ])
+    // MVP1.5 / masqué volontairement : opportunités, soutiens et sous-onglets avancés.
+    return []
   }
 
   if (role === 'REFERENT') {
@@ -401,12 +398,6 @@ function getSpaceSections(role, t) {
         link(t('nav.myGroups'), '/referent/groupes', 'Users'),
         link(t('nav.members'), '/referent/membres', 'User'),
         link(t('nav.projects'), '/referent/projets', 'Rocket'),
-        link(t('nav.prestations'), '/referent/prestations', 'CheckCircle'),
-      ]),
-      group(t('sidebar.sections.pilotage'), [
-        link(t('referentImpact.nav'), '/referent/impact', 'BarChart3'),
-        link(t('referentPartners.nav'), '/referent/partenaires', 'Handshake'),
-        link(t('referentReports.nav'), '/referent/rapports', 'FileText'),
       ]),
     ])
   }
@@ -418,7 +409,6 @@ function getSpaceSections(role, t) {
       link(t('nav.myGroups'), '/groupes', 'Users'),
       link(t('sidebar.labels.myActivities'), '/activites', 'Calendar'),
       link(t('sidebar.labels.myProjects'), '/projets', 'Rocket'),
-      link(t('nav.prestations'), '/prestations', 'CheckCircle'),
     ]),
   ])
 }
@@ -429,10 +419,6 @@ function getWorkSections(role, t) {
       group(t('sidebar.sections.validation'), [
         link(t('sidebar.labels.pendingGroups'), '/admin/groupes', 'ClipboardList'),
         link(t('admin.projectsToValidate'), '/admin/projets', 'Rocket'),
-      ]),
-      group(t('sidebar.sections.partners'), [
-        link(t('sidebar.labels.partnerSupports'), '/admin/soutiens', 'Handshake'),
-        link(t('partnerAssignments.nav'), '/admin/partenaires/affectations', 'Handshake'),
       ]),
     ])
   }
@@ -447,11 +433,8 @@ function getWorkSections(role, t) {
   }
 
   if (role === 'PARTENAIRE') {
-    return sections([
-      group(t('sidebar.sections.priorityActions'), [
-        link(t('partnerSpace.mySupports'), '/partenaire?tab=soutiens', 'Handshake'),
-      ]),
-    ])
+    // MVP1.5 / masqué volontairement : actions de soutien et opportunités partenaires.
+    return []
   }
 
   return []
@@ -532,12 +515,8 @@ function ContextSection({ section, location, onNavigate }) {
   )
 }
 
-function roleLabel(role) {
-  if (role === 'SUPER_ADMIN') return 'Super admin'
-  if (role === 'ADMIN') return 'Admin'
-  if (role === 'REFERENT') return 'Référent'
-  if (role === 'PARTENAIRE') return 'Partenaire'
-  return 'Membre'
+function roleLabel(role, t) {
+  return t(`roles.${role || 'MEMBRE'}`, { defaultValue: role || 'MEMBRE' })
 }
 
 function fullName(user) {
@@ -575,6 +554,8 @@ function recentItemFromLocation(location) {
 }
 
 function ContextLink({ item, location, onNavigate }) {
+  const { t } = useTranslation()
+
   if (!item.to) {
     return (
       <div className="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-sm font-bold text-slate-400">
@@ -583,7 +564,7 @@ function ContextLink({ item, location, onNavigate }) {
           <span className="truncate">{item.label}</span>
         </span>
         <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase text-slate-400">
-          bientôt
+          {t('sidebar.comingSoon')}
         </span>
       </div>
     )

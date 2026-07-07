@@ -24,6 +24,7 @@ export default function PresenceSheet({ backTo = '/admin/activites', tone = 'blu
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [drafts, setDrafts] = useState({})
+  const [presenceFilter, setPresenceFilter] = useState('TOUS')
 
   const fetchPresences = useCallback(async () => {
     setLoading(true)
@@ -60,6 +61,14 @@ export default function PresenceSheet({ backTo = '/admin/activites', tone = 'blu
     acc[status] = presences.filter(p => (p.statutPresence || 'NON_RENSEIGNEE') === status).length
     return acc
   }, {}), [presences])
+  const attendanceRate = useMemo(() => {
+    const denominator = (stats.PRESENT || 0) + (stats.ABSENT || 0) + (stats.EXCUSE || 0)
+    return denominator > 0 ? Math.round(((stats.PRESENT || 0) / denominator) * 100) : 0
+  }, [stats])
+  const filteredPresences = useMemo(() => {
+    if (presenceFilter === 'TOUS') return presences
+    return presences.filter(p => (p.statutPresence || 'NON_RENSEIGNEE') === presenceFilter)
+  }, [presenceFilter, presences])
 
   const updateDraft = (inscriptionId, patch) => {
     setDrafts(current => ({
@@ -191,11 +200,12 @@ export default function PresenceSheet({ backTo = '/admin/activites', tone = 'blu
           />
         ) : (
           <>
-            <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <PresenceStat label={t('presence.statuses.PRESENT')} value={stats.PRESENT || 0} icon="CheckCircle" tone="green" />
               <PresenceStat label={t('presence.statuses.ABSENT')} value={stats.ABSENT || 0} icon="XCircle" tone="red" />
               <PresenceStat label={t('presence.statuses.EXCUSE')} value={stats.EXCUSE || 0} icon="Clock" tone="amber" />
               <PresenceStat label={t('presence.statuses.NON_RENSEIGNEE')} value={stats.NON_RENSEIGNEE || 0} icon="ClipboardList" tone="slate" />
+              <PresenceStat label={t('presence.attendanceRate')} value={`${attendanceRate}%`} icon="BarChart3" tone="blue" />
             </div>
 
             {message && (
@@ -237,8 +247,25 @@ export default function PresenceSheet({ backTo = '/admin/activites', tone = 'blu
               </div>
             </SectionCard>
 
+            <div className="mb-4 flex flex-wrap gap-2 rounded-xl border border-slate-100 bg-white p-2 shadow-sm">
+              {['TOUS', ...PRESENCE_STATUSES.filter(status => status !== 'NON_RENSEIGNEE'), 'NON_RENSEIGNEE'].map(status => (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => setPresenceFilter(status)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                    presenceFilter === status
+                      ? 'bg-blue-700 text-white'
+                      : 'bg-slate-50 text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                  }`}
+                >
+                  {status === 'TOUS' ? t('presence.filters.all') : t(`presence.statuses.${status}`)}
+                </button>
+              ))}
+            </div>
+
             <div className="space-y-3 md:hidden">
-              {presences.map(presence => (
+              {filteredPresences.map(presence => (
                 <PresenceCard
                   key={presence.inscriptionId}
                   presence={presence}
@@ -266,7 +293,7 @@ export default function PresenceSheet({ backTo = '/admin/activites', tone = 'blu
                     </tr>
                   </thead>
                   <tbody>
-                    {presences.map(presence => {
+                    {filteredPresences.map(presence => {
                       const draft = drafts[presence.inscriptionId] || {}
                       const disabled = saving || sheetClosed || presence.statutInscription === 'ANNULEE'
                       return (
@@ -402,6 +429,7 @@ function PresenceStat({ label, value, icon, tone }) {
     green: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
     red: 'bg-red-50 text-red-700 ring-red-100',
     amber: 'bg-amber-50 text-amber-700 ring-amber-100',
+    blue: 'bg-blue-50 text-blue-700 ring-blue-100',
     slate: 'bg-slate-50 text-slate-700 ring-slate-100',
   }
   return (

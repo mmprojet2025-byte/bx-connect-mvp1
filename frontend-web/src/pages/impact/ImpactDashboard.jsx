@@ -278,7 +278,7 @@ export default function ImpactDashboard() {
                 { icon: 'ShieldX', label: t('impact.kpis.finalRejectedProjects'), value: impact.kpis.rejectedProjects, tone: 'amber' },
               ]}
             />
-            <ChartGrid charts={participationCharts} t={t} />
+            <ChartGrid charts={participationCharts} />
           </ImpactSection>
 
           <PartnerImpactSection
@@ -397,7 +397,7 @@ function PartnerImpactSection({ impact, supportStatusData, t, language }) {
       />
 
       {impact.hasData ? (
-        <ChartGrid charts={charts} t={t} />
+        <ChartGrid charts={charts} />
       ) : (
         <EmptyState
           icon="Handshake"
@@ -418,7 +418,7 @@ function ImpactSection({ icon, title, description, children }) {
   )
 }
 
-function ChartGrid({ charts, t }) {
+function ChartGrid({ charts }) {
   if (!charts.length) {
     return null
   }

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Navbar from '../../components/Navbar'
-import Footer from '../../components/Footer'
 import api from '../../api/axios'
 import AppIcon from '../../components/ui/AppIcons'
 import PageHeader from '../../components/ui/PageHeader'
@@ -38,6 +37,7 @@ export default function AdminPartenaireAffectations() {
   const [error, setError] = useState('')
   const [referentForm, setReferentForm] = useState(emptyReferentForm)
   const [groupeForm, setGroupeForm] = useState(emptyGroupeForm)
+  const [visibleForm, setVisibleForm] = useState('')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -81,6 +81,7 @@ export default function AdminPartenaireAffectations() {
         payloadFromForm(referentForm),
       )
       setReferentForm(emptyReferentForm)
+      setVisibleForm('')
       setMessage(t('partnerAssignments.messages.referentCreated'))
       await fetchData()
     } catch (err) {
@@ -102,6 +103,7 @@ export default function AdminPartenaireAffectations() {
         payloadFromForm(groupeForm),
       )
       setGroupeForm(emptyGroupeForm)
+      setVisibleForm('')
       setMessage(t('partnerAssignments.messages.groupCreated'))
       await fetchData()
     } catch (err) {
@@ -131,19 +133,47 @@ export default function AdminPartenaireAffectations() {
     <div className="flex min-h-screen flex-col bg-slate-50">
       <Navbar />
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         <PageHeader
           eyebrow={t('partnerAssignments.eyebrow')}
           title={t('partnerAssignments.title')}
           description={t('partnerAssignments.description')}
         />
 
-        <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Kpi icon="Handshake" label={t('partnerAssignments.kpis.total')} value={stats.total} />
-          <Kpi icon="CheckCircle" label={t('partnerAssignments.kpis.active')} value={stats.active} tone="green" />
-          <Kpi icon="User" label={t('partnerAssignments.kpis.referents')} value={stats.referents} tone="blue" />
-          <Kpi icon="Users" label={t('partnerAssignments.kpis.groups')} value={stats.groupes} tone="amber" />
-        </div>
+        {!loading && (
+          <div className="mb-3 flex flex-col gap-3 rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm font-semibold text-slate-600">
+              {t('partnerAssignments.summaryLine', {
+                total: stats.total,
+                active: stats.active,
+                referents: stats.referents,
+                groups: stats.groupes,
+              })}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setVisibleForm(current => current === 'referent' ? '' : 'referent')}
+                className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-black transition ${
+                  visibleForm === 'referent' ? 'bg-blue-700 text-white' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                }`}
+              >
+                <AppIcon name={visibleForm === 'referent' ? 'XCircle' : 'User'} className="h-3.5 w-3.5" />
+                {t('partnerAssignments.assignToReferent')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setVisibleForm(current => current === 'groupe' ? '' : 'groupe')}
+                className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-black transition ${
+                  visibleForm === 'groupe' ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <AppIcon name={visibleForm === 'groupe' ? 'XCircle' : 'Users'} className="h-3.5 w-3.5" />
+                {t('partnerAssignments.assignToGroup')}
+              </button>
+            </div>
+          </div>
+        )}
 
         {message && <Alert>{message}</Alert>}
         {error && !loading && <Alert type="error">{error}</Alert>}
@@ -159,7 +189,9 @@ export default function AdminPartenaireAffectations() {
           />
         ) : (
           <>
-            <div className="mb-6 grid gap-4 lg:grid-cols-2">
+            {visibleForm && (
+            <div className="mb-4">
+              {visibleForm === 'referent' && (
               <AssignmentForm
                 title={t('partnerAssignments.forms.referentTitle')}
                 description={t('partnerAssignments.forms.referentDescription')}
@@ -199,7 +231,9 @@ export default function AdminPartenaireAffectations() {
                   onChange={value => setReferentForm({ ...referentForm, commentaire: value })}
                 />
               </AssignmentForm>
+              )}
 
+              {visibleForm === 'groupe' && (
               <AssignmentForm
                 title={t('partnerAssignments.forms.groupTitle')}
                 description={t('partnerAssignments.forms.groupDescription')}
@@ -250,7 +284,9 @@ export default function AdminPartenaireAffectations() {
                   onChange={value => setGroupeForm({ ...groupeForm, commentaire: value })}
                 />
               </AssignmentForm>
+              )}
             </div>
+            )}
 
             {partenaires.length === 0 && (
               <div className="mb-6">
@@ -289,8 +325,6 @@ export default function AdminPartenaireAffectations() {
           </>
         )}
       </main>
-
-      <Footer />
     </div>
   )
 }
@@ -316,24 +350,6 @@ function displayUser(user) {
 function formatDate(value, language) {
   if (!value) return '—'
   return new Date(value).toLocaleDateString(language || 'fr-BE')
-}
-
-function Kpi({ icon, label, value, tone = 'slate' }) {
-  const tones = {
-    slate: 'bg-slate-100 text-slate-700',
-    green: 'bg-emerald-50 text-emerald-700',
-    blue: 'bg-sky-50 text-sky-700',
-    amber: 'bg-amber-50 text-amber-700',
-  }
-  return (
-    <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
-      <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg ${tones[tone] || tones.slate}`}>
-        <AppIcon name={icon} className="h-5 w-5" />
-      </div>
-      <p className="text-2xl font-black text-slate-950">{value}</p>
-      <p className="mt-1 text-sm font-semibold text-slate-500">{label}</p>
-    </div>
-  )
 }
 
 function AssignmentForm({ title, description, children, onSubmit, disabled, submitLabel }) {
@@ -392,7 +408,9 @@ function AssignmentsList({ title, subtitle, emptyTitle, items, type, actionKey, 
   return (
     <SectionCard title={title} subtitle={subtitle}>
       {items.length === 0 ? (
-        <EmptyState icon="Handshake" title={emptyTitle} />
+        <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-500">
+          {emptyTitle}
+        </p>
       ) : (
         <div className="space-y-3">
           {items.map(item => (

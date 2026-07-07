@@ -24,13 +24,6 @@ import Profil           from './pages/profil/Profil'
 import Groupes          from './pages/groupes/Groupes'
 import GroupeEspace     from './pages/groupes/GroupeEspace'
 import Messagerie       from './pages/messagerie/Messagerie'
-import Prestations      from './pages/prestations/Prestations'
-
-// Pages Paiement Stripe
-import PaiementStripe      from './pages/paiement/PaiementStripe'
-import PaiementSuccess     from './pages/paiement/PaiementSuccess'
-import PaiementCancel      from './pages/paiement/PaiementCancel'
-import HistoriquePaiements from './pages/paiement/HistoriquePaiements'
 
 // Pages Partenaire
 import PartenaireSpace from './pages/partenaire/PartenaireSpace'
@@ -43,10 +36,6 @@ import ReferentDemandes   from './pages/referent/ReferentDemandes'
 import ReferentActivites  from './pages/referent/ReferentActivites'
 import ReferentProjets    from './pages/referent/ReferentProjets'
 import ReferentMessagerie from './pages/referent/ReferentMessagerie'
-import ReferentRapports   from './pages/referent/ReferentRapports'
-import ReferentImpactDashboard from './pages/referent/ReferentImpactDashboard'
-import ReferentPartenaires from './pages/referent/ReferentPartenaires'
-import GestionPrestations from './pages/prestations/GestionPrestations'
 
 // Pages Admin
 import AdminDashboard    from './pages/admin/AdminDashboard'
@@ -55,9 +44,6 @@ import AdminActivites    from './pages/admin/AdminActivites'
 import AdminProjets      from './pages/admin/AdminProjets'
 import AdminGroupes      from './pages/admin/AdminGroupes'
 import AdminReferents    from './pages/admin/AdminReferents'
-import AdminSoutiens     from './pages/admin/AdminSoutiens'
-import AdminPartenaireAffectations from './pages/admin/AdminPartenaireAffectations'
-import ImpactDashboard   from './pages/impact/ImpactDashboard'
 import SuperAdminRoute      from './routes/SuperAdminRoute'
 import SuperAdminDashboard  from './pages/super-admin/SuperAdminDashboard'
 import SuperAdminAdmins     from './pages/super-admin/SuperAdminAdmins'
@@ -117,6 +103,14 @@ function PublicOnlyRoute({ children }) {
   const { isAuthenticated, user } = useAuth()
   if (isAuthenticated) return <Navigate to={getDefaultRouteForRole(user?.role)} replace />
   return children
+}
+
+function MvpHiddenRoute() {
+  const { isAuthenticated, user } = useAuth()
+  // MVP1.5 / masqué volontairement : les modules avancés restent dans le code,
+  // mais ne sont pas exposés dans la navigation ni accessibles directement en MVP1.
+  if (isAuthenticated) return <Navigate to={getDefaultRouteForRole(user?.role)} replace />
+  return <NotFound />
 }
 
 const PUBLIC_ONLY_PATHS = new Set([
@@ -191,14 +185,11 @@ export default function App() {
           <Route path="/messagerie"    element={<MembreRoute><Messagerie /></MembreRoute>} />
           <Route path="/dashboard"     element={<MembreRoute><Dashboard /></MembreRoute>} />
           <Route path="/profil"        element={<PrivateRoute><Profil /></PrivateRoute>} />
-          <Route path="/prestations"   element={<MembreRoute><Prestations /></MembreRoute>} />
           <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
 
-          {/* ── Pages Paiement Stripe ── */}
-          <Route path="/paiement/stripe"     element={<PrivateRoute><PaiementStripe /></PrivateRoute>} />
-          <Route path="/paiement/succes"     element={<PrivateRoute><PaiementSuccess /></PrivateRoute>} />
-          <Route path="/paiement/annule"     element={<PaiementCancel />} />
-          <Route path="/paiement/historique" element={<PrivateRoute><HistoriquePaiements /></PrivateRoute>} />
+          {/* MVP1.5 / masqué volontairement */}
+          <Route path="/prestations" element={<MvpHiddenRoute />} />
+          <Route path="/paiement/*" element={<MvpHiddenRoute />} />
 
           {/* ── Pages Partenaire ── */}
           <Route path="/partenaire" element={<PartenaireRoute><PartenaireSpace /></PartenaireRoute>} />
@@ -212,12 +203,14 @@ export default function App() {
           <Route path="/referent/activites"   element={<ReferentRoute><ReferentActivites /></ReferentRoute>} />
           <Route path="/referent/activites/:id/presences" element={<ReferentRoute><PresenceSheet backTo="/referent/activites" tone="teal" /></ReferentRoute>} />
           <Route path="/referent/projets"     element={<ReferentRoute><ReferentProjets /></ReferentRoute>} />
-          <Route path="/referent/partenaires" element={<ReferentRoute><ReferentPartenaires /></ReferentRoute>} />
-          <Route path="/referent/rapports"    element={<ReferentRoute><ReferentRapports /></ReferentRoute>} />
-          <Route path="/referent/impact"      element={<ReferentRoute><ReferentImpactDashboard /></ReferentRoute>} />
           <Route path="/referent/messagerie"  element={<ReferentRoute><ReferentMessagerie /></ReferentRoute>} />
-          <Route path="/referent/prestations" element={<ReferentRoute><GestionPrestations /></ReferentRoute>} />
-          <Route path="/referent/annonces"     element={<ReferentRoute><Annonces /></ReferentRoute>} />
+          <Route path="/referent/annonces"    element={<ReferentRoute><Annonces /></ReferentRoute>} />
+
+          {/* MVP1.5 / masqué volontairement */}
+          <Route path="/referent/partenaires" element={<MvpHiddenRoute />} />
+          <Route path="/referent/rapports" element={<MvpHiddenRoute />} />
+          <Route path="/referent/impact" element={<MvpHiddenRoute />} />
+          <Route path="/referent/prestations" element={<MvpHiddenRoute />} />
 
           {/* ── Pages Admin ── */}
           <Route path="/admin"               element={<Navigate to="/admin/dashboard" replace />} />
@@ -228,11 +221,13 @@ export default function App() {
           <Route path="/admin/activites/:id/presences" element={<AdminRoute><PresenceSheet backTo="/admin/activites" /></AdminRoute>} />
           <Route path="/admin/projets"       element={<AdminRoute><AdminProjets /></AdminRoute>} />
           <Route path="/admin/groupes"       element={<AdminRoute><AdminGroupes /></AdminRoute>} />
-          <Route path="/admin/soutiens"      element={<AdminRoute><AdminSoutiens /></AdminRoute>} />
-          <Route path="/admin/partenaires/affectations" element={<AdminRoute><AdminPartenaireAffectations /></AdminRoute>} />
-          <Route path="/admin/prestations"   element={<AdminRoute><GestionPrestations /></AdminRoute>} />
           <Route path="/admin/annonces"      element={<AdminRoute><Annonces /></AdminRoute>} />
-          <Route path="/impact"              element={<AdminRoute><ImpactDashboard /></AdminRoute>} />
+
+          {/* MVP1.5 / masqué volontairement */}
+          <Route path="/admin/soutiens" element={<MvpHiddenRoute />} />
+          <Route path="/admin/partenaires/affectations" element={<MvpHiddenRoute />} />
+          <Route path="/admin/prestations" element={<MvpHiddenRoute />} />
+          <Route path="/impact" element={<MvpHiddenRoute />} />
 
           {/* ── Pages SUPER_ADMIN ── */}
           <Route path="/super-admin"           element={<Navigate to="/super-admin/dashboard" replace />} />

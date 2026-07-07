@@ -230,6 +230,7 @@ function NotificationInboxItem({
   const isClickable = Boolean(cardAction);
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <article
       role={isClickable ? 'button' : undefined}
       tabIndex={isClickable ? 0 : undefined}

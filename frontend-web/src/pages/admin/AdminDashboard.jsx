@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import api from '../../api/axios'
@@ -50,15 +50,14 @@ export default function AdminDashboard() {
 
   useEffect(() => { fetchDashboard() }, [fetchDashboard])
 
-  const groupesSansReferent = useMemo(
-    () => groupes.filter(groupe => !groupe.referentId),
-    [groupes]
-  )
   const projetsSoumis = projets.filter(projet => ['VALIDE_REFERENT', 'SOUMIS'].includes(projet.statut))
   const soutiensEnAttente = soutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE')
   const activitesAPublier = activites.filter(activite => activite.statut === 'BROUILLON')
   const opportunitesEnAttente = opportunites.filter(opportunite => opportunite.statutModeration === 'EN_ATTENTE')
   const pendingTotal = groupesEnAttente.length + projetsSoumis.length + soutiensEnAttente.length + opportunitesEnAttente.length
+  const groupesActifs = groupes.filter(groupe => groupe.statut === 'VALIDE').length
+  const activitesPubliees = activites.filter(activite => activite.statut === 'PUBLIEE').length
+  const projetsActifs = projets.filter(projet => ['APPROUVE', 'EN_COURS'].includes(projet.statut)).length
   const hasDashboardData = groupes.length > 0
     || groupesEnAttente.length > 0
     || projets.length > 0
@@ -72,8 +71,10 @@ export default function AdminDashboard() {
       title={t('ux.adminDashboard.title', { defaultValue: 'Centre de pilotage BX-Connect' })}
       subtitle={t('admin.dashboardSummary', {
         count: pendingTotal,
-        defaultValue: `${pendingTotal} validation(s) en attente`,
+        defaultValue: `${pendingTotal} action(s) à traiter aujourd’hui.`,
       })}
+      accentHeader
+      compact
     >
         {error && hasDashboardData && <Alert type="error">{error}</Alert>}
 
@@ -90,35 +91,26 @@ export default function AdminDashboard() {
           <>
             <CompactKpiRow
               accent="blue"
-              className="mb-4"
+              className="mb-3 admin-dashboard-reveal"
               items={[
-                { icon: 'TriangleAlert', label: t('ux.adminDashboard.priority'), value: pendingTotal, tone: pendingTotal > 0 ? 'amber' : 'green' },
-                { icon: 'Clock', label: t('ux.adminDashboard.pendingGroups'), value: groupesEnAttente.length, tone: groupesEnAttente.length > 0 ? 'amber' : 'blue' },
-                { icon: 'Rocket', label: t('admin.projectsToValidate'), value: projetsSoumis.length, tone: projetsSoumis.length > 0 ? 'amber' : 'blue' },
-                { icon: 'Megaphone', label: t('admin.opportunitiesToModerate', { defaultValue: 'Opportunités à modérer' }), value: opportunitesEnAttente.length, tone: opportunitesEnAttente.length > 0 ? 'amber' : 'blue' },
-                { icon: 'Handshake', label: t('nav.supports', { defaultValue: 'Soutiens' }), value: soutiensEnAttente.length, tone: soutiensEnAttente.length > 0 ? 'amber' : 'blue' },
+                { icon: 'TriangleAlert', label: t('admin.pendingActions', { defaultValue: 'À traiter' }), value: pendingTotal, tone: pendingTotal > 0 ? 'amber' : 'green' },
+                { icon: 'Users', label: t('admin.groups', { defaultValue: 'Groupes' }), value: groupesActifs, tone: 'blue' },
+                { icon: 'Calendar', label: t('statuses.PUBLIEE', { defaultValue: 'Publiées' }), value: activitesPubliees, tone: 'green' },
+                { icon: 'Rocket', label: t('admin.projects_title', { defaultValue: 'Projets' }), value: projetsActifs, tone: 'violet' },
               ]}
             />
 
-            <AdminQueue
-              groupesSansReferent={groupesSansReferent}
-              groupesEnAttente={groupesEnAttente}
+            <AdminWorkFeed
               projetsSoumis={projetsSoumis}
-              soutiensEnAttente={soutiensEnAttente}
-              opportunitesEnAttente={opportunitesEnAttente}
               activitesAPublier={activitesAPublier}
-              t={t}
-            />
-
-            <AdminImpactCta
-              groupsWithoutReferent={groupesSansReferent.length}
-              activitiesToPublish={activitesAPublier.length}
-              pendingTotal={pendingTotal}
+              groupesEnAttente={groupesEnAttente}
+              opportunitesEnAttente={opportunitesEnAttente}
+              soutiensEnAttente={soutiensEnAttente}
               t={t}
             />
 
             {groupes.length === 0 && (
-              <div className="mt-8">
+              <div className="mt-2">
                 <EmptyState
                   title={t('admin.noGroupsCreated')}
                   description={t('admin.noGroupsCreatedDesc')}
@@ -133,126 +125,120 @@ export default function AdminDashboard() {
   )
 }
 
-function AdminQueue({ groupesSansReferent, groupesEnAttente, projetsSoumis, soutiensEnAttente, opportunitesEnAttente, activitesAPublier, t }) {
+function AdminWorkFeed({ projetsSoumis, activitesAPublier, groupesEnAttente, opportunitesEnAttente, soutiensEnAttente, t }) {
   const items = [
-    {
-      icon: 'User',
-      label: t('ux.adminDashboard.groupsWithoutReferent'),
-      value: groupesSansReferent.length,
-      description: t('admin.assignReferentDesc'),
-      to: '/admin/groupes',
-    },
-    {
-      icon: 'Clock',
-      label: t('ux.adminDashboard.pendingGroups'),
-      value: groupesEnAttente.length,
-      description: t('admin.pendingGroupsDesc'),
-      to: '/admin/groupes',
-    },
-    {
+    projetsSoumis[0] && {
       icon: 'Rocket',
-      label: t('admin.projectsToValidate'),
-      value: projetsSoumis.length,
-      description: t('admin.submittedProjectsDesc', { defaultValue: 'Projets à relire ou orienter.' }),
+      tone: 'violet',
+      title: getDisplayTitle(projetsSoumis[0], t('admin.workFeed.projectFallback')),
+      description: t('admin.workFeed.projectDescription'),
+      actionLabel: t('admin.workFeed.validate'),
       to: '/admin/projets',
     },
-    {
-      icon: 'Megaphone',
-      label: t('admin.opportunitiesToModerate', { defaultValue: 'Opportunités à modérer' }),
-      value: opportunitesEnAttente.length,
-      description: t('admin.opportunitiesToModerateDesc', { defaultValue: 'Publications partenaires à publier ou refuser.' }),
-      to: '/admin/annonces',
-    },
-    {
-      icon: 'Handshake',
-      label: t('nav.supports', { defaultValue: 'Soutiens partenaires' }),
-      value: soutiensEnAttente.length,
-      description: t('partnerSupport.admin.listDescription', { defaultValue: 'Soutiens à valider ou refuser.' }),
-      to: '/admin/soutiens',
-    },
-    {
+    activitesAPublier[0] && {
       icon: 'Calendar',
-      label: t('activities.draftsToPublish', { defaultValue: 'Activités à publier' }),
-      value: activitesAPublier.length,
-      description: t('activities.draftsToPublishDesc', { defaultValue: 'Brouillons prêts à vérifier.' }),
+      tone: 'green',
+      title: getDisplayTitle(activitesAPublier[0], t('admin.workFeed.activityFallback')),
+      description: t('admin.workFeed.activityDescription'),
+      actionLabel: t('admin.workFeed.publish'),
       to: '/admin/activites',
     },
-  ]
-  const activeItems = items.filter(item => item.value > 0)
+    groupesEnAttente[0] && {
+      icon: 'Users',
+      tone: 'amber',
+      title: getDisplayTitle(groupesEnAttente[0], t('admin.workFeed.groupFallback')),
+      description: t('admin.workFeed.groupDescription'),
+      actionLabel: t('admin.workFeed.process'),
+      to: '/admin/groupes',
+    },
+    opportunitesEnAttente[0] && {
+      icon: 'Megaphone',
+      tone: 'rose',
+      title: getDisplayTitle(opportunitesEnAttente[0], t('admin.workFeed.opportunityFallback')),
+      description: t('admin.workFeed.opportunityDescription'),
+      actionLabel: t('admin.workFeed.moderate'),
+      to: '/admin/annonces',
+    },
+    soutiensEnAttente[0] && {
+      icon: 'Handshake',
+      tone: 'orange',
+      title: getSupportTitle(soutiensEnAttente[0], t('admin.workFeed.supportFallback')),
+      description: t('admin.workFeed.supportDescription'),
+      actionLabel: t('admin.workFeed.review'),
+      to: '/admin/soutiens',
+    },
+  ].filter(Boolean).slice(0, 5)
 
   return (
-    <section className="mb-6 rounded-[1.5rem] border border-amber-100 bg-white p-5 shadow-lg shadow-amber-950/5">
-      <SectionHeader icon="TriangleAlert" title={t('ux.adminDashboard.priority')} subtitle={t('ux.adminDashboard.priorityDesc')} />
-      {activeItems.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-center">
-          <AppIcon name="CheckCircle" className="mx-auto mb-2 h-8 w-8 text-emerald-500" />
-          <p className="text-sm font-black text-slate-700">{t('admin.noPendingValidation', { defaultValue: 'Aucune validation en attente.' })}</p>
+    <section className="admin-dashboard-reveal mb-4 rounded-xl border border-white bg-white p-4 shadow-lg shadow-slate-950/5">
+      <SectionHeader
+        icon="ClipboardList"
+        title={t('admin.workFeed.title')}
+        subtitle={t('admin.workFeed.subtitle')}
+      />
+      {items.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-emerald-200 bg-emerald-50/70 px-4 py-4 text-center">
+          <AppIcon name="CheckCircle" className="mx-auto mb-2 h-7 w-7 text-emerald-500" />
+          <p className="text-sm font-black text-slate-700">{t('admin.workFeed.empty')}</p>
         </div>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {activeItems.slice(0, 5).map(item => <PriorityCard key={item.label} {...item} />)}
+        <div className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-100 bg-slate-50/60">
+          {items.map(item => <WorkFeedItem key={`${item.to}-${item.title}`} {...item} />)}
         </div>
       )}
     </section>
   )
 }
 
-function AdminImpactCta({ groupsWithoutReferent, activitiesToPublish, pendingTotal, t }) {
-  return (
-    <section className="mb-6 rounded-xl border border-blue-100 bg-white p-5 shadow-lg shadow-blue-950/5">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-start gap-3">
-          <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
-            <AppIcon name="BarChart3" className="h-5 w-5" />
-          </span>
-          <div>
-            <h2 className="text-lg font-black text-slate-950">
-              {t('impact.title', { defaultValue: 'Centre d’Impact' })}
-            </h2>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-              {t('admin.impactCtaDescription', {
-                pending: pendingTotal,
-                groups: groupsWithoutReferent,
-                activities: activitiesToPublish,
-                defaultValue: `${pendingTotal} action(s) à suivre · ${groupsWithoutReferent} groupe(s) sans référent · ${activitiesToPublish} activité(s) à publier.`,
-              })}
-            </p>
-          </div>
-        </div>
-        <Link
-          to="/impact"
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-black text-white transition hover:bg-blue-600"
-        >
-          {t('admin.openImpactCenter', { defaultValue: 'Ouvrir le Centre d’Impact' })}
-          <AppIcon name="ArrowRight" className="h-4 w-4" />
-        </Link>
-      </div>
-    </section>
-  )
-}
+function WorkFeedItem({ icon, tone = 'blue', title, description, actionLabel, to }) {
+  const toneClasses = {
+    amber: 'bg-amber-50 text-amber-700',
+    blue: 'bg-blue-50 text-blue-700',
+    cyan: 'bg-cyan-50 text-cyan-700',
+    green: 'bg-emerald-50 text-emerald-700',
+    orange: 'bg-orange-50 text-orange-700',
+    rose: 'bg-rose-50 text-rose-700',
+    violet: 'bg-violet-50 text-violet-700',
+  }
+  const colorClass = toneClasses[tone] || toneClasses.blue
 
-function PriorityCard({ icon, label, value, description, to }) {
   return (
-    <Link to={to} className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400">
-      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-amber-700">
-        <AppIcon name={icon} className="h-5 w-5" />
+    <Link
+      to={to}
+      className="group flex items-center gap-3 bg-white px-3 py-2.5 transition duration-200 hover:bg-blue-50/40 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-400"
+    >
+      <span className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${colorClass}`}>
+        <AppIcon name={icon} className="h-4 w-4" />
       </span>
-      <span className="min-w-0">
-        <span className="block font-black text-slate-950">{value} · {label}</span>
-        <span className="mt-0.5 block text-sm leading-5 text-slate-500">{description}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-black text-slate-950">{title}</span>
+        <span className="mt-0.5 block truncate text-xs leading-4 text-slate-500">{description}</span>
+      </span>
+      <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-700 transition group-hover:bg-blue-700 group-hover:text-white">
+        {actionLabel}
+        <AppIcon name="ArrowRight" className="h-3.5 w-3.5" />
       </span>
     </Link>
   )
 }
 
+function getDisplayTitle(item, fallback) {
+  return item?.titre || item?.nom || item?.name || item?.libelle || fallback
+}
+
+function getSupportTitle(item, fallback) {
+  const partnerName = [item?.partenairePrenom, item?.partenaireNom].filter(Boolean).join(' ').trim()
+  return partnerName || item?.partenaireNomComplet || item?.partenaire || item?.projetTitre || fallback
+}
+
 function SectionHeader({ icon, title, subtitle }) {
   return (
-    <div className="mb-4">
-      <h2 className="flex items-center gap-2 text-lg font-black text-slate-950">
+    <div className="mb-3">
+      <h2 className="flex items-center gap-2 text-base font-black text-slate-950">
         <AppIcon name={icon} className="h-5 w-5 text-blue-700" />
         {title}
       </h2>
-      {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+      {subtitle && <p className="mt-1 text-xs text-slate-500">{subtitle}</p>}
     </div>
   )
 }

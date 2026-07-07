@@ -159,7 +159,7 @@ export default function Annonces() {
         {message && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>}
         {error && annonces.length > 0 && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>}
 
-        {isAdmin && (
+        {isAdmin && (loadingOpportunities || adminOpportunities.length > 0) && (
           <section id="moderation-opportunites" className="mb-5 rounded-xl border border-amber-100 bg-white p-4 shadow-sm">
             <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -178,10 +178,6 @@ export default function Annonces() {
 
             {loadingOpportunities ? (
               <p className="py-6 text-center text-sm font-semibold text-slate-400">{t('announcements.loadingOpportunities')}</p>
-            ) : adminOpportunities.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-center text-sm font-semibold text-slate-500">
-                {t('announcements.noOpportunitiesToModerate')}
-              </div>
             ) : (
               <div className="space-y-2.5">
                 {adminOpportunities.map(opportunity => (
@@ -267,7 +263,7 @@ export default function Annonces() {
                   )}
                 </button>
               ))}
-              {isAdmin && (
+              {isAdmin && adminOpportunities.length > 0 && (
                 <a href="#moderation-opportunites" className="inline-flex shrink-0 items-center rounded-lg px-2.5 py-1.5 text-xs font-black text-amber-700 transition hover:bg-amber-50">
                   {t('announcements.filters.moderation')}
                 </a>
@@ -424,6 +420,7 @@ function AnnouncementFeedItem({ announcement, canManage, isAdmin, onPin, onDelet
   };
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <article
       role={externalUrl ? 'link' : undefined}
       tabIndex={externalUrl ? 0 : undefined}

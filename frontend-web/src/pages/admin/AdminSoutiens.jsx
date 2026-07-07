@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import api from '../../api/axios'
 import Navbar from '../../components/Navbar'
-import Footer from '../../components/Footer'
 import AppIcon from '../../components/ui/AppIcons'
 import PageHeader from '../../components/ui/PageHeader'
 import SectionCard from '../../components/ui/SectionCard'
@@ -269,7 +268,6 @@ export default function AdminSoutiens() {
           />
         )}
       </main>
-      <Footer />
     </div>
   )
 }
