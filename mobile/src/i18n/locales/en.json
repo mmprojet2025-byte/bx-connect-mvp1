@@ -118,6 +118,7 @@
     "projects": "Projects",
     "messaging": "Messages",
     "messages": "Messages",
+    "conversations": "Conversations",
     "notifications": "Notifications",
     "alerts": "Notifications",
     "profile": "Profile",
@@ -401,7 +402,12 @@
     "emptyDescriptionMobile": "Your notifications will appear here whenever an important action concerns your account.",
     "loading": "Loading notifications...",
     "dateNotProvided": "Date not provided",
-    "confirmDelete": "Are you sure you want to delete this notification?"
+    "confirmDelete": "Are you sure you want to delete this notification?",
+    "genericType": "Notification",
+    "types": {
+      "BUSINESS_CONVERSATION_CREATED": "New conversation",
+      "BUSINESS_MESSAGE": "New message"
+    }
   },
   "auth": {
     "login_hero_title": "Sign in to the BX-Connect community",
@@ -1135,6 +1141,33 @@
     "descriptionPlaceholder": "Description...",
     "encodeButton": "Record service",
     "datePlaceholder": "2026-05-21"
+  },
+  "businessConversations": {
+    "title": "Business conversations",
+    "subtitle": "Direct exchanges with administration, mentors or involved partners.",
+    "loading": "Loading conversations...",
+    "loadingMessages": "Loading messages...",
+    "errorLoad": "Unable to load business conversations.",
+    "errorMessages": "Unable to load messages.",
+    "errorSend": "Unable to send the message.",
+    "emptyTitle": "No business conversation",
+    "emptyText": "Conversations opened by the administration will appear here.",
+    "unavailableTitle": "Business messaging unavailable",
+    "memberDenied": "Business messaging is reserved for administrators, mentors and partners.",
+    "noPreview": "No message yet.",
+    "noMessages": "No message in this conversation.",
+    "messagePlaceholder": "Write a message...",
+    "archivedPlaceholder": "Archived conversation",
+    "archivedNotice": "This conversation is archived. Reading remains available, but sending is blocked.",
+    "participant": "Participant",
+    "types": {
+      "ADMIN_REFERENT": "Admin ↔ Mentor",
+      "ADMIN_PARTENAIRE": "Admin ↔ Partner"
+    },
+    "status": {
+      "ACTIVE": "Active",
+      "ARCHIVED": "Archived"
+    }
   },
   "partnerInstitution": {
     "completeProfile": "Complete profile",

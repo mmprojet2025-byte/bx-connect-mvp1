@@ -118,6 +118,7 @@
     "projects": "Projets",
     "messaging": "Messagerie",
     "messages": "Messages",
+    "conversations": "Conversations",
     "notifications": "Notifications",
     "alerts": "Notifications",
     "profile": "Profil",
@@ -403,7 +404,12 @@
     "loading": "Chargement des notifications...",
     "dateNotProvided": "Date non renseignée",
     "confirmDelete": "Voulez-vous vraiment supprimer cette notification ?",
-    "unreadCount": "{{count}} non lue(s)"
+    "unreadCount": "{{count}} non lue(s)",
+    "genericType": "Notification",
+    "types": {
+      "BUSINESS_CONVERSATION_CREATED": "Nouvelle conversation",
+      "BUSINESS_MESSAGE": "Nouveau message"
+    }
   },
   "auth": {
     "login_hero_title": "Connecte-toi à la communauté BX-Connect",
@@ -1139,6 +1145,33 @@
     "descriptionPlaceholder": "Description...",
     "encodeButton": "Encoder la prestation",
     "datePlaceholder": "2026-05-21"
+  },
+  "businessConversations": {
+    "title": "Conversations métier",
+    "subtitle": "Échanges directs avec l’administration, les référents ou les partenaires concernés.",
+    "loading": "Chargement des conversations...",
+    "loadingMessages": "Chargement des messages...",
+    "errorLoad": "Impossible de charger les conversations métier.",
+    "errorMessages": "Impossible de charger les messages.",
+    "errorSend": "Impossible d’envoyer le message.",
+    "emptyTitle": "Aucune conversation métier",
+    "emptyText": "Les conversations ouvertes par l’administration apparaîtront ici.",
+    "unavailableTitle": "Messagerie métier indisponible",
+    "memberDenied": "La messagerie métier est réservée aux administrateurs, référents et partenaires.",
+    "noPreview": "Aucun message pour le moment.",
+    "noMessages": "Aucun message dans cette conversation.",
+    "messagePlaceholder": "Écrire un message...",
+    "archivedPlaceholder": "Conversation archivée",
+    "archivedNotice": "Cette conversation est archivée. La lecture reste disponible, mais l’envoi est bloqué.",
+    "participant": "Participant",
+    "types": {
+      "ADMIN_REFERENT": "Admin ↔ Référent",
+      "ADMIN_PARTENAIRE": "Admin ↔ Partenaire"
+    },
+    "status": {
+      "ACTIVE": "Active",
+      "ARCHIVED": "Archivée"
+    }
   },
   "partnerInstitution": {
     "completeProfile": "Compléter le profil",

@@ -21,6 +21,7 @@ import MemberHomeScreen    from '../screens/MemberHomeScreen';
 import ProfileScreen       from '../screens/ProfileScreen';
 import GroupesScreen       from '../screens/GroupesScreen';
 import MessagerieScreen    from '../screens/MessagerieScreen';
+import BusinessConversationsScreen from '../screens/BusinessConversationsScreen';
 import ProjectsScreen        from '../screens/ProjectsScreen';
 import NotificationsScreen   from '../screens/NotificationsScreen';
 import AdminUsersScreen      from '../screens/AdminUsersScreen';
@@ -711,6 +712,7 @@ function PrivateTabs() {
   const NetworkStack       = makeNetworkStack(communityLabels.network, roleLabel, unreadNotifications);
   const ManagementStack    = makeManagementStack(communityLabels.management, roleLabel, unreadNotifications);
   const MessagerieStack    = makeStack(MessagerieScreen, t('navigation.messaging'), roleLabel, unreadNotifications);
+  const BusinessConversationsStack = makeStack(BusinessConversationsScreen, t('navigation.conversations'), roleLabel, unreadNotifications);
   const NotificationsStack = makeStack(NotificationsScreen, t('navigation.notifications'), roleLabel, unreadNotifications);
   const ProfileStack       = makeStack(ProfileScreen, t('navigation.profile'), roleLabel, unreadNotifications);
 
@@ -730,6 +732,7 @@ function PrivateTabs() {
       NetworkStack,
       ManagementStack,
       MessagerieStack,
+      BusinessConversationsStack,
       NotificationsStack,
       ProfileStack,
     },
@@ -819,6 +822,7 @@ function getTabsForRole({ isMembre, isReferent, isAdmin, isSuperAdmin, isPartena
       tab('TabDashboard', t('navigation.home'), 'home', stacks.DashboardStack),
       tab('TabUsers', labels.management, 'shield', stacks.ManagementStack),
       tab('TabActivities', t('navigation.activities'), 'activity', stacks.ActivitiesStack),
+      tab('TabBusinessConversations', t('navigation.conversations'), 'message', stacks.BusinessConversationsStack),
       tab('TabNotifications', t('navigation.notifications'), 'bell', stacks.NotificationsStack),
       tab('TabProfile', t('navigation.profile'), 'profile', stacks.ProfileStack),
     ];
@@ -829,6 +833,7 @@ function getTabsForRole({ isMembre, isReferent, isAdmin, isSuperAdmin, isPartena
       tab('TabDashboard', t('navigation.home'), 'home', stacks.DashboardStack),
       tab('TabProjects', t('navigation.projects'), 'project', stacks.ProjectsStack),
       tab('TabActivities', t('navigation.activities'), 'activity', stacks.ActivitiesStack),
+      tab('TabBusinessConversations', t('navigation.conversations'), 'message', stacks.BusinessConversationsStack),
       tab('TabNotifications', t('navigation.notifications'), 'bell', stacks.NotificationsStack),
       tab('TabProfile', t('navigation.profile'), 'profile', stacks.ProfileStack),
       tab('TabSupports', t('partner.supports'), 'wallet', stacks.SupportsStack, true),
@@ -841,6 +846,7 @@ function getTabsForRole({ isMembre, isReferent, isAdmin, isSuperAdmin, isPartena
       tab('TabGroupes', labels.network, 'group', stacks.NetworkStack),
       tab('TabActivities', t('navigation.activities'), 'activity', stacks.ActivitiesStack),
       tab('TabMessagerie', t('navigation.messages'), 'message', stacks.MessagerieStack),
+      tab('TabBusinessConversations', t('navigation.conversations'), 'message', stacks.BusinessConversationsStack),
       tab('TabProfile', t('navigation.profile'), 'profile', stacks.ProfileStack),
       tab('TabNotifications', t('navigation.notifications'), 'bell', stacks.NotificationsStack, true),
     ];

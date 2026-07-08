@@ -98,7 +98,7 @@ export default function NotificationsScreen({ navigation }) {
       await handleMarquerLue(notification.id);
     }
 
-    const target = resolveActionTarget(notification.lienAction, {
+    const target = resolveActionTarget(notification, {
       isMembre,
       isReferent,
       isAdmin,
@@ -287,10 +287,14 @@ function typeColor(type) {
 }
 
 function formatType(type, t) {
-  return t(`notifications.types.${type}`);
+  if (!type) return t('notifications.genericType', { defaultValue: 'Notification' });
+  return t(`notifications.types.${type}`, {
+    defaultValue: t('notifications.genericType', { defaultValue: 'Notification' }),
+  });
 }
 
-function resolveActionTarget(lienAction, roles) {
+function resolveActionTarget(notification, roles) {
+  const lienAction = notification?.lienAction;
   if (!lienAction) return null;
 
   if (lienAction.startsWith('http://') || lienAction.startsWith('https://')) {
@@ -298,7 +302,15 @@ function resolveActionTarget(lienAction, roles) {
   }
 
   const path = lienAction.toLowerCase();
+  const type = String(notification?.type || '').toUpperCase();
   const availableTabs = getAvailableTabs(roles);
+
+  if (isBusinessConversationNotification(type, path) && availableTabs.has('TabBusinessConversations')) {
+    const conversationId = path.match(/\/conversations-metier\/(\d+)/)?.[1];
+    return conversationId
+      ? { tab: 'TabBusinessConversations', params: { screen: 'Main', params: { conversationId } } }
+      : { tab: 'TabBusinessConversations' };
+  }
 
   if (path.includes('/dashboard') && availableTabs.has('TabDashboard')) {
     return { tab: 'TabDashboard' };
@@ -349,10 +361,10 @@ function resolveActionTarget(lienAction, roles) {
 }
 
 function getAvailableTabs({ isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire }) {
-  if (isSuperAdmin) return new Set(['TabDashboard', 'TabUsers', 'TabNotifications', 'TabProfile']);
-  if (isAdmin) return new Set(['TabDashboard', 'TabUsers', 'TabActivities', 'TabNotifications', 'TabProfile']);
+  if (isSuperAdmin) return new Set(['TabDashboard', 'TabUsers', 'TabBusinessConversations', 'TabNotifications', 'TabProfile']);
+  if (isAdmin) return new Set(['TabDashboard', 'TabUsers', 'TabActivities', 'TabBusinessConversations', 'TabNotifications', 'TabProfile']);
   if (isPartenaire) {
-    return new Set(['TabDashboard', 'TabProjects', 'TabActivities', 'TabNotifications', 'TabProfile']);
+    return new Set(['TabDashboard', 'TabProjects', 'TabActivities', 'TabBusinessConversations', 'TabNotifications', 'TabProfile']);
   }
   if (isReferent) {
     return new Set([
@@ -360,6 +372,7 @@ function getAvailableTabs({ isMembre, isReferent, isAdmin, isSuperAdmin, isParte
       'TabGroupes',
       'TabActivities',
       'TabMessagerie',
+      'TabBusinessConversations',
       'TabNotifications',
       'TabProfile',
     ]);
@@ -375,6 +388,12 @@ function getAvailableTabs({ isMembre, isReferent, isAdmin, isSuperAdmin, isParte
     ]);
   }
   return new Set(['TabDashboard', 'TabProfile']);
+}
+
+function isBusinessConversationNotification(type, path) {
+  return type === 'BUSINESS_CONVERSATION_CREATED'
+    || type === 'BUSINESS_MESSAGE'
+    || path.includes('/conversations-metier');
 }
 
 function formatDate(dateStr, language, t) {

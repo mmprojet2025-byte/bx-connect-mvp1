@@ -118,6 +118,7 @@
     "projects": "Projecten",
     "messaging": "Berichten",
     "messages": "Berichten",
+    "conversations": "Gesprekken",
     "notifications": "Meldingen",
     "alerts": "Meldingen",
     "profile": "Profiel",
@@ -401,7 +402,12 @@
     "emptyDescriptionMobile": "Je meldingen verschijnen hier zodra een belangrijke actie je account betreft.",
     "loading": "Meldingen laden...",
     "dateNotProvided": "Datum niet ingevuld",
-    "confirmDelete": "Wil je deze melding echt verwijderen?"
+    "confirmDelete": "Wil je deze melding echt verwijderen?",
+    "genericType": "Melding",
+    "types": {
+      "BUSINESS_CONVERSATION_CREATED": "Nieuw gesprek",
+      "BUSINESS_MESSAGE": "Nieuw bericht"
+    }
   },
   "auth": {
     "login_hero_title": "Meld je aan bij de BX-Connect-community",
@@ -1135,6 +1141,33 @@
     "descriptionPlaceholder": "Beschrijving...",
     "encodeButton": "Prestatie invoeren",
     "datePlaceholder": "2026-05-21"
+  },
+  "businessConversations": {
+    "title": "Zakelijke gesprekken",
+    "subtitle": "Rechtstreekse uitwisselingen met administratie, begeleiders of betrokken partners.",
+    "loading": "Gesprekken laden...",
+    "loadingMessages": "Berichten laden...",
+    "errorLoad": "Zakelijke gesprekken kunnen niet worden geladen.",
+    "errorMessages": "Berichten kunnen niet worden geladen.",
+    "errorSend": "Het bericht kan niet worden verzonden.",
+    "emptyTitle": "Geen zakelijk gesprek",
+    "emptyText": "Gesprekken die door de administratie worden geopend, verschijnen hier.",
+    "unavailableTitle": "Zakelijke berichten niet beschikbaar",
+    "memberDenied": "Zakelijke berichten zijn voorbehouden aan beheerders, begeleiders en partners.",
+    "noPreview": "Nog geen bericht.",
+    "noMessages": "Geen bericht in dit gesprek.",
+    "messagePlaceholder": "Schrijf een bericht...",
+    "archivedPlaceholder": "Gearchiveerd gesprek",
+    "archivedNotice": "Dit gesprek is gearchiveerd. Lezen blijft mogelijk, maar verzenden is geblokkeerd.",
+    "participant": "Deelnemer",
+    "types": {
+      "ADMIN_REFERENT": "Admin ↔ Begeleider",
+      "ADMIN_PARTENAIRE": "Admin ↔ Partner"
+    },
+    "status": {
+      "ACTIVE": "Actief",
+      "ARCHIVED": "Gearchiveerd"
+    }
   },
   "partnerInstitution": {
     "completeProfile": "Profiel aanvullen",
