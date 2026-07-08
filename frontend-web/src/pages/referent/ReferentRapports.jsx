@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import * as XLSX from 'xlsx'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import api from '../../api/axios'
@@ -13,6 +12,7 @@ import ErrorState from '../../components/ui/ErrorState'
 import LoadingState from '../../components/ui/LoadingState'
 import PageHeader from '../../components/ui/PageHeader'
 import SectionCard from '../../components/ui/SectionCard'
+import { appendExcelSheet, createExcelWorkbook, saveExcelWorkbook, sanitizeExcelSheetName } from '../../utils/excelHtmlExport'
 
 const DEFAULT_FILTERS = { group: 'all', period: 'all' }
 const PRESENCE_STATUSES = ['PRESENT', 'ABSENT', 'EXCUSE', 'NON_RENSEIGNEE']
@@ -642,7 +642,7 @@ function exportReportPdf({ report, data, generatedAt, language, t }) {
 }
 
 function exportReportExcel({ report, data, generatedAt, language, t }) {
-  const workbook = XLSX.utils.book_new()
+  const workbook = createExcelWorkbook()
 
   appendSheet(workbook, t('referentReports.exports.sheets.summary'), [
     [t('referentReports.exports.reportTitle')],
@@ -701,7 +701,7 @@ function exportReportExcel({ report, data, generatedAt, language, t }) {
     ...report.limits.map(limit => [limit]),
   ])
 
-  XLSX.writeFile(workbook, buildFileName('rapport-groupe', 'xlsx', generatedAt))
+  saveExcelWorkbook(workbook, buildFileName('rapport-groupe', 'xls', generatedAt))
 }
 
 function addPdfTable(doc, startY, title, rows) {
@@ -729,12 +729,11 @@ function addPdfTable(doc, startY, title, rows) {
 }
 
 function appendSheet(workbook, sheetName, rows) {
-  const worksheet = XLSX.utils.aoa_to_sheet(rows)
-  XLSX.utils.book_append_sheet(workbook, worksheet, sanitizeSheetName(sheetName))
+  appendExcelSheet(workbook, sheetName, rows)
 }
 
 function sanitizeSheetName(name) {
-  return String(name).replace(/[\\/?*[\]:]/g, '').slice(0, 31) || 'Sheet'
+  return sanitizeExcelSheetName(name)
 }
 
 function buildFileName(prefix, extension, date) {

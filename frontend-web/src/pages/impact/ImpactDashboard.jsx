@@ -15,7 +15,6 @@ import {
 } from 'recharts'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import * as XLSX from 'xlsx'
 import api from '../../api/axios'
 import AppIcon from '../../components/ui/AppIcons'
 import Alert from '../../components/ui/Alert'
@@ -24,6 +23,7 @@ import ErrorState from '../../components/ui/ErrorState'
 import LoadingState from '../../components/ui/LoadingState'
 import CompactKpiRow from '../../components/dashboard/CompactKpiRow'
 import { CollaborativeDashboardLayout } from '../../components/dashboard/CollaborativeDashboard'
+import { appendExcelSheet, createExcelWorkbook, saveExcelWorkbook, sanitizeExcelSheetName } from '../../utils/excelHtmlExport'
 
 const CHART_COLORS = ['#2563eb', '#0f766e', '#d97706', '#7c3aed', '#dc2626', '#64748b']
 const DEFAULT_FILTERS = { period: 'all', commune: 'all', group: 'all' }
@@ -1418,7 +1418,7 @@ function exportImpactPdf({ data, impact, filterSummary, generatedAt, t, language
 }
 
 function exportImpactExcel({ data, impact, filterSummary, generatedAt, t, language }) {
-  const workbook = XLSX.utils.book_new()
+  const workbook = createExcelWorkbook()
 
   appendSheet(workbook, t('impact.exports.sheets.summary'), [
     [t('impact.exports.reportTitle')],
@@ -1554,7 +1554,7 @@ function exportImpactExcel({ data, impact, filterSummary, generatedAt, t, langua
     [t('impact.exports.partnerLimits.amounts')],
   ])
 
-  XLSX.writeFile(workbook, buildExportFileName('rapport-impact', 'xlsx', generatedAt))
+  saveExcelWorkbook(workbook, buildExportFileName('rapport-impact', 'xls', generatedAt))
 }
 
 function addPdfTable(doc, startY, title, rows) {
@@ -1765,12 +1765,11 @@ function formatReferentName(link) {
 }
 
 function appendSheet(workbook, name, rows) {
-  const sheet = XLSX.utils.aoa_to_sheet(rows)
-  XLSX.utils.book_append_sheet(workbook, sheet, sanitizeSheetName(name))
+  appendExcelSheet(workbook, name, rows)
 }
 
 function sanitizeSheetName(name) {
-  return String(name || 'Sheet').replace(/[\\/?*[\]:]/g, ' ').slice(0, 31)
+  return sanitizeExcelSheetName(name)
 }
 
 function buildExportFileName(base, extension, date) {
