@@ -46,6 +46,7 @@ const ROLE_ROUTES = {
     activity: '/referent/activites',
     project: '/referent/projets',
     message: '/referent/messagerie',
+    businessConversation: '/referent/conversations',
     request: '/referent/demandes',
   },
   ADMIN: {
@@ -54,6 +55,7 @@ const ROLE_ROUTES = {
     activity: '/admin/activites',
     project: '/admin/projets',
     support: '/admin/soutiens',
+    businessConversation: '/admin/conversations',
     request: '/admin/groupes',
   },
   PARTENAIRE: {
@@ -61,10 +63,12 @@ const ROLE_ROUTES = {
     activity: '/partenaire?tab=activites',
     project: '/partenaire?tab=projets',
     support: '/partenaire?tab=soutiens',
+    businessConversation: '/partenaire/conversations',
     request: '/partenaire?tab=dashboard',
   },
   SUPER_ADMIN: {
     dashboard: '/super-admin/dashboard',
+    businessConversation: '/admin/conversations',
   },
 }
 
@@ -78,6 +82,11 @@ export function resolveNotificationRoute(notification = {}, role = 'MEMBRE') {
 
   const exactRoute = exactRouteFromAction(actionPath, role)
   if (exactRoute) return exactRoute
+
+  if (isBusinessConversationNotification(type)) {
+    const businessRoute = businessConversationRouteForRole(role)
+    if (businessRoute) return businessRoute
+  }
 
   const rule = NOTIFICATION_KINDS.find(candidate =>
     candidate.tokens.some(token => type.includes(token))
@@ -98,6 +107,8 @@ function exactRouteFromAction(actionPath, role) {
   const routes = ROLE_ROUTES[role] || ROLE_ROUTES.MEMBRE
   const isAdmin = role === 'ADMIN'
   const isReferent = role === 'REFERENT'
+  const businessRoute = businessConversationRouteForRole(role, actionPath)
+  if (businessRoute) return businessRoute
 
   if (/\/activites\/\d+/.test(actionPath)) {
     if (isAdmin || isReferent) return routes.activity || routes.dashboard
@@ -121,4 +132,18 @@ function exactRouteFromAction(actionPath, role) {
   if (actionPath.includes('/activites') || actionPath.includes('/inscriptions')) return routes.activity || routes.dashboard
 
   return ''
+}
+
+function businessConversationRouteForRole(role, actionPath = '') {
+  const routes = ROLE_ROUTES[role] || ROLE_ROUTES.MEMBRE
+  if (!routes.businessConversation) return ''
+
+  const match = actionPath.match(/\/conversations-metier\/(\d+)/)
+  if (!match) return actionPath.includes('/conversations-metier') ? routes.businessConversation : ''
+
+  return `${routes.businessConversation}?conversationId=${match[1]}`
+}
+
+function isBusinessConversationNotification(type) {
+  return type === 'BUSINESS_CONVERSATION_CREATED' || type === 'BUSINESS_MESSAGE'
 }
