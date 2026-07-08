@@ -77,9 +77,21 @@ public class BusinessConversationService {
             SendBusinessMessageRequest request,
             String emailAuteur
     ) {
+        return envoyerMessage(conversationId, request, emailAuteur, true);
+    }
+
+    private BusinessMessageResponse envoyerMessage(
+            Long conversationId,
+            SendBusinessMessageRequest request,
+            String emailAuteur,
+            boolean notifierParticipants
+    ) {
         User auteur = chargerUtilisateurAutorise(emailAuteur);
         BusinessConversationParticipant participant = chargerParticipant(conversationId, auteur);
         BusinessConversation conversation = participant.getConversation();
+        if (conversation.getStatus() == BusinessConversationStatus.ARCHIVED) {
+            throw new AccessDeniedException("Cette conversation est archivee.");
+        }
 
         BusinessMessage message = new BusinessMessage();
         message.setConversation(conversation);
@@ -92,7 +104,9 @@ public class BusinessConversationService {
         conversation.setUpdatedAt(saved.getCreatedAt());
         conversationRepository.save(conversation);
 
-        notifierNouveauMessage(conversation, auteur);
+        if (notifierParticipants) {
+            notifierNouveauMessage(conversation, auteur);
+        }
         return BusinessMessageResponse.fromEntity(saved);
     }
 
@@ -164,7 +178,7 @@ public class BusinessConversationService {
         if (messageInitial != null) {
             SendBusinessMessageRequest messageRequest = new SendBusinessMessageRequest();
             messageRequest.setContenu(messageInitial);
-            envoyerMessage(saved.getId(), messageRequest, createur.getEmail());
+            envoyerMessage(saved.getId(), messageRequest, createur.getEmail(), false);
         }
 
         notificationService.creer(

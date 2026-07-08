@@ -4,7 +4,9 @@ import com.bxjeunes.bx_connect.dto.business.CreateBusinessConversationRequest;
 import com.bxjeunes.bx_connect.dto.business.SendBusinessMessageRequest;
 import com.bxjeunes.bx_connect.entity.BusinessConversation;
 import com.bxjeunes.bx_connect.entity.BusinessConversationParticipant;
+import com.bxjeunes.bx_connect.entity.BusinessConversationStatus;
 import com.bxjeunes.bx_connect.entity.BusinessConversationType;
+import com.bxjeunes.bx_connect.entity.BusinessMessage;
 import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.repository.BusinessConversationParticipantRepository;
@@ -31,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -158,6 +161,51 @@ class BusinessConversationServiceSecurityTest {
     }
 
     @Test
+    @DisplayName("Impossible de creer admin-referent avec un PARTENAIRE")
+    void admin_referent_refuse_partenaire() {
+        CreateBusinessConversationRequest request = new CreateBusinessConversationRequest();
+        request.setDestinataireId(partenaireA.getId());
+
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(userRepository.findById(partenaireA.getId())).thenReturn(Optional.of(partenaireA));
+
+        assertThatThrownBy(() -> service.creerConversationAdminReferent(request, admin.getEmail()))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("Destinataire");
+        verify(conversationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Impossible de creer admin-partenaire avec un REFERENT")
+    void admin_partenaire_refuse_referent() {
+        CreateBusinessConversationRequest request = new CreateBusinessConversationRequest();
+        request.setDestinataireId(referentA.getId());
+
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(userRepository.findById(referentA.getId())).thenReturn(Optional.of(referentA));
+
+        assertThatThrownBy(() -> service.creerConversationAdminPartenaire(request, admin.getEmail()))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("Destinataire");
+        verify(conversationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Impossible de creer une conversation metier avec un MEMBRE")
+    void conversation_metier_refuse_membre() {
+        CreateBusinessConversationRequest request = new CreateBusinessConversationRequest();
+        request.setDestinataireId(membre.getId());
+
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(userRepository.findById(membre.getId())).thenReturn(Optional.of(membre));
+
+        assertThatThrownBy(() -> service.creerConversationAdminReferent(request, admin.getEmail()))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("Destinataire");
+        verify(conversationRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("Non participant ne peut pas lire les messages")
     void non_participant_ne_lit_pas_messages() {
         when(userRepository.findByEmail(referentB.getEmail())).thenReturn(Optional.of(referentB));
@@ -185,6 +233,24 @@ class BusinessConversationServiceSecurityTest {
     }
 
     @Test
+    @DisplayName("Impossible d'envoyer un message dans une conversation ARCHIVED")
+    void conversation_archivee_refuse_envoi_message() {
+        conversation.setStatus(BusinessConversationStatus.ARCHIVED);
+        BusinessConversationParticipant adminParticipant = participant(conversation, admin);
+        SendBusinessMessageRequest request = new SendBusinessMessageRequest();
+        request.setContenu("Message apres archivage");
+
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(participantRepository.findByConversationIdAndUserId(100L, admin.getId()))
+                .thenReturn(Optional.of(adminParticipant));
+
+        assertThatThrownBy(() -> service.envoyerMessage(100L, request, admin.getEmail()))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("archivee");
+        verify(messageRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("lastReadAt ne modifie que le participant courant")
     void last_read_at_modifie_participant_courant_uniquement() {
         BusinessConversationParticipant adminParticipant = participant(conversation, admin);
@@ -205,6 +271,100 @@ class BusinessConversationServiceSecurityTest {
         verify(participantRepository).save(referentParticipant);
         assertThat(referentParticipant.getLastReadAt()).isNotNull();
         assertThat(adminParticipant.getLastReadAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("lastReadAt fonctionne dans une conversation ARCHIVED")
+    void last_read_at_fonctionne_conversation_archivee() {
+        conversation.setStatus(BusinessConversationStatus.ARCHIVED);
+        BusinessConversationParticipant adminParticipant = participant(conversation, admin);
+        BusinessConversationParticipant referentParticipant = participant(conversation, referentA);
+
+        when(userRepository.findByEmail(referentA.getEmail())).thenReturn(Optional.of(referentA));
+        when(participantRepository.findByConversationIdAndUserId(100L, referentA.getId()))
+                .thenReturn(Optional.of(referentParticipant));
+        when(participantRepository.findByConversationIdOrderByIdAsc(100L))
+                .thenReturn(List.of(adminParticipant, referentParticipant));
+        when(messageRepository.countUnreadForParticipant(eq(100L), eq(referentA.getId()), any()))
+                .thenReturn(0L);
+        when(messageRepository.findFirstByConversationIdOrderByCreatedAtDesc(100L))
+                .thenReturn(Optional.empty());
+
+        service.marquerLu(100L, referentA.getEmail());
+
+        verify(participantRepository).save(referentParticipant);
+        assertThat(referentParticipant.getLastReadAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Notification envoyee seulement aux autres participants")
+    void notification_message_seulement_autres_participants() {
+        BusinessConversationParticipant adminParticipant = participant(conversation, admin);
+        BusinessConversationParticipant referentParticipant = participant(conversation, referentA);
+        SendBusinessMessageRequest request = new SendBusinessMessageRequest();
+        request.setContenu("Bonjour referent");
+
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(participantRepository.findByConversationIdAndUserId(100L, admin.getId()))
+                .thenReturn(Optional.of(adminParticipant));
+        when(messageRepository.save(any(BusinessMessage.class))).thenAnswer(inv -> {
+            BusinessMessage message = inv.getArgument(0);
+            message.setId(500L);
+            message.setCreatedAt(java.time.LocalDateTime.now());
+            return message;
+        });
+        when(participantRepository.findByConversationIdOrderByIdAsc(100L))
+                .thenReturn(List.of(adminParticipant, referentParticipant));
+
+        service.envoyerMessage(100L, request, admin.getEmail());
+
+        verify(notificationService, times(1)).creer(
+                eq(referentA),
+                eq("Nouveau message"),
+                any(),
+                eq("BUSINESS_MESSAGE"),
+                eq("/conversations-metier/100")
+        );
+        verify(notificationService, never()).creer(
+                eq(admin),
+                any(),
+                any(),
+                any(),
+                any()
+        );
+    }
+
+    @Test
+    @DisplayName("Message initial ne cree pas de double notification")
+    void message_initial_ne_cree_pas_double_notification() {
+        CreateBusinessConversationRequest request = new CreateBusinessConversationRequest();
+        request.setDestinataireId(referentA.getId());
+        request.setMessageInitial("Bonjour pour commencer.");
+
+        stubCreation(admin, referentA, BusinessConversationType.ADMIN_REFERENT);
+        when(messageRepository.save(any(BusinessMessage.class))).thenAnswer(inv -> {
+            BusinessMessage message = inv.getArgument(0);
+            message.setId(501L);
+            message.setCreatedAt(java.time.LocalDateTime.now());
+            return message;
+        });
+
+        service.creerConversationAdminReferent(request, admin.getEmail());
+
+        verify(notificationService, times(1)).creer(
+                eq(referentA),
+                eq("Nouvelle conversation"),
+                any(),
+                eq("BUSINESS_CONVERSATION_CREATED"),
+                eq("/conversations-metier/100")
+        );
+        verify(notificationService, never()).creer(
+                eq(referentA),
+                eq("Nouveau message"),
+                any(),
+                eq("BUSINESS_MESSAGE"),
+                eq("/conversations-metier/100")
+        );
     }
 
     private void stubCreation(User createur, User destinataire, BusinessConversationType type) {
