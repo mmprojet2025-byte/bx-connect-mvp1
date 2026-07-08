@@ -8,19 +8,13 @@ import java.time.LocalDateTime;
 
 public class PaiementResponse {
 
-    private Long id;
     private BigDecimal montant;
     private StatutPaiement statutPaiement;
     private String fournisseur;
 
-    // PayPal
+    // URLs de redirection client uniquement.
     private String approvalUrl;
-    private String paypalPaymentId;
-
-    // Stripe
-    private String stripeSessionId;
-    private String stripePaymentIntentId;
-    private String checkoutUrl;        // URL Stripe Checkout (redirect)
+    private String checkoutUrl;
 
     // Commun
     private String message;
@@ -31,7 +25,6 @@ public class PaiementResponse {
     private Long donateurId;
     private String donateurPrenom;
     private String donateurNom;
-    private String donateurEmail;
 
     // Cible
     private Long activiteId;
@@ -42,14 +35,10 @@ public class PaiementResponse {
     // ─── Factory depuis entité ────────────────────────────────────────────────
     public static PaiementResponse fromEntity(SoutienFinancier s) {
         PaiementResponse r = new PaiementResponse();
-        r.id                    = s.getId();
         r.montant               = s.getMontant();
         r.statutPaiement        = s.getStatutPaiement();
         r.fournisseur           = s.getFournisseur();
         r.approvalUrl           = s.getApprovalUrl();
-        r.paypalPaymentId       = s.getPaypalPaymentId();
-        r.stripeSessionId       = s.getStripeSessionId();
-        r.stripePaymentIntentId = s.getStripePaymentIntentId();
         r.checkoutUrl           = s.getCheckoutUrl();
         r.message               = s.getMessage();
         r.dateCreation          = s.getDateCreation();
@@ -59,7 +48,6 @@ public class PaiementResponse {
             r.donateurId     = s.getDonateur().getId();
             r.donateurPrenom = s.getDonateur().getPrenom();
             r.donateurNom    = s.getDonateur().getNom();
-            r.donateurEmail  = s.getDonateur().getEmail();
         }
         if (s.getActivite() != null) {
             r.activiteId    = s.getActivite().getId();
@@ -73,14 +61,10 @@ public class PaiementResponse {
     }
 
     // ─── Getters ──────────────────────────────────────────────────────────────
-    public Long getId()                        { return id; }
     public BigDecimal getMontant()             { return montant; }
     public StatutPaiement getStatutPaiement()  { return statutPaiement; }
     public String getFournisseur()             { return fournisseur; }
     public String getApprovalUrl()             { return approvalUrl; }
-    public String getPaypalPaymentId()         { return paypalPaymentId; }
-    public String getStripeSessionId()         { return stripeSessionId; }
-    public String getStripePaymentIntentId()   { return stripePaymentIntentId; }
     public String getCheckoutUrl()             { return checkoutUrl; }
     public String getMessage()                 { return message; }
     public LocalDateTime getDateCreation()     { return dateCreation; }
@@ -88,7 +72,6 @@ public class PaiementResponse {
     public Long getDonateurId()                { return donateurId; }
     public String getDonateurPrenom()          { return donateurPrenom; }
     public String getDonateurNom()             { return donateurNom; }
-    public String getDonateurEmail()           { return donateurEmail; }
     public Long getActiviteId()                { return activiteId; }
     public String getActiviteTitre()           { return activiteTitre; }
     public Long getProjetId()                  { return projetId; }

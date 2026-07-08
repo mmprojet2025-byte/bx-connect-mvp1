@@ -60,13 +60,16 @@ public class StripeService {
         Activite activite = null;
         Projet projet = null;
 
+        verifierCibleUnique(request);
         if (request.getActiviteId() != null) {
             activite = activiteRepository.findById(request.getActiviteId())
                     .orElseThrow(() -> new RuntimeException("Activité introuvable"));
+            verifierActivitePayable(activite);
             description = "Soutien activité : " + activite.getTitre();
         } else if (request.getProjetId() != null) {
             projet = projetRepository.findById(request.getProjetId())
                     .orElseThrow(() -> new RuntimeException("Projet introuvable"));
+            verifierProjetPayable(projet);
             description = "Soutien projet : " + projet.getTitre();
         }
 
@@ -202,5 +205,29 @@ public class StripeService {
 
     public String getPublishableKey() {
         return publishableKey;
+    }
+
+    private void verifierCibleUnique(PaiementRequest request) {
+        boolean cibleActivite = request.getActiviteId() != null;
+        boolean cibleProjet = request.getProjetId() != null;
+        if (cibleActivite == cibleProjet) {
+            throw new AccessDeniedException("Le paiement doit cibler une seule activité ou un seul projet ouvert au soutien.");
+        }
+    }
+
+    private void verifierActivitePayable(Activite activite) {
+        if (activite.getStatut() != StatutActivite.PUBLIEE) {
+            throw new AccessDeniedException("Cette activité n'est pas ouverte au paiement.");
+        }
+    }
+
+    private void verifierProjetPayable(Projet projet) {
+        boolean statutOuvert = projet.getStatut() == StatutProjet.APPROUVE
+                || projet.getStatut() == StatutProjet.EN_COURS;
+        boolean visibiliteOuverte = projet.getVisibilite() == VisibiliteProjet.PUBLIC
+                || projet.getVisibilite() == VisibiliteProjet.PARTENAIRES;
+        if (!statutOuvert || !visibiliteOuverte) {
+            throw new AccessDeniedException("Ce projet n'est pas ouvert au paiement.");
+        }
     }
 }

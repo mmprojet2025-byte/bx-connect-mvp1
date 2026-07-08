@@ -1,6 +1,7 @@
 package com.bxjeunes.bx_connect.config;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -33,6 +34,9 @@ public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
 
+    @Value("${springdoc.api-docs.enabled:false}")
+    private boolean openApiEnabled;
+
     // ─── Routes publiques ─────────────────────────────────────────────────────
     private static final String[] PUBLIC_URLS = {
         // Auth
@@ -53,10 +57,16 @@ public class SecurityConfig {
         "/api/stripe/config",
         "/api/stripe/webhook",
 
-        // Swagger / OpenAPI
+        // Swagger / OpenAPI (autorise uniquement en dev/local via springdoc.api-docs.enabled=true)
+    };
+
+    private static final String[] SWAGGER_URLS = {
         "/swagger-ui/**",
         "/swagger-ui.html",
         "/v3/api-docs/**",
+    };
+
+    private static final String[] PUBLIC_UTILITY_URLS = {
 
         // Monitoring public minimal
         "/actuator/health",
@@ -71,21 +81,27 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.GET,
-                    "/api/activites",
-                    "/api/activites/*",
-                    "/api/activites/recherche",
-                    "/api/activites/filtrer",
-                    "/api/activites/options-filtres",
-                    "/api/projets",
-                    "/api/projets/*",
-                    "/api/projets/*/commentaires"
-                ).permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/groupes", "/api/groupes/*").permitAll()
-                .requestMatchers(PUBLIC_URLS).permitAll()
-                .anyRequest().authenticated()
-            )
+            .authorizeHttpRequests(auth -> {
+                auth.requestMatchers(HttpMethod.GET,
+                        "/api/activites",
+                        "/api/activites/*",
+                        "/api/activites/recherche",
+                        "/api/activites/filtrer",
+                        "/api/activites/options-filtres",
+                        "/api/projets",
+                        "/api/projets/*",
+                        "/api/projets/*/commentaires"
+                    ).permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/groupes", "/api/groupes/*").permitAll()
+                    .requestMatchers(PUBLIC_URLS).permitAll()
+                    .requestMatchers(PUBLIC_UTILITY_URLS).permitAll();
+
+                if (openApiEnabled) {
+                    auth.requestMatchers(SWAGGER_URLS).permitAll();
+                }
+
+                auth.anyRequest().authenticated();
+            })
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )

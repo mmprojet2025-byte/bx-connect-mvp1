@@ -42,12 +42,14 @@ public class StripeController {
         try {
             PaiementResponse response = stripeService.creerSessionCheckout(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (AccessDeniedException e) {
+            throw e;
         } catch (StripeException e) {
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                    .body(Map.of("error", "Erreur Stripe", "message", e.getMessage()));
+                    .body(Map.of("error", "Erreur Stripe", "message", "Impossible de créer la session de paiement."));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", "Erreur", "message", e.getMessage()));
+                    .body(Map.of("error", "Erreur", "message", "Paiement impossible pour cette demande."));
         }
     }
 
@@ -65,10 +67,10 @@ public class StripeController {
             throw e;
         } catch (StripeException e) {
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                    .body(Map.of("error", "Erreur Stripe", "message", e.getMessage()));
+                    .body(Map.of("error", "Erreur Stripe", "message", "Impossible de vérifier la session de paiement."));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Session introuvable", "message", e.getMessage()));
+                    .body(Map.of("error", "Session introuvable", "message", "Session de paiement introuvable."));
         }
     }
 
@@ -83,7 +85,7 @@ public class StripeController {
             stripeService.traiterWebhook(payload, sigHeader);
             return ResponseEntity.ok("Webhook traité");
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Webhook invalide");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erreur webhook");
         }

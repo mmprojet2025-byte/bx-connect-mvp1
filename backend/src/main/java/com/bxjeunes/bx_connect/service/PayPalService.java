@@ -2,16 +2,15 @@ package com.bxjeunes.bx_connect.service;
 
 import com.bxjeunes.bx_connect.dto.PaiementRequest;
 import com.bxjeunes.bx_connect.dto.PaiementResponse;
-import com.bxjeunes.bx_connect.entity.Activite;
-import com.bxjeunes.bx_connect.entity.SoutienFinancier;
-import com.bxjeunes.bx_connect.entity.StatutPaiement;
-import com.bxjeunes.bx_connect.entity.User;
+import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.ActiviteRepository;
+import com.bxjeunes.bx_connect.repository.ProjetRepository;
 import com.bxjeunes.bx_connect.repository.SoutienFinancierRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
 import com.paypal.api.payments.*;
 import com.paypal.base.rest.APIContext;
 import com.paypal.base.rest.PayPalRESTException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -29,6 +28,7 @@ public class PayPalService {
     private final SoutienFinancierRepository soutienRepo;
     private final UserRepository userRepository;
     private final ActiviteRepository activiteRepository;
+    private final ProjetRepository projetRepository;
 
     @Value("${paypal.return-url}")
     private String returnUrl;
@@ -39,11 +39,13 @@ public class PayPalService {
     public PayPalService(APIContext apiContext,
                          SoutienFinancierRepository soutienRepo,
                          UserRepository userRepository,
-                         ActiviteRepository activiteRepository) {
+                         ActiviteRepository activiteRepository,
+                         ProjetRepository projetRepository) {
         this.apiContext = apiContext;
         this.soutienRepo = soutienRepo;
         this.userRepository = userRepository;
         this.activiteRepository = activiteRepository;
+        this.projetRepository = projetRepository;
     }
 
     // ─── Créer un paiement PayPal ─────────────────────────────────────────────
@@ -54,6 +56,19 @@ public class PayPalService {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User donateur = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        Activite activite = null;
+        Projet projet = null;
+        verifierCibleUnique(request);
+        if (request.getActiviteId() != null) {
+            activite = activiteRepository.findById(request.getActiviteId())
+                    .orElseThrow(() -> new RuntimeException("Activité non trouvée"));
+            verifierActivitePayable(activite);
+        } else {
+            projet = projetRepository.findById(request.getProjetId())
+                    .orElseThrow(() -> new RuntimeException("Projet non trouvé"));
+            verifierProjetPayable(projet);
+        }
 
         // Montant formaté (2 décimales)
         String montantStr = request.getMontant()
@@ -104,11 +119,11 @@ public class PayPalService {
         soutien.setApprovalUrl(approvalUrl);
         soutien.setDonateur(donateur);
 
-        // Lier à une activité si fournie
-        if (request.getActiviteId() != null) {
-            Activite activite = activiteRepository.findById(request.getActiviteId())
-                    .orElseThrow(() -> new RuntimeException("Activité non trouvée"));
+        if (activite != null) {
             soutien.setActivite(activite);
+        }
+        if (projet != null) {
+            soutien.setProjet(projet);
         }
 
         SoutienFinancier saved = soutienRepo.save(soutien);
@@ -177,5 +192,29 @@ public class PayPalService {
                 .stream()
                 .map(PaiementResponse::fromEntity)
                 .toList();
+    }
+
+    private void verifierCibleUnique(PaiementRequest request) {
+        boolean cibleActivite = request.getActiviteId() != null;
+        boolean cibleProjet = request.getProjetId() != null;
+        if (cibleActivite == cibleProjet) {
+            throw new AccessDeniedException("Le paiement doit cibler une seule activité ou un seul projet ouvert au soutien.");
+        }
+    }
+
+    private void verifierActivitePayable(Activite activite) {
+        if (activite.getStatut() != StatutActivite.PUBLIEE) {
+            throw new AccessDeniedException("Cette activité n'est pas ouverte au paiement.");
+        }
+    }
+
+    private void verifierProjetPayable(Projet projet) {
+        boolean statutOuvert = projet.getStatut() == StatutProjet.APPROUVE
+                || projet.getStatut() == StatutProjet.EN_COURS;
+        boolean visibiliteOuverte = projet.getVisibilite() == VisibiliteProjet.PUBLIC
+                || projet.getVisibilite() == VisibiliteProjet.PARTENAIRES;
+        if (!statutOuvert || !visibiliteOuverte) {
+            throw new AccessDeniedException("Ce projet n'est pas ouvert au paiement.");
+        }
     }
 }

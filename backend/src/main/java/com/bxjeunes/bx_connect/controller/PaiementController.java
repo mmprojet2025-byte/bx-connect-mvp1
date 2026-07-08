@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,9 +38,11 @@ public class PaiementController {
         try {
             PaiementResponse response = payPalService.creerPaiement(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (AccessDeniedException e) {
+            throw e;
         } catch (PayPalRESTException e) {
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                    .body(Map.of("error", "Erreur PayPal", "message", e.getMessage()));
+                    .body(Map.of("error", "Erreur PayPal", "message", "Impossible de créer le paiement."));
         }
     }
 
@@ -55,7 +58,7 @@ public class PaiementController {
             return ResponseEntity.ok(response);
         } catch (PayPalRESTException e) {
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                    .body(Map.of("error", "Erreur confirmation PayPal", "message", e.getMessage()));
+                    .body(Map.of("error", "Erreur confirmation PayPal", "message", "Impossible de confirmer le paiement."));
         }
     }
 
