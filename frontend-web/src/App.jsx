@@ -24,6 +24,7 @@ import Profil           from './pages/profil/Profil'
 import Groupes          from './pages/groupes/Groupes'
 import GroupeEspace     from './pages/groupes/GroupeEspace'
 import Messagerie       from './pages/messagerie/Messagerie'
+import BusinessConversations from './pages/messagerie/BusinessConversations'
 
 // Pages Partenaire
 import PartenaireSpace from './pages/partenaire/PartenaireSpace'
@@ -61,6 +62,13 @@ function AdminRoute({ children }) {
   const { isAuthenticated, isAdmin, user } = useAuth()
   if (!isAuthenticated) return <Navigate to="/login" replace />
   if (!isAdmin) return <Navigate to={getDefaultRouteForRole(user?.role)} replace />
+  return children
+}
+
+function AdminOrSuperAdminRoute({ children }) {
+  const { isAuthenticated, isAdmin, isSuperAdmin, user } = useAuth()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (!isAdmin && !isSuperAdmin) return <Navigate to={getDefaultRouteForRole(user?.role)} replace />
   return children
 }
 
@@ -204,6 +212,7 @@ export default function App() {
           <Route path="/referent/activites/:id/presences" element={<ReferentRoute><PresenceSheet backTo="/referent/activites" tone="teal" /></ReferentRoute>} />
           <Route path="/referent/projets"     element={<ReferentRoute><ReferentProjets /></ReferentRoute>} />
           <Route path="/referent/messagerie"  element={<ReferentRoute><ReferentMessagerie /></ReferentRoute>} />
+          <Route path="/referent/conversations" element={<ReferentRoute><BusinessConversations mode="referent" /></ReferentRoute>} />
           <Route path="/referent/annonces"    element={<ReferentRoute><Annonces /></ReferentRoute>} />
 
           {/* MVP1.5 / masqué volontairement */}
@@ -222,6 +231,7 @@ export default function App() {
           <Route path="/admin/projets"       element={<AdminRoute><AdminProjets /></AdminRoute>} />
           <Route path="/admin/groupes"       element={<AdminRoute><AdminGroupes /></AdminRoute>} />
           <Route path="/admin/annonces"      element={<AdminRoute><Annonces /></AdminRoute>} />
+          <Route path="/admin/conversations" element={<AdminOrSuperAdminRoute><BusinessConversations mode="admin" /></AdminOrSuperAdminRoute>} />
 
           {/* MVP1.5 / masqué volontairement */}
           <Route path="/admin/soutiens" element={<MvpHiddenRoute />} />

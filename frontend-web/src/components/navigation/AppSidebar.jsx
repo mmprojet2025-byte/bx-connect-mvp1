@@ -325,6 +325,7 @@ function getMainSections(role, t) {
     return sections([
       group(t('sidebar.sections.pilotage'), [
         link(t('nav.dashboard'), '/admin/dashboard', 'Home'),
+        link(t('nav.conversations'), '/admin/conversations', 'MessagesSquare'),
         link(t('nav.notifications'), '/notifications', 'Bell'),
       ]),
     ])
@@ -349,6 +350,7 @@ function getMainSections(role, t) {
       group(t('sidebar.sections.overview'), [
         link(t('nav.dashboard'), '/referent/dashboard', 'Home'),
         link(t('nav.messaging'), '/referent/messagerie', 'MessageCircle'),
+        link(t('nav.conversations'), '/referent/conversations', 'MessagesSquare'),
       ]),
       group(t('sidebar.sections.communication'), [
         link(t('nav.notifications'), '/notifications', 'Bell'),
@@ -366,6 +368,7 @@ function getMainSections(role, t) {
         link(t('nav.logs'), '/super-admin/logs', 'ClipboardList'),
       ]),
       group(t('sidebar.sections.communication'), [
+        link(t('nav.conversations'), '/admin/conversations', 'MessagesSquare'),
         link(t('nav.notifications'), '/notifications', 'Bell'),
       ]),
     ])
