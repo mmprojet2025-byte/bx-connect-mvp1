@@ -201,6 +201,7 @@ export default function App() {
 
           {/* ── Pages Partenaire ── */}
           <Route path="/partenaire" element={<PartenaireRoute><PartenaireSpace /></PartenaireRoute>} />
+          <Route path="/partenaire/conversations" element={<PartenaireRoute><BusinessConversations mode="partenaire" /></PartenaireRoute>} />
 
           {/* ── Pages Référent ── */}
           <Route path="/referent"             element={<Navigate to="/referent/dashboard" replace />} />

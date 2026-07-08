@@ -50,13 +50,8 @@ export default function BusinessConversations({ mode = 'referent' }) {
     return recipients.filter(recipient => recipient.role === expectedRole)
   }, [form.type, recipients])
 
-  const pageTitle = mode === 'admin'
-    ? t('businessConversations.adminTitle')
-    : t('businessConversations.referentTitle')
-
-  const pageDescription = mode === 'admin'
-    ? t('businessConversations.adminDescription')
-    : t('businessConversations.referentDescription')
+  const pageTitle = t(`businessConversations.${mode}Title`)
+  const pageDescription = t(`businessConversations.${mode}Description`)
 
   useEffect(() => {
     loadConversations()
@@ -241,9 +236,7 @@ export default function BusinessConversations({ mode = 'referent' }) {
                     <EmptyState
                       icon="Inbox"
                       title={t('businessConversations.emptyTitle')}
-                      description={mode === 'admin'
-                        ? t('businessConversations.emptyDescriptionAdmin')
-                        : t('businessConversations.emptyDescriptionReferent')}
+                      description={t(`businessConversations.emptyDescription.${mode}`)}
                     />
                   </div>
                 ) : (

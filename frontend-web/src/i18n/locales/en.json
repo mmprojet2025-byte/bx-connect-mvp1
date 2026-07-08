@@ -2776,6 +2776,8 @@
     "adminDescription": "Exchange with mentors and partners already involved in your administrative follow-up.",
     "referentTitle": "Business conversations",
     "referentDescription": "Find direct conversations opened with the BX-Connect administration.",
+    "partenaireTitle": "Business conversations",
+    "partenaireDescription": "Follow conversations opened with the BX-Connect administration and reply to received messages.",
     "loading": "Loading conversations...",
     "loadingMessages": "Loading messages...",
     "errorTitle": "Unable to load business messaging",
@@ -2787,6 +2789,11 @@
     "emptyTitle": "No business conversation",
     "emptyDescriptionAdmin": "Create a conversation with a mentor or partner when follow-up needs a direct exchange.",
     "emptyDescriptionReferent": "Conversations opened by the administration will appear here.",
+    "emptyDescription": {
+      "admin": "Create a conversation with a mentor or partner when follow-up needs a direct exchange.",
+      "referent": "Conversations opened by the administration will appear here.",
+      "partenaire": "No conversation for now. An administrator can open a conversation with you."
+    },
     "selectTitle": "Select a conversation",
     "selectDescription": "Choose a conversation from the list to read messages and reply.",
     "participants": "Participants",

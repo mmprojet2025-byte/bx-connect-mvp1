@@ -340,6 +340,7 @@ function getMainSections(role, t) {
         link(t('partnerSpace.mySupports', { defaultValue: 'Mes soutiens' }), '/partenaire?tab=soutiens', 'Wallet'),
       ]),
       group(t('sidebar.sections.communication'), [
+        link(t('nav.conversations'), '/partenaire/conversations', 'MessagesSquare'),
         link(t('nav.notifications'), '/notifications', 'Bell'),
       ]),
     ])

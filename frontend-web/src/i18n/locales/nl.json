@@ -2776,6 +2776,8 @@
     "adminDescription": "Wissel uit met begeleiders en partners die al betrokken zijn bij de administratieve opvolging.",
     "referentTitle": "Zakelijke gesprekken",
     "referentDescription": "Bekijk de rechtstreekse gesprekken die door de BX-Connect administratie zijn geopend.",
+    "partenaireTitle": "Zakelijke gesprekken",
+    "partenaireDescription": "Volg gesprekken die door de BX-Connect administratie zijn geopend en beantwoord ontvangen berichten.",
     "loading": "Gesprekken laden...",
     "loadingMessages": "Berichten laden...",
     "errorTitle": "Zakelijke berichten kunnen niet worden geladen",
@@ -2787,6 +2789,11 @@
     "emptyTitle": "Geen zakelijk gesprek",
     "emptyDescriptionAdmin": "Maak een gesprek met een begeleider of partner wanneer opvolging rechtstreeks overleg vraagt.",
     "emptyDescriptionReferent": "Gesprekken die door de administratie worden geopend, verschijnen hier.",
+    "emptyDescription": {
+      "admin": "Maak een gesprek met een begeleider of partner wanneer opvolging rechtstreeks overleg vraagt.",
+      "referent": "Gesprekken die door de administratie worden geopend, verschijnen hier.",
+      "partenaire": "Nog geen gesprek. Een beheerder kan een gesprek met u openen."
+    },
     "selectTitle": "Selecteer een gesprek",
     "selectDescription": "Kies een gesprek in de lijst om berichten te lezen en te antwoorden.",
     "participants": "Deelnemers",

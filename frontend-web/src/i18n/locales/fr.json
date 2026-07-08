@@ -2776,6 +2776,8 @@
     "adminDescription": "Échangez avec les référents et partenaires déjà liés à votre suivi administratif.",
     "referentTitle": "Conversations métier",
     "referentDescription": "Retrouvez les échanges directs ouverts avec l’administration BX-Connect.",
+    "partenaireTitle": "Conversations métier",
+    "partenaireDescription": "Suivez les échanges ouverts avec l’administration BX-Connect et répondez aux messages reçus.",
     "loading": "Chargement des conversations...",
     "loadingMessages": "Chargement des messages...",
     "errorTitle": "Impossible de charger la messagerie métier",
@@ -2787,6 +2789,11 @@
     "emptyTitle": "Aucune conversation métier",
     "emptyDescriptionAdmin": "Créez une conversation avec un référent ou un partenaire lorsque le suivi nécessite un échange direct.",
     "emptyDescriptionReferent": "Les conversations ouvertes par l’administration apparaîtront ici.",
+    "emptyDescription": {
+      "admin": "Créez une conversation avec un référent ou un partenaire lorsque le suivi nécessite un échange direct.",
+      "referent": "Les conversations ouvertes par l’administration apparaîtront ici.",
+      "partenaire": "Aucune conversation pour le moment. Un administrateur peut ouvrir une conversation avec vous."
+    },
     "selectTitle": "Sélectionnez une conversation",
     "selectDescription": "Choisissez une conversation dans la liste pour lire les messages et répondre.",
     "participants": "Participants",
