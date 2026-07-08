@@ -1,5 +1,6 @@
 package com.bxjeunes.bx_connect.config;
 
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -7,11 +8,18 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private final Environment environment;
+
+    public GlobalExceptionHandler(Environment environment) {
+        this.environment = environment;
+    }
 
     // ─── Ressource introuvable (404) ─────────────────────────────────────────
     // Toute RuntimeException dont le message contient "introuvable" → 404
@@ -28,7 +36,7 @@ public class GlobalExceptionHandler {
         error.put("timestamp", LocalDateTime.now().toString());
         error.put("status", status.value());
         error.put("error", isNotFound ? "Not Found" : "Bad Request");
-        error.put("message", message);
+        error.put("message", publicRuntimeMessage(message, isNotFound));
         return ResponseEntity.status(status).body(error);
     }
 
@@ -70,5 +78,20 @@ public class GlobalExceptionHandler {
         error.put("error", "Internal Server Error");
         error.put("message", "Une erreur inattendue est survenue.");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
+
+    private String publicRuntimeMessage(String devMessage, boolean isNotFound) {
+        if (isRelaxedProfile()) {
+            return devMessage;
+        }
+        return isNotFound ? "Ressource introuvable." : "La demande est invalide.";
+    }
+
+    private boolean isRelaxedProfile() {
+        String[] profiles = environment.getActiveProfiles().length > 0
+                ? environment.getActiveProfiles()
+                : environment.getDefaultProfiles();
+        return Arrays.stream(profiles)
+                .anyMatch(profile -> profile.equals("dev") || profile.equals("local") || profile.equals("test"));
     }
 }
