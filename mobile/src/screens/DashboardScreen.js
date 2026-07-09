@@ -6,6 +6,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import { getRecentNotifications } from '../api/notifications';
 import AppIcon from '../components/AppIcon';
 import { ActionCard, Avatar, COLORS, StatCard } from '../components/MobileUI';
 import { trackDashboardView } from '../services/analytics';
@@ -71,7 +72,7 @@ export default function DashboardScreen({ navigation }) {
       const results = await Promise.allSettled([
         api.get('/referent/dashboard'),
         api.get('/referent/groupes'),
-        api.get('/notifications'),
+        getRecentNotifications(3),
       ]);
       const [dashboardRes, groupesRes, notificationsRes] = results;
       if (allRejected(results)) {
@@ -83,7 +84,7 @@ export default function DashboardScreen({ navigation }) {
       setReferentDashboard({
         ...settledData(dashboardRes, {}),
         groupes,
-        notifications: settledData(notificationsRes, []),
+        notifications: settledArray(notificationsRes),
         demandesAdhesion,
       });
       if (results.some(result => result.status === 'rejected')) {
@@ -919,6 +920,10 @@ function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, d
 
 function settledData(result, fallback) {
   return result.status === 'fulfilled' ? (result.value.data ?? fallback) : fallback;
+}
+
+function settledArray(result) {
+  return result.status === 'fulfilled' && Array.isArray(result.value) ? result.value : [];
 }
 
 async function chargerDemandesAdhesionReferent(groupes) {

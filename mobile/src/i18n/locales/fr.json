@@ -402,6 +402,7 @@
     "emptyShort": "Aucune notification",
     "emptyDescriptionMobile": "Vos notifications apparaîtront ici dès qu’une action importante concerne votre compte.",
     "loading": "Chargement des notifications...",
+    "loadMore": "Charger plus",
     "dateNotProvided": "Date non renseignée",
     "confirmDelete": "Voulez-vous vraiment supprimer cette notification ?",
     "unreadCount": "{{count}} non lue(s)",

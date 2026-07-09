@@ -401,6 +401,7 @@
     "emptyShort": "Geen meldingen",
     "emptyDescriptionMobile": "Je meldingen verschijnen hier zodra een belangrijke actie je account betreft.",
     "loading": "Meldingen laden...",
+    "loadMore": "Meer laden",
     "dateNotProvided": "Datum niet ingevuld",
     "confirmDelete": "Wil je deze melding echt verwijderen?",
     "genericType": "Melding",

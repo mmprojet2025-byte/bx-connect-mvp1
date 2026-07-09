@@ -5,7 +5,13 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import api from '../api/axios';
+import {
+  deleteNotification,
+  getNotificationsPage,
+  getUnreadCount,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from '../api/notifications';
 import AppIcon from '../components/AppIcon';
 import {
   EmptyState as SharedEmptyState,
@@ -13,41 +19,75 @@ import {
   LoadingState,
 } from '../components/MobileUI';
 
+const NOTIFICATIONS_PAGE_SIZE = 20;
+
 export default function NotificationsScreen({ navigation }) {
   const { t, i18n } = useTranslation();
   const { isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [pagination, setPagination] = useState({
+    page: 0,
+    size: NOTIFICATIONS_PAGE_SIZE,
+    totalElements: 0,
+    totalPages: 0,
+    last: true,
+  });
 
   useEffect(() => {
     fetchNotifications();
   }, []);
 
-  const fetchNotifications = async () => {
-    setLoading(true);
+  const fetchNotifications = async (page = 0, append = false) => {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
     setError('');
     setMessage('');
     try {
-      const res = await api.get('/notifications');
-      setNotifications(res.data);
+      const [pageData, count] = await Promise.all([
+        getNotificationsPage(page, NOTIFICATIONS_PAGE_SIZE),
+        getUnreadCount(),
+      ]);
+      setNotifications(prev => append ? mergeNotifications(prev, pageData.content) : pageData.content);
+      setUnreadCount(count);
+      setPagination({
+        page: pageData.page,
+        size: pageData.size,
+        totalElements: pageData.totalElements,
+        totalPages: pageData.totalPages,
+        last: pageData.last,
+      });
     } catch (err) {
-      setNotifications([]);
+      if (!append) setNotifications([]);
       setError(getApiError(err, t, t('notifications.errorLoad')));
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (!loadingMore && !pagination.last) {
+      fetchNotifications(pagination.page + 1, true);
     }
   };
 
   const handleMarquerLue = async (id) => {
     setError('');
     try {
-      await api.patch(`/notifications/${id}/lue`);
+      const wasUnread = notifications.some(n => n.id === id && !n.lue);
+      await markNotificationRead(id);
       setNotifications(prev =>
         prev.map(n => n.id === id ? { ...n, lue: true } : n)
       );
+      if (wasUnread) {
+        setUnreadCount(prev => Math.max(prev - 1, 0));
+      }
     } catch (err) {
       setError(getApiError(err, t, t('notifications.errorMarkAsRead')));
     }
@@ -58,9 +98,11 @@ export default function NotificationsScreen({ navigation }) {
     setError('');
     setMessage('');
     try {
-      await api.patch('/notifications/toutes-lues');
+      await markAllNotificationsRead();
       setNotifications(prev => prev.map(n => ({ ...n, lue: true })));
+      setUnreadCount(0);
       setMessage(t('notifications.allMarkedAsRead'));
+      fetchNotifications(0, false);
     } catch (err) {
       setError(getApiError(err, t, t('notifications.errorMarkAllAsRead')));
     } finally {
@@ -86,10 +128,24 @@ export default function NotificationsScreen({ navigation }) {
   const supprimerNotification = async (id) => {
     setError('');
     try {
-      await api.delete(`/notifications/${id}`);
+      const wasUnread = notifications.some(n => n.id === id && !n.lue);
+      await deleteNotification(id);
       setNotifications(prev => prev.filter(n => n.id !== id));
+      if (wasUnread) {
+        setUnreadCount(prev => Math.max(prev - 1, 0));
+      } else {
+        refreshUnreadCount();
+      }
     } catch (err) {
       setError(getApiError(err, t, t('notifications.errorDelete')));
+    }
+  };
+
+  const refreshUnreadCount = async () => {
+    try {
+      setUnreadCount(await getUnreadCount());
+    } catch {
+      // Le compteur n'est pas bloquant pour l'affichage de la liste.
     }
   };
 
@@ -118,8 +174,6 @@ export default function NotificationsScreen({ navigation }) {
 
     navigation.getParent()?.navigate(target.tab, target.params);
   };
-
-  const nonLues = notifications.filter(n => !n.lue).length;
 
   const renderNotification = ({ item }) => (
     <TouchableOpacity
@@ -183,14 +237,14 @@ export default function NotificationsScreen({ navigation }) {
         <View>
           <Text style={styles.headerTitle}>{t('notifications.title')}</Text>
           <Text style={styles.headerSub}>
-            {nonLues > 0 ? t('notifications.unreadCount', { count: nonLues }) : t('notifications.allCaughtUp')}
+            {unreadCount > 0 ? t('notifications.unreadCount', { count: unreadCount }) : t('notifications.allCaughtUp')}
           </Text>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.btnLight} onPress={fetchNotifications}>
+          <TouchableOpacity style={styles.btnLight} onPress={() => fetchNotifications(0, false)}>
             <Text style={styles.btnLightText}>{t('common.retry')}</Text>
           </TouchableOpacity>
-          {nonLues > 0 && (
+          {unreadCount > 0 && (
             <TouchableOpacity
               style={[styles.btnToutesLues, actionLoading && styles.btnDisabled]}
               onPress={handleMarquerToutesLues}
@@ -224,7 +278,7 @@ export default function NotificationsScreen({ navigation }) {
           title={t('common.loadErrorTitle')}
           text={error || t('common.loadErrorDescription')}
           retryLabel={t('common.retry')}
-          onRetry={fetchNotifications}
+          onRetry={() => fetchNotifications(0, false)}
         />
       ) : notifications.length === 0 ? (
         <SharedEmptyState
@@ -233,21 +287,43 @@ export default function NotificationsScreen({ navigation }) {
           title={t('notifications.emptyShort')}
           text={t('notifications.emptyDescriptionMobile')}
           actionLabel={t('common.retry')}
-          onAction={fetchNotifications}
+          onAction={() => fetchNotifications(0, false)}
         />
       ) : (
         <FlatList
           data={notifications}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderNotification}
+          ListFooterComponent={!pagination.last ? (
+            <TouchableOpacity
+              style={[styles.loadMoreButton, loadingMore && styles.btnDisabled]}
+              onPress={handleLoadMore}
+              disabled={loadingMore}
+            >
+              {loadingMore ? (
+                <ActivityIndicator color="#38BDF8" size="small" />
+              ) : (
+                <>
+                  <AppIcon name="chevron-down" size={16} color="#38BDF8" />
+                  <Text style={styles.loadMoreText}>{t('notifications.loadMore')}</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          ) : null}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          onRefresh={fetchNotifications}
+          onRefresh={() => fetchNotifications(0, false)}
           refreshing={false}
         />
       )}
     </View>
   );
+}
+
+function mergeNotifications(current, next) {
+  const byId = new Map(current.map(notification => [notification.id, notification]));
+  next.forEach(notification => byId.set(notification.id, notification));
+  return Array.from(byId.values());
 }
 
 function typeIcon(type) {
@@ -557,6 +633,26 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     borderRadius: 18,
     backgroundColor: '#fef2f2',
+  },
+  loadMoreButton: {
+    alignSelf: 'center',
+    minHeight: 42,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 22,
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    marginTop: 4,
+  },
+  loadMoreText: {
+    color: '#38BDF8',
+    fontSize: 12,
+    fontWeight: '900',
   },
 
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },

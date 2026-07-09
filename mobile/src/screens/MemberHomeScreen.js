@@ -11,6 +11,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import { getRecentNotifications } from '../api/notifications';
 import AppIcon from '../components/AppIcon';
 import { Badge, COLORS, SHADOWS } from '../components/MobileUI';
 
@@ -41,7 +42,7 @@ export default function MemberHomeScreen({ navigation }) {
       api.get('/annonces/mes-annonces'),
       api.get('/groupes/mes-adhesions'),
       api.get('/messagerie/mon-groupe'),
-      api.get('/notifications'),
+      getRecentNotifications(3),
     ]);
 
     setActivities(settledList(results[0]));
@@ -49,7 +50,7 @@ export default function MemberHomeScreen({ navigation }) {
     setAnnouncements(settledList(results[2]));
     setMemberships(settledList(results[3]));
     setMessageGroup(results[4].status === 'fulfilled' ? results[4].value.data : null);
-    setNotifications(settledList(results[5]));
+    setNotifications(results[5].status === 'fulfilled' && Array.isArray(results[5].value) ? results[5].value : []);
     setRefreshing(false);
   }, []);
 

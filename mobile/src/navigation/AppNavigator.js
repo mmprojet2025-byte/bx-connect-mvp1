@@ -7,6 +7,7 @@ import { ActivityIndicator, View, TouchableOpacity, Text, ScrollView } from 'rea
 import { useTranslation } from 'react-i18next';
 import AppIcon from '../components/AppIcon';
 import api from '../api/axios';
+import { getUnreadCount } from '../api/notifications';
 
 // ─── Écrans publics ───────────────────────────────────────────────────────────
 import HomeScreen          from '../screens/HomeScreen';
@@ -677,11 +678,10 @@ function PrivateTabs() {
 
   useEffect(() => {
     let cancelled = false;
-    api.get('/notifications')
-      .then((res) => {
+    getUnreadCount()
+      .then((count) => {
         if (!cancelled) {
-          const unread = (res.data || []).filter((notification) => !notification.lue).length;
-          setUnreadNotifications(unread);
+          setUnreadNotifications(count);
         }
       })
       .catch(() => {
