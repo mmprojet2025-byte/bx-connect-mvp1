@@ -18,6 +18,8 @@ public interface GroupeRepository extends JpaRepository<Groupe, Long> {
     // Groupes validés + recherche par nom
     List<Groupe> findByStatutAndNomContainingIgnoreCase(StatutGroupe statut, String nom);
 
+    Page<Groupe> findByStatutAndNomContainingIgnoreCase(StatutGroupe statut, String nom, Pageable pageable);
+
     // Groupes d'un référent
     List<Groupe> findByReferentId(Long referentId);
 

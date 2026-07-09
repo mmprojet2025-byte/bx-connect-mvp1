@@ -32,6 +32,14 @@ public class GroupeController {
         return ResponseEntity.ok(groupeService.listerGroupes());
     }
 
+    @GetMapping("/page")
+    public ResponseEntity<PagedResponse<GroupeResponse>> listerGroupesPage(
+            @RequestParam(required = false) String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(groupeService.listerGroupesPage(q, page, size));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<GroupeResponse> getGroupe(@PathVariable Long id) {
         return ResponseEntity.ok(groupeService.getGroupe(id));

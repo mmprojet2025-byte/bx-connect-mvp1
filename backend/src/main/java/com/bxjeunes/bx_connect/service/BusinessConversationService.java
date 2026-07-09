@@ -60,6 +60,20 @@ public class BusinessConversationService {
                 .toList();
     }
 
+    public PagedResponse<BusinessConversationResponse> listerMesConversationsPage(
+            String emailUtilisateur,
+            int page,
+            int size
+    ) {
+        User utilisateur = chargerUtilisateurAutorise(emailUtilisateur);
+        return PagedResponse.fromPage(conversationRepository
+                .findVisibleForUser(
+                        utilisateur.getId(),
+                        PaginationUtils.pageRequest(page, size, Sort.unsorted())
+                )
+                .map(conversation -> toResponse(conversation, utilisateur)));
+    }
+
     public BusinessConversationResponse getConversation(Long conversationId, String emailUtilisateur) {
         User utilisateur = chargerUtilisateurAutorise(emailUtilisateur);
         BusinessConversationParticipant participant = chargerParticipant(conversationId, utilisateur);

@@ -90,7 +90,8 @@ public class SecurityConfig {
                         "/api/activites/options-filtres",
                         "/api/projets",
                         "/api/projets/*",
-                        "/api/projets/*/commentaires"
+                        "/api/projets/*/commentaires",
+                        "/api/projets/*/commentaires/page"
                     ).permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/groupes", "/api/groupes/*").permitAll()
                     .requestMatchers(PUBLIC_URLS).permitAll()

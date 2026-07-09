@@ -89,6 +89,15 @@ public class PartenaireController {
         return ResponseEntity.ok(partenaireService.mesSoutiens(auth.getName()));
     }
 
+    @GetMapping("/mes-soutiens/page")
+    @PreAuthorize("hasRole('PARTENAIRE')")
+    public ResponseEntity<PagedResponse<SoutienResponse>> mesSoutiensPage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            Authentication auth) {
+        return ResponseEntity.ok(partenaireService.mesSoutiensPage(auth.getName(), page, size));
+    }
+
     @PutMapping("/mes-soutiens/{id}")
     @PreAuthorize("hasRole('PARTENAIRE')")
     public ResponseEntity<SoutienResponse> modifierSoutien(

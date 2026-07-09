@@ -56,6 +56,18 @@ public class GroupeService {
                 .stream().map(GroupeResponse::fromEntity).collect(Collectors.toList());
     }
 
+    public PagedResponse<GroupeResponse> listerGroupesPage(String nom, int page, int size) {
+        var pageable = PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation"));
+        if (nom != null && !nom.isBlank()) {
+            return PagedResponse.fromPage(groupeRepository
+                    .findByStatutAndNomContainingIgnoreCase(StatutGroupe.VALIDE, nom, pageable)
+                    .map(GroupeResponse::fromEntity));
+        }
+        return PagedResponse.fromPage(groupeRepository
+                .findByStatut(StatutGroupe.VALIDE, pageable)
+                .map(GroupeResponse::fromEntity));
+    }
+
     public GroupeResponse getGroupe(Long id) {
         Groupe groupe = groupeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + id));

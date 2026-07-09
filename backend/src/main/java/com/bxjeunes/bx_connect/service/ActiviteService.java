@@ -3,6 +3,7 @@ package com.bxjeunes.bx_connect.service;
 import com.bxjeunes.bx_connect.dto.ActiviteFiltreRequest;
 import com.bxjeunes.bx_connect.dto.ActiviteRequest;
 import com.bxjeunes.bx_connect.dto.ActiviteResponse;
+import com.bxjeunes.bx_connect.dto.PagedResponse;
 import com.bxjeunes.bx_connect.entity.Activite;
 import com.bxjeunes.bx_connect.entity.Inscription;
 import com.bxjeunes.bx_connect.entity.Role;
@@ -12,8 +13,10 @@ import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.repository.ActiviteRepository;
 import com.bxjeunes.bx_connect.repository.InscriptionRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
+import com.bxjeunes.bx_connect.util.PaginationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -85,12 +88,27 @@ public class ActiviteService {
                 .collect(Collectors.toList());
     }
 
+    public PagedResponse<ActiviteResponse> listerPublieesPage(String emailUtilisateur, int page, int size) {
+        return PagedResponse.fromPage(activiteRepository
+                .findByStatut(
+                        StatutActivite.PUBLIEE,
+                        PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation"))
+                )
+                .map(activite -> toResponse(activite, emailUtilisateur)));
+    }
+
     // ─── Lister toutes les activités (admin/référent) ─────────────────────────
     public List<ActiviteResponse> listerToutes() {
         return activiteRepository.findAll()
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    public PagedResponse<ActiviteResponse> listerToutesPage(int page, int size) {
+        return PagedResponse.fromPage(activiteRepository
+                .findAll(PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation")))
+                .map(this::toResponse));
     }
 
     // ─── Détail d'une activité (V04) ──────────────────────────────────────────

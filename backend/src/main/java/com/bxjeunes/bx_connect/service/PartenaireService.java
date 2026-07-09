@@ -167,6 +167,19 @@ public class PartenaireService {
                 .collect(Collectors.toList());
     }
 
+    public PagedResponse<SoutienResponse> mesSoutiensPage(String emailPartenaire, int page, int size) {
+        User partenaire = userRepository.findByEmail(emailPartenaire)
+                .filter(user -> user.getRole() == Role.PARTENAIRE)
+                .orElseThrow(() -> new RuntimeException("Partenaire introuvable"));
+
+        return PagedResponse.fromPage(soutienRepository
+                .findByDonateurId(
+                        partenaire.getId(),
+                        PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation"))
+                )
+                .map(SoutienResponse::fromEntity));
+    }
+
     public SoutienResponse modifierSoutien(Long soutienId, SoutienRequest request, String emailPartenaire) {
         SoutienFinancier soutien = chargerSoutienEditable(soutienId, emailPartenaire);
         User partenaire = soutien.getDonateur();

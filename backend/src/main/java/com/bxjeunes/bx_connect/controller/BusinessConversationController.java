@@ -32,6 +32,15 @@ public class BusinessConversationController {
                 businessConversationService.listerMesConversations(authentication.getName()));
     }
 
+    @GetMapping("/page")
+    public ResponseEntity<PagedResponse<BusinessConversationResponse>> listerPage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            Authentication authentication) {
+        return ResponseEntity.ok(
+                businessConversationService.listerMesConversationsPage(authentication.getName(), page, size));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<BusinessConversationResponse> detail(
             @PathVariable Long id,

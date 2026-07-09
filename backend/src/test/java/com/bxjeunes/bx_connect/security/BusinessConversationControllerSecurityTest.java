@@ -42,6 +42,8 @@ class BusinessConversationControllerSecurityTest {
     void membre_interdit_partout() throws Exception {
         mockMvc.perform(get("/api/conversations-metier"))
                 .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/conversations-metier/page"))
+                .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/conversations-metier/1"))
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/conversations-metier/1/messages"))

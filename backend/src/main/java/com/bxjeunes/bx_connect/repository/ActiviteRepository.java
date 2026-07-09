@@ -2,6 +2,8 @@ package com.bxjeunes.bx_connect.repository;
 
 import com.bxjeunes.bx_connect.entity.Activite;
 import com.bxjeunes.bx_connect.entity.StatutActivite;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,6 +17,8 @@ public interface ActiviteRepository extends JpaRepository<Activite, Long> {
 
     // ─── Lister par statut ────────────────────────────────────────────────────
     List<Activite> findByStatut(StatutActivite statut);
+
+    Page<Activite> findByStatut(StatutActivite statut, Pageable pageable);
 
     // ─── Filtres visiteur (V03) ───────────────────────────────────────────────
     List<Activite> findByStatutAndCategorie(StatutActivite statut, String categorie);

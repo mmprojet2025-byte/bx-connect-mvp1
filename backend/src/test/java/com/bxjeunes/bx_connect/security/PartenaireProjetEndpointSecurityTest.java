@@ -62,6 +62,22 @@ class PartenaireProjetEndpointSecurityTest {
     }
 
     @Test
+    @WithMockUser(roles = "PARTENAIRE")
+    @DisplayName("PARTENAIRE peut appeler ses soutiens pagines")
+    void partenaire_peut_appeler_mes_soutiens_pages() throws Exception {
+        mockMvc.perform(get("/api/partenaire/mes-soutiens/page"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "MEMBRE")
+    @DisplayName("MEMBRE ne peut pas appeler les soutiens partenaire pagines")
+    void membre_ne_peut_pas_appeler_mes_soutiens_pages() throws Exception {
+        mockMvc.perform(get("/api/partenaire/mes-soutiens/page"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @WithMockUser(roles = "ADMIN")
     @DisplayName("ADMIN peut appeler les soutiens admin pagines")
     void admin_peut_appeler_soutiens_admin_pages() throws Exception {

@@ -83,6 +83,44 @@ class BusinessConversationServiceSecurityTest {
     }
 
     @Test
+    @DisplayName("MEMBRE est refuse par la liste paginee")
+    void membre_interdit_liste_pagee() {
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+
+        assertThatThrownBy(() -> service.listerMesConversationsPage(membre.getEmail(), 0, 20))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("reservee");
+        verify(conversationRepository, never()).findVisibleForUser(any(), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("Liste paginee limitee a l'utilisateur participant")
+    void liste_pagee_limitee_utilisateur_participant() {
+        when(userRepository.findByEmail(referentA.getEmail())).thenReturn(Optional.of(referentA));
+        when(conversationRepository.findVisibleForUser(eq(referentA.getId()), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(
+                        List.of(conversation),
+                        org.springframework.data.domain.PageRequest.of(0, 100),
+                        1));
+        when(participantRepository.findByConversationIdAndUserId(100L, referentA.getId()))
+                .thenReturn(Optional.of(participant(conversation, referentA)));
+        when(participantRepository.findByConversationIdOrderByIdAsc(100L))
+                .thenReturn(List.of(participant(conversation, admin), participant(conversation, referentA)));
+        when(messageRepository.findFirstByConversationIdOrderByCreatedAtDesc(100L))
+                .thenReturn(Optional.empty());
+        when(messageRepository.countUnreadForParticipant(100L, referentA.getId(), null))
+                .thenReturn(0L);
+
+        var response = service.listerMesConversationsPage(referentA.getEmail(), -1, 500);
+
+        assertThat(response.content()).hasSize(1);
+        assertThat(response.page()).isZero();
+        assertThat(response.size()).isEqualTo(100);
+        verify(conversationRepository).findVisibleForUser(eq(referentA.getId()), any(Pageable.class));
+        verify(conversationRepository, never()).findAll();
+    }
+
+    @Test
     @DisplayName("REFERENT ne voit pas une conversation d'un autre REFERENT")
     void referent_ne_voit_pas_conversation_autre_referent() {
         when(userRepository.findByEmail(referentB.getEmail())).thenReturn(Optional.of(referentB));

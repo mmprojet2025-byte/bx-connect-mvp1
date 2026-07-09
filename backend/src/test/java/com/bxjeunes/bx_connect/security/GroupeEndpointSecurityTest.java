@@ -29,6 +29,13 @@ class GroupeEndpointSecurityTest {
     @MockitoBean private UserDetailsService userDetailsService;
 
     @Test
+    @DisplayName("Visiteur peut appeler les groupes publics pagines")
+    void visiteur_peut_appeler_groupes_publics_pages() throws Exception {
+        mockMvc.perform(get("/api/groupes/page"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     @DisplayName("L'acces public aux membres d'un groupe est refuse")
     void acces_public_refuse_aux_membres_du_groupe() throws Exception {
         mockMvc.perform(get("/api/groupes/1/membres"))

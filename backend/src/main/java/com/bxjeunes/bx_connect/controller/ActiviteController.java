@@ -3,6 +3,7 @@ package com.bxjeunes.bx_connect.controller;
 import com.bxjeunes.bx_connect.dto.ActiviteFiltreRequest;
 import com.bxjeunes.bx_connect.dto.ActiviteRequest;
 import com.bxjeunes.bx_connect.dto.ActiviteResponse;
+import com.bxjeunes.bx_connect.dto.PagedResponse;
 import com.bxjeunes.bx_connect.dto.PresenceBulkRequest;
 import com.bxjeunes.bx_connect.dto.PresenceRequest;
 import com.bxjeunes.bx_connect.dto.PresenceResponse;
@@ -36,6 +37,14 @@ public class ActiviteController {
     @GetMapping
     public ResponseEntity<List<ActiviteResponse>> listerPubliees(Authentication authentication) {
         return ResponseEntity.ok(activiteService.listerPubliees(emailConnecte(authentication)));
+    }
+
+    @GetMapping("/page")
+    public ResponseEntity<PagedResponse<ActiviteResponse>> listerPublieesPage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            Authentication authentication) {
+        return ResponseEntity.ok(activiteService.listerPublieesPage(emailConnecte(authentication), page, size));
     }
 
     // ─── PUBLIC : Détail d'une activité (V04) ────────────────────────────────
@@ -91,6 +100,14 @@ public class ActiviteController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ActiviteResponse>> listerToutes() {
         return ResponseEntity.ok(activiteService.listerToutes());
+    }
+
+    @GetMapping("/admin/toutes/page")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<PagedResponse<ActiviteResponse>> listerToutesPage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return ResponseEntity.ok(activiteService.listerToutesPage(page, size));
     }
 
     // ─── REFERENT : Mes activités créées ─────────────────────────────────────

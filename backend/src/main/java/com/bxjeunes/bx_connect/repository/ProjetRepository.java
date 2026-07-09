@@ -6,6 +6,8 @@ import com.bxjeunes.bx_connect.entity.VisibiliteProjet;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -20,9 +22,19 @@ public interface ProjetRepository extends JpaRepository<Projet, Long> {
             List<StatutProjet> statuts,
             VisibiliteProjet visibilite);
 
+    Page<Projet> findByStatutInAndVisibilite(
+            List<StatutProjet> statuts,
+            VisibiliteProjet visibilite,
+            Pageable pageable);
+
     List<Projet> findByStatutInAndVisibiliteIn(
             List<StatutProjet> statuts,
             List<VisibiliteProjet> visibilites);
+
+    Page<Projet> findByStatutInAndVisibiliteIn(
+            List<StatutProjet> statuts,
+            List<VisibiliteProjet> visibilites,
+            Pageable pageable);
 
     // Projets d'un porteur
     List<Projet> findByPorteurId(Long porteurId);
@@ -40,4 +52,70 @@ public interface ProjetRepository extends JpaRepository<Projet, Long> {
 
     // Recherche par mot-clé dans le titre
     List<Projet> findByTitreContainingIgnoreCaseAndStatutIn(String titre, List<StatutProjet> statuts);
+
+    @Query(
+            value = """
+                    SELECT p
+                    FROM Projet p
+                    WHERE p.porteur.id = :userId
+                       OR (:groupeId IS NOT NULL AND p.visibilite = :visibiliteGroupe AND p.groupe.id = :groupeId)
+                       OR (p.statut IN :statutsDiffusables AND p.visibilite IN :visibilitesDiffusables)
+                    """,
+            countQuery = """
+                    SELECT COUNT(p)
+                    FROM Projet p
+                    WHERE p.porteur.id = :userId
+                       OR (:groupeId IS NOT NULL AND p.visibilite = :visibiliteGroupe AND p.groupe.id = :groupeId)
+                       OR (p.statut IN :statutsDiffusables AND p.visibilite IN :visibilitesDiffusables)
+                    """
+    )
+    Page<Projet> findVisibleForMembre(
+            @Param("userId") Long userId,
+            @Param("groupeId") Long groupeId,
+            @Param("visibiliteGroupe") VisibiliteProjet visibiliteGroupe,
+            @Param("statutsDiffusables") List<StatutProjet> statutsDiffusables,
+            @Param("visibilitesDiffusables") List<VisibiliteProjet> visibilitesDiffusables,
+            Pageable pageable);
+
+    @Query(
+            value = """
+                    SELECT p
+                    FROM Projet p
+                    WHERE p.porteur.id = :userId
+                       OR (p.groupe.referent.id = :userId)
+                       OR (p.statut IN :statutsDiffusables AND p.visibilite IN :visibilitesDiffusables)
+                    """,
+            countQuery = """
+                    SELECT COUNT(p)
+                    FROM Projet p
+                    WHERE p.porteur.id = :userId
+                       OR (p.groupe.referent.id = :userId)
+                       OR (p.statut IN :statutsDiffusables AND p.visibilite IN :visibilitesDiffusables)
+                    """
+    )
+    Page<Projet> findVisibleForReferent(
+            @Param("userId") Long userId,
+            @Param("statutsDiffusables") List<StatutProjet> statutsDiffusables,
+            @Param("visibilitesDiffusables") List<VisibiliteProjet> visibilitesDiffusables,
+            Pageable pageable);
+
+    @Query(
+            value = """
+                    SELECT p
+                    FROM Projet p
+                    WHERE p.porteur.id = :userId
+                       OR (p.statut IN :statutsDiffusables AND p.visibilite IN :visibilitesDiffusables)
+                    """,
+            countQuery = """
+                    SELECT COUNT(p)
+                    FROM Projet p
+                    WHERE p.porteur.id = :userId
+                       OR (p.statut IN :statutsDiffusables AND p.visibilite IN :visibilitesDiffusables)
+                    """
+    )
+    Page<Projet> findVisibleForPartenaire(
+            @Param("userId") Long userId,
+            @Param("statutsDiffusables") List<StatutProjet> statutsDiffusables,
+            @Param("visibilitesDiffusables") List<VisibiliteProjet> visibilitesDiffusables,
+            Pageable pageable);
 }

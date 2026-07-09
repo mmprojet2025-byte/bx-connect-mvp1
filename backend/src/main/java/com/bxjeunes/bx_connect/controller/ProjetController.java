@@ -29,6 +29,17 @@ public class ProjetController {
         return ResponseEntity.ok(projetService.listerProjetsVisibles(emailAuthentifie(authentication)));
     }
 
+    @GetMapping("/page")
+    public ResponseEntity<PagedResponse<ProjetResponse>> listerProjetsVisiblesPage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            Authentication authentication) {
+        return ResponseEntity.ok(projetService.listerProjetsVisiblesPage(
+                emailAuthentifie(authentication),
+                page,
+                size));
+    }
+
     // ─── GET /api/projets/admin/tous — Tous les projets (ADMIN / REFERENT) ───
 
     @GetMapping("/admin/tous")
@@ -187,6 +198,19 @@ public class ProjetController {
             @PathVariable Long id,
             Authentication authentication) {
         return ResponseEntity.ok(projetService.getCommentaires(id, emailAuthentifie(authentication)));
+    }
+
+    @GetMapping("/{id}/commentaires/page")
+    public ResponseEntity<PagedResponse<CommentaireResponse>> getCommentairesPage(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            Authentication authentication) {
+        return ResponseEntity.ok(projetService.getCommentairesPage(
+                id,
+                emailAuthentifie(authentication),
+                page,
+                size));
     }
 
     // ─── GET /api/projets/mes-projets — Mes projets (porteur) — M28 ──────────

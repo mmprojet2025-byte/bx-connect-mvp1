@@ -33,6 +33,20 @@ class ProjetEndpointSecurityTest {
     @MockitoBean private UserDetailsService userDetailsService;
 
     @Test
+    @DisplayName("Visiteur peut appeler les projets publics pagines")
+    void visiteur_peut_appeler_projets_publics_pages() throws Exception {
+        mockMvc.perform(get("/api/projets/page"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Visiteur peut appeler les commentaires projet pagines")
+    void visiteur_peut_appeler_commentaires_projet_pages() throws Exception {
+        mockMvc.perform(get("/api/projets/1/commentaires/page"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     @WithMockUser(roles = "ADMIN")
     @DisplayName("ADMIN recoit 403 sur rejoindreProjet")
     void admin_recoit_403_sur_rejoindre_projet() throws Exception {

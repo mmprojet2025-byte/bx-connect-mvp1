@@ -41,6 +41,29 @@ class ActiviteEndpointSecurityTest {
     @MockitoBean private UserDetailsService userDetailsService;
 
     @Test
+    @DisplayName("Visiteur peut appeler les activites publiques paginees")
+    void visiteur_peut_appeler_activites_publiques_pagees() throws Exception {
+        mockMvc.perform(get("/api/activites/page"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("ADMIN peut appeler les activites admin paginees")
+    void admin_peut_appeler_activites_admin_pagees() throws Exception {
+        mockMvc.perform(get("/api/activites/admin/toutes/page"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "REFERENT")
+    @DisplayName("REFERENT ne peut pas appeler les activites admin paginees")
+    void referent_ne_peut_pas_appeler_activites_admin_pagees() throws Exception {
+        mockMvc.perform(get("/api/activites/admin/toutes/page"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @WithMockUser(roles = "ADMIN")
     @DisplayName("ADMIN ne peut pas utiliser les endpoints d'inscription membre")
     void admin_ne_peut_pas_s_inscrire() throws Exception {

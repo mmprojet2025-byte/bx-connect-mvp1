@@ -116,6 +116,30 @@ class PartenaireProjetSecurityTest {
     }
 
     @Test
+    @DisplayName("Mes soutiens pagines restent limites au partenaire connecte")
+    void mes_soutiens_pages_limites_au_partenaire_connecte() {
+        SoutienFinancier soutien = soutien(100L, partenaire, StatutPaiement.EN_ATTENTE);
+        when(userRepository.findByEmail(partenaire.getEmail())).thenReturn(Optional.of(partenaire));
+        when(soutienRepository.findByDonateurId(
+                org.mockito.ArgumentMatchers.eq(partenaire.getId()),
+                any(Pageable.class)))
+                .thenReturn(new PageImpl<>(
+                        List.of(soutien),
+                        org.springframework.data.domain.PageRequest.of(0, 100),
+                        1));
+
+        var response = partenaireService.mesSoutiensPage(partenaire.getEmail(), -4, 500);
+
+        assertThat(response.content()).hasSize(1);
+        assertThat(response.page()).isZero();
+        assertThat(response.size()).isEqualTo(100);
+        verify(soutienRepository).findByDonateurId(
+                org.mockito.ArgumentMatchers.eq(partenaire.getId()),
+                any(Pageable.class));
+        verify(soutienRepository, never()).findAll();
+    }
+
+    @Test
     @DisplayName("Partenaire ne peut pas soutenir un projet GROUPE")
     void partenaire_ne_soutient_pas_projet_groupe() {
         Projet projet = projet(1L, StatutProjet.APPROUVE, VisibiliteProjet.GROUPE);

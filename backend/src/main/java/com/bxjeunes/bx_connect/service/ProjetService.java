@@ -73,6 +73,63 @@ public class ProjetService {
                 .collect(Collectors.toList());
     }
 
+    public PagedResponse<ProjetResponse> listerProjetsVisiblesPage(String emailUser, int page, int size) {
+        var pageable = PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation"));
+        if (emailUser == null) {
+            return PagedResponse.fromPage(projetRepository
+                    .findByStatutInAndVisibilite(STATUTS_DIFFUSABLES, VisibiliteProjet.PUBLIC, pageable)
+                    .map(ProjetResponse::fromEntity));
+        }
+
+        User user = userRepository.findByEmail(emailUser)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+
+        if (user.getRole() == Role.ADMIN || user.getRole() == Role.SUPER_ADMIN) {
+            return PagedResponse.fromPage(projetRepository
+                    .findAll(pageable)
+                    .map(ProjetResponse::fromEntity));
+        }
+
+        if (user.getRole() == Role.MEMBRE) {
+            Long groupeId = membreGroupeRepository
+                    .findFirstByUserIdAndStatut(user.getId(), StatutMembre.ACCEPTE)
+                    .map(MembreGroupe::getGroupe)
+                    .map(Groupe::getId)
+                    .orElse(null);
+            return PagedResponse.fromPage(projetRepository
+                    .findVisibleForMembre(
+                            user.getId(),
+                            groupeId,
+                            VisibiliteProjet.GROUPE,
+                            STATUTS_DIFFUSABLES,
+                            List.of(VisibiliteProjet.COMMUNAUTE, VisibiliteProjet.PARTENAIRES, VisibiliteProjet.PUBLIC),
+                            pageable)
+                    .map(ProjetResponse::fromEntity));
+        }
+
+        if (user.getRole() == Role.REFERENT) {
+            return PagedResponse.fromPage(projetRepository
+                    .findVisibleForReferent(
+                            user.getId(),
+                            STATUTS_DIFFUSABLES,
+                            List.of(VisibiliteProjet.COMMUNAUTE, VisibiliteProjet.PARTENAIRES, VisibiliteProjet.PUBLIC),
+                            pageable)
+                    .map(ProjetResponse::fromEntity));
+        }
+
+        if (user.getRole() == Role.PARTENAIRE) {
+            return PagedResponse.fromPage(projetRepository
+                    .findVisibleForPartenaire(
+                            user.getId(),
+                            STATUTS_DIFFUSABLES,
+                            List.of(VisibiliteProjet.PARTENAIRES, VisibiliteProjet.PUBLIC),
+                            pageable)
+                    .map(ProjetResponse::fromEntity));
+        }
+
+        return PagedResponse.fromPage(org.springframework.data.domain.Page.<ProjetResponse>empty(pageable));
+    }
+
     public List<ProjetResponse> listerProjetsPublics() {
         return listerProjetsVisibles(null);
     }
@@ -430,6 +487,23 @@ public class ProjetService {
                 .stream()
                 .map(CommentaireResponse::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    public PagedResponse<CommentaireResponse> getCommentairesPage(
+            Long projetId,
+            String emailUser,
+            int page,
+            int size
+    ) {
+        Projet projet = projetRepository.findById(projetId)
+                .orElseThrow(() -> new RuntimeException("Projet introuvable"));
+        verifierAccesProjet(projet, emailUser);
+        return PagedResponse.fromPage(commentaireRepository
+                .findByProjetId(
+                        projetId,
+                        PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCommentaire"))
+                )
+                .map(CommentaireResponse::fromEntity));
     }
 
     // ─── Mes projets (porteur connecté) — M28 ────────────────────────────────

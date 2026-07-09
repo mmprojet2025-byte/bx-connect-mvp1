@@ -29,6 +29,8 @@ public interface SoutienFinancierRepository extends JpaRepository<SoutienFinanci
     // ─── Par donateur (utilisé par PayPalService, StripeService) ─────────────
     List<SoutienFinancier> findByDonateurId(Long donateurId);
 
+    Page<SoutienFinancier> findByDonateurId(Long donateurId, Pageable pageable);
+
     // ─── Par donateur + statut (P07 — mes soutiens par statut) ───────────────
     List<SoutienFinancier> findByDonateurIdAndStatutPaiement(
         Long donateurId,
