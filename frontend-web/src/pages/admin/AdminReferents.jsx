@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import api from '../../api/axios'
+import { getNotificationsPage } from '../../api/notifications'
 import { userFriendlyError } from '../../utils/userFriendlyError'
 import AppIcon from '../../components/ui/AppIcons'
 import StatusBadge from '../../components/StatusBadge'
@@ -44,7 +45,7 @@ export default function AdminReferents() {
         api.get('/admin/groupes'),
         api.get('/activites/admin/toutes'),
         api.get('/projets/admin/tous'),
-        api.get('/notifications'),
+        getNotificationsPage(0, 5),
       ])
       if (referentsResult.status === 'rejected') throw referentsResult.reason
       setReferents(Array.isArray(referentsResult.value.data) ? referentsResult.value.data : [])
@@ -57,8 +58,8 @@ export default function AdminReferents() {
       const projetsOk = projetsResult.status === 'fulfilled' && Array.isArray(projetsResult.value.data)
       setProjets(projetsOk ? projetsResult.value.data : [])
       setProjetsDisponibles(projetsOk)
-      setNotifications(notificationsResult.status === 'fulfilled' && Array.isArray(notificationsResult.value.data)
-        ? notificationsResult.value.data
+      setNotifications(notificationsResult.status === 'fulfilled' && Array.isArray(notificationsResult.value.content)
+        ? notificationsResult.value.content
         : [])
       setError('')
     } catch {

@@ -4,7 +4,12 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
-import api from '../api/axios';
+import {
+  deleteNotification,
+  getNotificationsPage,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from '../api/notifications';
 import Alert from '../components/ui/Alert';
 import EmptyState from '../components/ui/EmptyState';
 import AppIcon from '../components/ui/AppIcons';
@@ -13,46 +18,76 @@ import LoadingState from '../components/ui/LoadingState';
 import ErrorState from '../components/ui/ErrorState';
 import { dashboardRouteForRole, resolveNotificationRoute, hasExactNotificationRoute } from '../utils/notificationRoute';
 
+const NOTIFICATIONS_PAGE_SIZE = 20;
+
 export default function Notifications() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
+  const [pagination, setPagination] = useState({
+    page: 0,
+    size: NOTIFICATIONS_PAGE_SIZE,
+    totalElements: 0,
+    totalPages: 0,
+    last: true,
+  });
 
   useEffect(() => {
     if (isAuthenticated) fetchNotifications();
     else setLoading(false);
   }, []);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (page = 0, append = false) => {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
+    setError('');
     try {
-      const res = await api.get('/notifications');
-      setNotifications(res.data);
+      const pageData = await getNotificationsPage(page, NOTIFICATIONS_PAGE_SIZE);
+      setNotifications(prev => append ? mergeNotifications(prev, pageData.content) : pageData.content);
+      setPagination({
+        page: pageData.page,
+        size: pageData.size,
+        totalElements: pageData.totalElements,
+        totalPages: pageData.totalPages,
+        last: pageData.last,
+      });
     } catch (err) { setError(userFriendlyError(err, t('notifications.errorLoad'))); }
-    finally { setLoading(false); }
+    finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (!loadingMore && !pagination.last) {
+      fetchNotifications(pagination.page + 1, true);
+    }
   };
 
   const handleMarquerLue = async (id) => {
     try {
-      await api.patch(`/notifications/${id}/lue`);
+      await markNotificationRead(id);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, lue: true } : n));
     } catch (err) { setError(userFriendlyError(err, t('notifications.errorLoad'))); }
   };
 
   const handleToutesLues = async () => {
     try {
-      await api.patch('/notifications/toutes-lues');
+      await markAllNotificationsRead();
       setNotifications(prev => prev.map(n => ({ ...n, lue: true })));
+      fetchNotifications(0, false);
     } catch (err) { setError(userFriendlyError(err, t('notifications.errorLoad'))); }
   };
 
   const handleSupprimer = async (id) => {
     if (!confirmSensitiveAction(t('notifications.confirmDelete'))) return;
     try {
-      await api.delete(`/notifications/${id}`);
+      await deleteNotification(id);
       setNotifications(prev => prev.filter(n => n.id !== id));
     } catch (err) { setError(userFriendlyError(err, t('notifications.errorLoad'))); }
   };
@@ -186,30 +221,51 @@ export default function Notifications() {
                 description={t('notifications.emptyFilterDescription')}
               />
             ) : (
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-              {filteredNotifications.map(n => (
-                <NotificationInboxItem
-                  key={n.id}
-                  notification={n}
-                  category={getNotificationCategory(n.type)}
-                  icon={typeIcon(n.type)}
-                  important={isImportantNotification(n.type)}
-                  actor={getNotificationActor(n)}
-                  actionable={Boolean(n.lienAction || hasExactNotificationRoute(n, user?.role))}
-                  dateLabel={formatNotificationDate(n.dateCreation, i18n.language, t)}
-                  onOpen={() => handleOpenNotification(n)}
-                  onMarkRead={() => handleMarquerLue(n.id)}
-                  onDelete={() => handleSupprimer(n.id)}
-                  t={t}
-                />
-              ))}
-              </div>
+              <>
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                  {filteredNotifications.map(n => (
+                    <NotificationInboxItem
+                      key={n.id}
+                      notification={n}
+                      category={getNotificationCategory(n.type)}
+                      icon={typeIcon(n.type)}
+                      important={isImportantNotification(n.type)}
+                      actor={getNotificationActor(n)}
+                      actionable={Boolean(n.lienAction || hasExactNotificationRoute(n, user?.role))}
+                      dateLabel={formatNotificationDate(n.dateCreation, i18n.language, t)}
+                      onOpen={() => handleOpenNotification(n)}
+                      onMarkRead={() => handleMarquerLue(n.id)}
+                      onDelete={() => handleSupprimer(n.id)}
+                      t={t}
+                    />
+                  ))}
+                </div>
+                {!pagination.last && (
+                  <div className="mt-4 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={handleLoadMore}
+                      disabled={loadingMore}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {loadingMore && <AppIcon name="RefreshCw" className="h-4 w-4 animate-spin" />}
+                      {t('notifications.loadMore')}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
       </main>
     </div>
   );
+}
+
+function mergeNotifications(current, next) {
+  const byId = new Map(current.map(notification => [notification.id, notification]));
+  next.forEach(notification => byId.set(notification.id, notification));
+  return Array.from(byId.values());
 }
 
 function NotificationInboxItem({

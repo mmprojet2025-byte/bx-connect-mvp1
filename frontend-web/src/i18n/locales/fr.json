@@ -587,6 +587,7 @@
     "emptyFilterDescription": "Essaie un autre filtre pour retrouver les notifications utiles.",
     "emptyDescriptionMobile": "Vos notifications apparaîtront ici dès qu’une action importante concerne votre compte.",
     "loading": "Chargement des notifications...",
+    "loadMore": "Charger plus",
     "dateNotProvided": "Date non renseignée",
     "confirmDelete": "Voulez-vous vraiment supprimer cette notification ?",
     "importantCount": "{{count}} importante(s)",

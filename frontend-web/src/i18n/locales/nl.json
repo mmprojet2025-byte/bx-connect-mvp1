@@ -587,6 +587,7 @@
     "emptyFilterDescription": "Probeer een andere filter om nuttige meldingen te vinden.",
     "emptyDescriptionMobile": "Je meldingen verschijnen hier zodra een belangrijke actie je account betreft.",
     "loading": "Meldingen laden...",
+    "loadMore": "Meer laden",
     "dateNotProvided": "Datum niet ingevuld",
     "confirmDelete": "Wil je deze melding echt verwijderen?",
     "importantCount": "{{count}} belangrijk",
