@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -31,6 +32,30 @@ class GroupeEndpointSecurityTest {
     @DisplayName("L'acces public aux membres d'un groupe est refuse")
     void acces_public_refuse_aux_membres_du_groupe() throws Exception {
         mockMvc.perform(get("/api/groupes/1/membres"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("ADMIN peut appeler les groupes admin pagines")
+    void admin_peut_appeler_groupes_admin_pages() throws Exception {
+        mockMvc.perform(get("/api/groupes/admin/tous/page"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "REFERENT")
+    @DisplayName("REFERENT ne peut pas appeler les groupes admin pagines")
+    void referent_ne_peut_pas_appeler_groupes_admin_pages() throws Exception {
+        mockMvc.perform(get("/api/groupes/admin/tous/page"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "PARTENAIRE")
+    @DisplayName("PARTENAIRE ne peut pas appeler les groupes admin pagines")
+    void partenaire_ne_peut_pas_appeler_groupes_admin_pages() throws Exception {
+        mockMvc.perform(get("/api/groupes/admin/tous/page"))
                 .andExpect(status().isForbidden());
     }
 }

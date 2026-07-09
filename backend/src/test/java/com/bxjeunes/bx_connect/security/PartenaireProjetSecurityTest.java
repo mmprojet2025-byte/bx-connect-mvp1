@@ -22,9 +22,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
@@ -74,6 +77,42 @@ class PartenaireProjetSecurityTest {
         when(soutienRepository.totalSoutiensProjet(1L)).thenReturn(BigDecimal.ZERO);
 
         assertThat(partenaireService.projetsSoutienOuverts()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Liste admin paginee des soutiens utilise Pageable et pas findAll complet")
+    void soutiens_admin_pages_utilisent_pageable() {
+        SoutienFinancier soutien = soutien(100L, partenaire, StatutPaiement.EN_ATTENTE);
+        when(soutienRepository.findAll(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(soutien)));
+
+        var response = partenaireService.tousLesSoutiensPage(null, -2, 500);
+
+        assertThat(response.content()).hasSize(1);
+        verify(soutienRepository, never()).findAll();
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(soutienRepository).findAll(captor.capture());
+        assertThat(captor.getValue().getPageNumber()).isZero();
+        assertThat(captor.getValue().getPageSize()).isEqualTo(100);
+        assertThat(captor.getValue().getSort().getOrderFor("dateCreation").isDescending()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Liste admin paginee des soutiens conserve le filtre statut")
+    void soutiens_admin_pages_filtrent_par_statut() {
+        SoutienFinancier soutien = soutien(100L, partenaire, StatutPaiement.EN_ATTENTE);
+        when(soutienRepository.findByStatutPaiement(
+                org.mockito.ArgumentMatchers.eq(StatutPaiement.EN_ATTENTE),
+                any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(soutien)));
+
+        var response = partenaireService.tousLesSoutiensPage(StatutPaiement.EN_ATTENTE, 0, 25);
+
+        assertThat(response.content()).hasSize(1);
+        verify(soutienRepository, never()).findAll(any(Pageable.class));
+        verify(soutienRepository).findByStatutPaiement(
+                org.mockito.ArgumentMatchers.eq(StatutPaiement.EN_ATTENTE),
+                any(Pageable.class));
     }
 
     @Test

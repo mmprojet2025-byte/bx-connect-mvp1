@@ -2,6 +2,8 @@ package com.bxjeunes.bx_connect.repository;
 
 import com.bxjeunes.bx_connect.entity.Groupe;
 import com.bxjeunes.bx_connect.entity.StatutGroupe;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -24,6 +26,8 @@ public interface GroupeRepository extends JpaRepository<Groupe, Long> {
 
     // Groupes en attente de validation (admin)
     List<Groupe> findByStatutOrderByDateCreationAsc(StatutGroupe statut);
+
+    Page<Groupe> findByStatut(StatutGroupe statut, Pageable pageable);
 
     // Legacy : groupes actifs (compatibilité)
     List<Groupe> findByActifTrue();

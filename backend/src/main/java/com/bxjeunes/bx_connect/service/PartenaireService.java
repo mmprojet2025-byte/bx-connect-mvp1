@@ -1,10 +1,12 @@
 package com.bxjeunes.bx_connect.service;
 
 import com.bxjeunes.bx_connect.dto.*;
+import com.bxjeunes.bx_connect.util.PaginationUtils;
 import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -308,6 +310,18 @@ public class PartenaireService {
         return soutienRepository.findAll().stream()
                 .map(SoutienResponse::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    public PagedResponse<SoutienResponse> tousLesSoutiensPage(StatutPaiement statut, int page, int size) {
+        var pageable = PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation"));
+        if (statut != null) {
+            return PagedResponse.fromPage(soutienRepository
+                    .findByStatutPaiement(statut, pageable)
+                    .map(SoutienResponse::fromEntity));
+        }
+        return PagedResponse.fromPage(soutienRepository
+                .findAll(pageable)
+                .map(SoutienResponse::fromEntity));
     }
 
     private User getPartenaire(String email) {

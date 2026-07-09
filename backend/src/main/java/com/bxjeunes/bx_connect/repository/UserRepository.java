@@ -2,6 +2,8 @@ package com.bxjeunes.bx_connect.repository;
 
 import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -30,6 +32,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByRole(Role role);
 
     List<User> findByRoleAndActifTrue(Role role);
+
+    Page<User> findByRoleIn(List<Role> roles, Pageable pageable);
 
     @Query("SELECT u FROM User u WHERE u.actif = true AND u.role IN :roles AND (" +
            "LOWER(u.prenom) LIKE LOWER(CONCAT('%', :q, '%')) OR " +

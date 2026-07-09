@@ -3,13 +3,16 @@ package com.bxjeunes.bx_connect.service;
 import com.bxjeunes.bx_connect.dto.GroupeRequest;
 import com.bxjeunes.bx_connect.dto.GroupeResponse;
 import com.bxjeunes.bx_connect.dto.MembreGroupeResponse;
+import com.bxjeunes.bx_connect.dto.PagedResponse;
 import com.bxjeunes.bx_connect.dto.admin.AdminGroupeRequest;
 import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.GroupeRepository;
 import com.bxjeunes.bx_connect.repository.MembreGroupeRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
+import com.bxjeunes.bx_connect.util.PaginationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -259,6 +262,12 @@ public class GroupeService {
     public List<GroupeResponse> tousLesGroupes() {
         return groupeRepository.findAll().stream()
                 .map(GroupeResponse::fromEntity).collect(Collectors.toList());
+    }
+
+    public PagedResponse<GroupeResponse> tousLesGroupesPage(int page, int size) {
+        return PagedResponse.fromPage(groupeRepository
+                .findAll(PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation")))
+                .map(GroupeResponse::fromEntity));
     }
 
     public List<GroupeResponse> groupesEnAttente() {

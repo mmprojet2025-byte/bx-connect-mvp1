@@ -3,9 +3,11 @@ package com.bxjeunes.bx_connect.controller;
 import com.bxjeunes.bx_connect.dto.SoutienRequest;
 import com.bxjeunes.bx_connect.dto.SoutienResponse;
 import com.bxjeunes.bx_connect.dto.AdminSoutienDecisionRequest;
+import com.bxjeunes.bx_connect.dto.PagedResponse;
 import com.bxjeunes.bx_connect.dto.PartenaireProfilRequest;
 import com.bxjeunes.bx_connect.dto.PartenaireProfilResponse;
 import com.bxjeunes.bx_connect.dto.PartenairePublicResponse;
+import com.bxjeunes.bx_connect.entity.StatutPaiement;
 import com.bxjeunes.bx_connect.service.PartenaireService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -116,6 +118,15 @@ public class PartenaireController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<SoutienResponse>> tousLesSoutiens() {
         return ResponseEntity.ok(partenaireService.tousLesSoutiens());
+    }
+
+    @GetMapping("/admin/tous/page")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<PagedResponse<SoutienResponse>> tousLesSoutiensPage(
+            @RequestParam(required = false) StatutPaiement statut,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return ResponseEntity.ok(partenaireService.tousLesSoutiensPage(statut, page, size));
     }
 
     // ─── Admin : Valider un soutien (A25) ────────────────────────────────────

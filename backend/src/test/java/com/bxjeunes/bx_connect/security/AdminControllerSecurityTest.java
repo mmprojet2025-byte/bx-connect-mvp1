@@ -14,8 +14,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
@@ -25,6 +28,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -71,6 +75,30 @@ class AdminControllerSecurityTest {
                 .extracting("role")
                 .containsExactlyInAnyOrder(Role.MEMBRE, Role.REFERENT, Role.PARTENAIRE)
                 .doesNotContain(Role.ADMIN, Role.SUPER_ADMIN);
+    }
+
+    @Test
+    @DisplayName("/api/admin/utilisateurs/page exclut les admins cote DB et limite la taille")
+    void liste_utilisateurs_pagee_exclut_admins_cote_db() {
+        User membre = user(3L, Role.MEMBRE);
+        when(userRepository.findByRoleIn(
+                eq(List.of(Role.MEMBRE, Role.REFERENT, Role.PARTENAIRE)),
+                any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(membre)));
+
+        var response = adminController.getAllUtilisateursPage(-1, 500);
+
+        assertThat(response.getBody().content())
+                .extracting("role")
+                .containsExactly(Role.MEMBRE);
+        verify(userRepository, never()).findAll();
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(userRepository).findByRoleIn(
+                eq(List.of(Role.MEMBRE, Role.REFERENT, Role.PARTENAIRE)),
+                captor.capture());
+        assertThat(captor.getValue().getPageNumber()).isZero();
+        assertThat(captor.getValue().getPageSize()).isEqualTo(100);
+        assertThat(captor.getValue().getSort().getOrderFor("dateInscription").isDescending()).isTrue();
     }
 
     @Test

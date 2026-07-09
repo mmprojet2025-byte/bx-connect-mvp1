@@ -1,10 +1,12 @@
 package com.bxjeunes.bx_connect.service;
 
 import com.bxjeunes.bx_connect.dto.*;
+import com.bxjeunes.bx_connect.util.PaginationUtils;
 import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -82,6 +84,12 @@ public class ProjetService {
                 .stream()
                 .map(ProjetResponse::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    public PagedResponse<ProjetResponse> listerTousProjetsPage(int page, int size) {
+        return PagedResponse.fromPage(projetRepository
+                .findAll(PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation")))
+                .map(ProjetResponse::fromEntity));
     }
 
     // ─── Détail d'un projet ───────────────────────────────────────────────────

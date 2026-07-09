@@ -2,6 +2,8 @@ package com.bxjeunes.bx_connect.repository;
 
 import com.bxjeunes.bx_connect.entity.SoutienFinancier;
 import com.bxjeunes.bx_connect.entity.StatutPaiement;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -35,6 +37,8 @@ public interface SoutienFinancierRepository extends JpaRepository<SoutienFinanci
 
     // ─── Par statut global ────────────────────────────────────────────────────
     List<SoutienFinancier> findByStatutPaiement(StatutPaiement statut);
+
+    Page<SoutienFinancier> findByStatutPaiement(StatutPaiement statut, Pageable pageable);
 
     // ─── Par projet ───────────────────────────────────────────────────────────
     List<SoutienFinancier> findByProjetId(Long projetId);

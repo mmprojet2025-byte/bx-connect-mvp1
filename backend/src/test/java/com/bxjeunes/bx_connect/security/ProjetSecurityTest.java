@@ -25,9 +25,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
@@ -37,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
@@ -105,6 +109,24 @@ class ProjetSecurityTest {
                 org.mockito.ArgumentMatchers.eq("BROUILLON"),
                 org.mockito.ArgumentMatchers.eq("Projet cree."),
                 org.mockito.ArgumentMatchers.contains("\"porteurId\":1"));
+    }
+
+    @Test
+    @DisplayName("Liste admin paginee des projets utilise Pageable et pas findAll complet")
+    void projets_admin_pages_utilisent_pageable() {
+        Projet projet = projet(99L, StatutProjet.SOUMIS, groupe, membre);
+        when(projetRepository.findAll(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(projet)));
+
+        var response = projetService.listerTousProjetsPage(-2, 500);
+
+        assertThat(response.content()).hasSize(1);
+        verify(projetRepository, never()).findAll();
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(projetRepository).findAll(captor.capture());
+        assertThat(captor.getValue().getPageNumber()).isZero();
+        assertThat(captor.getValue().getPageSize()).isEqualTo(100);
+        assertThat(captor.getValue().getSort().getOrderFor("dateCreation").isDescending()).isTrue();
     }
 
     @Test

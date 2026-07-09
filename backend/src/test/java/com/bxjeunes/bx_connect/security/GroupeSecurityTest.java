@@ -13,12 +13,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -87,6 +91,23 @@ class GroupeSecurityTest {
         assertThatThrownBy(() ->
             groupeService.modifierGroupe(10L, request, "referent2@test.be")
         ).isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    @DisplayName("Liste admin paginee des groupes utilise Pageable et pas findAll complet")
+    void groupes_admin_pages_utilisent_pageable() {
+        when(groupeRepository.findAll(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(groupeDeReferent1)));
+
+        var response = groupeService.tousLesGroupesPage(-2, 500);
+
+        assertThat(response.content()).hasSize(1);
+        verify(groupeRepository, never()).findAll();
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(groupeRepository).findAll(captor.capture());
+        assertThat(captor.getValue().getPageNumber()).isZero();
+        assertThat(captor.getValue().getPageSize()).isEqualTo(100);
+        assertThat(captor.getValue().getSort().getOrderFor("dateCreation").isDescending()).isTrue();
     }
 
     @Test

@@ -64,6 +64,30 @@ class ProjetEndpointSecurityTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("ADMIN peut appeler les projets admin pagines")
+    void admin_peut_appeler_projets_admin_pages() throws Exception {
+        mockMvc.perform(get("/api/projets/admin/tous/page"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "REFERENT")
+    @DisplayName("REFERENT ne peut pas appeler les projets admin pagines")
+    void referent_ne_peut_pas_appeler_projets_admin_pages() throws Exception {
+        mockMvc.perform(get("/api/projets/admin/tous/page"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "PARTENAIRE")
+    @DisplayName("PARTENAIRE ne peut pas appeler les projets admin pagines")
+    void partenaire_ne_peut_pas_appeler_projets_admin_pages() throws Exception {
+        mockMvc.perform(get("/api/projets/admin/tous/page"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @WithMockUser(username = "referent@test.be", roles = "REFERENT")
     @DisplayName("REFERENT peut appeler la modification dediee de ses projets")
     void referent_peut_appeler_modification_dediee() throws Exception {

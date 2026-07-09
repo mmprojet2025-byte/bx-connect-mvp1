@@ -3,6 +3,7 @@ package com.bxjeunes.bx_connect.controller;
 import com.bxjeunes.bx_connect.dto.GroupeRequest;
 import com.bxjeunes.bx_connect.dto.GroupeResponse;
 import com.bxjeunes.bx_connect.dto.MembreGroupeResponse;
+import com.bxjeunes.bx_connect.dto.PagedResponse;
 import com.bxjeunes.bx_connect.service.GroupeService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -96,6 +97,14 @@ public class GroupeController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<GroupeResponse>> tousLesGroupes() {
         return ResponseEntity.ok(groupeService.tousLesGroupes());
+    }
+
+    @GetMapping("/admin/tous/page")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<PagedResponse<GroupeResponse>> tousLesGroupesPage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return ResponseEntity.ok(groupeService.tousLesGroupesPage(page, size));
     }
 
     @GetMapping("/admin/en-attente")

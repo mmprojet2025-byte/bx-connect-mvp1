@@ -37,6 +37,14 @@ public class ProjetController {
         return ResponseEntity.ok(projetService.listerTousProjets());
     }
 
+    @GetMapping("/admin/tous/page")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<PagedResponse<ProjetResponse>> listerTousProjetsPage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return ResponseEntity.ok(projetService.listerTousProjetsPage(page, size));
+    }
+
     // ─── GET /api/projets/admin/soumis — Projets en attente de validation ────
 
     @GetMapping("/admin/soumis")

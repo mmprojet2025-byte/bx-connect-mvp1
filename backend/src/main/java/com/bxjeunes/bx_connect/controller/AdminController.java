@@ -1,6 +1,7 @@
 package com.bxjeunes.bx_connect.controller;
 
 import com.bxjeunes.bx_connect.dto.GroupeResponse;
+import com.bxjeunes.bx_connect.dto.PagedResponse;
 import com.bxjeunes.bx_connect.dto.UserResponse;
 import com.bxjeunes.bx_connect.dto.admin.AdminGroupeRequest;
 import com.bxjeunes.bx_connect.dto.admin.CreateReferentRequest;
@@ -14,7 +15,9 @@ import com.bxjeunes.bx_connect.repository.UserRepository;
 import com.bxjeunes.bx_connect.service.GroupeService;
 import com.bxjeunes.bx_connect.service.AdminReferentService;
 import com.bxjeunes.bx_connect.service.PrestationService;
+import com.bxjeunes.bx_connect.util.PaginationUtils;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -95,6 +98,18 @@ public class AdminController {
                 .map(UserResponse::fromEntity)
                 .toList()
         );
+    }
+
+    @GetMapping("/utilisateurs/page")
+    public ResponseEntity<PagedResponse<UserResponse>> getAllUtilisateursPage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return ResponseEntity.ok(PagedResponse.fromPage(userRepository
+                .findByRoleIn(
+                        List.of(Role.MEMBRE, Role.REFERENT, Role.PARTENAIRE),
+                        PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateInscription"))
+                )
+                .map(UserResponse::fromEntity)));
     }
 
     @PatchMapping("/utilisateurs/{id}/role")
