@@ -1,10 +1,13 @@
 package com.bxjeunes.bx_connect.service;
 
+import com.bxjeunes.bx_connect.dto.PagedResponse;
 import com.bxjeunes.bx_connect.dto.superadmin.AuditLogResponse;
 import com.bxjeunes.bx_connect.entity.AuditLog;
 import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.repository.AuditLogRepository;
+import com.bxjeunes.bx_connect.util.PaginationUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -152,6 +155,26 @@ public class AuditLogService {
                 .limit(safeLimit)
                 .map(AuditLogResponse::fromEntity)
                 .toList();
+    }
+
+    public PagedResponse<AuditLogResponse> rechercherPage(
+            String action,
+            String cibleType,
+            String acteurRole,
+            LocalDateTime dateDebut,
+            LocalDateTime dateFin,
+            int page,
+            int size) {
+        return PagedResponse.fromPage(auditLogRepository
+                .rechercherPage(
+                        normaliser(action),
+                        normaliser(cibleType),
+                        normaliser(acteurRole),
+                        dateDebut,
+                        dateFin,
+                        PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateAction"))
+                )
+                .map(AuditLogResponse::fromEntity));
     }
 
     private String normaliser(String value) {

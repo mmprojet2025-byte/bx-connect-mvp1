@@ -5,6 +5,7 @@ import com.bxjeunes.bx_connect.dto.FilDiscussionResponse;
 import com.bxjeunes.bx_connect.dto.GroupeResponse;
 import com.bxjeunes.bx_connect.dto.MessageRequest;
 import com.bxjeunes.bx_connect.dto.MessageResponse;
+import com.bxjeunes.bx_connect.dto.PagedResponse;
 import com.bxjeunes.bx_connect.entity.TypeFil;
 import com.bxjeunes.bx_connect.service.MessagerieService;
 import jakarta.validation.Valid;
@@ -110,6 +111,20 @@ public class MessagerieController {
             @PathVariable Long filId,
             Principal principal) {
         return ResponseEntity.ok(messagerieService.listerMessages(filId, principal.getName()));
+    }
+
+    @GetMapping("/fils/{filId}/messages/page")
+    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT')")
+    public ResponseEntity<PagedResponse<MessageResponse>> listerMessagesPage(
+            @PathVariable Long filId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
+            Principal principal) {
+        return ResponseEntity.ok(messagerieService.listerMessagesPage(
+                filId,
+                principal.getName(),
+                page,
+                size));
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.bxjeunes.bx_connect.controller;
 
+import com.bxjeunes.bx_connect.dto.PagedResponse;
 import com.bxjeunes.bx_connect.service.NotificationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,6 +25,15 @@ public class NotificationController {
     @GetMapping
     public ResponseEntity<List<Map<String, Object>>> mesNotifications(Authentication auth) {
         return ResponseEntity.ok(notificationService.mesNotifications(auth.getName()));
+    }
+
+    // GET /api/notifications/page — Mes notifications paginees
+    @GetMapping("/page")
+    public ResponseEntity<PagedResponse<Map<String, Object>>> mesNotificationsPage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            Authentication auth) {
+        return ResponseEntity.ok(notificationService.mesNotificationsPage(auth.getName(), page, size));
     }
 
     // GET /api/notifications/count — Compteur non lues (badge)

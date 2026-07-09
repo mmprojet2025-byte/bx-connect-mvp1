@@ -23,6 +23,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
@@ -89,6 +91,21 @@ class MessagerieSecurityTest {
     }
 
     @Test
+    @DisplayName("Un membre du groupe A ne peut pas lire les messages pagines du groupe B")
+    void membre_groupe_a_ne_lit_pas_messages_pages_groupe_b() {
+        when(userRepository.findByEmail(membreA.getEmail())).thenReturn(Optional.of(membreA));
+        when(filRepository.findById(200L)).thenReturn(Optional.of(filB));
+        when(groupeRepository.findById(20L)).thenReturn(Optional.of(groupeB));
+        when(membreGroupeRepository.findFirstByUserIdAndStatut(1L, StatutMembre.ACCEPTE))
+                .thenReturn(Optional.of(adhesion(membreA, groupeA)));
+
+        assertThatThrownBy(() -> messagerieService.listerMessagesPage(200L, membreA.getEmail(), 0, 50))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("pas acces");
+        verify(messageRepository, never()).findByFilId(any(), any(Pageable.class));
+    }
+
+    @Test
     @DisplayName("Un referent du groupe A ne peut pas lire les messages du groupe B")
     void referent_groupe_a_ne_lit_pas_groupe_b() {
         when(userRepository.findByEmail(referentA.getEmail())).thenReturn(Optional.of(referentA));
@@ -149,6 +166,20 @@ class MessagerieSecurityTest {
         when(messageRepository.findByFilIdOrderByDateEnvoiAsc(100L)).thenReturn(List.of(message));
 
         assertThat(messagerieService.listerMessages(100L, membreA.getEmail())).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Un membre accepte peut lire les messages pagines de son groupe")
+    void membre_accepte_peut_lire_messages_pages_son_groupe() {
+        when(userRepository.findByEmail(membreA.getEmail())).thenReturn(Optional.of(membreA));
+        when(filRepository.findById(100L)).thenReturn(Optional.of(filA));
+        when(groupeRepository.findById(10L)).thenReturn(Optional.of(groupeA));
+        when(membreGroupeRepository.findFirstByUserIdAndStatut(1L, StatutMembre.ACCEPTE))
+                .thenReturn(Optional.of(adhesion(membreA, groupeA)));
+        when(messageRepository.findByFilId(org.mockito.ArgumentMatchers.eq(100L), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        assertThat(messagerieService.listerMessagesPage(100L, membreA.getEmail(), 0, 50).content()).isEmpty();
     }
 
     @Test

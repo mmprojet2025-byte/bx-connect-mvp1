@@ -10,11 +10,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -119,6 +123,46 @@ class AuditLogServiceTest {
                 .first()
                 .extracting("action")
                 .isEqualTo("GROUP_VALIDATED");
+    }
+
+    @Test
+    void rechercherPageDelegueLesFiltresEtLimiteLaTaille() {
+        LocalDateTime debut = LocalDateTime.now().minusDays(1);
+        LocalDateTime fin = LocalDateTime.now();
+        AuditLog log = AuditLog.builder()
+                .action("GROUP_VALIDATED")
+                .cibleType("GROUPE")
+                .acteurRole("ADMIN")
+                .build();
+        when(auditLogRepository.rechercherPage(
+                eq("GROUP_VALIDATED"),
+                eq("GROUPE"),
+                eq("ADMIN"),
+                eq(debut),
+                eq(fin),
+                any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(log)));
+
+        var response = auditLogService.rechercherPage(
+                " GROUP_VALIDATED ",
+                " GROUPE ",
+                " ADMIN ",
+                debut,
+                fin,
+                0,
+                500);
+
+        assertThat(response.content()).hasSize(1);
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(auditLogRepository).rechercherPage(
+                eq("GROUP_VALIDATED"),
+                eq("GROUPE"),
+                eq("ADMIN"),
+                eq(debut),
+                eq(fin),
+                captor.capture());
+        assertThat(captor.getValue().getPageSize()).isEqualTo(100);
+        assertThat(captor.getValue().getSort().getOrderFor("dateAction").isDescending()).isTrue();
     }
 
     private User user(Long id, String email, Role role, String prenom, String nom) {

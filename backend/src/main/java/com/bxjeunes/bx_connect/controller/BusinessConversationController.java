@@ -1,5 +1,6 @@
 package com.bxjeunes.bx_connect.controller;
 
+import com.bxjeunes.bx_connect.dto.PagedResponse;
 import com.bxjeunes.bx_connect.dto.business.BusinessConversationResponse;
 import com.bxjeunes.bx_connect.dto.business.BusinessMessageResponse;
 import com.bxjeunes.bx_connect.dto.business.CreateBusinessConversationRequest;
@@ -47,6 +48,17 @@ public class BusinessConversationController {
     ) {
         return ResponseEntity.ok(
                 businessConversationService.listerMessages(id, authentication.getName()));
+    }
+
+    @GetMapping("/{id}/messages/page")
+    public ResponseEntity<PagedResponse<BusinessMessageResponse>> messagesPage(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(
+                businessConversationService.listerMessagesPage(id, authentication.getName(), page, size));
     }
 
     @PostMapping("/{id}/messages")

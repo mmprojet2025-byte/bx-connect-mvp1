@@ -4,6 +4,7 @@ import com.bxjeunes.bx_connect.dto.FilDiscussionRequest;
 import com.bxjeunes.bx_connect.dto.FilDiscussionResponse;
 import com.bxjeunes.bx_connect.dto.MessageRequest;
 import com.bxjeunes.bx_connect.dto.MessageResponse;
+import com.bxjeunes.bx_connect.dto.PagedResponse;
 import com.bxjeunes.bx_connect.entity.FilDiscussion;
 import com.bxjeunes.bx_connect.entity.Groupe;
 import com.bxjeunes.bx_connect.entity.MembreGroupe;
@@ -17,6 +18,8 @@ import com.bxjeunes.bx_connect.repository.GroupeRepository;
 import com.bxjeunes.bx_connect.repository.MembreGroupeRepository;
 import com.bxjeunes.bx_connect.repository.MessageRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
+import com.bxjeunes.bx_connect.util.PaginationUtils;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -156,6 +159,21 @@ public class MessagerieService {
                 .stream()
                 .map(MessageResponse::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    public PagedResponse<MessageResponse> listerMessagesPage(
+            Long filId,
+            String emailUtilisateur,
+            int page,
+            int size
+    ) {
+        verifierAccesFil(emailUtilisateur, filId);
+        return PagedResponse.fromPage(messageRepository
+                .findByFilId(
+                        filId,
+                        PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateEnvoi"))
+                )
+                .map(MessageResponse::fromEntity));
     }
 
     public MessageResponse envoyerMessageGroupe(Long groupeId, String contenu, String emailAuteur) {

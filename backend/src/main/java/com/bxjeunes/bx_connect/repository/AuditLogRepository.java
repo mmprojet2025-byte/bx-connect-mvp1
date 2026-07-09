@@ -1,6 +1,8 @@
 package com.bxjeunes.bx_connect.repository;
 
 import com.bxjeunes.bx_connect.entity.AuditLog;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -42,4 +44,30 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
             @Param("acteurRole") String acteurRole,
             @Param("dateDebut") LocalDateTime dateDebut,
             @Param("dateFin") LocalDateTime dateFin);
+
+    @Query(
+            value = """
+                    SELECT log FROM AuditLog log
+                    WHERE (:action IS NULL OR log.action = :action)
+                      AND (:cibleType IS NULL OR log.cibleType = :cibleType)
+                      AND (:acteurRole IS NULL OR log.acteurRole = :acteurRole)
+                      AND (:dateDebut IS NULL OR log.dateAction >= :dateDebut)
+                      AND (:dateFin IS NULL OR log.dateAction <= :dateFin)
+                    """,
+            countQuery = """
+                    SELECT COUNT(log) FROM AuditLog log
+                    WHERE (:action IS NULL OR log.action = :action)
+                      AND (:cibleType IS NULL OR log.cibleType = :cibleType)
+                      AND (:acteurRole IS NULL OR log.acteurRole = :acteurRole)
+                      AND (:dateDebut IS NULL OR log.dateAction >= :dateDebut)
+                      AND (:dateFin IS NULL OR log.dateAction <= :dateFin)
+                    """
+    )
+    Page<AuditLog> rechercherPage(
+            @Param("action") String action,
+            @Param("cibleType") String cibleType,
+            @Param("acteurRole") String acteurRole,
+            @Param("dateDebut") LocalDateTime dateDebut,
+            @Param("dateFin") LocalDateTime dateFin,
+            Pageable pageable);
 }

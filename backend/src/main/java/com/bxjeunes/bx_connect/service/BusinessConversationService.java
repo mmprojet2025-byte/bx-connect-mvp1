@@ -1,5 +1,6 @@
 package com.bxjeunes.bx_connect.service;
 
+import com.bxjeunes.bx_connect.dto.PagedResponse;
 import com.bxjeunes.bx_connect.dto.business.BusinessConversationResponse;
 import com.bxjeunes.bx_connect.dto.business.BusinessMessageResponse;
 import com.bxjeunes.bx_connect.dto.business.CreateBusinessConversationRequest;
@@ -16,6 +17,8 @@ import com.bxjeunes.bx_connect.repository.BusinessConversationParticipantReposit
 import com.bxjeunes.bx_connect.repository.BusinessConversationRepository;
 import com.bxjeunes.bx_connect.repository.BusinessMessageRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
+import com.bxjeunes.bx_connect.util.PaginationUtils;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,6 +73,22 @@ public class BusinessConversationService {
                 .stream()
                 .map(BusinessMessageResponse::fromEntity)
                 .toList();
+    }
+
+    public PagedResponse<BusinessMessageResponse> listerMessagesPage(
+            Long conversationId,
+            String emailUtilisateur,
+            int page,
+            int size
+    ) {
+        User utilisateur = chargerUtilisateurAutorise(emailUtilisateur);
+        chargerParticipant(conversationId, utilisateur);
+        return PagedResponse.fromPage(messageRepository
+                .findByConversationId(
+                        conversationId,
+                        PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
+                )
+                .map(BusinessMessageResponse::fromEntity));
     }
 
     public BusinessMessageResponse envoyerMessage(

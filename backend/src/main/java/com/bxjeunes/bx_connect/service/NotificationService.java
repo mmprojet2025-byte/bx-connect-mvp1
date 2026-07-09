@@ -1,11 +1,14 @@
 package com.bxjeunes.bx_connect.service;
 
+import com.bxjeunes.bx_connect.dto.PagedResponse;
 import com.bxjeunes.bx_connect.entity.Notification;
 import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.event.PushNotificationEvent;
 import com.bxjeunes.bx_connect.repository.NotificationRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
+import com.bxjeunes.bx_connect.util.PaginationUtils;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -56,6 +59,18 @@ public class NotificationService {
                 .stream()
                 .map(this::toMap)
                 .collect(Collectors.toList());
+    }
+
+    public PagedResponse<Map<String, Object>> mesNotificationsPage(String email, int page, int size) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+
+        return PagedResponse.fromPage(notificationRepository
+                .findByDestinataireId(
+                        user.getId(),
+                        PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation"))
+                )
+                .map(this::toMap));
     }
 
     // ─── Compter les non lues (badge) ─────────────────────────────────────────

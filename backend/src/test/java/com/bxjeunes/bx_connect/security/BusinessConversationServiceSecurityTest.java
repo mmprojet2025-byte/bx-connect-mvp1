@@ -23,6 +23,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
@@ -215,6 +217,37 @@ class BusinessConversationServiceSecurityTest {
         assertThatThrownBy(() -> service.listerMessages(100L, referentB.getEmail()))
                 .isInstanceOf(AccessDeniedException.class);
         verify(messageRepository, never()).findByConversationIdOrderByCreatedAtAsc(100L);
+    }
+
+    @Test
+    @DisplayName("Non participant ne peut pas lire les messages pagines")
+    void non_participant_ne_lit_pas_messages_pages() {
+        when(userRepository.findByEmail(referentB.getEmail())).thenReturn(Optional.of(referentB));
+        when(participantRepository.findByConversationIdAndUserId(100L, referentB.getId()))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.listerMessagesPage(100L, referentB.getEmail(), 0, 50))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(messageRepository, never()).findByConversationId(eq(100L), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("Messages metier pagines appliquent le tri DESC et la taille maximale")
+    void messages_metier_pages_limitent_size() {
+        BusinessConversationParticipant adminParticipant = participant(conversation, admin);
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(participantRepository.findByConversationIdAndUserId(100L, admin.getId()))
+                .thenReturn(Optional.of(adminParticipant));
+        when(messageRepository.findByConversationId(eq(100L), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        service.listerMessagesPage(100L, admin.getEmail(), -1, 500);
+
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(messageRepository).findByConversationId(eq(100L), captor.capture());
+        assertThat(captor.getValue().getPageNumber()).isZero();
+        assertThat(captor.getValue().getPageSize()).isEqualTo(100);
+        assertThat(captor.getValue().getSort().getOrderFor("createdAt").isDescending()).isTrue();
     }
 
     @Test

@@ -1,6 +1,8 @@
 package com.bxjeunes.bx_connect.repository;
 
 import com.bxjeunes.bx_connect.entity.Notification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -16,6 +18,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     // Toutes les notifications d'un utilisateur (plus récentes en premier)
     List<Notification> findByDestinataireIdOrderByDateCreationDesc(Long destinataireId);
+
+    Page<Notification> findByDestinataireId(Long destinataireId, Pageable pageable);
 
     // Notifications non lues d'un utilisateur
     List<Notification> findByDestinataireIdAndLueFalseOrderByDateCreationDesc(Long destinataireId);

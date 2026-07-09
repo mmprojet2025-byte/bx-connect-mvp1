@@ -51,6 +51,8 @@ class AdminEndpointSecurityTest {
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/super-admin/logs/search"))
                 .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/super-admin/logs/search/page"))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -58,6 +60,11 @@ class AdminEndpointSecurityTest {
     @DisplayName("SUPER_ADMIN peut consulter les logs filtres")
     void super_admin_peut_consulter_logs_filtres() throws Exception {
         mockMvc.perform(get("/api/super-admin/logs/search")
+                        .param("action", "PROJECT_APPROVED")
+                        .param("cibleType", "PROJECT")
+                        .param("acteurRole", "ADMIN"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/super-admin/logs/search/page")
                         .param("action", "PROJECT_APPROVED")
                         .param("cibleType", "PROJECT")
                         .param("acteurRole", "ADMIN"))
@@ -94,6 +101,8 @@ class AdminEndpointSecurityTest {
         mockMvc.perform(get("/api/messagerie/mon-groupe"))
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/messagerie/fils/1/messages"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/messagerie/fils/1/messages/page"))
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/messagerie/groupes/1/fil"))
                 .andExpect(status().isForbidden());

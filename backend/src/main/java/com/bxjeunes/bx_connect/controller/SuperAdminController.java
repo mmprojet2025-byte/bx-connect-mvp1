@@ -1,5 +1,6 @@
 package com.bxjeunes.bx_connect.controller;
 
+import com.bxjeunes.bx_connect.dto.PagedResponse;
 import com.bxjeunes.bx_connect.dto.superadmin.AdminResponse;
 import com.bxjeunes.bx_connect.dto.superadmin.AuditLogResponse;
 import com.bxjeunes.bx_connect.dto.superadmin.CreateAdminRequest;
@@ -103,5 +104,26 @@ public class SuperAdminController {
                 dateDebut,
                 dateFin,
                 limit));
+    }
+
+    @GetMapping("/logs/search/page")
+    public ResponseEntity<PagedResponse<AuditLogResponse>> rechercherLogsPage(
+            @RequestParam(required = false) String action,
+            @RequestParam(required = false) String cibleType,
+            @RequestParam(required = false) String acteurRole,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateDebut,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateFin,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        return ResponseEntity.ok(auditLogService.rechercherPage(
+                action,
+                cibleType,
+                acteurRole,
+                dateDebut,
+                dateFin,
+                page,
+                size));
     }
 }

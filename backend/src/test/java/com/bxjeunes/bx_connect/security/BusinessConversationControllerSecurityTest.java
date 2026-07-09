@@ -46,6 +46,8 @@ class BusinessConversationControllerSecurityTest {
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/conversations-metier/1/messages"))
                 .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/conversations-metier/1/messages/page"))
+                .andExpect(status().isForbidden());
         mockMvc.perform(post("/api/conversations-metier/1/messages")
                         .contentType("application/json")
                         .content("{\"contenu\":\"Bonjour\"}"))
