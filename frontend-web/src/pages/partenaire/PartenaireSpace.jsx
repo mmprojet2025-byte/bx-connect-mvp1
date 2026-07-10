@@ -30,15 +30,28 @@ import { SUPPORT_STATUS_STYLES, supportStatusLabel } from '../../utils/supportSt
 import PartnerLogo from '../../components/PartnerLogo';
 import { CollaborativeDashboardLayout } from '../../components/dashboard/CollaborativeDashboard';
 import CompactKpiRow from '../../components/dashboard/CompactKpiRow';
-
-// MVP1.5 / masqué volontairement : les onglets avancés restent dans le code mais hors navigation visible.
-const PARTNER_TABS = new Set(['dashboard', 'projets', 'activites', 'soutiens']);
-const PARTNER_TAB_ALIASES = {
-  'projets-activites': 'projets',
-};
-const OPPORTUNITY_CATEGORIES = ['EMPLOI', 'STAGE', 'FORMATION', 'EVENEMENT', 'APPEL_PROJET', 'PUBLICITE'];
-const OPPORTUNITY_APPLICATION_MODES = ['LIEN_EXTERNE', 'CONTACT_PARTENAIRE', 'INFORMATION'];
-const OPPORTUNITY_TARGETS = ['TOUS', 'MEMBRES', 'REFERENTS', 'GROUPES', 'PUBLIC'];
+import {
+  CHART_COLORS,
+  OPPORTUNITY_APPLICATION_MODES,
+  OPPORTUNITY_CATEGORIES,
+  OPPORTUNITY_TARGETS,
+  PARTNER_TAB_ALIASES,
+  PARTNER_TABS,
+  PARTNER_TYPES,
+} from './partnerSpace.constants';
+import {
+  applySettled,
+  buildPartnerImpact,
+  buildStatusChartData,
+  emptyOpportunityForm,
+  emptyPartnerProfile,
+  formatEuros,
+  getSupportedProjectStatus,
+  normalizeExternalUrl,
+  opportunityStatusStyle,
+  profileFromResponse,
+  safeText,
+} from './partnerSpace.helpers';
 
 export default function PartenaireSpace() {
   const { user } = useAuth();
@@ -2162,8 +2175,6 @@ function ImpactMetric({ icon, label, value }) {
   );
 }
 
-const CHART_COLORS = ['#f97316', '#2563eb', '#0f766e', '#d97706', '#7c3aed', '#dc2626', '#64748b'];
-
 function buildPartnerLocalImpact({ impactLocal, mesReferents, mesGroupesLies, mesSoutiens, mesOpportunites, profilInstitutionnel, t }) {
   const referents = Array.isArray(impactLocal?.referents) ? impactLocal.referents : mesReferents;
   const groupes = Array.isArray(impactLocal?.groupes) ? impactLocal.groupes : mesGroupesLies;
@@ -2272,51 +2283,6 @@ function buildPartnerChartData({ mesSoutiens, activitesOuvertes, t }) {
   };
 }
 
-function buildStatusChartData(items, getKey, getLabel) {
-  const counts = new Map();
-  items.forEach(item => {
-    const key = getKey(item);
-    if (!key) return;
-    counts.set(key, (counts.get(key) || 0) + 1);
-  });
-
-  return Array.from(counts.entries()).map(([key, value]) => ({
-    key,
-    label: getLabel(key),
-    value,
-  }));
-}
-
-function getSupportedProjectStatus(soutien) {
-  return soutien.projetStatut
-    || soutien.statutProjet
-    || soutien.projectStatus
-    || soutien.projet?.statut
-    || null;
-}
-
-function buildPartnerImpact({ statistiques, mesSoutiens }) {
-  const totalMontant = statistiques?.totalMontant
-    ?? mesSoutiens.reduce((sum, soutien) => sum + Number(soutien.montant || 0), 0);
-  const soutiensValides = statistiques?.soutiensValides
-    ?? mesSoutiens.filter(soutien => soutien.statutPaiement === 'PAYE').length;
-  const projetsSoutenus = statistiques?.projetsSoutenus
-    ?? new Set(mesSoutiens.map(soutien => soutien.projetId).filter(Boolean)).size;
-  const activitesSoutenues = statistiques?.activitesSoutenues
-    ?? new Set(mesSoutiens.map(soutien => soutien.activiteId).filter(Boolean)).size;
-
-  return {
-    totalSoutiens: statistiques?.totalSoutiens ?? mesSoutiens.length,
-    totalMontant,
-    soutiensValides,
-    projetsSoutenus,
-    activitesSoutenues,
-    recentSupports: [...mesSoutiens]
-      .sort((a, b) => new Date(b.dateCreation || 0) - new Date(a.dateCreation || 0))
-      .slice(0, 4),
-  };
-}
-
 function buildPartnerActivityItems({ mesSoutiens, projetsOuverts, activitesOuvertes, t }) {
   const supportItems = mesSoutiens.map(soutien => ({
     key: `soutien-${soutien.id}`,
@@ -2381,19 +2347,6 @@ function InlineIconLabel({ icon, children }) {
   );
 }
 
-function safeText(value, fallback) {
-  const text = String(value ?? '').trim();
-  if (!text || ['UNKNOWN', 'UNDEFINED', 'NULL'].includes(text.toUpperCase())) {
-    return fallback;
-  }
-  return text;
-}
-
-function formatEuros(value) {
-  const amount = Number(value || 0);
-  return `${Number.isFinite(amount) ? amount.toLocaleString('fr-BE') : 0} €`;
-}
-
 function formatDate(value, language) {
   if (!value) return '';
   const date = new Date(value);
@@ -2408,49 +2361,6 @@ function statusLabel(status, t) {
 function isMvp15View(activeView, expectedView) {
   // MVP1.5 / masqué volontairement : anciennes vues avancées conservées mais non affichées en MVP1.
   return activeView === expectedView && PARTNER_TABS.has(expectedView) === false;
-}
-
-const PARTNER_TYPES = ['COMMUNE', 'BIJ', 'ECOLE', 'HAUTE_ECOLE', 'ENTREPRISE', 'SPONSOR', 'ASSOCIATION', 'ONG', 'FONDATION', 'AUTRE'];
-
-function emptyOpportunityForm() {
-  return {
-    titre: '',
-    descriptionCourte: '',
-    contenu: '',
-    categorieOpportunite: 'EMPLOI',
-    lienExterne: '',
-    dateLimite: '',
-    nombrePlaces: '',
-    modeCandidature: 'LIEN_EXTERNE',
-    publicCible: 'TOUS',
-    miseEnAvant: false,
-  };
-}
-
-function emptyPartnerProfile() {
-  return {
-    nomOrganisation: '',
-    typePartenaire: 'AUTRE',
-    logoUrl: '',
-    personneContact: '',
-    emailContact: '',
-    telephone: '',
-    siteWeb: '',
-    description: '',
-  };
-}
-
-function profileFromResponse(profile) {
-  return {
-    nomOrganisation: profile?.nomOrganisation || '',
-    typePartenaire: profile?.typePartenaire || 'AUTRE',
-    logoUrl: profile?.logoUrl || '',
-    personneContact: profile?.personneContact || '',
-    emailContact: profile?.emailContact || '',
-    telephone: profile?.telephone || '',
-    siteWeb: profile?.siteWeb || '',
-    description: profile?.description || '',
-  };
 }
 
 function opportunityCategoryLabel(category, t) {
@@ -2482,21 +2392,6 @@ function opportunityTargetLabel(target, t) {
   return t(`opportunityFields.targets.${target}`, { defaultValue: target || '-' });
 }
 
-function opportunityStatusStyle(status) {
-  const styles = {
-    EN_ATTENTE: 'bg-amber-100 text-amber-800',
-    PUBLIEE: 'bg-green-100 text-green-700',
-    REFUSEE: 'bg-red-100 text-red-700',
-  };
-  return styles[status] || 'bg-slate-100 text-slate-700';
-}
-
-function normalizeExternalUrl(value) {
-  if (!value) return '#';
-  const trimmed = String(value).trim();
-  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-}
-
 function ProfileInput({ label, value, onChange, type = 'text', required = false, ...inputProps }) {
   return (
     <label className="block">
@@ -2511,14 +2406,6 @@ function ProfileInput({ label, value, onChange, type = 'text', required = false,
       />
     </label>
   );
-}
-
-function applySettled(result, onSuccess, onError) {
-  if (result.status === 'fulfilled') {
-    onSuccess(result.value.data);
-  } else {
-    onError(result.reason);
-  }
 }
 
 function SectionLoadError({ message }) {
