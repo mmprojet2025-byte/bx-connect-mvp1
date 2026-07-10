@@ -14,7 +14,6 @@ import {
   YAxis,
 } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
-import api from '../../api/axios';
 import { userFriendlyError } from '../../utils/userFriendlyError';
 import AppIcon from '../../components/ui/AppIcons';
 import LoadingState from '../../components/ui/LoadingState';
@@ -52,6 +51,23 @@ import {
   profileFromResponse,
   safeText,
 } from './partnerSpace.helpers';
+import {
+  cancelPartnerSupport,
+  createActivitySupport,
+  createPartnerOpportunity,
+  createProjectSupport,
+  getOpenPartnerActivities,
+  getOpenPartnerProjects,
+  getPartnerLinkedGroups,
+  getPartnerLocalImpact,
+  getPartnerOpportunities,
+  getPartnerProfile,
+  getPartnerReferents,
+  getPartnerStats,
+  getPartnerSupports,
+  savePartnerProfile,
+  updatePartnerSupport,
+} from './partnerSpace.api';
 
 export default function PartenaireSpace() {
   const { user } = useAuth();
@@ -98,15 +114,15 @@ export default function PartenaireSpace() {
     setSectionErrors({});
     try {
       const results = await Promise.allSettled([
-        api.get('/partenaire/mes-soutiens'),
-        api.get('/partenaire/projets-ouverts'),
-        api.get('/partenaire/activites-ouvertes'),
-        api.get('/partenaire/profil'),
-        api.get('/partenaire/statistiques'),
-        api.get('/annonces/partenaire/mes-opportunites'),
-        api.get('/partenaire/mes-referents'),
-        api.get('/partenaire/mes-groupes-lies'),
-        api.get('/partenaire/impact-local'),
+        getPartnerSupports(),
+        getOpenPartnerProjects(),
+        getOpenPartnerActivities(),
+        getPartnerProfile(),
+        getPartnerStats(),
+        getPartnerOpportunities(),
+        getPartnerReferents(),
+        getPartnerLinkedGroups(),
+        getPartnerLocalImpact(),
       ]);
       const [
         soutiensRes,
@@ -155,7 +171,7 @@ export default function PartenaireSpace() {
     setMessage('');
     setError('');
     try {
-      const response = await api.put('/partenaire/profil', profileForm);
+      const response = await savePartnerProfile(profileForm);
       setProfilInstitutionnel(response.data);
       setProfileForm(profileFromResponse(response.data));
       setShowProfileForm(false);
@@ -183,10 +199,10 @@ export default function PartenaireSpace() {
       };
       if (soutienForm.type === 'projet') {
         payload.projetId = soutienForm.projetId;
-        await api.post('/partenaire/soutenir-projet', payload);
+        await createProjectSupport(payload);
       } else {
         payload.activiteId = soutienForm.activiteId;
-        await api.post('/partenaire/soutenir-activite', payload);
+        await createActivitySupport(payload);
       }
       const feedback = t('partnerSpace.supportSubmitted');
       setMessage(feedback);
@@ -226,7 +242,7 @@ export default function PartenaireSpace() {
     setMessage('');
     setError('');
     try {
-      await api.put(`/partenaire/mes-soutiens/${editingSupport.id}`, {
+      await updatePartnerSupport(editingSupport.id, {
         montant: parseFloat(editSupportForm.montant),
         message: editSupportForm.message,
       });
@@ -254,7 +270,7 @@ export default function PartenaireSpace() {
     setMessage('');
     setError('');
     try {
-      await api.patch(`/partenaire/mes-soutiens/${soutien.id}/annuler`);
+      await cancelPartnerSupport(soutien.id);
       const feedback = t('partnerSpace.supportCanceled', { defaultValue: 'Proposition de soutien annulée.' });
       setMessage(feedback);
       toast.success(feedback);
@@ -291,7 +307,7 @@ export default function PartenaireSpace() {
         payload.dateLimite = opportunityForm.dateLimite;
         payload.dateExpiration = opportunityForm.dateLimite;
       }
-      await api.post('/annonces/opportunites', payload);
+      await createPartnerOpportunity(payload);
       const feedback = t('partnerSpace.opportunitySubmitted', { defaultValue: 'Opportunité envoyée à l’administration pour validation.' });
       setMessage(feedback);
       toast.success(feedback);
