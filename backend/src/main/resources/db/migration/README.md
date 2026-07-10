@@ -1,54 +1,77 @@
 # Flyway migrations
 
-Flyway is prepared in the backend dependencies, but it is disabled by default
-for the TFE/soutenance phase with:
+Flyway is now the source of truth for the BX-Connect database schema.
+Hibernate must validate the schema, not mutate it automatically.
+
+Normal backend configuration:
 
 ```properties
-spring.flyway.enabled=false
-spring.jpa.hibernate.ddl-auto=update
+spring.flyway.enabled=true
+spring.flyway.locations=classpath:db/migration
+spring.flyway.validate-on-migrate=true
+spring.flyway.baseline-on-migrate=false
+spring.flyway.clean-disabled=true
+spring.jpa.hibernate.ddl-auto=validate
 ```
 
-This avoids changing the current local MySQL database, which has been built
-incrementally by Hibernate `ddl-auto=update`.
+Do not use `spring.jpa.hibernate.ddl-auto=update` in production. Schema changes
+must be explicit, reviewed, versioned Flyway migrations.
 
-## Later production path
+## Current migrations
 
-1. Start from a clean copy or backup of the real MySQL database.
-2. Export the real schema after verifying it matches the current JPA entities.
-   Example direction:
+- `V1__baseline_schema.sql`: baseline schema exported from the verified MySQL
+  schema. It contains only DDL, no data, no users, no secrets.
+- `V2__add_core_indexes.sql`: core indexes for common production queries
+  such as notifications, messages, conversations, groups, projects, soutiens,
+  and audit logs.
 
-   ```bash
-   mysqldump --no-data --routines --triggers bxconnect_mvp1 > V1__baseline_schema.sql
-   ```
+## New database
 
-3. Review the generated SQL manually:
-   - remove environment-specific options if needed;
-   - keep foreign keys, indexes, unique constraints, enum/string columns;
-   - do not include local demo data or user secrets.
-4. Place the reviewed file here as:
+On an empty database, Flyway applies migrations in order:
 
-   ```text
-   V1__baseline_schema.sql
-   ```
+1. `V1__baseline_schema.sql`
+2. `V2__add_core_indexes.sql`
+3. future `V3__...`, `V4__...`, etc.
 
-5. Enable Flyway on a non-production copy first:
+After the migrations run, Hibernate starts with `ddl-auto=validate` and checks
+that the database schema matches the JPA entities.
 
-   ```properties
-   spring.flyway.enabled=true
-   spring.flyway.baseline-on-migrate=true
-   ```
+## Existing local database
 
-6. Once Flyway owns the schema safely, change Hibernate from:
+The existing local database `bxconnect_mvp1` was baselined once with Flyway so
+that Flyway created `flyway_schema_history` without replaying `V1` on top of
+the already existing schema.
 
-   ```properties
-   spring.jpa.hibernate.ddl-auto=update
-   ```
+That one-time baseline used a temporary runtime override only:
 
-   to:
+```properties
+spring.flyway.enabled=true
+spring.flyway.baseline-on-migrate=true
+spring.flyway.baseline-version=1
+spring.jpa.hibernate.ddl-auto=validate
+```
 
-   ```properties
-   spring.jpa.hibernate.ddl-auto=validate
-   ```
+This override must not remain in permanent configuration. Normal configuration
+keeps:
 
-Do not add an empty or approximate migration. The first migration must come
-from the real verified MySQL schema.
+```properties
+spring.flyway.baseline-on-migrate=false
+```
+
+## Future schema changes
+
+Every database evolution must be added as a new migration:
+
+```text
+V3__short_clear_description.sql
+V4__short_clear_description.sql
+```
+
+Rules:
+
+- never edit an already applied migration;
+- never add `INSERT` statements with personal data, test accounts, messages, or
+  secrets;
+- avoid destructive operations unless they are planned, backed up, and tested;
+- test on a disposable database before applying to real data;
+- keep Hibernate on `ddl-auto=validate`.

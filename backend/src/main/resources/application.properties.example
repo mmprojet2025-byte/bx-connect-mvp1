@@ -5,7 +5,12 @@ spring.datasource.url=jdbc:mysql://localhost:3306/bxconnect_mvp1?createDatabaseI
 spring.datasource.username=root
 spring.datasource.password=${DB_PASSWORD:CHANGE_ME}
 spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
-spring.jpa.hibernate.ddl-auto=update
+spring.jpa.hibernate.ddl-auto=validate
+spring.flyway.enabled=true
+spring.flyway.locations=classpath:db/migration
+spring.flyway.validate-on-migrate=true
+spring.flyway.baseline-on-migrate=false
+spring.flyway.clean-disabled=true
 
 # Donnees partenaires de demonstration (desactivees par defaut)
 bx.demo.partners.enabled=${BX_DEMO_PARTNERS_ENABLED:false}
