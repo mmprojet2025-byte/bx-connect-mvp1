@@ -23,7 +23,7 @@ import ErrorState from '../../components/ui/ErrorState'
 import LoadingState from '../../components/ui/LoadingState'
 import CompactKpiRow from '../../components/dashboard/CompactKpiRow'
 import { CollaborativeDashboardLayout } from '../../components/dashboard/CollaborativeDashboard'
-import { appendExcelSheet, createExcelWorkbook, saveExcelWorkbook, sanitizeExcelSheetName } from '../../utils/excelHtmlExport'
+import { appendExcelSheet, createExcelWorkbook, saveExcelWorkbook } from '../../utils/excelHtmlExport'
 
 const CHART_COLORS = ['#2563eb', '#0f766e', '#d97706', '#7c3aed', '#dc2626', '#64748b']
 const DEFAULT_FILTERS = { period: 'all', commune: 'all', group: 'all' }
@@ -1766,10 +1766,6 @@ function formatReferentName(link) {
 
 function appendSheet(workbook, name, rows) {
   appendExcelSheet(workbook, name, rows)
-}
-
-function sanitizeSheetName(name) {
-  return sanitizeExcelSheetName(name)
 }
 
 function buildExportFileName(base, extension, date) {

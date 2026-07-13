@@ -12,7 +12,7 @@ import ErrorState from '../../components/ui/ErrorState'
 import LoadingState from '../../components/ui/LoadingState'
 import PageHeader from '../../components/ui/PageHeader'
 import SectionCard from '../../components/ui/SectionCard'
-import { appendExcelSheet, createExcelWorkbook, saveExcelWorkbook, sanitizeExcelSheetName } from '../../utils/excelHtmlExport'
+import { appendExcelSheet, createExcelWorkbook, saveExcelWorkbook } from '../../utils/excelHtmlExport'
 
 const DEFAULT_FILTERS = { group: 'all', period: 'all' }
 const PRESENCE_STATUSES = ['PRESENT', 'ABSENT', 'EXCUSE', 'NON_RENSEIGNEE']
@@ -730,10 +730,6 @@ function addPdfTable(doc, startY, title, rows) {
 
 function appendSheet(workbook, sheetName, rows) {
   appendExcelSheet(workbook, sheetName, rows)
-}
-
-function sanitizeSheetName(name) {
-  return sanitizeExcelSheetName(name)
 }
 
 function buildFileName(prefix, extension, date) {
