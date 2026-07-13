@@ -1,6 +1,7 @@
 package com.bxjeunes.bx_connect.security;
 
 import com.bxjeunes.bx_connect.config.JwtService;
+import com.bxjeunes.bx_connect.config.RequestIdFilter;
 import com.bxjeunes.bx_connect.config.SecurityConfig;
 import com.bxjeunes.bx_connect.controller.PushDeviceController;
 import com.bxjeunes.bx_connect.dto.PushPreferenceResponse;
@@ -17,13 +18,16 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.blankOrNullString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PushDeviceController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, RequestIdFilter.class})
 class PushDeviceControllerSecurityTest {
 
     @Autowired private MockMvc mockMvc;
@@ -36,7 +40,16 @@ class PushDeviceControllerSecurityTest {
     @DisplayName("Les preferences push exigent une authentification")
     void preferences_exigent_authentification() throws Exception {
         mockMvc.perform(get("/api/push/preferences"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(header().string(RequestIdFilter.HEADER_NAME, not(blankOrNullString())));
+    }
+
+    @Test
+    @DisplayName("Actuator env reste refuse avec un request id")
+    void actuator_env_reste_refuse_avec_request_id() throws Exception {
+        mockMvc.perform(get("/actuator/env"))
+                .andExpect(status().isForbidden())
+                .andExpect(header().string(RequestIdFilter.HEADER_NAME, not(blankOrNullString())));
     }
 
     @Test

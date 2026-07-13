@@ -3,6 +3,7 @@ package com.bxjeunes.bx_connect.config;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.slf4j.MDC;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -37,6 +38,7 @@ public class GlobalExceptionHandler {
         error.put("status", status.value());
         error.put("error", isNotFound ? "Not Found" : "Bad Request");
         error.put("message", publicRuntimeMessage(message, isNotFound));
+        addRequestId(error);
         return ResponseEntity.status(status).body(error);
     }
 
@@ -55,6 +57,7 @@ public class GlobalExceptionHandler {
         error.put("status", HttpStatus.UNPROCESSABLE_ENTITY.value());
         error.put("error", "Validation Failed");
         error.put("fields", fieldErrors);
+        addRequestId(error);
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
     }
 
@@ -66,6 +69,7 @@ public class GlobalExceptionHandler {
         error.put("status", HttpStatus.FORBIDDEN.value());
         error.put("error", "Forbidden");
         error.put("message", "Vous n'avez pas les droits pour effectuer cette action.");
+        addRequestId(error);
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
@@ -77,6 +81,7 @@ public class GlobalExceptionHandler {
         error.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
         error.put("error", "Internal Server Error");
         error.put("message", "Une erreur inattendue est survenue.");
+        addRequestId(error);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 
@@ -93,5 +98,12 @@ public class GlobalExceptionHandler {
                 : environment.getDefaultProfiles();
         return Arrays.stream(profiles)
                 .anyMatch(profile -> profile.equals("dev") || profile.equals("local") || profile.equals("test"));
+    }
+
+    private void addRequestId(Map<String, Object> error) {
+        String requestId = MDC.get(RequestIdFilter.MDC_KEY);
+        if (requestId != null && !requestId.isBlank()) {
+            error.put("requestId", requestId);
+        }
     }
 }
