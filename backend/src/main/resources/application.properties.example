@@ -1,10 +1,26 @@
 # BX-CONNECT - Exemple de configuration
 # Copiez en application.properties
 server.port=8080
+
+# Local/dev :
 spring.datasource.url=jdbc:mysql://localhost:3306/bxconnect_mvp1?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
 spring.datasource.username=root
 spring.datasource.password=${DB_PASSWORD:CHANGE_ME}
 spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# Production :
+# SPRING_PROFILES_ACTIVE=prod
+# BX_PRODUCTION=true
+# DB_URL=jdbc:mysql://<host>:3306/<database>?useSSL=true&serverTimezone=UTC
+# DB_USERNAME=<db-user>
+# DB_PASSWORD=<db-password>
+# APP_CORS_ALLOWED_ORIGINS=https://app.example.org,https://admin.example.org
+# FRONTEND_URL=https://app.example.org
+# PAYPAL_RETURN_URL=https://api.example.org/api/paiements/confirmer
+# PAYPAL_CANCEL_URL=https://api.example.org/api/paiements/annuler
+# STRIPE_SUCCESS_URL=https://app.example.org/paiement/succes
+# STRIPE_CANCEL_URL=https://app.example.org/paiement/annule
+
 spring.jpa.hibernate.ddl-auto=validate
 spring.flyway.enabled=true
 spring.flyway.locations=classpath:db/migration
@@ -19,6 +35,8 @@ spring.jpa.show-sql=false
 jwt.secret=${JWT_SECRET:CHANGE_ME}
 jwt.expiration=86400000
 frontend.url=http://localhost:5173
+app.cors.allowed-origins=${APP_CORS_ALLOWED_ORIGINS:http://localhost:*,http://127.0.0.1:*}
+bx.production=${BX_PRODUCTION:false}
 springdoc.api-docs.path=/v3/api-docs
 springdoc.swagger-ui.path=/swagger-ui.html
 paypal.client-id=${PAYPAL_CLIENT_ID:CHANGE_ME}
