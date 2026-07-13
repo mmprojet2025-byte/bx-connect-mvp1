@@ -22,7 +22,7 @@ import StatusBadge from '../../components/StatusBadge';
 import ProjectCover from '../../components/ProjectCover';
 import ActivityCover from '../../components/ActivityCover';
 import ProjectVisibilityBadge from '../../components/ProjectVisibilityBadge';
-import { SUPPORT_STATUS_STYLES, supportStatusLabel } from '../../utils/supportStatus';
+import { supportStatusLabel } from '../../utils/supportStatus';
 import PartnerLogo from '../../components/PartnerLogo';
 import { CollaborativeDashboardLayout } from '../../components/dashboard/CollaborativeDashboard';
 import CompactKpiRow from '../../components/dashboard/CompactKpiRow';
@@ -40,6 +40,8 @@ import {
   opportunityStatusStyle,
   safeText,
 } from './partnerSpace.helpers';
+import PartnerDashboardOverview from './components/PartnerDashboardOverview';
+import PartnerSupportCard from './components/PartnerSupportCard';
 import usePartnerSpace from './usePartnerSpace';
 
 export default function PartenaireSpace() {
@@ -849,50 +851,6 @@ function PartnerWorkspaceShell({
   );
 }
 
-// MVP1.5 / masqué volontairement : ancienne carte partenaire détaillée conservée hors rendu MVP1.
-// eslint-disable-next-line no-unused-vars
-function PartnerHeaderCard({ profil, user, onEditProfile, onSupport, t }) {
-  const organization = safeText(profil?.nomOrganisation, t('partnerSpace.title'));
-  const contact = safeText(profil?.personneContact || [user?.prenom, user?.nom].filter(Boolean).join(' '), t('partnerSpace.contactFallback', { defaultValue: 'Contact non renseigné' }));
-
-  return (
-    <div className="flex flex-col gap-4 rounded-xl border border-orange-100 bg-white p-5 shadow-lg shadow-orange-950/5 md:flex-row md:items-center md:justify-between">
-      <div className="flex min-w-0 items-center gap-4">
-        <PartnerLogo logoUrl={profil?.logoUrl} name={organization} />
-        <div className="min-w-0">
-          <h1 className="flex items-center gap-3 text-xl font-black text-slate-950">
-            <AppIcon name="Handshake" className="h-6 w-6 text-orange-600" />
-            <span className="truncate">{organization}</span>
-          </h1>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">
-              {t(`partnerInstitution.types.${profil?.typePartenaire || 'AUTRE'}`, { defaultValue: t('partnerInstitution.types.AUTRE', { defaultValue: 'Partenaire' }) })}
-            </span>
-            <span className="text-sm text-slate-500">{contact}</span>
-          </div>
-        </div>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={onEditProfile}
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-        >
-          <AppIcon name="Edit" className="h-4 w-4" />
-          {t('partnerInstitution.editProfile')}
-        </button>
-        <button
-          type="button"
-          onClick={onSupport}
-          className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-500"
-        >
-          <AppIcon name="PlusCircle" className="h-4 w-4" />
-          {t('partnerSpace.financialSupport')}
-        </button>
-      </div>
-    </div>
-  );
-}
 function PartnerMvp1Dashboard({
   activeView,
   mesSoutiens,
@@ -985,122 +943,6 @@ function PartnerMvp1Dashboard({
           )}
         </SectionCard>
       )}
-    </div>
-  );
-}
-
-function PartnerDashboardOverview({ mesSoutiens, projetsOuverts, activitesOuvertes, recentItems, language, t }) {
-  const recentSupports = [...mesSoutiens]
-    .sort((a, b) => new Date(b.dateCreation || b.datePaiement || 0) - new Date(a.dateCreation || a.datePaiement || 0))
-    .slice(0, 3);
-  const availableItems = [
-    ...projetsOuverts.slice(0, 2).map(projet => ({
-      key: `projet-${projet.id}`,
-      icon: 'Rocket',
-      title: safeText(projet.titre, t('projects.titleFallback', { defaultValue: 'Projet' })),
-      description: projet.budgetDemande ? `${t('partnerSpace.budget')}: ${formatEuros(projet.budgetDemande)}` : t('partnerSpace.openProjects'),
-    })),
-    ...activitesOuvertes.slice(0, 2).map(activite => ({
-      key: `activite-${activite.id}`,
-      icon: 'Calendar',
-      title: safeText(activite.titre, t('activities.titleFallback', { defaultValue: 'Activité' })),
-      description: activite.dateDebut ? formatDate(activite.dateDebut, language) : t('partnerSpace.openActivities'),
-    })),
-  ].slice(0, 4);
-
-  return (
-    <div className="space-y-5">
-      <SectionCard
-        title={t('partnerSpace.dashboardSummaryTitle', { defaultValue: 'À retenir' })}
-        subtitle={t('partnerSpace.dashboardSummarySubtitle', { defaultValue: 'Une vue courte de ce que vous pouvez soutenir et de ce que vous suivez déjà.' })}
-      >
-        <div className="grid gap-3 md:grid-cols-3">
-          <SummaryTile icon="Wallet" title={t('partnerSpace.mySupports')} value={mesSoutiens.length} />
-          <SummaryTile icon="Rocket" title={t('partnerSpace.openProjects')} value={projetsOuverts.length} />
-          <SummaryTile icon="Calendar" title={t('partnerSpace.openActivities')} value={activitesOuvertes.length} />
-        </div>
-      </SectionCard>
-
-      <div className="grid gap-5 xl:grid-cols-2">
-        <SectionCard
-          title={t('partnerSpace.recentSupports', { defaultValue: 'Derniers soutiens' })}
-          subtitle={t('partnerSpace.recentSupportsHint', { defaultValue: 'Les trois derniers soutiens suivis.' })}
-        >
-          {recentSupports.length === 0 ? (
-            <EmptyState
-              icon="Wallet"
-              title={t('partnerSpace.noDeclarations')}
-              description={t('partnerSpace.noSupports')}
-            />
-          ) : (
-            <div className="grid gap-3">
-              {recentSupports.map(soutien => (
-                <CompactSupportRow key={soutien.id} soutien={soutien} language={language} t={t} />
-              ))}
-            </div>
-          )}
-        </SectionCard>
-
-        <SectionCard
-          title={t('partnerSpace.availableToSupport', { defaultValue: 'Disponibles au soutien' })}
-          subtitle={t('partnerSpace.availableToSupportHint', { defaultValue: 'Quelques projets et activités ouverts.' })}
-        >
-          {availableItems.length === 0 ? (
-            <EmptyState
-              icon="Rocket"
-              title={t('partnerSpace.noOpenSupports', { defaultValue: 'Aucun soutien disponible' })}
-              description={t('partnerSpace.noOpenSupportsDesc', { defaultValue: 'Les projets et activités ouverts apparaîtront ici.' })}
-            />
-          ) : (
-            <div className="grid gap-3">
-              {availableItems.map(item => (
-                <div key={item.key} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
-                    <AppIcon name={item.icon} className="h-4 w-4" />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-black text-slate-950">{item.title}</span>
-                    <span className="mt-0.5 block truncate text-xs font-semibold text-slate-500">{item.description}</span>
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </SectionCard>
-      </div>
-
-      <SimpleRecentHistory items={recentItems} language={language} t={t} />
-    </div>
-  );
-}
-
-function SummaryTile({ icon, title, value }) {
-  return (
-    <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-      <AppIcon name={icon} className="mb-3 h-5 w-5 text-orange-600" />
-      <p className="text-2xl font-black text-slate-950">{value}</p>
-      <p className="mt-1 text-sm font-bold text-slate-500">{title}</p>
-    </div>
-  );
-}
-
-function CompactSupportRow({ soutien, language, t }) {
-  const target = safeText(soutien.projetTitre || soutien.activiteTitre, t('partnerSpace.supportFallback', { defaultValue: 'Soutien financier' }));
-
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
-        <AppIcon name="Wallet" className="h-4 w-4" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-black text-slate-950">{target}</span>
-        <span className="mt-0.5 block truncate text-xs font-semibold text-slate-500">
-          {formatEuros(soutien.montant)} · {formatDate(soutien.dateCreation || soutien.datePaiement, language)}
-        </span>
-      </span>
-      <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-black ${SUPPORT_STATUS_STYLES[soutien.statutPaiement] || 'bg-slate-100 text-slate-700'}`}>
-        {supportStatusLabel(soutien.statutPaiement, t)}
-      </span>
     </div>
   );
 }
@@ -1801,102 +1643,6 @@ function OpportunityCard({ opportunite, language, t }) {
         )}
       </div>
     </article>
-  );
-}
-
-function PartnerSupportCard({ soutien, language, focused, processingKey, onEdit, onCancel, t }) {
-  const target = safeText(soutien.projetTitre || soutien.activiteTitre, t('partnerSpace.supportFallback', { defaultValue: 'Soutien financier' }))
-  const targetType = soutien.projetTitre ? t('partnerSupport.project') : soutien.activiteTitre ? t('partnerSupport.activity') : t('partnerSpace.supportTargetFallback', { defaultValue: 'Soutien' })
-  const editable = soutien.statutPaiement === 'EN_ATTENTE'
-
-  return (
-    <article className={`rounded-xl border bg-white p-4 shadow-sm ${focused ? 'border-orange-300 ring-2 ring-orange-100' : 'border-slate-100'}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-black uppercase tracking-wide text-orange-600">
-            {targetType}
-          </p>
-          <h3 className="mt-1 truncate font-black text-slate-950">{target}</h3>
-          <p className="mt-1 text-sm font-black text-orange-600">{formatEuros(soutien.montant)}</p>
-        </div>
-        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-black ${SUPPORT_STATUS_STYLES[soutien.statutPaiement] || 'bg-slate-100 text-slate-700'}`}>
-          {supportStatusLabel(soutien.statutPaiement, t)}
-        </span>
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-3 text-xs font-semibold text-slate-500">
-        {soutien.dateCreation && (
-          <InlineIconLabel icon="Calendar">{formatDate(soutien.dateCreation, language)}</InlineIconLabel>
-        )}
-        {soutien.reponseAdmin && (
-          <InlineIconLabel icon="Shield">{t('partnerSpace.adminReplyAvailable', { defaultValue: 'Réponse admin disponible' })}</InlineIconLabel>
-        )}
-      </div>
-
-      {editable && (
-        <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
-          <button
-            type="button"
-            onClick={onEdit}
-            disabled={processingKey === `edit-${soutien.id}` || processingKey === `cancel-${soutien.id}`}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-orange-200 bg-white px-3 py-2 text-sm font-bold text-orange-700 transition hover:bg-orange-50 disabled:opacity-50"
-          >
-            <AppIcon name="Edit" className="h-4 w-4" />
-            {t('common.edit', { defaultValue: 'Modifier' })}
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={processingKey === `cancel-${soutien.id}` || processingKey === `edit-${soutien.id}`}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
-          >
-            <AppIcon name="XCircle" className="h-4 w-4" />
-            {processingKey === `cancel-${soutien.id}`
-              ? t('common.saving', { defaultValue: 'Enregistrement...' })
-              : t('common.cancel', { defaultValue: 'Annuler' })}
-          </button>
-        </div>
-      )}
-    </article>
-  );
-}
-
-function SimpleRecentHistory({ items, language, t }) {
-  const recentItems = [...items]
-    .filter(item => item.date)
-    .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
-    .slice(0, 5);
-
-  return (
-    <SectionCard
-      title={t('partnerSpace.recentHistoryTitle', { defaultValue: 'Historique récent' })}
-      subtitle={t('partnerSpace.recentHistorySubtitle', { defaultValue: 'Derniers soutiens, projets et activités disponibles.' })}
-    >
-      {recentItems.length === 0 ? (
-        <EmptyState
-          icon="Clock"
-          title={t('partnerSpace.noRecentHistory', { defaultValue: 'Aucun historique récent' })}
-          description={t('partnerSpace.noRecentHistoryDesc', { defaultValue: 'Les derniers mouvements apparaîtront ici dès qu’un soutien, projet ou activité sera disponible.' })}
-        />
-      ) : (
-        <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-100 bg-white">
-          {recentItems.map(item => (
-            <div key={item.key} className="flex items-center gap-3 px-4 py-3">
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
-                <AppIcon name={item.icon || 'Clock'} className="h-4 w-4" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-black text-slate-950">{safeText(item.title, t('partnerSpace.historyFallback', { defaultValue: 'Mouvement partenaire' }))}</p>
-                <p className="mt-0.5 truncate text-xs font-semibold text-slate-500">{safeText(item.description, t('partnerSpace.historyDescriptionFallback', { defaultValue: 'Mise à jour récente' }))}</p>
-              </div>
-              <span className="shrink-0 text-xs font-semibold text-slate-400">
-                {formatDate(item.date, language)}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </SectionCard>
   );
 }
 
