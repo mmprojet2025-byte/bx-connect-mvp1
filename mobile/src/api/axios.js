@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { captureApiError } from '../services/captureApiError';
 import { clearStoredAuth, getStoredToken } from '../services/secureAuthStorage';
 
 function getApiBaseUrl() {
@@ -50,6 +51,14 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    const status = error.response?.status;
+    const isNetworkError = !error.response && error.code !== 'ERR_CANCELED' && error.name !== 'CanceledError';
+    const isServerError = status >= 500;
+
+    if (isNetworkError || isServerError) {
+      captureApiError(error, isNetworkError ? 'network_error' : 'http_5xx_error');
+    }
+
     const isPublic = error.config?.skipAuth
       || PUBLIC_ROUTES.some(route => error.config?.url?.includes(route));
     if (error.response?.status === 401 && !isPublic) {

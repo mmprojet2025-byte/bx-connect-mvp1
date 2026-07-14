@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react-native';
+import { sanitizeBreadcrumb, sanitizeSentryEvent } from './sentrySanitizer';
 
 const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
 let sentryEnabled = false;
@@ -12,15 +13,8 @@ export function initSentry() {
     environment: __DEV__ ? 'development' : 'production',
     sendDefaultPii: false,
     tracesSampleRate: 0,
-    beforeSend(event) {
-      if (event.user) {
-        delete event.user.email;
-        delete event.user.id;
-        delete event.user.ip_address;
-        delete event.user.username;
-      }
-      return event;
-    },
+    beforeSend: sanitizeSentryEvent,
+    beforeBreadcrumb: sanitizeBreadcrumb,
   });
 
   sentryEnabled = true;
