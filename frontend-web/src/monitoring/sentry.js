@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react'
+import { sanitizeBreadcrumb, sanitizeSentryEvent } from './sentrySanitizer'
 
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN
 
@@ -9,14 +10,7 @@ if (sentryDsn) {
     environment: import.meta.env.MODE,
     sendDefaultPii: false,
     tracesSampleRate: 0,
-    beforeSend(event) {
-      if (event.user) {
-        delete event.user.email
-        delete event.user.id
-        delete event.user.ip_address
-        delete event.user.username
-      }
-      return event
-    },
+    beforeSend: sanitizeSentryEvent,
+    beforeBreadcrumb: sanitizeBreadcrumb,
   })
 }
