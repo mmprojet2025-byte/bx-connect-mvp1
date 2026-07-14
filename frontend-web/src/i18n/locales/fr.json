@@ -2832,6 +2832,12 @@
       "ARCHIVED": "Archivée"
     }
   },
+  "errorBoundary": {
+    "eyebrow": "Erreur application",
+    "title": "Une erreur inattendue est survenue",
+    "description": "Vous pouvez recharger la page. Si le problème persiste, contactez l’équipe BX-Connect.",
+    "reload": "Recharger la page"
+  },
   "dashboardCharts": {
     "title": "Indicateurs visuels",
     "adminSubtitle": "Répartitions calculées à partir des données chargées dans ce tableau de bord.",

@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { captureApiError } from '../monitoring/captureApiError.js'
 
 // URL API depuis variable d'environnement Vite
 // Creer .env.local avec : VITE_API_BASE_URL=http://localhost:8080/api
@@ -26,6 +27,14 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    const status = error.response?.status
+    const isNetworkError = !error.response && error.code !== 'ERR_CANCELED' && error.name !== 'CanceledError'
+    const isServerError = status >= 500
+
+    if (isNetworkError || isServerError) {
+      captureApiError(error, isNetworkError ? 'network_error' : 'http_5xx_error')
+    }
+
     if (error.response?.status === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')

@@ -2832,6 +2832,12 @@
       "ARCHIVED": "Archived"
     }
   },
+  "errorBoundary": {
+    "eyebrow": "Application error",
+    "title": "An unexpected error occurred",
+    "description": "You can reload the page. If the problem continues, contact the BX-Connect team.",
+    "reload": "Reload page"
+  },
   "dashboardCharts": {
     "title": "Visual indicators",
     "adminSubtitle": "Breakdowns calculated from the data loaded in this dashboard.",

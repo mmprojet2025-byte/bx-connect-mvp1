@@ -2832,6 +2832,12 @@
       "ARCHIVED": "Gearchiveerd"
     }
   },
+  "errorBoundary": {
+    "eyebrow": "Applicatiefout",
+    "title": "Er is een onverwachte fout opgetreden",
+    "description": "U kunt de pagina opnieuw laden. Blijft het probleem bestaan, neem dan contact op met het BX-Connect-team.",
+    "reload": "Pagina opnieuw laden"
+  },
   "dashboardCharts": {
     "title": "Visuele indicatoren",
     "adminSubtitle": "Verdelingen berekend op basis van de gegevens die in dit dashboard zijn geladen.",
