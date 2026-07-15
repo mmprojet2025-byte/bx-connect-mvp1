@@ -53,14 +53,60 @@ Verifier que les tests passent avant de construire l'artefact final.
 
 ## Build frontend web
 
-Depuis `frontend-web/`, fournir obligatoirement l'URL API production :
+Depuis `frontend-web/`, fournir obligatoirement l'URL API production et, si
+Sentry est actif, une release explicite :
 
 ```bash
-VITE_API_BASE_URL=https://api.example.org/api npm run build
+VITE_API_BASE_URL=https://api.example.org/api \
+VITE_SENTRY_ENVIRONMENT=production \
+VITE_SENTRY_RELEASE=<git-tag-or-ci-release> \
+npm run build
 ```
 
 `https://api.example.org/api` est un placeholder. Remplacer par le domaine API
-definitif.
+definitif. La valeur `VITE_SENTRY_RELEASE` doit venir du tag Git ou de la
+version CI validee pour la release.
+
+### Sourcemaps Sentry web
+
+Le frontend web est compatible avec l'upload Sentry via le plugin Vite officiel.
+Le plugin ne s'active que si toutes les variables CI/build suivantes sont
+presentes au moment du build :
+
+```text
+SENTRY_AUTH_TOKEN=<sentry-ci-token>
+SENTRY_ORG=<sentry-org-slug>
+SENTRY_PROJECT=<sentry-web-project-slug>
+VITE_SENTRY_RELEASE=<git-tag-or-ci-release>
+```
+
+`SENTRY_AUTH_TOKEN` est un secret CI uniquement. Ne jamais le prefixer par
+`VITE_`, ne jamais le committer et ne jamais l'exposer au navigateur.
+
+Ordre recommande :
+
+1. Definir la release (`VITE_SENTRY_RELEASE`) depuis le tag Git ou la CI.
+2. Lancer le build frontend avec les variables runtime et CI Sentry.
+3. Laisser le plugin uploader les sourcemaps vers Sentry.
+4. Verifier que les fichiers `.map` ont ete supprimes du dossier `dist/`.
+5. Deployer uniquement le contenu final sans `.map` publics.
+6. Declencher une erreur controlee en preproduction et verifier la resolution
+   de stacktrace dans Sentry.
+
+Controle local apres build :
+
+```bash
+find dist -name '*.map' -print
+```
+
+La commande ne doit rien afficher pour un build deployable publiquement.
+
+Si `SENTRY_DIST` et `VITE_SENTRY_DIST` sont utilises, ils doivent porter la
+meme valeur de build. Sans `SENTRY_DIST`, la release seule suffit.
+
+Le token Sentry doit etre stocke dans le gestionnaire de secrets CI/hebergeur et
+faire l'objet d'une rotation reguliere, notamment apres tout changement
+d'equipe ou incident.
 
 ## Variables backend
 
@@ -87,6 +133,9 @@ Frontend web :
 ```text
 VITE_API_BASE_URL=https://api.example.org/api
 VITE_SENTRY_DSN=<optional-sentry-dsn>
+VITE_SENTRY_ENVIRONMENT=production
+VITE_SENTRY_RELEASE=<git-tag-or-ci-release>
+VITE_SENTRY_DIST=<optional-build-number>
 ```
 
 Mobile Expo :

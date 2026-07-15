@@ -32,8 +32,24 @@ captures contenant ces valeurs.
 | Variable | Obligatoire | Exemple de placeholder | Contraintes |
 | --- | --- | --- | --- |
 | `VITE_API_BASE_URL` | Oui | `https://api.example.org/api` | HTTPS, non local. Sans cette variable, le code retombe sur localhost. |
-| `VITE_SENTRY_DSN` | Recommande | `<sentry-web-dsn>` | Activer seulement apres validation PII. |
+| `VITE_SENTRY_DSN` | Recommande | `<sentry-web-dsn>` | Runtime navigateur. Activer seulement apres validation PII. |
+| `VITE_SENTRY_ENVIRONMENT` | Recommande si Sentry actif | `preprod` ou `production` | Environnement visible dans Sentry. |
+| `VITE_SENTRY_RELEASE` | Recommande si Sentry actif | `<git-tag-or-ci-release>` | Source de verite release web, identique a la release utilisee pour l'upload sourcemaps. |
+| `VITE_SENTRY_DIST` | Optionnel | `<build-number>` | Distribution visible cote navigateur si l'equipe segmente les builds. Doit correspondre a `SENTRY_DIST` si les deux sont utilises. |
 | `VITE_ANALYTICS_KEY` | Optionnel | `<analytics-key>` | Ne pas envoyer de donnees personnelles. |
+
+## Frontend web Sentry - variables CI/build
+
+Ces variables sont utilisees uniquement pendant le build CI pour uploader les
+sourcemaps vers Sentry. Elles ne doivent jamais etre prefixees par `VITE_` et
+ne doivent jamais etre exposees au navigateur.
+
+| Variable | Obligatoire | Exemple de placeholder | Contraintes |
+| --- | --- | --- | --- |
+| `SENTRY_AUTH_TOKEN` | Oui pour upload sourcemaps | `<sentry-ci-token>` | Secret CI uniquement, jamais dans Git, rotation reguliere. |
+| `SENTRY_ORG` | Oui pour upload sourcemaps | `<sentry-org-slug>` | Slug organisation Sentry. |
+| `SENTRY_PROJECT` | Oui pour upload sourcemaps | `<sentry-web-project-slug>` | Slug projet Sentry web. |
+| `SENTRY_DIST` | Optionnel | `<build-number>` | Distribution d'upload. Doit correspondre a `VITE_SENTRY_DIST` si le runtime renseigne aussi `dist`. |
 
 ## Mobile Expo
 
