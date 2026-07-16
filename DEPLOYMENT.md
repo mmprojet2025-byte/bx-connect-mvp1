@@ -143,7 +143,52 @@ Mobile Expo :
 ```text
 EXPO_PUBLIC_API_BASE_URL=https://api.example.org/api
 EXPO_PUBLIC_SENTRY_DSN=<optional-sentry-dsn>
+EXPO_PUBLIC_SENTRY_ENVIRONMENT=production
+EXPO_PUBLIC_SENTRY_RELEASE=bx-connect-mobile@1.0.0
+EXPO_PUBLIC_SENTRY_DIST=ios-1
 ```
+
+Pour Android, `EXPO_PUBLIC_SENTRY_DIST` doit suivre le build Android, par
+exemple `android-1`. Ne jamais inclure d'email, identifiant utilisateur ou
+donnee personnelle dans la release ou le dist.
+
+## Builds mobile EAS et Sentry
+
+Le projet mobile contient des profils EAS generiques `development`, `preview`
+et `production`. Ils ne contiennent aucun secret. Les secrets Sentry doivent
+etre fournis via EAS Secrets ou le gestionnaire de secrets CI :
+
+```text
+SENTRY_AUTH_TOKEN=<sentry-ci-token>
+SENTRY_ORG=<sentry-org-slug>
+SENTRY_PROJECT=<sentry-mobile-project-slug>
+```
+
+Ne jamais utiliser `EXPO_PUBLIC_SENTRY_AUTH_TOKEN` et ne jamais mettre
+`SENTRY_AUTH_TOKEN` dans `app.json`, `eas.json` ou un fichier committe.
+
+Convention mobile recommandee :
+
+- release : `bx-connect-mobile@<expo.version>` ;
+- dist iOS : `ios-<ios.buildNumber>` ;
+- dist Android : `android-<android.versionCode>`.
+
+Avant chaque build distribue :
+
+1. Incrementer `ios.buildNumber` et/ou `android.versionCode`.
+2. Definir `EXPO_PUBLIC_SENTRY_RELEASE` avec la release mobile attendue.
+3. Definir `EXPO_PUBLIC_SENTRY_DIST` selon la plateforme construite.
+4. Lancer le build EAS `preview` ou `production`.
+5. Laisser le plugin `@sentry/react-native/expo` et les secrets EAS/CI gerer
+   l'upload des sourcemaps/artifacts.
+6. Declencher une erreur JS volontaire en preview.
+7. Verifier dans Sentry que la stacktrace est symboliquee, que `release` et
+   `dist` correspondent au build, et qu'aucune donnee personnelle n'est envoyee.
+8. Verifier que `SENTRY_AUTH_TOKEN` n'apparait pas dans le bundle exporte ni
+   dans les logs publics.
+
+Ne pas lancer de build EAS production sans projet Sentry mobile de
+preproduction valide et sans validation humaine de la stacktrace.
 
 ## Demarrage backend
 

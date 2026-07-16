@@ -56,8 +56,33 @@ ne doivent jamais etre exposees au navigateur.
 | Variable | Obligatoire | Exemple de placeholder | Contraintes |
 | --- | --- | --- | --- |
 | `EXPO_PUBLIC_API_BASE_URL` | Oui pour release | `https://api.example.org/api` | HTTPS, non local. Sans cette variable, le code utilise des fallbacks locaux/dev. |
-| `EXPO_PUBLIC_SENTRY_DSN` | Recommande | `<sentry-mobile-dsn>` | Sentry mobile, PII desactivee dans le code. |
+| `EXPO_PUBLIC_SENTRY_DSN` | Recommande | `<sentry-mobile-dsn>` | DSN public mobile. PII desactivee dans le code. |
+| `EXPO_PUBLIC_SENTRY_ENVIRONMENT` | Recommande si Sentry actif | `preprod` ou `production` | Environnement visible dans Sentry. Les profils EAS le definissent deja. |
+| `EXPO_PUBLIC_SENTRY_RELEASE` | Recommande si Sentry actif | `bx-connect-mobile@1.0.0` | Release runtime mobile. Doit correspondre aux artifacts sourcemaps uploades. |
+| `EXPO_PUBLIC_SENTRY_DIST` | Recommande si Sentry actif | `ios-1` ou `android-1` | Distribution runtime. Ne jamais contenir de donnee personnelle. |
 | `EXPO_PUBLIC_ANALYTICS_KEY` | Optionnel | `<analytics-key>` | Ne pas envoyer de donnees personnelles. |
+
+## Mobile Sentry - variables EAS/CI secretes
+
+Ces variables servent a l'upload des sourcemaps et artifacts Sentry pendant les
+builds EAS/CI. Elles ne doivent jamais etre prefixees par `EXPO_PUBLIC_` et ne
+doivent jamais etre embarquees dans l'application.
+
+| Variable | Obligatoire | Exemple de placeholder | Contraintes |
+| --- | --- | --- | --- |
+| `SENTRY_AUTH_TOKEN` | Oui pour upload sourcemaps mobile | `<sentry-ci-token>` | Secret EAS/CI uniquement, jamais dans Git, rotation reguliere. |
+| `SENTRY_ORG` | Oui pour upload sourcemaps mobile | `<sentry-org-slug>` | Slug organisation Sentry. |
+| `SENTRY_PROJECT` | Oui pour upload sourcemaps mobile | `<sentry-mobile-project-slug>` | Slug projet Sentry mobile. |
+
+Convention recommandee :
+
+- release mobile : `bx-connect-mobile@<expo.version>` ;
+- dist iOS : `ios-<ios.buildNumber>` ;
+- dist Android : `android-<android.versionCode>`.
+
+`ios.buildNumber` et `android.versionCode` doivent etre incrementes pour chaque
+build distribue. La release et le dist des events runtime doivent correspondre
+aux sourcemaps/artifacts uploades pour le meme build.
 
 ## A confirmer selon l'hebergeur
 

@@ -13,10 +13,12 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bxjeunes.bxconnect"
+      "bundleIdentifier": "com.bxjeunes.bxconnect",
+      "buildNumber": "1"
     },
     "android": {
       "package": "com.bxjeunes.bxconnect",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -31,7 +33,8 @@
       "expo-font",
       "expo-notifications",
       "expo-localization",
-      "expo-secure-store"
+      "expo-secure-store",
+      "@sentry/react-native/expo"
     ]
   }
 }
