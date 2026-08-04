@@ -31,6 +31,17 @@ const emptyForm = {
   theme: '',
 };
 
+async function fetchActivites({ t, setActivites, setError, setLoading }) {
+  try {
+    const res = await api.get('/activites/admin/toutes');
+    setActivites(res.data);
+  } catch (err) {
+    setError(userFriendlyError(err, t('admin.error_load')));
+  } finally {
+    setLoading(false);
+  }
+}
+
 export default function AdminActivites() {
   const { t, i18n } = useTranslation();
   const [activites, setActivites] = useState([]);
@@ -46,18 +57,9 @@ export default function AdminActivites() {
   const [form, setForm] = useState(emptyForm);
   const [selectedActivity, setSelectedActivity] = useState(null);
 
-  useEffect(() => { fetchActivites(); }, []);
-
-  const fetchActivites = async () => {
-    try {
-      const res = await api.get('/activites/admin/toutes');
-      setActivites(res.data);
-    } catch (err) {
-      setError(userFriendlyError(err, t('admin.error_load')));
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    fetchActivites({ t, setActivites, setError, setLoading });
+  }, [t]);
 
   const resetForm = () => {
     setForm(emptyForm);
@@ -309,7 +311,7 @@ export default function AdminActivites() {
             title={t('common.loadErrorTitle')}
             description={error}
             actionLabel={t('common.retry')}
-            action={fetchActivites}
+            action={() => fetchActivites({ t, setActivites, setError, setLoading })}
           />
         ) : activites.length === 0 ? (
           <EmptyState

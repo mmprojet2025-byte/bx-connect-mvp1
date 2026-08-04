@@ -20,6 +20,36 @@ import { dashboardRouteForRole, resolveNotificationRoute, hasExactNotificationRo
 
 const NOTIFICATIONS_PAGE_SIZE = 20;
 
+async function fetchNotifications({
+  page = 0,
+  append = false,
+  t,
+  setNotifications,
+  setPagination,
+  setLoading,
+  setLoadingMore,
+  setError,
+}) {
+  if (append) setLoadingMore(true);
+  else setLoading(true);
+  setError('');
+  try {
+    const pageData = await getNotificationsPage(page, NOTIFICATIONS_PAGE_SIZE);
+    setNotifications(prev => append ? mergeNotifications(prev, pageData.content) : pageData.content);
+    setPagination({
+      page: pageData.page,
+      size: pageData.size,
+      totalElements: pageData.totalElements,
+      totalPages: pageData.totalPages,
+      last: pageData.last,
+    });
+  } catch (err) { setError(userFriendlyError(err, t('notifications.errorLoad'))); }
+  finally {
+    setLoading(false);
+    setLoadingMore(false);
+  }
+}
+
 export default function Notifications() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -38,34 +68,24 @@ export default function Notifications() {
   });
 
   useEffect(() => {
-    if (isAuthenticated) fetchNotifications();
-    else setLoading(false);
-  }, []);
-
-  const fetchNotifications = async (page = 0, append = false) => {
-    if (append) setLoadingMore(true);
-    else setLoading(true);
-    setError('');
-    try {
-      const pageData = await getNotificationsPage(page, NOTIFICATIONS_PAGE_SIZE);
-      setNotifications(prev => append ? mergeNotifications(prev, pageData.content) : pageData.content);
-      setPagination({
-        page: pageData.page,
-        size: pageData.size,
-        totalElements: pageData.totalElements,
-        totalPages: pageData.totalPages,
-        last: pageData.last,
-      });
-    } catch (err) { setError(userFriendlyError(err, t('notifications.errorLoad'))); }
-    finally {
-      setLoading(false);
-      setLoadingMore(false);
+    if (isAuthenticated) {
+      fetchNotifications({ t, setNotifications, setPagination, setLoading, setLoadingMore, setError });
     }
-  };
+    else setLoading(false);
+  }, [isAuthenticated, t]);
 
   const handleLoadMore = () => {
     if (!loadingMore && !pagination.last) {
-      fetchNotifications(pagination.page + 1, true);
+      fetchNotifications({
+        page: pagination.page + 1,
+        append: true,
+        t,
+        setNotifications,
+        setPagination,
+        setLoading,
+        setLoadingMore,
+        setError,
+      });
     }
   };
 
@@ -80,7 +100,7 @@ export default function Notifications() {
     try {
       await markAllNotificationsRead();
       setNotifications(prev => prev.map(n => ({ ...n, lue: true })));
-      fetchNotifications(0, false);
+      fetchNotifications({ t, setNotifications, setPagination, setLoading, setLoadingMore, setError });
     } catch (err) { setError(userFriendlyError(err, t('notifications.errorLoad'))); }
   };
 
@@ -176,7 +196,7 @@ export default function Notifications() {
             title={t('common.loadErrorTitle')}
             description={error || t('common.loadErrorDescription')}
             actionLabel={t('common.retry')}
-            action={fetchNotifications}
+            action={() => fetchNotifications({ t, setNotifications, setPagination, setLoading, setLoadingMore, setError })}
           />
         ) : notifications.length === 0 ? (
           <EmptyState

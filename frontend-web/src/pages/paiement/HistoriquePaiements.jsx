@@ -9,6 +9,17 @@ import EmptyState from '../../components/ui/EmptyState';
 import ErrorState from '../../components/ui/ErrorState';
 import LoadingState from '../../components/ui/LoadingState';
 
+async function fetchHistorique({ t, setPaiements, setError, setLoading }) {
+  try {
+    const res = await api.get('/stripe/historique');
+    setPaiements(res.data);
+  } catch {
+    setError(t('payment.historyLoadError'));
+  } finally {
+    setLoading(false);
+  }
+}
+
 export default function HistoriquePaiements() {
   const { t, i18n } = useTranslation();
   const [paiements, setPaiements] = useState([]);
@@ -17,19 +28,8 @@ export default function HistoriquePaiements() {
   const [filtre, setFiltre] = useState('TOUS');
 
   useEffect(() => {
-    fetchHistorique();
-  }, []);
-
-  const fetchHistorique = async () => {
-    try {
-      const res = await api.get('/stripe/historique');
-      setPaiements(res.data);
-    } catch {
-      setError(t('payment.historyLoadError'));
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchHistorique({ t, setPaiements, setError, setLoading });
+  }, [t]);
 
   const FILTRES = ['TOUS', 'PAYE', 'EN_ATTENTE', 'ANNULE', 'ECHOUE'];
 
@@ -112,7 +112,7 @@ export default function HistoriquePaiements() {
             title={t('common.loadErrorTitle')}
             description={error}
             actionLabel={t('common.retry')}
-            action={fetchHistorique}
+            action={() => fetchHistorique({ t, setPaiements, setError, setLoading })}
           />
         ) : paiementsFiltres.length === 0 ? (
           <EmptyState

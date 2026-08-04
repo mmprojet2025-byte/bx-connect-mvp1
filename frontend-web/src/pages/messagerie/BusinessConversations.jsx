@@ -15,6 +15,81 @@ const ADMIN_REFERENT = 'ADMIN_REFERENT'
 const ADMIN_PARTENAIRE = 'ADMIN_PARTENAIRE'
 const ARCHIVED = 'ARCHIVED'
 
+async function loadConversations({ t, setConversations, setLoading, setError }) {
+  try {
+    setLoading(true)
+    setError('')
+    const response = await businessConversationsApi.list()
+    setConversations(Array.isArray(response.data) ? response.data : [])
+  } catch (err) {
+    setError(userFriendlyError(err, t('businessConversations.errorLoad')))
+  } finally {
+    setLoading(false)
+  }
+}
+
+async function loadActiveConversation({
+  conversationId,
+  t,
+  setActiveConversation,
+  setMessages,
+  setConversations,
+  setMessagesLoading,
+  setMessagesError,
+}) {
+  try {
+    setMessagesLoading(true)
+    setMessagesError('')
+    const [conversationResponse, messagesResponse] = await Promise.all([
+      businessConversationsApi.get(conversationId),
+      businessConversationsApi.getMessages(conversationId),
+    ])
+    setActiveConversation(conversationResponse.data)
+    setMessages(Array.isArray(messagesResponse.data) ? messagesResponse.data : [])
+    await businessConversationsApi.markAsRead(conversationId)
+    setConversations(current => current.map(conversation => (
+      conversation.id === conversationId ? { ...conversation, unreadCount: 0 } : conversation
+    )))
+  } catch (err) {
+    setMessagesError(userFriendlyError(err, t('businessConversations.errorMessages')))
+  } finally {
+    setMessagesLoading(false)
+  }
+}
+
+async function loadRecipients({
+  isSuperAdmin,
+  t,
+  setRecipients,
+  setRecipientsLoading,
+  setRecipientsError,
+}) {
+  try {
+    setRecipientsLoading(true)
+    setRecipientsError('')
+    const endpoints = isSuperAdmin
+      ? ['/super-admin/utilisateurs']
+      : ['/admin/referents', '/admin/utilisateurs']
+
+    const responses = await Promise.allSettled(endpoints.map(endpoint => api.get(endpoint)))
+    const users = responses.flatMap(result => (
+      result.status === 'fulfilled' && Array.isArray(result.value.data) ? result.value.data : []
+    ))
+    const uniqueUsers = deduplicateUsers(users)
+      .filter(candidate => ['REFERENT', 'PARTENAIRE'].includes(candidate.role))
+      .filter(candidate => candidate.actif !== false)
+
+    setRecipients(uniqueUsers)
+    if (responses.every(result => result.status === 'rejected')) {
+      setRecipientsError(t('businessConversations.recipientUnavailable'))
+    }
+  } catch {
+    setRecipientsError(t('businessConversations.recipientUnavailable'))
+  } finally {
+    setRecipientsLoading(false)
+  }
+}
+
 export default function BusinessConversations({ mode = 'referent' }) {
   const { t, i18n } = useTranslation()
   const { user, isAdmin, isSuperAdmin } = useAuth()
@@ -54,18 +129,26 @@ export default function BusinessConversations({ mode = 'referent' }) {
   const pageDescription = t(`businessConversations.${mode}Description`)
 
   useEffect(() => {
-    loadConversations()
-  }, [])
+    loadConversations({ t, setConversations, setLoading, setError })
+  }, [t])
 
   useEffect(() => {
     if (!canCreate) return
-    loadRecipients()
-  }, [canCreate, isSuperAdmin])
+    loadRecipients({ isSuperAdmin, t, setRecipients, setRecipientsLoading, setRecipientsError })
+  }, [canCreate, isSuperAdmin, t])
 
   useEffect(() => {
     if (!activeId) return
-    loadActiveConversation(activeId)
-  }, [activeId])
+    loadActiveConversation({
+      conversationId: activeId,
+      t,
+      setActiveConversation,
+      setMessages,
+      setConversations,
+      setMessagesLoading,
+      setMessagesError,
+    })
+  }, [activeId, t])
 
   useEffect(() => {
     if (sortedConversations.length === 0) {
@@ -79,67 +162,6 @@ export default function BusinessConversations({ mode = 'referent' }) {
     }
   }, [activeId, sortedConversations])
 
-  const loadConversations = async () => {
-    try {
-      setLoading(true)
-      setError('')
-      const response = await businessConversationsApi.list()
-      setConversations(Array.isArray(response.data) ? response.data : [])
-    } catch (err) {
-      setError(userFriendlyError(err, t('businessConversations.errorLoad')))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadActiveConversation = async (conversationId) => {
-    try {
-      setMessagesLoading(true)
-      setMessagesError('')
-      const [conversationResponse, messagesResponse] = await Promise.all([
-        businessConversationsApi.get(conversationId),
-        businessConversationsApi.getMessages(conversationId),
-      ])
-      setActiveConversation(conversationResponse.data)
-      setMessages(Array.isArray(messagesResponse.data) ? messagesResponse.data : [])
-      await businessConversationsApi.markAsRead(conversationId)
-      setConversations(current => current.map(conversation => (
-        conversation.id === conversationId ? { ...conversation, unreadCount: 0 } : conversation
-      )))
-    } catch (err) {
-      setMessagesError(userFriendlyError(err, t('businessConversations.errorMessages')))
-    } finally {
-      setMessagesLoading(false)
-    }
-  }
-
-  const loadRecipients = async () => {
-    try {
-      setRecipientsLoading(true)
-      setRecipientsError('')
-      const endpoints = isSuperAdmin
-        ? ['/super-admin/utilisateurs']
-        : ['/admin/referents', '/admin/utilisateurs']
-
-      const responses = await Promise.allSettled(endpoints.map(endpoint => api.get(endpoint)))
-      const users = responses.flatMap(result => (
-        result.status === 'fulfilled' && Array.isArray(result.value.data) ? result.value.data : []
-      ))
-      const uniqueUsers = deduplicateUsers(users)
-        .filter(candidate => ['REFERENT', 'PARTENAIRE'].includes(candidate.role))
-        .filter(candidate => candidate.actif !== false)
-
-      setRecipients(uniqueUsers)
-      if (responses.every(result => result.status === 'rejected')) {
-        setRecipientsError(t('businessConversations.recipientUnavailable'))
-      }
-    } catch {
-      setRecipientsError(t('businessConversations.recipientUnavailable'))
-    } finally {
-      setRecipientsLoading(false)
-    }
-  }
-
   const handleSendMessage = async (event) => {
     event.preventDefault()
     const contenu = draft.trim()
@@ -150,7 +172,18 @@ export default function BusinessConversations({ mode = 'referent' }) {
       setMessagesError('')
       await businessConversationsApi.sendMessage(activeId, contenu)
       setDraft('')
-      await Promise.all([loadConversations(), loadActiveConversation(activeId)])
+      await Promise.all([
+        loadConversations({ t, setConversations, setLoading, setError }),
+        loadActiveConversation({
+          conversationId: activeId,
+          t,
+          setActiveConversation,
+          setMessages,
+          setConversations,
+          setMessagesLoading,
+          setMessagesError,
+        }),
+      ])
     } catch (err) {
       setMessagesError(userFriendlyError(err, t('businessConversations.errorSend')))
     } finally {
@@ -180,7 +213,7 @@ export default function BusinessConversations({ mode = 'referent' }) {
         titre: '',
         messageInitial: '',
       })
-      await loadConversations()
+      await loadConversations({ t, setConversations, setLoading, setError })
       setActiveId(response.data?.id || null)
     } catch (err) {
       setCreateError(userFriendlyError(err, t('businessConversations.createError')))
@@ -205,7 +238,7 @@ export default function BusinessConversations({ mode = 'referent' }) {
             title={t('businessConversations.errorTitle')}
             description={error}
             actionLabel={t('common.retry')}
-            action={loadConversations}
+            action={() => loadConversations({ t, setConversations, setLoading, setError })}
           />
         ) : (
           <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
@@ -219,7 +252,7 @@ export default function BusinessConversations({ mode = 'referent' }) {
                   error={recipientsError || createError}
                   creating={creating}
                   onSubmit={handleCreateConversation}
-                  onReloadRecipients={loadRecipients}
+                  onReloadRecipients={() => loadRecipients({ isSuperAdmin, t, setRecipients, setRecipientsLoading, setRecipientsError })}
                 />
               )}
 

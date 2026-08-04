@@ -19,23 +19,33 @@ export default function LocationPicker({
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const onCoordinatesChangeRef = useRef(onCoordinatesChange);
+  const translationRef = useRef(t);
   const [status, setStatus] = useState('');
   const [message, setMessage] = useState('');
   const numericLatitude = parseCoordinate(latitude);
   const numericLongitude = parseCoordinate(longitude);
   const hasCoordinates = Number.isFinite(numericLatitude) && Number.isFinite(numericLongitude);
+  const initialViewRef = useRef({ hasCoordinates, numericLatitude, numericLongitude });
 
   useEffect(() => {
     onCoordinatesChangeRef.current = onCoordinatesChange;
   }, [onCoordinatesChange]);
 
   useEffect(() => {
+    translationRef.current = t;
+  }, [t]);
+
+  useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return undefined;
 
+    const initialView = initialViewRef.current;
     const map = L.map(mapContainerRef.current, {
       scrollWheelZoom: false,
       attributionControl: true,
-    }).setView(hasCoordinates ? [numericLatitude, numericLongitude] : BRUSSELS_CENTER, hasCoordinates ? 15 : 11);
+    }).setView(
+      initialView.hasCoordinates ? [initialView.numericLatitude, initialView.numericLongitude] : BRUSSELS_CENTER,
+      initialView.hasCoordinates ? 15 : 11,
+    );
     mapRef.current = map;
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -47,7 +57,7 @@ export default function LocationPicker({
       const nextLongitude = formatCoordinate(event.latlng.lng);
       onCoordinatesChangeRef.current(nextLatitude, nextLongitude);
       setStatus('success');
-      setMessage(t('location.coordinatesSelected'));
+      setMessage(translationRef.current('location.coordinatesSelected'));
     });
 
     setTimeout(() => map.invalidateSize(), 0);

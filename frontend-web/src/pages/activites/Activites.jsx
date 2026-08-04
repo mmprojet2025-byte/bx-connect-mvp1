@@ -16,6 +16,18 @@ import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import AppIcon from '../../components/ui/AppIcons';
 
+async function fetchActivites({ t, setActivites, setError, setLoading }) {
+  try {
+    setError('');
+    const res = await api.get('/activites');
+    setActivites(res.data);
+  } catch {
+    setError(t('activities.error_load'));
+  } finally {
+    setLoading(false);
+  }
+}
+
 export default function Activites() {
   const { isAuthenticated, isAdmin, isReferent, isMembre } = useAuth();
   const { t, i18n } = useTranslation();
@@ -41,21 +53,9 @@ export default function Activites() {
     : t('activities.manageMyActivities', { defaultValue: 'Gérer mes activités' });
 
   useEffect(() => {
-    fetchActivites();
+    fetchActivites({ t, setActivites, setError, setLoading });
     fetchOptions();
-  }, []);
-
-  const fetchActivites = async () => {
-    try {
-      setError('');
-      const res = await api.get('/activites');
-      setActivites(res.data);
-    } catch {
-      setError(t('activities.error_load'));
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [t]);
 
   const fetchOptions = async () => {
     try {
@@ -119,7 +119,7 @@ export default function Activites() {
     setRecherche(''); setFiltreCategorie('');
     setFiltreGratuite('');
     setNearbyMode(false);
-    fetchActivites();
+    fetchActivites({ t, setActivites, setError, setLoading });
   };
 
   const handleNearbyActivities = () => {
@@ -179,7 +179,7 @@ export default function Activites() {
           }
         : activite
       ));
-      fetchActivites();
+      fetchActivites({ t, setActivites, setError, setLoading });
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       const feedback = userFriendlyError(err, t('activities.error_register'));
@@ -212,7 +212,7 @@ export default function Activites() {
           }
         : activite
       ));
-      fetchActivites();
+      fetchActivites({ t, setActivites, setError, setLoading });
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       const feedback = userFriendlyError(err, t('activities.error_cancel_registration'));
@@ -358,7 +358,7 @@ export default function Activites() {
             title={t('common.loadErrorTitle')}
             description={error || t('common.loadErrorDescription')}
             actionLabel={t('common.retry')}
-            action={fetchActivites}
+            action={() => fetchActivites({ t, setActivites, setError, setLoading })}
           />
         ) : activites.length === 0 ? (
           <EmptyState

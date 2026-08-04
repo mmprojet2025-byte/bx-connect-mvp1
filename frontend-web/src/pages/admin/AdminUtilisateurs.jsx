@@ -11,6 +11,17 @@ import LoadingState from '../../components/ui/LoadingState';
 
 const ROLES = ['MEMBRE', 'REFERENT', 'PARTENAIRE'];
 
+async function fetchUtilisateurs({ endpoint, t, setUtilisateurs, setError, setLoading }) {
+  try {
+    const res = await api.get(endpoint);
+    setUtilisateurs(res.data);
+  } catch (err) {
+    setError(userFriendlyError(err, t('users.errorLoad')));
+  } finally {
+    setLoading(false);
+  }
+}
+
 export default function AdminUtilisateurs({
   endpoint = '/admin/utilisateurs',
   readOnly = false,
@@ -25,18 +36,9 @@ export default function AdminUtilisateurs({
   const [recherche, setRecherche] = useState('');
   const [filtre, setFiltre] = useState('TOUS');
 
-  useEffect(() => { fetchUtilisateurs(); }, [endpoint]);
-
-  const fetchUtilisateurs = async () => {
-    try {
-      const res = await api.get(endpoint);
-      setUtilisateurs(res.data);
-    } catch (err) {
-      setError(userFriendlyError(err, t('users.errorLoad')));
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    fetchUtilisateurs({ endpoint, t, setUtilisateurs, setError, setLoading });
+  }, [endpoint, t]);
 
   const changerRole = async (user, role) => {
     if (user.role === role) return;
@@ -164,7 +166,7 @@ export default function AdminUtilisateurs({
             title={t('common.loadErrorTitle')}
             description={error}
             actionLabel={t('common.retry')}
-            action={fetchUtilisateurs}
+            action={() => fetchUtilisateurs({ endpoint, t, setUtilisateurs, setError, setLoading })}
           />
         ) : utilisateurs.length === 0 ? (
           <EmptyState

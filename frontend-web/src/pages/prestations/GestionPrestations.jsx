@@ -9,6 +9,34 @@ import EmptyState from '../../components/ui/EmptyState';
 import ErrorState from '../../components/ui/ErrorState';
 import LoadingState from '../../components/ui/LoadingState';
 
+async function fetchMesGroupes({ t, setMesGroupes, setGroupeSelectionne, setError, setLoading }) {
+  try {
+    await api.get('/referent/mes-activites');
+    // Récupérer les groupes du référent
+    const gRes = await api.get('/groupes/referent/mes-groupes');
+    setMesGroupes(gRes.data);
+    if (gRes.data.length > 0) setGroupeSelectionne(gRes.data[0].id);
+  } catch { setError(t('prestations.errorLoadGroups')); }
+  finally { setLoading(false); }
+}
+
+async function fetchPrestationsGroupe({ groupeId, t, setPrestations, setError, setLoading }) {
+  setLoading(true);
+  try {
+    const res = await api.get(`/prestations/groupe/${groupeId}`);
+    setPrestations(res.data);
+  } catch { setError(t('prestations.errorLoad')); }
+  finally { setLoading(false); }
+}
+
+async function fetchToutesPrestations({ t, setPrestations, setError, setLoading }) {
+  try {
+    const res = await api.get('/prestations/admin/toutes');
+    setPrestations(res.data);
+  } catch { setError(t('prestations.errorLoad')); }
+  finally { setLoading(false); }
+}
+
 export default function GestionPrestations() {
   const { t } = useTranslation();
   const { isAdmin } = useAuth();
@@ -22,50 +50,24 @@ export default function GestionPrestations() {
 
   useEffect(() => {
     if (isAdmin) {
-      fetchToutesPrestations();
+      fetchToutesPrestations({ t, setPrestations, setError, setLoading });
     } else {
-      fetchMesGroupes();
+      fetchMesGroupes({ t, setMesGroupes, setGroupeSelectionne, setError, setLoading });
     }
-  }, []);
+  }, [isAdmin, t]);
 
   useEffect(() => {
-    if (groupeSelectionne) fetchPrestationsGroupe(groupeSelectionne);
-  }, [groupeSelectionne]);
-
-  const fetchMesGroupes = async () => {
-    try {
-      await api.get('/referent/mes-activites');
-      // Récupérer les groupes du référent
-      const gRes = await api.get('/groupes/referent/mes-groupes');
-      setMesGroupes(gRes.data);
-      if (gRes.data.length > 0) setGroupeSelectionne(gRes.data[0].id);
-    } catch { setError(t('prestations.errorLoadGroups')); }
-    finally { setLoading(false); }
-  };
-
-  const fetchPrestationsGroupe = async (groupeId) => {
-    setLoading(true);
-    try {
-      const res = await api.get(`/prestations/groupe/${groupeId}`);
-      setPrestations(res.data);
-    } catch { setError(t('prestations.errorLoad')); }
-    finally { setLoading(false); }
-  };
-
-  const fetchToutesPrestations = async () => {
-    try {
-      const res = await api.get('/prestations/admin/toutes');
-      setPrestations(res.data);
-    } catch { setError(t('prestations.errorLoad')); }
-    finally { setLoading(false); }
-  };
+    if (groupeSelectionne) {
+      fetchPrestationsGroupe({ groupeId: groupeSelectionne, t, setPrestations, setError, setLoading });
+    }
+  }, [groupeSelectionne, t]);
 
   const handleValider = async (id) => {
     try {
       await api.patch(`/prestations/${id}/valider`, { commentaire: t('prestations.validatedByReferent') });
       setMessage(t('prestations.validated'));
-      if (isAdmin) fetchToutesPrestations();
-      else if (groupeSelectionne) fetchPrestationsGroupe(groupeSelectionne);
+      if (isAdmin) fetchToutesPrestations({ t, setPrestations, setError, setLoading });
+      else if (groupeSelectionne) fetchPrestationsGroupe({ groupeId: groupeSelectionne, t, setPrestations, setError, setLoading });
       setTimeout(() => setMessage(''), 3000);
     } catch { setError(t('prestations.errorValidate')); }
   };
@@ -75,8 +77,8 @@ export default function GestionPrestations() {
     try {
       await api.patch(`/prestations/${id}/refuser`, { commentaire });
       setMessage(t('prestations.refused'));
-      if (isAdmin) fetchToutesPrestations();
-      else if (groupeSelectionne) fetchPrestationsGroupe(groupeSelectionne);
+      if (isAdmin) fetchToutesPrestations({ t, setPrestations, setError, setLoading });
+      else if (groupeSelectionne) fetchPrestationsGroupe({ groupeId: groupeSelectionne, t, setPrestations, setError, setLoading });
       setTimeout(() => setMessage(''), 3000);
     } catch { setError(t('prestations.errorRefuse')); }
   };

@@ -11,6 +11,23 @@ import defaultAvatar from '../../assets/images/avatars/default-avatar.png';
 import ErrorState from '../../components/ui/ErrorState';
 import LoadingState from '../../components/ui/LoadingState';
 
+async function fetchProfil({ t, setProfil, setForm, setAvatarUrl, setError, setLoading }) {
+  try {
+    const res = await api.get('/users/me');
+    setProfil(res.data);
+    setForm({
+      prenom: res.data.prenom,
+      nom: res.data.nom,
+      languePreference: res.data.languePreference || 'FR',
+    });
+    setAvatarUrl(res.data.avatarUrl || null);
+  } catch (err) {
+    setError(getApiError(err, t('profile.error_load'), t));
+  } finally {
+    setLoading(false);
+  }
+}
+
 export default function Profil() {
   const { t, i18n } = useTranslation();
 
@@ -25,25 +42,8 @@ export default function Profil() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchProfil();
-  }, []);
-
-  const fetchProfil = async () => {
-    try {
-      const res = await api.get('/users/me');
-      setProfil(res.data);
-      setForm({
-        prenom: res.data.prenom,
-        nom: res.data.nom,
-        languePreference: res.data.languePreference || 'FR',
-      });
-      setAvatarUrl(res.data.avatarUrl || null);
-    } catch (err) {
-      setError(getApiError(err, t('profile.error_load'), t));
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchProfil({ t, setProfil, setForm, setAvatarUrl, setError, setLoading });
+  }, [t]);
 
   const handleSaveProfil = async (e) => {
     e.preventDefault();
@@ -96,7 +96,7 @@ export default function Profil() {
           title={t('common.loadErrorTitle')}
           description={error}
           actionLabel={t('common.retry')}
-          action={fetchProfil}
+          action={() => fetchProfil({ t, setProfil, setForm, setAvatarUrl, setError, setLoading })}
         />
       </main>
       <Footer />

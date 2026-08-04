@@ -10,6 +10,27 @@ import LoadingState from '../../components/ui/LoadingState';
 
 const OPPORTUNITY_CATEGORIES = ['EMPLOI', 'STAGE', 'FORMATION', 'EVENEMENT', 'APPEL_PROJET', 'PUBLICITE'];
 
+async function fetchAnnonces({ isAuthenticated, t, setAnnonces, setError, setLoading }) {
+  try {
+    const endpoint = isAuthenticated ? '/annonces/mes-annonces' : '/annonces/globales';
+    const res = await api.get(endpoint);
+    setAnnonces(res.data);
+  } catch { setError(t('announcements.errorLoad')); }
+  finally { setLoading(false); }
+}
+
+async function fetchAdminOpportunities({ t, setAdminOpportunities, setError, setLoadingOpportunities }) {
+  setLoadingOpportunities(true);
+  try {
+    const res = await api.get('/annonces/admin/opportunites');
+    setAdminOpportunities(Array.isArray(res.data) ? res.data : []);
+  } catch {
+    setError(t('announcements.errorLoadOpportunities'));
+  } finally {
+    setLoadingOpportunities(false);
+  }
+}
+
 export default function Annonces() {
   const { t, i18n } = useTranslation();
   const { user, isAuthenticated, isAdmin, isReferent } = useAuth();
@@ -37,19 +58,10 @@ export default function Annonces() {
   const filters = buildAnnouncementFilters(t, annonces);
 
   useEffect(() => {
-    fetchAnnonces();
+    fetchAnnonces({ isAuthenticated, t, setAnnonces, setError, setLoading });
     if (isReferent) fetchMesGroupes();
-    if (isAdmin) fetchAdminOpportunities();
-  }, [isAuthenticated, isReferent, isAdmin]);
-
-  const fetchAnnonces = async () => {
-    try {
-      const endpoint = isAuthenticated ? '/annonces/mes-annonces' : '/annonces/globales';
-      const res = await api.get(endpoint);
-      setAnnonces(res.data);
-    } catch { setError(t('announcements.errorLoad')); }
-    finally { setLoading(false); }
-  };
+    if (isAdmin) fetchAdminOpportunities({ t, setAdminOpportunities, setError, setLoadingOpportunities });
+  }, [isAuthenticated, isReferent, isAdmin, t]);
 
   const fetchMesGroupes = async () => {
     try {
@@ -59,18 +71,6 @@ export default function Annonces() {
         setForm(prev => ({ ...prev, type: 'GROUPE', groupeId: prev.groupeId || res.data[0].id }));
       }
     } catch {}
-  };
-
-  const fetchAdminOpportunities = async () => {
-    setLoadingOpportunities(true);
-    try {
-      const res = await api.get('/annonces/admin/opportunites');
-      setAdminOpportunities(Array.isArray(res.data) ? res.data : []);
-    } catch {
-      setError(t('announcements.errorLoadOpportunities'));
-    } finally {
-      setLoadingOpportunities(false);
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -95,7 +95,7 @@ export default function Annonces() {
         groupeId: isReferent && mesGroupes.length > 0 ? mesGroupes[0].id : null,
         epinglee: false
       });
-      fetchAnnonces();
+      fetchAnnonces({ isAuthenticated, t, setAnnonces, setError, setLoading });
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       setError(err.response?.data?.message || t('announcements.errorPublish'));
@@ -105,7 +105,7 @@ export default function Annonces() {
   const handleEpingler = async (id) => {
     try {
       await api.patch(`/annonces/${id}/epingler`);
-      fetchAnnonces();
+      fetchAnnonces({ isAuthenticated, t, setAnnonces, setError, setLoading });
     } catch { setError(t('announcements.errorPin')); }
   };
 
@@ -126,7 +126,10 @@ export default function Annonces() {
       setMessage(action === 'publier'
         ? t('announcements.opportunityPublished')
         : t('announcements.opportunityRejected'));
-      await Promise.all([fetchAdminOpportunities(), fetchAnnonces()]);
+      await Promise.all([
+        fetchAdminOpportunities({ t, setAdminOpportunities, setError, setLoadingOpportunities }),
+        fetchAnnonces({ isAuthenticated, t, setAnnonces, setError, setLoading }),
+      ]);
       setTimeout(() => setMessage(''), 3000);
     } catch {
       setError(action === 'publier'
@@ -332,7 +335,7 @@ export default function Annonces() {
             title={t('common.loadErrorTitle')}
             description={error}
             actionLabel={t('common.retry')}
-            action={fetchAnnonces}
+            action={() => fetchAnnonces({ isAuthenticated, t, setAnnonces, setError, setLoading })}
           />
         ) : filteredAnnonces.length === 0 ? (
           <EmptyState

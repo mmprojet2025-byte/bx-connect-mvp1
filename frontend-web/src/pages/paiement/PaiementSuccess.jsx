@@ -8,6 +8,17 @@ import { useAuth } from '../../context/AuthContext';
 import { getDefaultRouteForRole } from '../../routes/roleRoutes';
 import { useTranslation } from 'react-i18next';
 
+async function verifierSession({ sessionId, t, setPaiement, setError, setLoading }) {
+  try {
+    const res = await api.get(`/stripe/session/${sessionId}`);
+    setPaiement(res.data);
+  } catch {
+    setError(t('payment.verifyError'));
+  } finally {
+    setLoading(false);
+  }
+}
+
 export default function PaiementSuccess() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
@@ -21,22 +32,11 @@ export default function PaiementSuccess() {
 
   useEffect(() => {
     if (sessionId) {
-      verifierSession();
+      verifierSession({ sessionId, t, setPaiement, setError, setLoading });
     } else {
       setLoading(false);
     }
-  }, [sessionId]);
-
-  const verifierSession = async () => {
-    try {
-      const res = await api.get(`/stripe/session/${sessionId}`);
-      setPaiement(res.data);
-    } catch {
-      setError(t('payment.verifyError'));
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [sessionId, t]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">

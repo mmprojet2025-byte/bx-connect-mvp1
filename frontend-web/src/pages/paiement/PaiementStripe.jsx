@@ -30,7 +30,7 @@ export default function PaiementStripe() {
     if (!isAuthenticated) {
       navigate('/login');
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, navigate]);
 
   const handlePayer = async (e) => {
     e.preventDefault();

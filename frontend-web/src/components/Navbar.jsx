@@ -362,7 +362,7 @@ function GlobalSearch({ navigate }) {
     }, 250)
 
     return () => window.clearTimeout(timeoutId)
-  }, [query])
+  }, [query, t])
 
   const groupedResults = SEARCH_GROUPS
     .map(group => ({

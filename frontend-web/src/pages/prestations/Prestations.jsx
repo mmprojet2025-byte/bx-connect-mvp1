@@ -11,6 +11,14 @@ import LoadingState from '../../components/ui/LoadingState';
 
 const TYPES = ['ANIMATION', 'LOGISTIQUE', 'COMMUNICATION', 'FORMATION', 'AUTRE'];
 
+async function fetchPrestations({ t, setPrestations, setError, setLoading }) {
+  try {
+    const res = await api.get('/prestations/mes-prestations');
+    setPrestations(res.data);
+  } catch { setError(t('prestations.errorLoad')); }
+  finally { setLoading(false); }
+}
+
 export default function Prestations() {
   const { t } = useTranslation();
   const [prestations, setPrestations] = useState([]);
@@ -25,17 +33,9 @@ export default function Prestations() {
   });
 
   useEffect(() => {
-    fetchPrestations();
+    fetchPrestations({ t, setPrestations, setError, setLoading });
     fetchMesGroupes();
-  }, []);
-
-  const fetchPrestations = async () => {
-    try {
-      const res = await api.get('/prestations/mes-prestations');
-      setPrestations(res.data);
-    } catch { setError(t('prestations.errorLoad')); }
-    finally { setLoading(false); }
-  };
+  }, [t]);
 
   const fetchMesGroupes = async () => {
     try {
@@ -57,7 +57,7 @@ export default function Prestations() {
       setMessage(t('prestations.successCreate'));
       setShowForm(false);
       setForm({ titre: '', type: 'ANIMATION', datePrestation: '', dureeHeures: '', description: '', groupeId: mesGroupes[0]?.id || '' });
-      fetchPrestations();
+      fetchPrestations({ t, setPrestations, setError, setLoading });
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       setError(userFriendlyError(err, 'Action impossible.'));
@@ -170,7 +170,7 @@ export default function Prestations() {
             title={t('common.loadErrorTitle')}
             description={error}
             actionLabel={t('common.retry')}
-            action={fetchPrestations}
+            action={() => fetchPrestations({ t, setPrestations, setError, setLoading })}
           />
         ) : prestations.length === 0 ? (
           <EmptyState

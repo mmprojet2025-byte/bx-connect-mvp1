@@ -14,6 +14,17 @@ import AppIcon from '../../components/ui/AppIcons';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 
+async function fetchActivite({ id, t, setActivite, setError, setLoading }) {
+  try {
+    const res = await api.get(`/activites/${id}`);
+    setActivite(res.data);
+  } catch {
+    setError(t('activities.not_found'));
+  } finally {
+    setLoading(false);
+  }
+}
+
 export default function ActiviteDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -29,8 +40,8 @@ export default function ActiviteDetail() {
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
-    fetchActivite();
-  }, [id]);
+    fetchActivite({ id, t, setActivite, setError, setLoading });
+  }, [id, t]);
 
   const locationDetails = useMemo(() => buildLocationDetails(activite), [activite]);
 
@@ -67,17 +78,6 @@ export default function ActiviteDetail() {
     };
   }, [activite?.titre, locationDetails]);
 
-  const fetchActivite = async () => {
-    try {
-      const res = await api.get(`/activites/${id}`);
-      setActivite(res.data);
-    } catch {
-      setError(t('activities.not_found'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleInscrire = async () => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -90,7 +90,7 @@ export default function ActiviteDetail() {
     try {
       const response = await api.post('/inscriptions', { activiteId: parseInt(id) });
       setMessage(registrationSuccessMessage(response.data, activite, t));
-      await fetchActivite();
+      await fetchActivite({ id, t, setActivite, setError, setLoading });
     } catch (err) {
       setError(userFriendlyError(err, t('activities.error_register')));
     } finally {
@@ -106,7 +106,7 @@ export default function ActiviteDetail() {
     try {
       await api.delete(`/inscriptions/${activite.inscriptionId}`);
       setMessage(t('activities.success_cancel_registration'));
-      await fetchActivite();
+      await fetchActivite({ id, t, setActivite, setError, setLoading });
     } catch (err) {
       setError(userFriendlyError(err, t('activities.error_cancel_registration')));
     } finally {

@@ -13,6 +13,17 @@ const emptyForm = {
   motDePasseTemporaire: '',
 }
 
+async function fetchAdmins({ t, setAdmins, setError, setLoading }) {
+  try {
+    const res = await api.get('/super-admin/admins')
+    setAdmins(res.data)
+  } catch {
+    setError(t('superAdmin.errorAdminsLoad'))
+  } finally {
+    setLoading(false)
+  }
+}
+
 export default function SuperAdminAdmins() {
   const { t, i18n } = useTranslation()
   const [admins, setAdmins] = useState([])
@@ -25,18 +36,9 @@ export default function SuperAdminAdmins() {
   const [newPassword, setNewPassword] = useState('')
   const [recherche, setRecherche] = useState('')
 
-  useEffect(() => { fetchAdmins() }, [])
-
-  const fetchAdmins = async () => {
-    try {
-      const res = await api.get('/super-admin/admins')
-      setAdmins(res.data)
-    } catch {
-      setError(t('superAdmin.errorAdminsLoad'))
-    } finally {
-      setLoading(false)
-    }
-  }
+  useEffect(() => {
+    fetchAdmins({ t, setAdmins, setError, setLoading })
+  }, [t])
 
   const clearFeedback = () => {
     setError('')

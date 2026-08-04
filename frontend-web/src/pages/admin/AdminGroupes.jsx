@@ -58,7 +58,7 @@ export default function AdminGroupes() {
     } catch {
       setError(t('referent.errorLoad'));
     }
-  }, []);
+  }, [t]);
 
   const fetchGroupes = useCallback(async () => {
     setLoading(true);
