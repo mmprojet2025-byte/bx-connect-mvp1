@@ -1,5 +1,6 @@
 package com.bxjeunes.bx_connect.config;
 
+import com.bxjeunes.bx_connect.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -16,6 +17,8 @@ import java.util.function.Function;
 
 @Service
 public class JwtService {
+
+    private static final String CREDENTIALS_VERSION_CLAIM = "credentialsVersion";
 
     @Value("${jwt.secret}")
     private String secretKey;
@@ -40,8 +43,10 @@ public class JwtService {
     }
 
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+        Map<String, Object> claims = new HashMap<>(extraClaims);
+        claims.put(CREDENTIALS_VERSION_CLAIM, credentialsVersion(userDetails));
         return Jwts.builder()
-                .claims(extraClaims)
+                .claims(claims)
                 .subject(userDetails.getUsername())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
@@ -53,11 +58,21 @@ public class JwtService {
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return username.equals(userDetails.getUsername())
+                && extractCredentialsVersion(token) == credentialsVersion(userDetails)
                 && !isTokenExpired(token)
                 && userDetails.isEnabled()
                 && userDetails.isAccountNonLocked()
                 && userDetails.isAccountNonExpired()
                 && userDetails.isCredentialsNonExpired();
+    }
+
+    private int extractCredentialsVersion(String token) {
+        Number version = extractClaim(token, claims -> claims.get(CREDENTIALS_VERSION_CLAIM, Number.class));
+        return version != null ? version.intValue() : 0;
+    }
+
+    private int credentialsVersion(UserDetails userDetails) {
+        return userDetails instanceof User user ? user.getCredentialsVersion() : 0;
     }
 
     private boolean isTokenExpired(String token) {

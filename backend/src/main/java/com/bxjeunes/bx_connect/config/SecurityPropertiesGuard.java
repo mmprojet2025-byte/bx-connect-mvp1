@@ -53,6 +53,7 @@ public class SecurityPropertiesGuard implements BeanFactoryPostProcessor, Enviro
         requireProductionUrl("stripe.cancel-url");
         requireProductionUrl("paypal.return-url");
         requireProductionUrl("paypal.cancel-url");
+        requireProductionPasswordReset();
     }
 
     private boolean isRelaxedProfile() {
@@ -166,6 +167,18 @@ public class SecurityPropertiesGuard implements BeanFactoryPostProcessor, Enviro
                 || normalized.contains("127.0.0.1")) {
             throw new IllegalStateException(propertyName + " doit etre une URL HTTPS non locale hors dev.");
         }
+    }
+
+    private void requireProductionPasswordReset() {
+        if (!Boolean.parseBoolean(environment.getProperty("app.password-reset.email-enabled", "false"))) {
+            throw new IllegalStateException(
+                    "app.password-reset.email-enabled doit etre true hors dev.");
+        }
+        requireProductionUrl("app.password-reset.frontend-url");
+        requireRealSecret("app.password-reset.from-address");
+        requireRealSecret("spring.mail.host");
+        requireRealSecret("spring.mail.username");
+        requireRealSecret("spring.mail.password");
     }
 
     private boolean isProductionFlagEnabled() {

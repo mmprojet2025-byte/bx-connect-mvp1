@@ -9,6 +9,7 @@ import APropos          from './pages/APropos'
 import Login            from './pages/auth/Login'
 import Register         from './pages/auth/Register'
 import ForgotPassword   from './pages/auth/ForgotPassword'
+import ResetPassword    from './pages/auth/ResetPassword'
 import Activites        from './pages/activites/Activites'
 import ActiviteDetail   from './pages/activites/ActiviteDetail'
 import PresenceSheet    from './pages/activites/PresenceSheet'
@@ -126,6 +127,7 @@ const PUBLIC_ONLY_PATHS = new Set([
   '/register',
   '/mot-de-passe-oublie',
   '/forgot-password',
+  '/reinitialiser-mot-de-passe',
 ])
 
 export default function App() {
@@ -178,6 +180,7 @@ export default function App() {
           <Route path="/register"      element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
           <Route path="/mot-de-passe-oublie" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
           <Route path="/forgot-password" element={<Navigate to="/mot-de-passe-oublie" replace />} />
+          <Route path="/reinitialiser-mot-de-passe" element={<ResetPassword />} />
           <Route path="/activites"     element={<ActivityCatalogRoute><Activites /></ActivityCatalogRoute>} />
           <Route path="/activites/:id" element={<ActivityCatalogRoute><ActiviteDetail /></ActivityCatalogRoute>} />
           <Route path="/groupes"       element={<PublicOrMembreRoute><Groupes /></PublicOrMembreRoute>} />

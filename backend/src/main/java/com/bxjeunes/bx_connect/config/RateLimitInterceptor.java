@@ -55,6 +55,12 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         if (HttpMethod.POST.matches(method) && "/api/auth/register".equals(path)) {
             return new RateLimitRule(5, Duration.ofMinutes(10));
         }
+        if (HttpMethod.POST.matches(method) && "/api/auth/forgot-password".equals(path)) {
+            return new RateLimitRule(5, Duration.ofMinutes(15));
+        }
+        if (HttpMethod.POST.matches(method) && "/api/auth/reset-password".equals(path)) {
+            return new RateLimitRule(10, Duration.ofMinutes(15));
+        }
         if (HttpMethod.POST.matches(method) && "/api/upload".equals(path)) {
             return new RateLimitRule(20, Duration.ofMinutes(10));
         }

@@ -24,6 +24,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .addPathPatterns(
                         "/api/auth/login",
                         "/api/auth/register",
+                        "/api/auth/forgot-password",
+                        "/api/auth/reset-password",
                         "/api/upload",
                         "/api/stripe/checkout",
                         "/api/paiements/creer"

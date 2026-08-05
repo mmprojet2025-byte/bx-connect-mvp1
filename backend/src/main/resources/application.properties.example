@@ -53,3 +53,12 @@ stripe.cancel-url=http://localhost:5173/paiement/annule
 # Expo Push Service (token d'acces facultatif si la securite renforcee Expo est desactivee)
 bx.push.expo-url=${EXPO_PUSH_URL:https://exp.host/--/api/v2/push/send}
 bx.push.access-token=${EXPO_PUSH_ACCESS_TOKEN:}
+# Recuperation de mot de passe (variables de production)
+# PASSWORD_RESET_EMAIL_ENABLED=true
+# PASSWORD_RESET_TOKEN_TTL=PT15M
+# PASSWORD_RESET_FRONTEND_URL=https://app.example.org/reinitialiser-mot-de-passe
+# PASSWORD_RESET_FROM_ADDRESS=no-reply@example.org
+# MAIL_HOST=smtp.example.org
+# MAIL_PORT=587
+# MAIL_USERNAME=<smtp-user>
+# MAIL_PASSWORD=<smtp-password>

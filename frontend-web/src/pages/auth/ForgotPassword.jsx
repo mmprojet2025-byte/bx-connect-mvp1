@@ -3,15 +3,28 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import AppIcon from '../../components/ui/AppIcons'
 import logoBxConnect from '../../assets/images/logo-bx-connect.png'
+import api from '../../api/axios'
 
 export default function ForgotPassword() {
   const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
-    setSubmitted(true)
+    setSubmitted(false)
+    setError(null)
+    setLoading(true)
+    try {
+      await api.post('/auth/forgot-password', { email: email.trim() })
+      setSubmitted(true)
+    } catch {
+      setError(t('auth.forgot_password_error'))
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -40,6 +53,13 @@ export default function ForgotPassword() {
           </div>
         )}
 
+        {error && (
+          <div className="mb-5 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+            <AppIcon name="XCircle" className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
@@ -58,9 +78,10 @@ export default function ForgotPassword() {
 
           <button
             type="submit"
+            disabled={loading}
             className="w-full rounded-xl bg-blue-700 py-2.5 font-semibold text-white transition hover:bg-blue-600"
           >
-            {t('auth.forgot_password_submit')}
+            {loading ? t('common.loading') : t('auth.forgot_password_submit')}
           </button>
         </form>
 

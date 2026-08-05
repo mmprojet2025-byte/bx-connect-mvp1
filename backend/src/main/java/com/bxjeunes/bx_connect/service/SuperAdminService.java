@@ -126,6 +126,7 @@ public class SuperAdminService {
         User admin = getAdmin(id);
 
         admin.setMotDePasse(passwordEncoder.encode(request.getNouveauMotDePasseTemporaire()));
+        admin.setCredentialsVersion(admin.getCredentialsVersion() + 1);
         User saved = userRepository.save(admin);
         auditerSuperAdmin(acteur, "RESET_ADMIN_PASSWORD", saved,
                 "Reinitialisation du mot de passe d'un compte ADMIN.");

@@ -122,6 +122,14 @@ DB_PASSWORD=<db-password>
 JWT_SECRET=<strong-secret>
 APP_CORS_ALLOWED_ORIGINS=https://app.example.org
 FRONTEND_URL=https://app.example.org
+PASSWORD_RESET_EMAIL_ENABLED=true
+PASSWORD_RESET_TOKEN_TTL=PT15M
+PASSWORD_RESET_FRONTEND_URL=https://app.example.org/reinitialiser-mot-de-passe
+PASSWORD_RESET_FROM_ADDRESS=no-reply@example.org
+MAIL_HOST=smtp.example.org
+MAIL_PORT=587
+MAIL_USERNAME=<smtp-user>
+MAIL_PASSWORD=<smtp-password>
 ```
 
 Ajouter les variables Stripe/PayPal si les paiements sont actifs.

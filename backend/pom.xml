@@ -63,6 +63,12 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- E-mail transactionnel (recuperation de mot de passe) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- Monitoring / Health checks -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

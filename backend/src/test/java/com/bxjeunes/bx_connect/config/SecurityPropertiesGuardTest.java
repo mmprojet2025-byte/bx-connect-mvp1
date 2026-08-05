@@ -143,6 +143,16 @@ class SecurityPropertiesGuardTest {
                 .doesNotThrowAnyException();
     }
 
+    @Test
+    void prodProfileRejectsDisabledPasswordResetEmail() {
+        MockEnvironment environment = validProdEnvironment();
+        environment.setProperty("app.password-reset.email-enabled", "false");
+
+        assertThatThrownBy(() -> guard(environment).validate())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("app.password-reset.email-enabled");
+    }
+
     private SecurityPropertiesGuard guard(MockEnvironment environment) {
         SecurityPropertiesGuard guard = new SecurityPropertiesGuard();
         guard.setEnvironment(environment);
@@ -178,6 +188,12 @@ class SecurityPropertiesGuardTest {
         environment.setProperty("stripe.cancel-url", "https://app.example.org/paiement/annule");
         environment.setProperty("paypal.return-url", "https://api.example.org/api/paiements/confirmer");
         environment.setProperty("paypal.cancel-url", "https://api.example.org/api/paiements/annuler");
+        environment.setProperty("app.password-reset.email-enabled", "true");
+        environment.setProperty("app.password-reset.frontend-url", "https://app.example.org/reinitialiser-mot-de-passe");
+        environment.setProperty("app.password-reset.from-address", "no-reply@example.org");
+        environment.setProperty("spring.mail.host", "smtp.example.org");
+        environment.setProperty("spring.mail.username", "smtp-user");
+        environment.setProperty("spring.mail.password", "smtp-password");
         return environment;
     }
 }

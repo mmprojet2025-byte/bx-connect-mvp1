@@ -16,6 +16,14 @@ captures contenant ces valeurs.
 | `JWT_SECRET` | Oui | `<random-strong-secret-32-bytes-min>` | Secret fort, 32 octets minimum. |
 | `APP_CORS_ALLOWED_ORIGINS` | Oui | `https://app.example.org,https://admin.example.org` | HTTPS uniquement, pas de wildcard, pas de localhost. |
 | `FRONTEND_URL` | Oui | `https://app.example.org` | HTTPS, non local. |
+| `PASSWORD_RESET_EMAIL_ENABLED` | Oui | `true` | Doit rester active en production. |
+| `PASSWORD_RESET_TOKEN_TTL` | Oui | `PT15M` | Duree ISO-8601 courte ; 15 minutes recommandees. |
+| `PASSWORD_RESET_FRONTEND_URL` | Oui | `https://app.example.org/reinitialiser-mot-de-passe` | HTTPS, non local. |
+| `PASSWORD_RESET_FROM_ADDRESS` | Oui | `no-reply@example.org` | Adresse expediteur validee chez le fournisseur. |
+| `MAIL_HOST` | Oui | `smtp.example.org` | Hote SMTP du fournisseur transactionnel. |
+| `MAIL_PORT` | Oui | `587` | Port SMTP avec STARTTLS. |
+| `MAIL_USERNAME` | Oui | `<smtp-user>` | Stocker dans le gestionnaire de secrets. |
+| `MAIL_PASSWORD` | Oui | `<smtp-password>` | Secret SMTP, rotation documentee. |
 | `STRIPE_SECRET_KEY` | Oui si Stripe actif | `<stripe-live-secret-key>` | Secret Stripe live, jamais dans Git. |
 | `STRIPE_PUBLISHABLE_KEY` | Oui si Stripe actif | `<stripe-live-publishable-key>` | Cle publique, a garder en configuration. |
 | `STRIPE_WEBHOOK_SECRET` | Oui si Stripe actif | `<stripe-live-webhook-secret>` | Secret webhook live. |

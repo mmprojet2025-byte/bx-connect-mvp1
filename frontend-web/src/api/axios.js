@@ -10,7 +10,12 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-const PUBLIC_ROUTES = ['/auth/login', '/auth/register']
+const PUBLIC_ROUTES = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+]
 
 api.interceptors.request.use(
   (config) => {

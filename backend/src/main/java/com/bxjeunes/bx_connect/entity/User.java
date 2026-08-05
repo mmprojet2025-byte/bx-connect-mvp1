@@ -34,6 +34,10 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String motDePasse;
 
+    @Column(name = "credentials_version", nullable = false)
+    @Builder.Default
+    private int credentialsVersion = 0;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;

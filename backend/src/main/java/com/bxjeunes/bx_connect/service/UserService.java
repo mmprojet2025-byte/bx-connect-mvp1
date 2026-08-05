@@ -53,6 +53,7 @@ public class UserService {
         }
 
         user.setMotDePasse(passwordEncoder.encode(request.getNouveauMotDePasse()));
+        user.setCredentialsVersion(user.getCredentialsVersion() + 1);
         userRepository.save(user);
     }
 

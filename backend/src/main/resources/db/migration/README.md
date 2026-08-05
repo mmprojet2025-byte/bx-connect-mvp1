@@ -24,6 +24,8 @@ must be explicit, reviewed, versioned Flyway migrations.
 - `V2__add_core_indexes.sql`: core indexes for common production queries
   such as notifications, messages, conversations, groups, projects, soutiens,
   and audit logs.
+- `V3__add_password_reset_tokens.sql`: version des identifiants JWT et jetons
+  de reinitialisation a usage unique, stockes uniquement sous forme de hash.
 
 ## New database
 
@@ -31,7 +33,8 @@ On an empty database, Flyway applies migrations in order:
 
 1. `V1__baseline_schema.sql`
 2. `V2__add_core_indexes.sql`
-3. future `V3__...`, `V4__...`, etc.
+3. `V3__add_password_reset_tokens.sql`
+4. future `V4__...`, `V5__...`, etc.
 
 After the migrations run, Hibernate starts with `ddl-auto=validate` and checks
 that the database schema matches the JPA entities.

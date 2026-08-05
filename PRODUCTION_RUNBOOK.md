@@ -57,6 +57,11 @@ Variables backend minimales :
 - `JWT_SECRET`
 - `APP_CORS_ALLOWED_ORIGINS`
 - `FRONTEND_URL`
+- `PASSWORD_RESET_EMAIL_ENABLED`
+- `PASSWORD_RESET_TOKEN_TTL`
+- `PASSWORD_RESET_FRONTEND_URL`
+- `PASSWORD_RESET_FROM_ADDRESS`
+- `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`
 - variables Stripe si Stripe est active ;
 - variables PayPal si PayPal est actif.
 
