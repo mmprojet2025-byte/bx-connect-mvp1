@@ -123,12 +123,12 @@ export default function Profil() {
         </header>
 
         {message && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">
+          <div role="status" className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">
             {message}
           </div>
         )}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">
+          <div role="alert" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">
             {error}
           </div>
         )}
@@ -183,24 +183,27 @@ export default function Profil() {
               ) : (
                 <form onSubmit={handleSaveProfil} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.firstname')}</label>
+                    <label htmlFor="profile-firstname" className="block text-sm font-medium text-slate-700 mb-1">{t('profile.firstname')}</label>
                     <input
+                      id="profile-firstname"
                       value={form.prenom}
                       onChange={(e) => setForm({ ...form, prenom: e.target.value })}
                       className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.lastname')}</label>
+                    <label htmlFor="profile-lastname" className="block text-sm font-medium text-slate-700 mb-1">{t('profile.lastname')}</label>
                     <input
+                      id="profile-lastname"
                       value={form.nom}
                       onChange={(e) => setForm({ ...form, nom: e.target.value })}
                       className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.language')}</label>
+                    <label htmlFor="profile-language" className="block text-sm font-medium text-slate-700 mb-1">{t('profile.language')}</label>
                     <select
+                      id="profile-language"
                       value={form.languePreference}
                       onChange={(e) => setForm({ ...form, languePreference: e.target.value })}
                       className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -248,8 +251,9 @@ export default function Profil() {
           ) : (
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.old_password')}</label>
+                <label htmlFor="profile-current-password" className="block text-sm font-medium text-slate-700 mb-1">{t('profile.old_password')}</label>
                 <input
+                  id="profile-current-password"
                   type="password"
                   value={passwordForm.ancienMotDePasse}
                   onChange={(e) => setPasswordForm({ ...passwordForm, ancienMotDePasse: e.target.value })}
@@ -257,8 +261,9 @@ export default function Profil() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{t('profile.new_password')}</label>
+                <label htmlFor="profile-new-password" className="block text-sm font-medium text-slate-700 mb-1">{t('profile.new_password')}</label>
                 <input
+                  id="profile-new-password"
                   type="password"
                   value={passwordForm.nouveauMotDePasse}
                   onChange={(e) => setPasswordForm({ ...passwordForm, nouveauMotDePasse: e.target.value })}

@@ -427,6 +427,7 @@ function getWorkSections(role, t) {
       group(t('sidebar.sections.validation'), [
         link(t('sidebar.labels.pendingGroups'), '/admin/groupes', 'ClipboardList'),
         link(t('admin.projectsToValidate'), '/admin/projets', 'Rocket'),
+        link(t('nav.supports'), '/admin/soutiens', 'Wallet'),
       ]),
     ])
   }

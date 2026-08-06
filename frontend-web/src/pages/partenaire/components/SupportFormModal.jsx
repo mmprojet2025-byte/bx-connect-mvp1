@@ -1,4 +1,6 @@
+import { useId } from 'react';
 import AppIcon from '../../../components/ui/AppIcons';
+import useAccessibleModal from './useAccessibleModal';
 
 export default function SupportFormModal({
   soutienForm,
@@ -10,11 +12,27 @@ export default function SupportFormModal({
   onClose,
   t,
 }) {
+  const instanceId = useId();
+  const titleId = `${instanceId}-support-title`;
+  const targetLabelId = `${instanceId}-support-target-label`;
+  const projectId = `${instanceId}-support-project`;
+  const activityId = `${instanceId}-support-activity`;
+  const amountId = `${instanceId}-support-amount`;
+  const messageId = `${instanceId}-support-message`;
+  const dialogRef = useAccessibleModal(onClose);
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="bg-white rounded-lg p-6 w-full max-w-md"
+      >
         <div className="flex justify-between items-center mb-4">
-          <h2 className="flex items-center gap-2 text-lg font-bold text-blue-900">
+          <h2 id={titleId} className="flex items-center gap-2 text-lg font-bold text-blue-900">
             <AppIcon name="Wallet" className="h-5 w-5 text-orange-600" />
             {t('partnerSpace.declareSupport')}
           </h2>
@@ -26,8 +44,8 @@ export default function SupportFormModal({
         <form onSubmit={onSubmit} className="space-y-4">
           {/* Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t('partnerSpace.supportTarget')}</label>
-            <div className="flex gap-3">
+            <span id={targetLabelId} className="block text-sm font-medium text-gray-700 mb-2">{t('partnerSpace.supportTarget')}</span>
+            <div className="flex gap-3" role="group" aria-labelledby={targetLabelId}>
               {['projet', 'activite'].map(type => (
                 <button
                   key={type}
@@ -51,8 +69,9 @@ export default function SupportFormModal({
           {/* Sélection cible */}
           {soutienForm.type === 'projet' ? (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('partnerSupport.project')} *</label>
+              <label htmlFor={projectId} className="block text-sm font-medium text-gray-700 mb-1">{t('partnerSupport.project')} *</label>
               <select
+                id={projectId}
                 required
                 value={soutienForm.projetId || ''}
                 onChange={e => setSoutienForm({ ...soutienForm, projetId: parseInt(e.target.value) })}
@@ -64,8 +83,9 @@ export default function SupportFormModal({
             </div>
           ) : (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('partnerSupport.activity')} *</label>
+              <label htmlFor={activityId} className="block text-sm font-medium text-gray-700 mb-1">{t('partnerSupport.activity')} *</label>
               <select
+                id={activityId}
                 required
                 value={soutienForm.activiteId || ''}
                 onChange={e => setSoutienForm({ ...soutienForm, activiteId: parseInt(e.target.value) })}
@@ -79,8 +99,9 @@ export default function SupportFormModal({
 
           {/* Montant */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('partnerSpace.amountEuros')} *</label>
+            <label htmlFor={amountId} className="block text-sm font-medium text-gray-700 mb-1">{t('partnerSpace.amountEuros')} *</label>
             <input
+              id={amountId}
               required type="number" min="1" step="0.01"
               value={soutienForm.montant}
               onChange={e => setSoutienForm({ ...soutienForm, montant: e.target.value })}
@@ -91,8 +112,9 @@ export default function SupportFormModal({
 
           {/* Message */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('partnerSpace.optionalMessage')}</label>
+            <label htmlFor={messageId} className="block text-sm font-medium text-gray-700 mb-1">{t('partnerSpace.optionalMessage')}</label>
             <textarea
+              id={messageId}
               value={soutienForm.message}
               onChange={e => setSoutienForm({ ...soutienForm, message: e.target.value })}
               rows={3}

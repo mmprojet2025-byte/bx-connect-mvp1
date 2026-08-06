@@ -47,7 +47,7 @@ export default function ForgotPassword() {
         </div>
 
         {submitted && (
-          <div className="mb-5 flex items-start gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+          <div className="mb-5 flex items-start gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700" role="status">
             <AppIcon name="CheckCircle" className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{t('auth.forgot_password_confirmation')}</span>
           </div>
@@ -62,10 +62,11 @@ export default function ForgotPassword() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="forgot-password-email" className="mb-1 block text-sm font-medium text-gray-700">
               {t('auth.email')}
             </label>
             <input
+              id="forgot-password-email"
               type="email"
               required
               autoComplete="email"
@@ -79,6 +80,7 @@ export default function ForgotPassword() {
           <button
             type="submit"
             disabled={loading}
+            aria-busy={loading}
             className="w-full rounded-xl bg-blue-700 py-2.5 font-semibold text-white transition hover:bg-blue-600"
           >
             {loading ? t('common.loading') : t('auth.forgot_password_submit')}

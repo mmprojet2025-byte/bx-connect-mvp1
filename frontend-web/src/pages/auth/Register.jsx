@@ -64,34 +64,36 @@ export default function Register() {
           </Link>
           <p className="text-gray-500 text-sm mt-1">{t('auth.register_subtitle')}</p>
         </div>
-        {erreur && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-5">{erreur}</div>}
+        {erreur && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-5" role="alert">{erreur}</div>}
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.firstname')} *</label>
-              <input required value={form.prenom} onChange={e=>setForm({...form,prenom:e.target.value})}
+              <label htmlFor="register-firstname" className="block text-sm font-medium text-gray-700 mb-1">{t('auth.firstname')} *</label>
+              <input id="register-firstname" required value={form.prenom} onChange={e=>setForm({...form,prenom:e.target.value})}
                 className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.lastname')} *</label>
-              <input required value={form.nom} onChange={e=>setForm({...form,nom:e.target.value})}
+              <label htmlFor="register-lastname" className="block text-sm font-medium text-gray-700 mb-1">{t('auth.lastname')} *</label>
+              <input id="register-lastname" required value={form.nom} onChange={e=>setForm({...form,nom:e.target.value})}
                 className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.email')} *</label>
-            <input type="email" required value={form.email} onChange={e=>setForm({...form,email:e.target.value})}
+            <label htmlFor="register-email" className="block text-sm font-medium text-gray-700 mb-1">{t('auth.email')} *</label>
+            <input id="register-email" type="email" required value={form.email} onChange={e=>setForm({...form,email:e.target.value})}
               placeholder={t('auth.email_placeholder')}
               className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.password')} *</label>
+            <label htmlFor="register-password" className="block text-sm font-medium text-gray-700 mb-1">{t('auth.password')} *</label>
             <div className="relative">
               <input
+                id="register-password"
                 type={showPassword ? 'text' : 'password'}
                 required
                 value={form.motDePasse}
                 onChange={e=>setForm({...form,motDePasse:e.target.value})}
+                aria-describedby="register-password-requirements"
                 placeholder={t('auth.password_placeholder')}
                 className="w-full border border-gray-300 rounded-xl px-4 py-2.5 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
@@ -99,17 +101,19 @@ export default function Register() {
                 type="button"
                 onClick={() => setShowPassword(value => !value)}
                 aria-label={showPassword ? t('auth.hide_password') : t('auth.show_password')}
+                aria-pressed={showPassword}
                 className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-400 transition hover:text-blue-700"
               >
                 <AppIcon name={showPassword ? 'EyeOff' : 'Eye'} className="h-5 w-5" />
               </button>
             </div>
-            <PasswordHelp checks={passwordChecks} strength={passwordStrength} t={t} />
+            <PasswordHelp id="register-password-requirements" checks={passwordChecks} strength={passwordStrength} t={t} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.confirm_password')} *</label>
+            <label htmlFor="register-password-confirmation" className="block text-sm font-medium text-gray-700 mb-1">{t('auth.confirm_password')} *</label>
             <div className="relative">
               <input
+                id="register-password-confirmation"
                 type={showConfirmation ? 'text' : 'password'}
                 required
                 value={form.confirmation}
@@ -121,14 +125,16 @@ export default function Register() {
                 type="button"
                 onClick={() => setShowConfirmation(value => !value)}
                 aria-label={showConfirmation ? t('auth.hide_password') : t('auth.show_password')}
+                aria-pressed={showConfirmation}
                 className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-400 transition hover:text-blue-700"
               >
                 <AppIcon name={showConfirmation ? 'EyeOff' : 'Eye'} className="h-5 w-5" />
               </button>
             </div>
           </div>
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+          <label htmlFor="register-legal-acceptance" className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
             <input
+              id="register-legal-acceptance"
               type="checkbox"
               checked={legalAccepted}
               onChange={e => setLegalAccepted(e.target.checked)}
@@ -145,7 +151,7 @@ export default function Register() {
               </Link>.
             </span>
           </label>
-          <button type="submit" disabled={loading}
+          <button type="submit" disabled={loading} aria-busy={loading}
             className="w-full bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-xl transition disabled:opacity-60">
             {loading ? t('common.loading') : t('auth.register_btn')}
           </button>
@@ -160,9 +166,9 @@ export default function Register() {
   )
 }
 
-function PasswordHelp({ checks, strength, t }) {
+function PasswordHelp({ id, checks, strength, t }) {
   if (!strength) return (
-    <ul className="mt-2 space-y-1 text-xs text-slate-500">
+    <ul id={id} className="mt-2 space-y-1 text-xs text-slate-500">
       <li>{t('auth.password_rule_length')}</li>
       <li>{t('auth.password_rule_uppercase')}</li>
       <li>{t('auth.password_rule_digit')}</li>
@@ -176,7 +182,7 @@ function PasswordHelp({ checks, strength, t }) {
   }
 
   return (
-    <div className="mt-2">
+    <div id={id} className="mt-2">
       <p className={`text-xs font-semibold ${strengthStyles[strength]}`}>
         {t(`auth.password_strength_${strength}`)}
       </p>

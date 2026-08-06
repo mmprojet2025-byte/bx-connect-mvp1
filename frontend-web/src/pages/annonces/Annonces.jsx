@@ -280,20 +280,20 @@ export default function Annonces() {
             <h2 className="text-lg font-bold text-blue-900 mb-4">{t('announcements.new')}</h2>
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.title')} *</label>
-                <input required value={form.titre} onChange={e => setForm({...form, titre: e.target.value})}
+                <label htmlFor="announcement-title" className="block text-sm font-medium text-gray-700 mb-1">{t('common.title')} *</label>
+                <input id="announcement-title" required value={form.titre} onChange={e => setForm({...form, titre: e.target.value})}
                   className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('announcements.content')} *</label>
-                <textarea required value={form.contenu} onChange={e => setForm({...form, contenu: e.target.value})} rows={4}
+                <label htmlFor="announcement-content" className="block text-sm font-medium text-gray-700 mb-1">{t('announcements.content')} *</label>
+                <textarea id="announcement-content" required value={form.contenu} onChange={e => setForm({...form, contenu: e.target.value})} rows={4}
                   className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {isAdmin && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.type')}</label>
-                    <select value={form.type} onChange={e => setForm({...form, type: e.target.value})}
+                    <label htmlFor="announcement-type" className="block text-sm font-medium text-gray-700 mb-1">{t('common.type')}</label>
+                    <select id="announcement-type" value={form.type} onChange={e => setForm({...form, type: e.target.value})}
                       className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
                       <option value="GLOBALE">{t('announcements.globalOption')}</option>
                       <option value="GROUPE">{t('announcements.groupOption')}</option>
@@ -302,8 +302,8 @@ export default function Annonces() {
                 )}
                 {(form.type === 'GROUPE' || isReferent) && mesGroupes.length > 0 && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('projects.group')}</label>
-                    <select value={form.groupeId || ''} onChange={e => setForm({...form, groupeId: parseInt(e.target.value)})}
+                    <label htmlFor="announcement-group" className="block text-sm font-medium text-gray-700 mb-1">{t('projects.group')}</label>
+                    <select id="announcement-group" value={form.groupeId || ''} onChange={e => setForm({...form, groupeId: parseInt(e.target.value)})}
                       className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
                       {mesGroupes.map(g => <option key={g.id} value={g.id}>{g.nom}</option>)}
                     </select>

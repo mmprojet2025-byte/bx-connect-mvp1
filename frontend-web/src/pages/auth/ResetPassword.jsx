@@ -89,8 +89,9 @@ export default function ResetPassword() {
               value={password}
               onChange={setPassword}
               autoComplete="new-password"
+              describedBy="reset-password-requirements"
             />
-            <PasswordRules checks={checks} t={t} />
+            <PasswordRules id="reset-password-requirements" checks={checks} t={t} />
             <PasswordField
               id="reset-password-confirmation"
               label={t('auth.confirm_password')}
@@ -102,6 +103,7 @@ export default function ResetPassword() {
             <button
               type="submit"
               disabled={loading || !token}
+              aria-busy={loading}
               className="w-full rounded-xl bg-blue-700 py-2.5 font-semibold text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? t('common.loading') : t('auth.reset_password_submit')}
@@ -113,7 +115,7 @@ export default function ResetPassword() {
   )
 }
 
-function PasswordField({ id, label, value, onChange, autoComplete }) {
+function PasswordField({ id, label, value, onChange, autoComplete, describedBy }) {
   const [visible, setVisible] = useState(false)
   const { t } = useTranslation()
 
@@ -128,12 +130,14 @@ function PasswordField({ id, label, value, onChange, autoComplete }) {
           required
           value={value}
           onChange={event => onChange(event.target.value)}
+          aria-describedby={describedBy}
           className="w-full rounded-xl border border-gray-300 px-4 py-2.5 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
         <button
           type="button"
           onClick={() => setVisible(current => !current)}
           aria-label={visible ? t('auth.hide_password') : t('auth.show_password')}
+          aria-pressed={visible}
           className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-400 transition hover:text-blue-700"
         >
           <AppIcon name={visible ? 'EyeOff' : 'Eye'} className="h-5 w-5" />
@@ -143,7 +147,7 @@ function PasswordField({ id, label, value, onChange, autoComplete }) {
   )
 }
 
-function PasswordRules({ checks, t }) {
+function PasswordRules({ id, checks, t }) {
   const labels = [
     t('auth.reset_password_rule_length'),
     t('auth.password_rule_uppercase'),
@@ -153,7 +157,7 @@ function PasswordRules({ checks, t }) {
   ]
 
   return (
-    <ul className="space-y-1 text-xs">
+    <ul id={id} className="space-y-1 text-xs">
       {labels.map((label, index) => (
         <li key={label} className={checks[index] ? 'text-green-600' : 'text-slate-500'}>
           {checks[index] ? '✓' : '•'} {label}

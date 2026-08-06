@@ -366,10 +366,11 @@ export default function Projets() {
                 shape="rectangle"
                 label={t('projects.form_image')}
               />
-              <Input label={t('projects.form_title')} value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
+              <Input id="project-title" label={t('projects.form_title')} value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{t('projects.form_description')}</label>
+                <label htmlFor="project-description" className="block text-sm font-medium text-slate-700 mb-1">{t('projects.form_description')}</label>
                 <textarea
+                  id="project-description"
                   required
                   value={form.description}
                   onChange={e => setForm({ ...form, description: e.target.value })}
@@ -377,7 +378,7 @@ export default function Projets() {
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-vertical"
                 />
               </div>
-              <Input label={t('projects.form_budget')} value={form.budgetDemande} onChange={value => setForm({ ...form, budgetDemande: value })} type="number" min="0" />
+              <Input id="project-budget" label={t('projects.form_budget')} value={form.budgetDemande} onChange={value => setForm({ ...form, budgetDemande: value })} type="number" min="0" />
               <VisibilitySelect
                 value={form.visibilite}
                 options={MEMBER_VISIBILITIES}
@@ -885,11 +886,12 @@ function formatProjectOwner(projet, t) {
   return t('projects.typeInstitutional')
 }
 
-function Input({ label, value, onChange, type = 'text', required = false, min }) {
+function Input({ id, label, value, onChange, type = 'text', required = false, min }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
+      <label htmlFor={id} className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
       <input
+        id={id}
         required={required}
         type={type}
         min={min}

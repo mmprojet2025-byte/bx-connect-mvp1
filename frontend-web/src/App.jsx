@@ -46,6 +46,7 @@ import AdminActivites    from './pages/admin/AdminActivites'
 import AdminProjets      from './pages/admin/AdminProjets'
 import AdminGroupes      from './pages/admin/AdminGroupes'
 import AdminReferents    from './pages/admin/AdminReferents'
+import AdminSoutiens     from './pages/admin/AdminSoutiens'
 import SuperAdminRoute      from './routes/SuperAdminRoute'
 import SuperAdminDashboard  from './pages/super-admin/SuperAdminDashboard'
 import SuperAdminAdmins     from './pages/super-admin/SuperAdminAdmins'
@@ -236,9 +237,9 @@ export default function App() {
           <Route path="/admin/groupes"       element={<AdminRoute><AdminGroupes /></AdminRoute>} />
           <Route path="/admin/annonces"      element={<AdminRoute><Annonces /></AdminRoute>} />
           <Route path="/admin/conversations" element={<AdminOrSuperAdminRoute><BusinessConversations mode="admin" /></AdminOrSuperAdminRoute>} />
+          <Route path="/admin/soutiens"      element={<AdminRoute><AdminSoutiens /></AdminRoute>} />
 
           {/* MVP1.5 / masqué volontairement */}
-          <Route path="/admin/soutiens" element={<MvpHiddenRoute />} />
           <Route path="/admin/partenaires/affectations" element={<MvpHiddenRoute />} />
           <Route path="/admin/prestations" element={<MvpHiddenRoute />} />
           <Route path="/impact" element={<MvpHiddenRoute />} />

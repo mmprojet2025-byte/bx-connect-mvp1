@@ -80,7 +80,7 @@ export default function Login() {
             </div>
 
             {erreur && (
-              <div className="mb-5 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div className="mb-5 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
                 <AppIcon name="XCircle" className="h-4 w-4 shrink-0" />
                 <span>{erreur}</span>
               </div>
@@ -140,6 +140,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={isSubmitting}
+                aria-busy={isSubmitting}
                 className="h-13 w-full rounded-xl bg-blue-700 px-5 text-base font-bold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSubmitting ? t('common.loading') : t('auth.login_btn')}
@@ -163,7 +164,7 @@ export default function Login() {
             </button>
 
             {googleNotice && (
-              <p className="mt-3 text-center text-sm font-medium text-blue-700">
+              <p className="mt-3 text-center text-sm font-medium text-blue-700" role="status">
                 {googleNotice}
               </p>
             )}

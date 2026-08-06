@@ -1,4 +1,6 @@
+import { useId } from 'react';
 import AppIcon from '../../../components/ui/AppIcons';
+import useAccessibleModal from './useAccessibleModal';
 
 export default function EditSupportModal({
   editingSupport,
@@ -9,18 +11,33 @@ export default function EditSupportModal({
   onClose,
   t,
 }) {
+  const instanceId = useId();
+  const titleId = `${instanceId}-edit-support-title`;
+  const descriptionId = `${instanceId}-edit-support-description`;
+  const amountId = `${instanceId}-edit-support-amount`;
+  const messageId = `${instanceId}-edit-support-message`;
+  const dialogRef = useAccessibleModal(onClose);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
+        tabIndex={-1}
+        className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
+      >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-black uppercase tracking-wide text-orange-600">
               {t('partnerSpace.editSupportEyebrow', { defaultValue: 'Soutien en attente' })}
             </p>
-            <h2 className="mt-1 text-lg font-bold text-blue-900">
+            <h2 id={titleId} className="mt-1 text-lg font-bold text-blue-900">
               {t('partnerSpace.editSupportTitle', { defaultValue: 'Modifier la proposition' })}
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
+            <p id={descriptionId} className="mt-1 text-sm text-slate-500">
               {editingSupport.projetTitre || editingSupport.activiteTitre || t('partnerSpace.supportFallback')}
             </p>
           </div>
@@ -48,9 +65,10 @@ export default function EditSupportModal({
             </p>
           </div>
 
-          <label className="block">
+          <label htmlFor={amountId} className="block">
             <span className="mb-1 block text-sm font-semibold text-gray-700">{t('partnerSpace.amountEuros')} *</span>
             <input
+              id={amountId}
               required
               type="number"
               min="1"
@@ -61,9 +79,10 @@ export default function EditSupportModal({
             />
           </label>
 
-          <label className="block">
+          <label htmlFor={messageId} className="block">
             <span className="mb-1 block text-sm font-semibold text-gray-700">{t('partnerSpace.optionalMessage')}</span>
             <textarea
+              id={messageId}
               value={editSupportForm.message}
               onChange={event => setEditSupportForm({ ...editSupportForm, message: event.target.value })}
               rows={3}
