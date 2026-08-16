@@ -17,7 +17,7 @@ import java.sql.Connection;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@ActiveProfiles("testcontainers")
+@ActiveProfiles("test")
 @Testcontainers(disabledWithoutDocker = true)
 class MySqlContainerSmokeTest {
 
@@ -33,6 +33,7 @@ class MySqlContainerSmokeTest {
         registry.add("spring.datasource.username", mysql::getUsername);
         registry.add("spring.datasource.password", mysql::getPassword);
         registry.add("spring.datasource.driver-class-name", mysql::getDriverClassName);
+        registry.add("jwt.secret", () -> "bx-connect-mysql-smoke-test-jwt-key-only-2026");
     }
 
     @Autowired

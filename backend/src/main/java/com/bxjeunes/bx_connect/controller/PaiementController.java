@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -19,6 +20,11 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/paiements")
+@ConditionalOnProperty(
+        name = "features.payments.paypal.enabled",
+        havingValue = "true",
+        matchIfMissing = false
+)
 @Tag(name = "Paiements PayPal", description = "Gestion des soutiens financiers via PayPal")
 @SecurityRequirement(name = "bearerAuth")
 public class PaiementController {

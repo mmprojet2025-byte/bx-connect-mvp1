@@ -3,9 +3,15 @@ package com.bxjeunes.bx_connect.config;
 import com.stripe.Stripe;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@ConditionalOnProperty(
+        name = "features.payments.stripe.enabled",
+        havingValue = "true",
+        matchIfMissing = false
+)
 public class StripeConfig {
 
     @Value("${stripe.secret-key}")

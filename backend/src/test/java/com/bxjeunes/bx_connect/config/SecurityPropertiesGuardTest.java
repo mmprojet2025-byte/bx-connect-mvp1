@@ -1,6 +1,8 @@
 package com.bxjeunes.bx_connect.config;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.mock.env.MockEnvironment;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -13,10 +15,6 @@ class SecurityPropertiesGuardTest {
         MockEnvironment environment = new MockEnvironment();
         environment.setActiveProfiles("dev");
         environment.setProperty("jwt.secret", "short-dev-secret");
-        environment.setProperty("stripe.secret-key", "sk_test_demo");
-        environment.setProperty("stripe.webhook-secret", "whsec_demo");
-        environment.setProperty("paypal.client-id", "demo");
-        environment.setProperty("paypal.client-secret", "demo");
 
         assertThatCode(() -> guard(environment).validate())
                 .doesNotThrowAnyException();
@@ -144,6 +142,91 @@ class SecurityPropertiesGuardTest {
     }
 
     @Test
+    void prodProfileWithDisabledPaymentsDoesNotRequirePaymentSecrets() {
+        MockEnvironment environment = validProdEnvironment();
+        environment.setProperty("features.payments.stripe.enabled", "false");
+        environment.setProperty("features.payments.paypal.enabled", "false");
+
+        assertThatCode(() -> guard(environment).validate())
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void presentPaymentSecretsDoNotEnableDisabledProviders() {
+        MockEnvironment environment = validProdEnvironment();
+        environment.setProperty("stripe.secret-key", "present-but-disabled-stripe-key");
+        environment.setProperty("paypal.client-id", "present-but-disabled-paypal-id");
+
+        assertThatCode(() -> guard(environment).validate())
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void enabledStripeDoesNotRequirePayPalConfiguration() {
+        MockEnvironment environment = validProdEnvironment();
+        enableValidStripe(environment);
+
+        assertThatCode(() -> guard(environment).validate())
+                .doesNotThrowAnyException();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "stripe.secret-key",
+            "stripe.publishable-key",
+            "stripe.webhook-secret",
+            "stripe.success-url",
+            "stripe.cancel-url"
+    })
+    void enabledStripeRejectsEachMissingRequiredProperty(String propertyName) {
+        MockEnvironment environment = validProdEnvironment();
+        enableValidStripe(environment);
+        environment.setProperty(propertyName, "");
+
+        assertThatThrownBy(() -> guard(environment).validate())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining(propertyName);
+    }
+
+    @Test
+    void enabledPayPalDoesNotRequireStripeConfiguration() {
+        MockEnvironment environment = validProdEnvironment();
+        enableValidPayPal(environment);
+
+        assertThatCode(() -> guard(environment).validate())
+                .doesNotThrowAnyException();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "paypal.client-id",
+            "paypal.client-secret",
+            "paypal.mode",
+            "paypal.return-url",
+            "paypal.cancel-url"
+    })
+    void enabledPayPalRejectsEachMissingRequiredProperty(String propertyName) {
+        MockEnvironment environment = validProdEnvironment();
+        enableValidPayPal(environment);
+        environment.setProperty(propertyName, "");
+
+        assertThatThrownBy(() -> guard(environment).validate())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining(propertyName);
+    }
+
+    @Test
+    void enabledPayPalRejectsUnknownMode() {
+        MockEnvironment environment = validProdEnvironment();
+        enableValidPayPal(environment);
+        environment.setProperty("paypal.mode", "unsupported");
+
+        assertThatThrownBy(() -> guard(environment).validate())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("paypal.mode");
+    }
+
+    @Test
     void prodProfileRejectsDisabledPasswordResetEmail() {
         MockEnvironment environment = validProdEnvironment();
         environment.setProperty("app.password-reset.email-enabled", "false");
@@ -163,10 +246,6 @@ class SecurityPropertiesGuardTest {
         MockEnvironment environment = new MockEnvironment();
         environment.setActiveProfiles(profiles);
         environment.setProperty("jwt.secret", "short-dev-secret");
-        environment.setProperty("stripe.secret-key", "sk_test_demo");
-        environment.setProperty("stripe.webhook-secret", "whsec_demo");
-        environment.setProperty("paypal.client-id", "demo");
-        environment.setProperty("paypal.client-secret", "demo");
         return environment;
     }
 
@@ -175,19 +254,11 @@ class SecurityPropertiesGuardTest {
         environment.setActiveProfiles("prod");
         environment.setProperty("bx.production", "true");
         environment.setProperty("jwt.secret", "01234567890123456789012345678901");
-        environment.setProperty("stripe.secret-key", "sk_live_valid_secret");
-        environment.setProperty("stripe.webhook-secret", "whsec_live_valid_secret");
-        environment.setProperty("paypal.client-id", "paypal-live-client-id");
-        environment.setProperty("paypal.client-secret", "paypal-live-client-secret");
         environment.setProperty("spring.datasource.url", "jdbc:mysql://db.example.org:3306/bxconnect?useSSL=true&serverTimezone=UTC");
         environment.setProperty("spring.datasource.username", "bxconnect_app");
         environment.setProperty("spring.datasource.password", "strong-db-password");
         environment.setProperty("app.cors.allowed-origins", "https://app.example.org,https://admin.example.org");
         environment.setProperty("frontend.url", "https://app.example.org");
-        environment.setProperty("stripe.success-url", "https://app.example.org/paiement/succes");
-        environment.setProperty("stripe.cancel-url", "https://app.example.org/paiement/annule");
-        environment.setProperty("paypal.return-url", "https://api.example.org/api/paiements/confirmer");
-        environment.setProperty("paypal.cancel-url", "https://api.example.org/api/paiements/annuler");
         environment.setProperty("app.password-reset.email-enabled", "true");
         environment.setProperty("app.password-reset.frontend-url", "https://app.example.org/reinitialiser-mot-de-passe");
         environment.setProperty("app.password-reset.from-address", "no-reply@example.org");
@@ -195,5 +266,23 @@ class SecurityPropertiesGuardTest {
         environment.setProperty("spring.mail.username", "smtp-user");
         environment.setProperty("spring.mail.password", "smtp-password");
         return environment;
+    }
+
+    private void enableValidStripe(MockEnvironment environment) {
+        environment.setProperty("features.payments.stripe.enabled", "true");
+        environment.setProperty("stripe.secret-key", "test-only-valid-stripe-secret-key");
+        environment.setProperty("stripe.publishable-key", "test-only-valid-stripe-publishable-key");
+        environment.setProperty("stripe.webhook-secret", "test-only-valid-stripe-webhook-key");
+        environment.setProperty("stripe.success-url", "https://app.example.org/paiement/succes");
+        environment.setProperty("stripe.cancel-url", "https://app.example.org/paiement/annule");
+    }
+
+    private void enableValidPayPal(MockEnvironment environment) {
+        environment.setProperty("features.payments.paypal.enabled", "true");
+        environment.setProperty("paypal.client-id", "test-only-valid-paypal-client-id");
+        environment.setProperty("paypal.client-secret", "test-only-valid-paypal-client-key");
+        environment.setProperty("paypal.mode", "live");
+        environment.setProperty("paypal.return-url", "https://api.example.org/api/paiements/confirmer");
+        environment.setProperty("paypal.cancel-url", "https://api.example.org/api/paiements/annuler");
     }
 }

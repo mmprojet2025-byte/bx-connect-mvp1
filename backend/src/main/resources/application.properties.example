@@ -20,6 +20,8 @@ spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 # PAYPAL_CANCEL_URL=https://api.example.org/api/paiements/annuler
 # STRIPE_SUCCESS_URL=https://app.example.org/paiement/succes
 # STRIPE_CANCEL_URL=https://app.example.org/paiement/annule
+# FEATURES_PAYMENTS_STRIPE_ENABLED=false
+# FEATURES_PAYMENTS_PAYPAL_ENABLED=false
 
 spring.jpa.hibernate.ddl-auto=validate
 spring.flyway.enabled=true
@@ -32,6 +34,8 @@ spring.flyway.clean-disabled=true
 bx.demo.partners.enabled=${BX_DEMO_PARTNERS_ENABLED:false}
 bx.demo.partners.password=${BX_DEMO_PARTNERS_PASSWORD:DemoPartner123!}
 spring.jpa.show-sql=false
+features.payments.stripe.enabled=${FEATURES_PAYMENTS_STRIPE_ENABLED:false}
+features.payments.paypal.enabled=${FEATURES_PAYMENTS_PAYPAL_ENABLED:false}
 jwt.secret=${JWT_SECRET:CHANGE_ME}
 jwt.expiration=86400000
 frontend.url=http://localhost:5173

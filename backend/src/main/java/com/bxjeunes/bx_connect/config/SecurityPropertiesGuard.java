@@ -42,18 +42,12 @@ public class SecurityPropertiesGuard implements BeanFactoryPostProcessor, Enviro
         }
 
         requireStrongSecret("jwt.secret", 32);
-        requireRealSecret("stripe.secret-key");
-        requireRealSecret("stripe.webhook-secret");
-        requireRealSecret("paypal.client-id");
-        requireRealSecret("paypal.client-secret");
         requireProductionDatasource();
         requireProductionCors();
         requireProductionUrl("frontend.url");
-        requireProductionUrl("stripe.success-url");
-        requireProductionUrl("stripe.cancel-url");
-        requireProductionUrl("paypal.return-url");
-        requireProductionUrl("paypal.cancel-url");
         requireProductionPasswordReset();
+        validateStripeConfiguration();
+        validatePayPalConfiguration();
     }
 
     private boolean isRelaxedProfile() {
@@ -179,6 +173,37 @@ public class SecurityPropertiesGuard implements BeanFactoryPostProcessor, Enviro
         requireRealSecret("spring.mail.host");
         requireRealSecret("spring.mail.username");
         requireRealSecret("spring.mail.password");
+    }
+
+    private void validateStripeConfiguration() {
+        if (!isFeatureEnabled("features.payments.stripe.enabled")) {
+            return;
+        }
+
+        requireRealSecret("stripe.secret-key");
+        requireRealSecret("stripe.publishable-key");
+        requireRealSecret("stripe.webhook-secret");
+        requireProductionUrl("stripe.success-url");
+        requireProductionUrl("stripe.cancel-url");
+    }
+
+    private void validatePayPalConfiguration() {
+        if (!isFeatureEnabled("features.payments.paypal.enabled")) {
+            return;
+        }
+
+        requireRealSecret("paypal.client-id");
+        requireRealSecret("paypal.client-secret");
+        String mode = requireRealSecret("paypal.mode");
+        if (!mode.equalsIgnoreCase("sandbox") && !mode.equalsIgnoreCase("live")) {
+            throw new IllegalStateException("paypal.mode doit etre 'sandbox' ou 'live'.");
+        }
+        requireProductionUrl("paypal.return-url");
+        requireProductionUrl("paypal.cancel-url");
+    }
+
+    private boolean isFeatureEnabled(String propertyName) {
+        return Boolean.parseBoolean(environment.getProperty(propertyName, "false"));
     }
 
     private boolean isProductionFlagEnabled() {
