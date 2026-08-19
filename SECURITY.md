@@ -8,11 +8,7 @@ Bx-Connect est actuellement un MVP en préparation de préproduction. Aucune ver
 
 N'ouvrez pas d'issue publique pour une vulnérabilité, un secret exposé ou une donnée personnelle.
 
-Méthode recommandée : utilisez la fonction privée **Report a vulnerability** des GitHub Security Advisories de ce dépôt, si elle est activée.
-
-Contact de sécurité alternatif : **[ADRESSE_DE_SECURITE_A_CONFIRMER]**.
-
-Ce placeholder doit être remplacé par une adresse fonctionnelle contrôlée avant la publication publique. N'utilisez pas d'adresse personnelle non validée.
+Utilisez exclusivement la fonction privée **Report a vulnerability** des GitHub Security Advisories de ce dépôt. Si cette fonction n'est pas disponible, ne publiez aucune information sensible dans une issue publique et attendez qu'un canal privé soit activé.
 
 Le signalement devrait indiquer, sans inclure de secret réel :
 
