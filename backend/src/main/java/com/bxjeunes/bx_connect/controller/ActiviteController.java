@@ -155,9 +155,9 @@ public class ActiviteController {
         return ResponseEntity.noContent().build();
     }
 
-    // ─── ADMIN/REFERENT/SUPER_ADMIN : Consulter les présences ───────────────
+    // ─── ADMIN/REFERENT : Consulter les présences ───────────────────────────
     @GetMapping("/{id}/presences")
-    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT')")
     public ResponseEntity<List<PresenceResponse>> listerPresences(
             @PathVariable Long id,
             Authentication authentication) {

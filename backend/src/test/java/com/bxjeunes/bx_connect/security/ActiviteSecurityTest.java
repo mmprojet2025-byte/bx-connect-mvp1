@@ -42,6 +42,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -247,6 +248,25 @@ class ActiviteSecurityTest {
         assertThatThrownBy(() -> presenceService.listerPresences(20L, membre.getEmail()))
                 .isInstanceOf(AccessDeniedException.class);
         verify(inscriptionRepository, never()).findByActiviteId(20L);
+    }
+
+    @Test
+    @DisplayName("SUPER_ADMIN est refuse avant tout acces aux depots de presence")
+    void super_admin_refuse_toutes_operations_presence_avant_depots_metier() {
+        User superAdmin = user(6L, "super-admin@test.be", Role.SUPER_ADMIN);
+        PresenceRequest request = presenceRequest(StatutPresence.PRESENT, "Interdit");
+        PresenceBulkRequest bulkRequest = new PresenceBulkRequest();
+        bulkRequest.setPresences(List.of(bulkItem(70L, StatutPresence.ABSENT)));
+        when(userRepository.findByEmail(superAdmin.getEmail())).thenReturn(Optional.of(superAdmin));
+
+        assertSuperAdminPresenceDenied(() -> presenceService.listerPresences(20L, superAdmin.getEmail()));
+        assertSuperAdminPresenceDenied(() -> presenceService.modifierPresence(
+                20L, 70L, request, superAdmin.getEmail()));
+        assertSuperAdminPresenceDenied(() -> presenceService.modifierPresencesBulk(
+                20L, bulkRequest, superAdmin.getEmail()));
+        assertSuperAdminPresenceDenied(() -> presenceService.cloturerPresences(20L, superAdmin.getEmail()));
+
+        verifyNoInteractions(activiteRepository, inscriptionRepository, auditLogService, notificationService);
     }
 
     @Test
@@ -539,6 +559,13 @@ class ActiviteSecurityTest {
         item.setInscriptionId(inscriptionId);
         item.setStatutPresence(statutPresence);
         return item;
+    }
+
+    private void assertSuperAdminPresenceDenied(
+            org.assertj.core.api.ThrowableAssert.ThrowingCallable operation) {
+        assertThatThrownBy(operation)
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("SUPER_ADMIN");
     }
 
     private ActiviteRequest activiteRequest(String titre) {

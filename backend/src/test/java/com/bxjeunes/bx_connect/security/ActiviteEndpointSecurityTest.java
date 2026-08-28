@@ -23,6 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @WebMvcTest(controllers = {
         ActiviteController.class,
@@ -45,6 +46,17 @@ class ActiviteEndpointSecurityTest {
     void visiteur_peut_appeler_activites_publiques_pagees() throws Exception {
         mockMvc.perform(get("/api/activites/page"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Visiteur reste refuse sur les endpoints prives d'inscription et de presence")
+    void visiteur_reste_refuse_sur_donnees_privees() throws Exception {
+        mockMvc.perform(get("/api/activites/1/presences"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/inscriptions/mes-inscriptions"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/inscriptions/activite/1"))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -78,10 +90,38 @@ class ActiviteEndpointSecurityTest {
     }
 
     @Test
+    @WithMockUser(roles = "MEMBRE")
+    @DisplayName("MEMBRE conserve ses endpoints d'inscription")
+    void membre_conserve_ses_droits_inscription() throws Exception {
+        mockMvc.perform(post("/api/inscriptions")
+                        .contentType("application/json")
+                        .content("{\"activiteId\":1}"))
+                .andExpect(status().isCreated());
+        mockMvc.perform(get("/api/inscriptions/mes-inscriptions"))
+                .andExpect(status().isOk());
+        mockMvc.perform(delete("/api/inscriptions/1"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "PARTENAIRE")
+    @DisplayName("PARTENAIRE reste exclu des inscriptions et presences privees")
+    void partenaire_reste_limite() throws Exception {
+        assertInscriptionMembreEndpointsForbidden();
+        mockMvc.perform(get("/api/inscriptions/activite/1"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/activites/1/presences"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @WithMockUser(roles = "SUPER_ADMIN")
     @DisplayName("SUPER_ADMIN ne peut pas utiliser les endpoints d'inscription membre")
     void super_admin_ne_peut_pas_s_inscrire() throws Exception {
         assertInscriptionMembreEndpointsForbidden();
+        mockMvc.perform(get("/api/inscriptions/activite/1"))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(inscriptionService);
     }
 
     @Test
@@ -128,10 +168,10 @@ class ActiviteEndpointSecurityTest {
 
     @Test
     @WithMockUser(roles = "SUPER_ADMIN")
-    @DisplayName("SUPER_ADMIN peut consulter mais pas gerer les presences")
-    void super_admin_consulte_presences_sans_gerer() throws Exception {
+    @DisplayName("SUPER_ADMIN ne peut ni consulter ni gerer les presences")
+    void super_admin_ne_consulte_et_ne_gere_pas_presences() throws Exception {
         mockMvc.perform(get("/api/activites/1/presences"))
-                .andExpect(status().isOk());
+                .andExpect(status().isForbidden());
         mockMvc.perform(patch("/api/activites/1/presences/2")
                         .contentType("application/json")
                         .content("{\"statutPresence\":\"PRESENT\"}"))
@@ -142,6 +182,19 @@ class ActiviteEndpointSecurityTest {
                 .andExpect(status().isForbidden());
         mockMvc.perform(post("/api/activites/1/presences/cloturer"))
                 .andExpect(status().isForbidden());
+        verifyNoInteractions(presenceService);
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    @DisplayName("SUPER_ADMIN conserve l'acces au catalogue public des activites")
+    void super_admin_conserve_catalogue_public() throws Exception {
+        mockMvc.perform(get("/api/activites"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/activites/page"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/activites/1"))
+                .andExpect(status().isOk());
     }
 
     private void assertInscriptionMembreEndpointsForbidden() throws Exception {

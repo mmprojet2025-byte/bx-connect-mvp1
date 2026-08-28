@@ -47,6 +47,7 @@ public class PresenceService {
     @Transactional(readOnly = true)
     public List<PresenceResponse> listerPresences(Long activiteId, String emailUtilisateur) {
         User utilisateur = utilisateur(emailUtilisateur);
+        refuserSuperAdmin(utilisateur);
         Activite activite = activite(activiteId);
         verifierAccesLecture(utilisateur, activite);
 
@@ -63,6 +64,7 @@ public class PresenceService {
             PresenceRequest request,
             String emailUtilisateur) {
         User utilisateur = utilisateur(emailUtilisateur);
+        refuserSuperAdmin(utilisateur);
         Activite activite = activite(activiteId);
         verifierAccesGestion(utilisateur, activite);
 
@@ -80,6 +82,7 @@ public class PresenceService {
             PresenceBulkRequest request,
             String emailUtilisateur) {
         User utilisateur = utilisateur(emailUtilisateur);
+        refuserSuperAdmin(utilisateur);
         Activite activite = activite(activiteId);
         verifierAccesGestion(utilisateur, activite);
 
@@ -100,6 +103,7 @@ public class PresenceService {
     @Transactional
     public List<PresenceResponse> cloturerPresences(Long activiteId, String emailUtilisateur) {
         User utilisateur = utilisateur(emailUtilisateur);
+        refuserSuperAdmin(utilisateur);
         Activite activite = activite(activiteId);
         verifierAccesGestion(utilisateur, activite);
 
@@ -143,8 +147,14 @@ public class PresenceService {
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + activiteId));
     }
 
+    private void refuserSuperAdmin(User utilisateur) {
+        if (utilisateur.getRole() == Role.SUPER_ADMIN) {
+            throw new AccessDeniedException("Le SUPER_ADMIN technique n'a pas acces aux presences.");
+        }
+    }
+
     private void verifierAccesLecture(User utilisateur, Activite activite) {
-        if (utilisateur.getRole() == Role.SUPER_ADMIN || utilisateur.getRole() == Role.ADMIN) {
+        if (utilisateur.getRole() == Role.ADMIN) {
             return;
         }
         verifierAccesReferent(utilisateur, activite);
