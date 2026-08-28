@@ -182,8 +182,8 @@ public class BusinessConversationService {
             BusinessConversationType type
     ) {
         User createur = chargerUtilisateurAutorise(emailCreateur);
-        if (createur.getRole() != Role.ADMIN && createur.getRole() != Role.SUPER_ADMIN) {
-            throw new AccessDeniedException("Seul un ADMIN ou SUPER_ADMIN peut creer cette conversation.");
+        if (createur.getRole() != Role.ADMIN) {
+            throw new AccessDeniedException("Seul un ADMIN peut creer cette conversation.");
         }
 
         User destinataire = userRepository.findById(request.getDestinataireId())
@@ -236,11 +236,13 @@ public class BusinessConversationService {
     private User chargerUtilisateurAutorise(String email) {
         User utilisateur = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable."));
+        if (utilisateur.getRole() == Role.SUPER_ADMIN) {
+            throw new AccessDeniedException("Le SUPER_ADMIN technique n'a pas acces aux conversations metier.");
+        }
         if (utilisateur.getRole() == Role.MEMBRE || utilisateur.getRole() == Role.VISITEUR) {
             throw new AccessDeniedException("La messagerie metier est reservee aux roles professionnels.");
         }
         if (utilisateur.getRole() != Role.ADMIN
-                && utilisateur.getRole() != Role.SUPER_ADMIN
                 && utilisateur.getRole() != Role.REFERENT
                 && utilisateur.getRole() != Role.PARTENAIRE) {
             throw new AccessDeniedException("Role non autorise.");

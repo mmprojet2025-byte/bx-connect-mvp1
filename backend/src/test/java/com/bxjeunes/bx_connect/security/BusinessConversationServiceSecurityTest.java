@@ -37,6 +37,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -179,14 +180,14 @@ class BusinessConversationServiceSecurityTest {
     }
 
     @Test
-    @DisplayName("Creation ADMIN_PARTENAIRE ajoute exactement super admin et partenaire")
+    @DisplayName("Creation ADMIN_PARTENAIRE ajoute exactement admin et partenaire")
     void creation_admin_partenaire_ajoute_deux_participants() {
         CreateBusinessConversationRequest request = new CreateBusinessConversationRequest();
         request.setDestinataireId(partenaireA.getId());
 
-        stubCreation(superAdmin, partenaireA, BusinessConversationType.ADMIN_PARTENAIRE);
+        stubCreation(admin, partenaireA, BusinessConversationType.ADMIN_PARTENAIRE);
 
-        service.creerConversationAdminPartenaire(request, superAdmin.getEmail());
+        service.creerConversationAdminPartenaire(request, admin.getEmail());
 
         ArgumentCaptor<Iterable<BusinessConversationParticipant>> captor =
                 ArgumentCaptor.forClass(Iterable.class);
@@ -195,9 +196,31 @@ class BusinessConversationServiceSecurityTest {
 
         assertThat(participants).hasSize(2);
         assertThat(participants).extracting(p -> p.getUser().getRole())
-                .containsExactlyInAnyOrder(Role.SUPER_ADMIN, Role.PARTENAIRE);
+                .containsExactlyInAnyOrder(Role.ADMIN, Role.PARTENAIRE);
         assertThat(participants).extracting(p -> p.getUser().getId())
-                .containsExactlyInAnyOrder(superAdmin.getId(), partenaireA.getId());
+                .containsExactlyInAnyOrder(admin.getId(), partenaireA.getId());
+    }
+
+    @Test
+    @DisplayName("SUPER_ADMIN est refuse avant tout acces aux depots metier")
+    void super_admin_interdit_sur_toutes_les_operations() {
+        CreateBusinessConversationRequest creation = new CreateBusinessConversationRequest();
+        creation.setDestinataireId(partenaireA.getId());
+        SendBusinessMessageRequest message = new SendBusinessMessageRequest();
+        message.setContenu("Message interdit");
+        when(userRepository.findByEmail(superAdmin.getEmail())).thenReturn(Optional.of(superAdmin));
+
+        assertSuperAdminDenied(() -> service.listerMesConversations(superAdmin.getEmail()));
+        assertSuperAdminDenied(() -> service.listerMesConversationsPage(superAdmin.getEmail(), 0, 20));
+        assertSuperAdminDenied(() -> service.getConversation(100L, superAdmin.getEmail()));
+        assertSuperAdminDenied(() -> service.listerMessages(100L, superAdmin.getEmail()));
+        assertSuperAdminDenied(() -> service.listerMessagesPage(100L, superAdmin.getEmail(), 0, 50));
+        assertSuperAdminDenied(() -> service.envoyerMessage(100L, message, superAdmin.getEmail()));
+        assertSuperAdminDenied(() -> service.marquerLu(100L, superAdmin.getEmail()));
+        assertSuperAdminDenied(() -> service.creerConversationAdminReferent(creation, superAdmin.getEmail()));
+        assertSuperAdminDenied(() -> service.creerConversationAdminPartenaire(creation, superAdmin.getEmail()));
+
+        verifyNoInteractions(conversationRepository, participantRepository, messageRepository, notificationService);
     }
 
     @Test
@@ -458,6 +481,12 @@ class BusinessConversationServiceSecurityTest {
                 .thenReturn(Optional.empty());
         when(messageRepository.countUnreadForParticipant(100L, createur.getId(), null))
                 .thenReturn(0L);
+    }
+
+    private void assertSuperAdminDenied(org.assertj.core.api.ThrowableAssert.ThrowingCallable operation) {
+        assertThatThrownBy(operation)
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("SUPER_ADMIN");
     }
 
     private BusinessConversation conversation(Long id, BusinessConversationType type, User createur) {

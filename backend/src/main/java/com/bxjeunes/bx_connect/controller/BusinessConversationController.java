@@ -17,7 +17,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/conversations-metier")
-@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'REFERENT', 'PARTENAIRE')")
+@PreAuthorize("hasAnyRole('ADMIN', 'REFERENT', 'PARTENAIRE')")
 public class BusinessConversationController {
 
     private final BusinessConversationService businessConversationService;
@@ -90,7 +90,7 @@ public class BusinessConversationController {
     }
 
     @PostMapping("/admin-referent")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BusinessConversationResponse> creerAdminReferent(
             @Valid @RequestBody CreateBusinessConversationRequest request,
             Authentication authentication
@@ -103,7 +103,7 @@ public class BusinessConversationController {
     }
 
     @PostMapping("/admin-partenaire")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BusinessConversationResponse> creerAdminPartenaire(
             @Valid @RequestBody CreateBusinessConversationRequest request,
             Authentication authentication
