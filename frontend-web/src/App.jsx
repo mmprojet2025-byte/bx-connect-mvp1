@@ -115,6 +115,12 @@ function PublicOnlyRoute({ children }) {
   return children
 }
 
+function SuperAdminExcludedRoute({ children }) {
+  const { isAuthenticated, isSuperAdmin } = useAuth()
+  if (isAuthenticated && isSuperAdmin) return <Navigate to="/super-admin" replace />
+  return children
+}
+
 function MvpHiddenRoute() {
   const { isAuthenticated, user } = useAuth()
   // MVP1.5 / masqué volontairement : les modules avancés restent dans le code,
@@ -182,13 +188,13 @@ export default function App() {
           <Route path="/mot-de-passe-oublie" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
           <Route path="/forgot-password" element={<Navigate to="/mot-de-passe-oublie" replace />} />
           <Route path="/reinitialiser-mot-de-passe" element={<ResetPassword />} />
-          <Route path="/activites"     element={<ActivityCatalogRoute><Activites /></ActivityCatalogRoute>} />
-          <Route path="/activites/:id" element={<ActivityCatalogRoute><ActiviteDetail /></ActivityCatalogRoute>} />
-          <Route path="/groupes"       element={<PublicOrMembreRoute><Groupes /></PublicOrMembreRoute>} />
-          <Route path="/groupes/:id"   element={<GroupeEspace />} />
-          <Route path="/projets/:id"   element={<Projets />} />
-          <Route path="/projets"       element={<Projets />} />
-          <Route path="/annonces"      element={<Annonces />} />
+          <Route path="/activites"     element={<SuperAdminExcludedRoute><ActivityCatalogRoute><Activites /></ActivityCatalogRoute></SuperAdminExcludedRoute>} />
+          <Route path="/activites/:id" element={<SuperAdminExcludedRoute><ActivityCatalogRoute><ActiviteDetail /></ActivityCatalogRoute></SuperAdminExcludedRoute>} />
+          <Route path="/groupes"       element={<SuperAdminExcludedRoute><PublicOrMembreRoute><Groupes /></PublicOrMembreRoute></SuperAdminExcludedRoute>} />
+          <Route path="/groupes/:id"   element={<SuperAdminExcludedRoute><GroupeEspace /></SuperAdminExcludedRoute>} />
+          <Route path="/projets/:id"   element={<SuperAdminExcludedRoute><Projets /></SuperAdminExcludedRoute>} />
+          <Route path="/projets"       element={<SuperAdminExcludedRoute><Projets /></SuperAdminExcludedRoute>} />
+          <Route path="/annonces"      element={<SuperAdminExcludedRoute><Annonces /></SuperAdminExcludedRoute>} />
           <Route path="/conditions-utilisation" element={<LegalPage document="terms" />} />
           <Route path="/politique-confidentialite" element={<LegalPage document="privacy" />} />
           <Route path="/mentions-legales" element={<LegalPage document="notices" />} />
@@ -197,7 +203,7 @@ export default function App() {
           <Route path="/messagerie"    element={<MembreRoute><Messagerie /></MembreRoute>} />
           <Route path="/dashboard"     element={<MembreRoute><Dashboard /></MembreRoute>} />
           <Route path="/profil"        element={<PrivateRoute><Profil /></PrivateRoute>} />
-          <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
+          <Route path="/notifications" element={<SuperAdminExcludedRoute><PrivateRoute><Notifications /></PrivateRoute></SuperAdminExcludedRoute>} />
 
           {/* MVP1.5 / masqué volontairement */}
           <Route path="/prestations" element={<MvpHiddenRoute />} />
@@ -236,7 +242,7 @@ export default function App() {
           <Route path="/admin/projets"       element={<AdminRoute><AdminProjets /></AdminRoute>} />
           <Route path="/admin/groupes"       element={<AdminRoute><AdminGroupes /></AdminRoute>} />
           <Route path="/admin/annonces"      element={<AdminRoute><Annonces /></AdminRoute>} />
-          <Route path="/admin/conversations" element={<AdminOrSuperAdminRoute><BusinessConversations mode="admin" /></AdminOrSuperAdminRoute>} />
+          <Route path="/admin/conversations" element={<SuperAdminExcludedRoute><AdminOrSuperAdminRoute><BusinessConversations mode="admin" /></AdminOrSuperAdminRoute></SuperAdminExcludedRoute>} />
           <Route path="/admin/soutiens"      element={<AdminRoute><AdminSoutiens /></AdminRoute>} />
 
           {/* MVP1.5 / masqué volontairement */}
@@ -248,7 +254,7 @@ export default function App() {
           <Route path="/super-admin"           element={<Navigate to="/super-admin/dashboard" replace />} />
           <Route path="/super-admin/dashboard" element={<SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>} />
           <Route path="/super-admin/admins"    element={<SuperAdminRoute><SuperAdminAdmins /></SuperAdminRoute>} />
-          <Route path="/super-admin/utilisateurs" element={<SuperAdminRoute><AdminUtilisateurs endpoint="/super-admin/utilisateurs" readOnly pageTitle="Utilisateurs métier" pageDescription="Consultation des membres, référents et partenaires." /></SuperAdminRoute>} />
+          <Route path="/super-admin/utilisateurs" element={<SuperAdminRoute><Navigate to="/super-admin" replace /></SuperAdminRoute>} />
           <Route path="/super-admin/logs"      element={<SuperAdminRoute><SuperAdminLogs /></SuperAdminRoute>} />
 
           {/* ── Page 404 ── */}

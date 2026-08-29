@@ -1776,7 +1776,7 @@
     "resetPassword": "Réinitialiser le mot de passe",
     "newTemporaryPassword": "Nouveau mot de passe temporaire",
     "reservedAction": "Action réservée au SUPER_ADMIN.",
-    "logsSubtitle": "Journal des actions sensibles réalisées sur la plateforme.",
+    "logsSubtitle": "Journal des opérations techniques autorisées sur les comptes ADMIN.",
     "errorLogsLoad": "Impossible de charger les logs.",
     "platformWatch": "Plateforme sous surveillance",
     "confirmResetPassword": "Réinitialiser le mot de passe temporaire de {{email}} ? Cette action sensible remplacera l’ancien mot de passe.",
@@ -1789,6 +1789,8 @@
     "target": "Cible",
     "details": "Détails",
     "noCriticalLog": "Aucun log critique.",
+    "noTechnicalLog": "Aucune opération technique n’a encore été enregistrée.",
+    "technicalTableCaption": "Liste des opérations techniques du SUPER_ADMIN.",
     "role": "Rôle",
     "oldStatus": "Ancien statut",
     "newStatus": "Nouveau statut",
@@ -1798,6 +1800,7 @@
     "viewDetails": "Voir les détails",
     "unknownAction": "{{action}}",
     "actions": {
+      "bootstrapSuperAdminCreated": "SUPER_ADMIN initial créé",
       "createAdmin": "ADMIN créé",
       "disableAdmin": "ADMIN désactivé",
       "enableAdmin": "ADMIN réactivé",
@@ -2109,7 +2112,7 @@
     },
     "partnerSubtitle": "Soutiens, projets ouverts et activités disponibles.",
     "referentSubtitle": "Demandes, membres, activités et projets liés à vos groupes.",
-    "superAdminSubtitle": "Actions sensibles, sécurité et activité administrative."
+    "superAdminSubtitle": "Opérations techniques autorisées sur les comptes ADMIN."
   },
   "adminMobile": {
     "opportunitiesTitle": "Opportunités à modérer"
@@ -2854,7 +2857,7 @@
   "dashboardCharts": {
     "title": "Indicateurs visuels",
     "adminSubtitle": "Répartitions calculées à partir des données chargées dans ce tableau de bord.",
-    "superAdminSubtitle": "Vue synthétique des comptes administrateurs et de l’activité auditée.",
+    "superAdminSubtitle": "Vue synthétique des comptes ADMIN et des opérations techniques autorisées.",
     "projectsByStatus": "Projets par statut",
     "activitiesByStatus": "Activités par statut",
     "supportsByStatus": "Soutiens par statut",

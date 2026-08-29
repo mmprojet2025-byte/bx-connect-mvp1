@@ -18,6 +18,14 @@ import CompactKpiRow from '../../components/dashboard/CompactKpiRow'
 import ErrorState from '../../components/ui/ErrorState'
 import LoadingState from '../../components/ui/LoadingState'
 
+const ACTION_LABEL_KEYS = {
+  BOOTSTRAP_SUPER_ADMIN_CREATED: 'bootstrapSuperAdminCreated',
+  CREATE_ADMIN: 'createAdmin',
+  DISABLE_ADMIN: 'disableAdmin',
+  ENABLE_ADMIN: 'enableAdmin',
+  RESET_ADMIN_PASSWORD: 'resetAdminPassword',
+}
+
 export default function SuperAdminDashboard() {
   const { t, i18n } = useTranslation()
   const [dashboard, setDashboard] = useState(null)
@@ -164,11 +172,20 @@ function buildSuperAdminActivityItems({ logs, t }) {
   return logs.map(log => ({
     key: `log-${log.id}`,
     icon: 'Shield',
-    title: log.action || t('superAdmin.latestLogs'),
-    description: log.cibleEmail,
+    title: formatAction(log.action, t),
     date: log.dateAction,
     to: '/super-admin/logs',
   }))
+}
+
+function formatAction(action, t) {
+  const key = ACTION_LABEL_KEYS[action]
+  return key ? t(`audit.actions.${key}`) : t('audit.unknownAction', { action: humanize(action) })
+}
+
+function humanize(value) {
+  if (!value) return '-'
+  return String(value).replace(/_/g, ' ').toLowerCase().replace(/^\p{L}/u, letter => letter.toUpperCase())
 }
 
 function Alert({ type, children }) {

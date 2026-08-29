@@ -8,33 +8,21 @@ import ErrorState from '../../components/ui/ErrorState'
 import LoadingState from '../../components/ui/LoadingState'
 
 const ACTION_LABEL_KEYS = {
+  BOOTSTRAP_SUPER_ADMIN_CREATED: 'bootstrapSuperAdminCreated',
   CREATE_ADMIN: 'createAdmin',
   DISABLE_ADMIN: 'disableAdmin',
   ENABLE_ADMIN: 'enableAdmin',
   RESET_ADMIN_PASSWORD: 'resetAdminPassword',
-  PROJECT_APPROVED: 'projectApproved',
-  PROJECT_REJECTED: 'projectRejected',
-  PROJECT_REFERENT_APPROVED: 'projectReferentApproved',
-  PROJECT_REFERENT_REJECTED: 'projectReferentRejected',
-  GROUP_ADHESION_ACCEPTED: 'groupAdhesionAccepted',
-  GROUP_VALIDATED: 'groupValidated',
-  GROUP_REJECTED: 'groupRejected',
-  SUPPORT_APPROVED: 'supportApproved',
-  SUPPORT_REJECTED: 'supportRejected',
-  OPPORTUNITY_PUBLISHED: 'opportunityPublished',
-  OPPORTUNITY_REJECTED: 'opportunityRejected',
-  ACTIVITY_PUBLISHED: 'activityPublished',
-  ACTIVITY_ATTENDANCE_UPDATED: 'attendanceUpdated',
-  ACTIVITY_ATTENDANCE_VALIDATED: 'attendanceValidated',
 }
+
+const TECHNICAL_ROLES = ['SUPER_ADMIN', 'SYSTEM']
+const TECHNICAL_TARGET_TYPES = ['USER']
 
 export default function SuperAdminLogs() {
   const { t, i18n } = useTranslation()
   const [logs, setLogs] = useState([])
   const [filterOptions, setFilterOptions] = useState({
     actions: [],
-    cibleTypes: [],
-    roles: [],
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -60,8 +48,6 @@ export default function SuperAdminLogs() {
         if (!filters.action && !filters.cibleType && !filters.acteurRole) {
           setFilterOptions({
             actions: unique(data.map(log => log.action)),
-            cibleTypes: unique(data.map(log => log.cibleType)),
-            roles: unique(data.map(log => log.acteurRole)),
           })
         }
       })
@@ -72,7 +58,6 @@ export default function SuperAdminLogs() {
   const stats = useMemo(() => ({
     total: logs.length,
     actions: new Set(logs.map(log => log.action).filter(Boolean)).size,
-    statuts: logs.filter(log => log.ancienStatut || log.nouveauStatut).length,
   }), [logs])
 
   const resetFilters = () => setFilters({ action: '', cibleType: '', acteurRole: '' })
@@ -88,14 +73,13 @@ export default function SuperAdminLogs() {
         </div>
       )}
 
-      <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <StatCard icon="ClipboardList" label={t('common.total', { defaultValue: 'Total' })} value={stats.total} tone="blue" />
         <StatCard icon="Shield" label={t('audit.action')} value={stats.actions} tone="violet" />
-        <StatCard icon="Activity" label={t('audit.statusChanges')} value={stats.statuts} tone="green" />
       </div>
 
       <SectionCard className="mb-5" title={t('common.filters', { defaultValue: 'Filtres' })}>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <FilterSelect
             label={t('audit.action')}
             value={filters.action}
@@ -107,14 +91,14 @@ export default function SuperAdminLogs() {
           <FilterSelect
             label={t('audit.targetType')}
             value={filters.cibleType}
-            options={filterOptions.cibleTypes}
+            options={TECHNICAL_TARGET_TYPES}
             onChange={value => setFilters(current => ({ ...current, cibleType: value }))}
             t={t}
           />
           <FilterSelect
             label={t('audit.actorRole')}
             value={filters.acteurRole}
-            options={filterOptions.roles}
+            options={TECHNICAL_ROLES}
             onChange={value => setFilters(current => ({ ...current, acteurRole: value }))}
             t={t}
           />
@@ -122,7 +106,7 @@ export default function SuperAdminLogs() {
             <button
               type="button"
               onClick={resetFilters}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
             >
               <AppIcon name="X" className="h-4 w-4" />
               {t('common.reset')}
@@ -140,62 +124,46 @@ export default function SuperAdminLogs() {
         />
       ) : (
         <>
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-3 xl:hidden">
             {logs.length === 0 ? (
-              <ModernEmpty icon="ClipboardList" title={t('audit.noCriticalLog')} />
+              <ModernEmpty icon="ClipboardList" title={t('audit.noTechnicalLog')} />
             ) : logs.map(log => (
               <LogMobileCard key={log.id} log={log} language={i18n.language} t={t} />
             ))}
           </div>
 
-          <div className="hidden overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm md:block">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse" style={{ minWidth: '1080px' }}>
+          <div className="hidden min-w-0 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm xl:block">
+              <table className="w-full table-fixed border-collapse">
+                <caption className="sr-only">{t('audit.technicalTableCaption')}</caption>
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
                     <HeaderCell>{t('audit.date')}</HeaderCell>
-                    <HeaderCell>{t('audit.actor')}</HeaderCell>
                     <HeaderCell>{t('audit.role')}</HeaderCell>
                     <HeaderCell>{t('audit.action')}</HeaderCell>
-                    <HeaderCell>{t('audit.target')}</HeaderCell>
-                    <HeaderCell>{t('audit.oldStatus')}</HeaderCell>
-                    <HeaderCell>{t('audit.newStatus')}</HeaderCell>
-                    <HeaderCell>{t('audit.details')}</HeaderCell>
+                    <HeaderCell>{t('audit.targetType')}</HeaderCell>
                   </tr>
                 </thead>
                 <tbody>
                   {logs.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="py-10 text-center text-sm text-gray-400">
-                        {t('audit.noCriticalLog')}
+                      <td colSpan={4} className="py-10 text-center text-sm text-gray-400">
+                        {t('audit.noTechnicalLog')}
                       </td>
                     </tr>
                   ) : logs.map((log, index) => (
                     <tr key={log.id} className={`border-b border-gray-50 align-top transition hover:bg-blue-50/50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'}`}>
-                      <td className="px-4 py-3 text-xs text-gray-500">{formatDate(log.dateAction, i18n.language)}</td>
-                      <td className="px-4 py-3 text-sm">
-                        <div className="font-semibold text-slate-900">{log.acteurEmail || '-'}</div>
-                      </td>
+                      <td className="break-words px-4 py-3 text-xs text-gray-500">{formatDate(log.dateAction, i18n.language)}</td>
                       <td className="px-4 py-3">
                         <RoleBadge role={log.acteurRole} />
                       </td>
                       <td className="px-4 py-3">
                         <ActionBadge action={log.action} t={t} />
                       </td>
-                      <td className="px-4 py-3 text-sm text-slate-600">
-                        <div className="font-medium text-slate-800">{formatTarget(log)}</div>
-                        <div className="mt-1 text-xs text-slate-400">{log.cibleType || '-'}</div>
-                      </td>
-                      <td className="px-4 py-3"><StatusBadge value={log.ancienStatut} /></td>
-                      <td className="px-4 py-3"><StatusBadge value={log.nouveauStatut} strong /></td>
-                      <td className="px-4 py-3">
-                        <LogDetails log={log} t={t} />
-                      </td>
+                      <td className="break-words px-4 py-3 text-sm font-medium text-slate-700">{log.cibleType || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
           </div>
         </>
       )}
@@ -234,16 +202,14 @@ function LogMobileCard({ log, language, t }) {
     <article className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
       <div className="mb-3 flex items-start justify-between gap-3">
         <ActionBadge action={log.action} t={t} />
-        <span className="text-xs text-gray-400">{formatDate(log.dateAction, language)}</span>
+        <time dateTime={log.dateAction || undefined} className="shrink-0 text-xs text-gray-400">{formatDate(log.dateAction, language)}</time>
       </div>
-      <p className="text-sm font-semibold text-slate-900">{log.acteurEmail || '-'}</p>
       <div className="mt-2 flex flex-wrap gap-2">
         <RoleBadge role={log.acteurRole} />
-        <StatusBadge value={log.ancienStatut} />
-        <StatusBadge value={log.nouveauStatut} strong />
+        <span className="inline-flex rounded-lg bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-600">
+          {log.cibleType || '-'}
+        </span>
       </div>
-      <p className="mt-3 text-sm text-slate-600">{formatTarget(log)}</p>
-      <LogDetails log={log} compact t={t} />
     </article>
   )
 }
@@ -262,47 +228,6 @@ function RoleBadge({ role }) {
     <span className="inline-flex rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
       {role || '-'}
     </span>
-  )
-}
-
-function StatusBadge({ value, strong = false }) {
-  if (!value) {
-    return <span className="text-xs text-slate-300">-</span>
-  }
-  return (
-    <span className={`inline-flex rounded-lg px-2 py-1 text-xs font-semibold ${strong ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-      {value}
-    </span>
-  )
-}
-
-function LogDetails({ log, compact = false, t }) {
-  const metadata = parseMetadata(log.metadataJson)
-  const entries = Object.entries(metadata)
-
-  if (!log.details && entries.length === 0) {
-    return <span className="text-xs text-slate-300">-</span>
-  }
-
-  return (
-    <details className={compact ? 'mt-3' : ''}>
-      <summary className="cursor-pointer text-xs font-semibold text-blue-700 hover:text-blue-900">
-        {t('audit.viewDetails')}
-      </summary>
-      <div className="mt-2 rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs text-slate-600">
-        {log.details && <p className="mb-2">{log.details}</p>}
-        {entries.length > 0 && (
-          <dl className="grid grid-cols-1 gap-1.5">
-            {entries.map(([key, value]) => (
-              <div key={key} className="flex gap-2">
-                <dt className="min-w-24 font-semibold text-slate-500">{formatMetadataKey(key)}</dt>
-                <dd className="break-all text-slate-700">{String(value)}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
-      </div>
-    </details>
   )
 }
 
@@ -335,24 +260,6 @@ function ModernEmpty({ icon, title }) {
 function formatAction(action, t) {
   const key = ACTION_LABEL_KEYS[action]
   return key ? t(`audit.actions.${key}`) : t('audit.unknownAction', { action: humanize(action) })
-}
-
-function formatTarget(log) {
-  return log.cibleNom || log.cibleEmail || (log.cibleId ? `#${log.cibleId}` : '-')
-}
-
-function parseMetadata(metadataJson) {
-  if (!metadataJson) return {}
-  try {
-    const parsed = JSON.parse(metadataJson)
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
-  } catch {
-    return {}
-  }
-}
-
-function formatMetadataKey(key) {
-  return humanize(key).replace('Id', 'ID')
 }
 
 function humanize(value) {

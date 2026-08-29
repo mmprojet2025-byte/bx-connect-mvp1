@@ -45,14 +45,14 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
 
   const role = user?.role || 'MEMBRE'
   const routes = ROLE_ROUTES[role] || ROLE_ROUTES.MEMBRE
-  const recentItems = useRecentWorkspaceItems(location, user)
+  const recentItems = useRecentWorkspaceItems(location, user, role === 'SUPER_ADMIN')
   const mainSections = getMainSections(role, t)
   const spaceSections = getSpaceSections(role, t)
   const workSections = getWorkSections(role, t)
   const sidebarSections = [...mainSections, ...spaceSections, ...workSections]
   const homeRoute = routes.home || getDefaultRouteForRole(role)
   const showRecentLast = role === 'ADMIN'
-  const showRecentSection = role !== 'PARTENAIRE'
+  const showRecentSection = role !== 'PARTENAIRE' && role !== 'SUPER_ADMIN'
 
   useEffect(() => {
     setMobileOpen(false)
@@ -295,18 +295,18 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
   )
 }
 
-function useRecentWorkspaceItems(location, user) {
+function useRecentWorkspaceItems(location, user, disabled = false) {
   const userKey = user?.id || user?.email || user?.role || 'default'
   const storageKey = `bx-sidebar-recents-${userKey}`
   const currentItem = useMemo(() => recentItemFromLocation(location), [location])
-  const [items, setItems] = useState(() => readRecentItems(storageKey))
+  const [items, setItems] = useState(() => disabled ? [] : readRecentItems(storageKey))
 
   useEffect(() => {
-    setItems(readRecentItems(storageKey))
-  }, [storageKey])
+    setItems(disabled ? [] : readRecentItems(storageKey))
+  }, [disabled, storageKey])
 
   useEffect(() => {
-    if (!currentItem) return
+    if (disabled || !currentItem) return
     setItems((current) => {
       const next = [
         { ...currentItem, visitedAt: new Date().toISOString() },
@@ -315,7 +315,7 @@ function useRecentWorkspaceItems(location, user) {
       window.localStorage.setItem(storageKey, JSON.stringify(next))
       return next
     })
-  }, [currentItem, storageKey])
+  }, [currentItem, disabled, storageKey])
 
   return items
 }
@@ -367,10 +367,6 @@ function getMainSections(role, t) {
       group(t('sidebar.sections.security'), [
         link(t('nav.admins'), '/super-admin/admins', 'Lock'),
         link(t('nav.logs'), '/super-admin/logs', 'ClipboardList'),
-      ]),
-      group(t('sidebar.sections.communication'), [
-        link(t('nav.conversations'), '/admin/conversations', 'MessagesSquare'),
-        link(t('nav.notifications'), '/notifications', 'Bell'),
       ]),
     ])
   }

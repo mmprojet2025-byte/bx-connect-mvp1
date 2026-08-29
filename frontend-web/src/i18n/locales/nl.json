@@ -1776,7 +1776,7 @@
     "resetPassword": "Wachtwoord resetten",
     "newTemporaryPassword": "Nieuw tijdelijk wachtwoord",
     "reservedAction": "Actie voorbehouden aan SUPER_ADMIN.",
-    "logsSubtitle": "Logboek van gevoelige acties op het platform.",
+    "logsSubtitle": "Logboek van toegestane technische bewerkingen op ADMIN-accounts.",
     "errorLogsLoad": "Kan logs niet laden.",
     "platformWatch": "Platform onder toezicht",
     "confirmResetPassword": "Het tijdelijke wachtwoord van {{email}} resetten? Deze gevoelige actie vervangt het vorige wachtwoord.",
@@ -1789,6 +1789,8 @@
     "target": "Doel",
     "details": "Details",
     "noCriticalLog": "Geen kritieke logs.",
+    "noTechnicalLog": "Er is nog geen technische bewerking geregistreerd.",
+    "technicalTableCaption": "Lijst met technische SUPER_ADMIN-bewerkingen.",
     "role": "Rol",
     "oldStatus": "Oude status",
     "newStatus": "Nieuwe status",
@@ -1798,6 +1800,7 @@
     "viewDetails": "Details bekijken",
     "unknownAction": "{{action}}",
     "actions": {
+      "bootstrapSuperAdminCreated": "Initiële SUPER_ADMIN aangemaakt",
       "createAdmin": "ADMIN aangemaakt",
       "disableAdmin": "ADMIN gedeactiveerd",
       "enableAdmin": "ADMIN heractiveerd",
@@ -2109,7 +2112,7 @@
     },
     "partnerSubtitle": "Steun, open projecten en beschikbare activiteiten.",
     "referentSubtitle": "Aanvragen, leden, activiteiten en projecten gekoppeld aan je groepen.",
-    "superAdminSubtitle": "Gevoelige acties, beveiliging en administratieve activiteit."
+    "superAdminSubtitle": "Toegestane technische bewerkingen op ADMIN-accounts."
   },
   "adminMobile": {
     "opportunitiesTitle": "Opportunités à modérer"
@@ -2854,7 +2857,7 @@
   "dashboardCharts": {
     "title": "Visuele indicatoren",
     "adminSubtitle": "Verdelingen berekend op basis van de gegevens die in dit dashboard zijn geladen.",
-    "superAdminSubtitle": "Samenvatting van beheerdersaccounts en geauditeerde activiteit.",
+    "superAdminSubtitle": "Samenvatting van ADMIN-accounts en toegestane technische bewerkingen.",
     "projectsByStatus": "Projecten per status",
     "activitiesByStatus": "Activiteiten per status",
     "supportsByStatus": "Steun per status",

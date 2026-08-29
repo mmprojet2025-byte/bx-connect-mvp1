@@ -25,9 +25,10 @@ export default function Navbar() {
   const navRef = useRef(null)
   const [notifCount, setNotifCount] = useState(0)
   const [openDropdown, setOpenDropdown] = useState(null)
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN'
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || isSuperAdmin) {
       setNotifCount(0)
       return
     }
@@ -35,7 +36,7 @@ export default function Navbar() {
     api.get('/notifications/count')
       .then(res => setNotifCount(res.data.nonLues || 0))
       .catch(() => {})
-  }, [isAuthenticated])
+  }, [isAuthenticated, isSuperAdmin])
 
   useEffect(() => {
     setOpenDropdown(null)
@@ -61,7 +62,7 @@ export default function Navbar() {
     }
   }, [])
 
-  const notificationItem = isAuthenticated
+  const notificationItem = isAuthenticated && !isSuperAdmin
     ? { to: '/notifications', label: t('nav.notifications'), icon: 'Bell' }
     : null
   const homeRoute = isAuthenticated ? getDefaultRouteForRole(user?.role) : '/'
@@ -99,7 +100,7 @@ export default function Navbar() {
         </Link>
 
         <div className="hidden items-center justify-center gap-1 lg:flex">
-          {isAuthenticated && (
+          {isAuthenticated && !isSuperAdmin && (
             <GlobalSearch navigate={navigate} />
           )}
         </div>
@@ -233,7 +234,9 @@ function AccountDropdown({ open, active, notificationsActive, onToggle, isAuthen
           {isAuthenticated ? (
             <>
               <NavItem item={{ to: '/profil', label: t('nav.profile'), icon: 'User' }} active={active} dropdown />
-              <NavItem item={{ to: '/notifications', label: t('nav.notifications'), icon: 'Bell' }} active={notificationsActive} dropdown />
+              {user?.role !== 'SUPER_ADMIN' && (
+                <NavItem item={{ to: '/notifications', label: t('nav.notifications'), icon: 'Bell' }} active={notificationsActive} dropdown />
+              )}
               <div className="my-1 border-t border-slate-100" />
               <button
                 type="button"

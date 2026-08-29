@@ -1776,7 +1776,7 @@
     "resetPassword": "Reset password",
     "newTemporaryPassword": "New temporary password",
     "reservedAction": "Action reserved for SUPER_ADMIN.",
-    "logsSubtitle": "Log of sensitive actions performed on the platform.",
+    "logsSubtitle": "Log of authorized technical operations on ADMIN accounts.",
     "errorLogsLoad": "Unable to load logs.",
     "platformWatch": "Platform under supervision",
     "confirmResetPassword": "Reset the temporary password for {{email}}? This sensitive action will replace the previous password.",
@@ -1789,6 +1789,8 @@
     "target": "Target",
     "details": "Details",
     "noCriticalLog": "No critical logs.",
+    "noTechnicalLog": "No technical operation has been recorded yet.",
+    "technicalTableCaption": "List of SUPER_ADMIN technical operations.",
     "role": "Role",
     "oldStatus": "Old status",
     "newStatus": "New status",
@@ -1798,6 +1800,7 @@
     "viewDetails": "View details",
     "unknownAction": "{{action}}",
     "actions": {
+      "bootstrapSuperAdminCreated": "Initial SUPER_ADMIN created",
       "createAdmin": "ADMIN created",
       "disableAdmin": "ADMIN disabled",
       "enableAdmin": "ADMIN reactivated",
@@ -2109,7 +2112,7 @@
     },
     "partnerSubtitle": "Support, open projects and available activities.",
     "referentSubtitle": "Requests, members, activities and projects linked to your groups.",
-    "superAdminSubtitle": "Sensitive actions, security and administrative activity."
+    "superAdminSubtitle": "Authorized technical operations on ADMIN accounts."
   },
   "adminMobile": {
     "opportunitiesTitle": "Opportunités à modérer"
@@ -2854,7 +2857,7 @@
   "dashboardCharts": {
     "title": "Visual indicators",
     "adminSubtitle": "Breakdowns calculated from the data loaded in this dashboard.",
-    "superAdminSubtitle": "Summary view of administrator accounts and audited activity.",
+    "superAdminSubtitle": "Summary view of ADMIN accounts and authorized technical operations.",
     "projectsByStatus": "Projects by status",
     "activitiesByStatus": "Activities by status",
     "supportsByStatus": "Support by status",
