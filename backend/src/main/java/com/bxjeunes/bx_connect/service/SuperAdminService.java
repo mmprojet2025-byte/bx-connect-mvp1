@@ -8,7 +8,6 @@ import com.bxjeunes.bx_connect.dto.UserResponse;
 import com.bxjeunes.bx_connect.entity.Langue;
 import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.User;
-import com.bxjeunes.bx_connect.repository.AuditLogRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -18,32 +17,21 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class SuperAdminService {
 
     private static final Logger log = LoggerFactory.getLogger(SuperAdminService.class);
-    private static final Set<String> ACTIONS_CRITIQUES = Set.of(
-            "CREATE_ADMIN",
-            "DISABLE_ADMIN",
-            "ENABLE_ADMIN",
-            "RESET_ADMIN_PASSWORD",
-            "DELETE_USER",
-            "CHANGE_USER_ROLE",
-            "UPDATE_USER_ROLE");
-
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditLogService auditLogService;
-    private final AuditLogRepository auditLogRepository;
 
     public SuperAdminDashboardResponse dashboard() {
         long adminsActifs = userRepository.countByRoleAndActifTrue(Role.ADMIN);
         long totalAdmins = userRepository.countByRole(Role.ADMIN);
         long adminsInactifs = totalAdmins - adminsActifs;
-        long totalActionsCritiques = auditLogRepository.countByActionIn(ACTIONS_CRITIQUES);
+        long totalActionsCritiques = auditLogService.compterActionsTechniques();
         return new SuperAdminDashboardResponse(
                 adminsActifs,
                 adminsInactifs,

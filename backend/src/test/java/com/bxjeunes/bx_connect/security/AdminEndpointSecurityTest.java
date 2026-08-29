@@ -57,17 +57,17 @@ class AdminEndpointSecurityTest {
 
     @Test
     @WithMockUser(roles = "SUPER_ADMIN")
-    @DisplayName("SUPER_ADMIN peut consulter les logs filtres")
-    void super_admin_peut_consulter_logs_filtres() throws Exception {
+    @DisplayName("SUPER_ADMIN peut consulter uniquement les logs techniques filtres")
+    void super_admin_peut_consulter_logs_techniques_filtres() throws Exception {
         mockMvc.perform(get("/api/super-admin/logs/search")
-                        .param("action", "PROJECT_APPROVED")
-                        .param("cibleType", "PROJECT")
-                        .param("acteurRole", "ADMIN"))
+                        .param("action", "CREATE_ADMIN")
+                        .param("cibleType", "USER")
+                        .param("acteurRole", "SUPER_ADMIN"))
                 .andExpect(status().isOk());
         mockMvc.perform(get("/api/super-admin/logs/search/page")
-                        .param("action", "PROJECT_APPROVED")
-                        .param("cibleType", "PROJECT")
-                        .param("acteurRole", "ADMIN"))
+                        .param("action", "CREATE_ADMIN")
+                        .param("cibleType", "USER")
+                        .param("acteurRole", "SUPER_ADMIN"))
                 .andExpect(status().isOk());
     }
 

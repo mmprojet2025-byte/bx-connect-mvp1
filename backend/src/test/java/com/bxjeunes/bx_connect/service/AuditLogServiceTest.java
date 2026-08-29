@@ -18,7 +18,9 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -107,46 +109,77 @@ class AuditLogServiceTest {
     }
 
     @Test
-    void rechercherDelegueLesFiltresAuRepository() {
+    void rechercherDelegueUniquementLesFiltresTechniquesAuRepository() {
         LocalDateTime debut = LocalDateTime.now().minusDays(1);
         LocalDateTime fin = LocalDateTime.now();
         AuditLog log = AuditLog.builder()
-                .action("GROUP_VALIDATED")
-                .cibleType("GROUPE")
-                .acteurRole("ADMIN")
+                .action("CREATE_ADMIN")
+                .cibleType("USER")
+                .acteurRole("SUPER_ADMIN")
                 .build();
-        when(auditLogRepository.rechercher("GROUP_VALIDATED", "GROUPE", "ADMIN", debut, fin))
-                .thenReturn(List.of(log));
+        when(auditLogRepository.rechercherTechnicalLogs(
+                eq(AuditLogService.SUPER_ADMIN_ADMIN_ACTIONS),
+                eq(AuditLogService.SUPER_ADMIN_BOOTSTRAP_ACTION),
+                eq("USER"),
+                eq("SUPER_ADMIN"),
+                eq("SYSTEM"),
+                eq("CREATE_ADMIN"),
+                eq("USER"),
+                eq("SUPER_ADMIN"),
+                eq(debut),
+                eq(fin),
+                any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(log)));
 
-        assertThat(auditLogService.rechercher("GROUP_VALIDATED", "GROUPE", "ADMIN", debut, fin))
+        assertThat(auditLogService.rechercher("CREATE_ADMIN", "USER", "SUPER_ADMIN", debut, fin))
                 .hasSize(1)
                 .first()
                 .extracting("action")
-                .isEqualTo("GROUP_VALIDATED");
+                .isEqualTo("CREATE_ADMIN");
     }
 
     @Test
-    void rechercherPageDelegueLesFiltresEtLimiteLaTaille() {
+    void filtresMetierNeContournentJamaisLaListeBlanche() {
+        assertThat(auditLogService.rechercher(
+                "PROJECT_APPROVED", "PROJECT", "ADMIN", null, null)).isEmpty();
+        assertThat(auditLogService.rechercher(
+                null, null, "MEMBRE", null, null)).isEmpty();
+        assertThat(auditLogService.rechercher(
+                null, null, "REFERENT", null, null)).isEmpty();
+        assertThat(auditLogService.rechercher(
+                null, null, "PARTENAIRE", null, null)).isEmpty();
+
+        verify(auditLogRepository, never()).rechercherTechnicalLogs(
+                anyCollection(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(Pageable.class));
+    }
+
+    @Test
+    void rechercherPageTechniqueLimiteLaTaille() {
         LocalDateTime debut = LocalDateTime.now().minusDays(1);
         LocalDateTime fin = LocalDateTime.now();
         AuditLog log = AuditLog.builder()
-                .action("GROUP_VALIDATED")
-                .cibleType("GROUPE")
-                .acteurRole("ADMIN")
+                .action("RESET_ADMIN_PASSWORD")
+                .cibleType("USER")
+                .acteurRole("SUPER_ADMIN")
                 .build();
-        when(auditLogRepository.rechercherPage(
-                eq("GROUP_VALIDATED"),
-                eq("GROUPE"),
-                eq("ADMIN"),
+        when(auditLogRepository.rechercherTechnicalLogs(
+                eq(AuditLogService.SUPER_ADMIN_ADMIN_ACTIONS),
+                eq(AuditLogService.SUPER_ADMIN_BOOTSTRAP_ACTION),
+                eq("USER"),
+                eq("SUPER_ADMIN"),
+                eq("SYSTEM"),
+                eq("RESET_ADMIN_PASSWORD"),
+                eq("USER"),
+                eq("SUPER_ADMIN"),
                 eq(debut),
                 eq(fin),
                 any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(log)));
 
         var response = auditLogService.rechercherPage(
-                " GROUP_VALIDATED ",
-                " GROUPE ",
-                " ADMIN ",
+                " RESET_ADMIN_PASSWORD ",
+                " USER ",
+                " SUPER_ADMIN ",
                 debut,
                 fin,
                 0,
@@ -154,15 +187,50 @@ class AuditLogServiceTest {
 
         assertThat(response.content()).hasSize(1);
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-        verify(auditLogRepository).rechercherPage(
-                eq("GROUP_VALIDATED"),
-                eq("GROUPE"),
-                eq("ADMIN"),
+        verify(auditLogRepository).rechercherTechnicalLogs(
+                eq(AuditLogService.SUPER_ADMIN_ADMIN_ACTIONS),
+                eq(AuditLogService.SUPER_ADMIN_BOOTSTRAP_ACTION),
+                eq("USER"),
+                eq("SUPER_ADMIN"),
+                eq("SYSTEM"),
+                eq("RESET_ADMIN_PASSWORD"),
+                eq("USER"),
+                eq("SUPER_ADMIN"),
                 eq(debut),
                 eq(fin),
                 captor.capture());
         assertThat(captor.getValue().getPageSize()).isEqualTo(100);
         assertThat(captor.getValue().getSort().getOrderFor("dateAction").isDescending()).isTrue();
+    }
+
+    @Test
+    void dtoTechniqueNeTransmetAucuneDonneePersonnelleOuMetier() {
+        AuditLog log = AuditLog.builder()
+                .id(99L)
+                .acteurId(1L)
+                .acteurEmail("super@bx.test")
+                .acteurRole("SUPER_ADMIN")
+                .action("DISABLE_ADMIN")
+                .cibleType("USER")
+                .cibleId(2L)
+                .cibleNom("Identite interdite")
+                .cibleEmail("identite@bx.test")
+                .ancienStatut("ACTIF")
+                .nouveauStatut("INACTIF")
+                .metadataJson("{\"businessId\":42}")
+                .details("Detail libre interdit")
+                .dateAction(LocalDateTime.now())
+                .build();
+
+        var response = com.bxjeunes.bx_connect.dto.superadmin.AuditLogResponse.fromEntity(log);
+
+        assertThat(response.getId()).isEqualTo(99L);
+        assertThat(response.getAction()).isEqualTo("DISABLE_ADMIN");
+        assertThat(response.getActeurRole()).isEqualTo("SUPER_ADMIN");
+        assertThat(response.getCibleType()).isEqualTo("USER");
+        assertThat(response.getClass().getDeclaredFields())
+                .extracting("name")
+                .containsExactlyInAnyOrder("id", "acteurRole", "action", "cibleType", "dateAction");
     }
 
     private User user(Long id, String email, Role role, String prenom, String nom) {

@@ -23,32 +23,30 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
 
     List<AuditLog> findByActeurRoleOrderByDateActionDesc(String acteurRole);
 
-    long countByActionIn(Collection<String> actions);
+    @Query("""
+            SELECT COUNT(log) FROM AuditLog log
+            WHERE log.cibleType = :cibleType
+              AND ((log.acteurRole = :superAdminRole AND log.action IN :adminActions)
+                OR (log.acteurRole = :systemRole AND log.action = :bootstrapAction))
+            """)
+    long countTechnicalLogs(
+            @Param("adminActions") Collection<String> adminActions,
+            @Param("bootstrapAction") String bootstrapAction,
+            @Param("cibleType") String cibleType,
+            @Param("superAdminRole") String superAdminRole,
+            @Param("systemRole") String systemRole);
 
     List<AuditLog> findByDateActionBetweenOrderByDateActionDesc(
             LocalDateTime dateDebut,
             LocalDateTime dateFin);
 
-    @Query("""
-            SELECT log FROM AuditLog log
-            WHERE (:action IS NULL OR log.action = :action)
-              AND (:cibleType IS NULL OR log.cibleType = :cibleType)
-              AND (:acteurRole IS NULL OR log.acteurRole = :acteurRole)
-              AND (:dateDebut IS NULL OR log.dateAction >= :dateDebut)
-              AND (:dateFin IS NULL OR log.dateAction <= :dateFin)
-            ORDER BY log.dateAction DESC
-            """)
-    List<AuditLog> rechercher(
-            @Param("action") String action,
-            @Param("cibleType") String cibleType,
-            @Param("acteurRole") String acteurRole,
-            @Param("dateDebut") LocalDateTime dateDebut,
-            @Param("dateFin") LocalDateTime dateFin);
-
     @Query(
             value = """
                     SELECT log FROM AuditLog log
-                    WHERE (:action IS NULL OR log.action = :action)
+                    WHERE log.cibleType = :technicalCibleType
+                      AND ((log.acteurRole = :superAdminRole AND log.action IN :adminActions)
+                        OR (log.acteurRole = :systemRole AND log.action = :bootstrapAction))
+                      AND (:action IS NULL OR log.action = :action)
                       AND (:cibleType IS NULL OR log.cibleType = :cibleType)
                       AND (:acteurRole IS NULL OR log.acteurRole = :acteurRole)
                       AND (:dateDebut IS NULL OR log.dateAction >= :dateDebut)
@@ -56,14 +54,22 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
                     """,
             countQuery = """
                     SELECT COUNT(log) FROM AuditLog log
-                    WHERE (:action IS NULL OR log.action = :action)
+                    WHERE log.cibleType = :technicalCibleType
+                      AND ((log.acteurRole = :superAdminRole AND log.action IN :adminActions)
+                        OR (log.acteurRole = :systemRole AND log.action = :bootstrapAction))
+                      AND (:action IS NULL OR log.action = :action)
                       AND (:cibleType IS NULL OR log.cibleType = :cibleType)
                       AND (:acteurRole IS NULL OR log.acteurRole = :acteurRole)
                       AND (:dateDebut IS NULL OR log.dateAction >= :dateDebut)
                       AND (:dateFin IS NULL OR log.dateAction <= :dateFin)
                     """
     )
-    Page<AuditLog> rechercherPage(
+    Page<AuditLog> rechercherTechnicalLogs(
+            @Param("adminActions") Collection<String> adminActions,
+            @Param("bootstrapAction") String bootstrapAction,
+            @Param("technicalCibleType") String technicalCibleType,
+            @Param("superAdminRole") String superAdminRole,
+            @Param("systemRole") String systemRole,
             @Param("action") String action,
             @Param("cibleType") String cibleType,
             @Param("acteurRole") String acteurRole,

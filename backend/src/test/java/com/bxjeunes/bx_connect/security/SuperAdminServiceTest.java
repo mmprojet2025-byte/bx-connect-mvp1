@@ -19,6 +19,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -38,6 +39,24 @@ class SuperAdminServiceTest {
 
     @InjectMocks
     private SuperAdminService superAdminService;
+
+    @Test
+    @DisplayName("Le tableau de bord conserve les compteurs ADMIN et utilise uniquement l'audit technique")
+    void dashboardUtiliseUniquementAuditTechnique() {
+        when(userRepository.countByRoleAndActifTrue(Role.ADMIN)).thenReturn(2L);
+        when(userRepository.countByRole(Role.ADMIN)).thenReturn(3L);
+        when(auditLogService.compterActionsTechniques()).thenReturn(4L);
+        when(auditLogService.derniersLogs()).thenReturn(List.of());
+
+        var response = superAdminService.dashboard();
+
+        assertThat(response.getAdminsActifs()).isEqualTo(2L);
+        assertThat(response.getAdminsInactifs()).isEqualTo(1L);
+        assertThat(response.getTotalActionsCritiques()).isEqualTo(4L);
+        assertThat(response.getDerniersLogs()).isEmpty();
+        verify(auditLogService).compterActionsTechniques();
+        verify(auditLogService).derniersLogs();
+    }
 
     @Test
     @DisplayName("SUPER_ADMIN cree uniquement un compte ADMIN")
