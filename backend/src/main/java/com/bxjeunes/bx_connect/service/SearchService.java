@@ -70,6 +70,9 @@ public class SearchService {
     public List<SearchResult> search(String email, String query, List<String> types, Integer requestedLimit) {
         User actor = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AccessDeniedException("Utilisateur introuvable."));
+        if (actor.getRole() == Role.SUPER_ADMIN) {
+            throw new AccessDeniedException("Le SUPER_ADMIN ne peut pas utiliser la recherche metier.");
+        }
 
         String q = normalizeQuery(query);
         if (q.length() < MIN_QUERY_LENGTH) {

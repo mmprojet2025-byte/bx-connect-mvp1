@@ -2,6 +2,7 @@ package com.bxjeunes.bx_connect.controller;
 
 import com.bxjeunes.bx_connect.dto.SearchResult;
 import com.bxjeunes.bx_connect.service.SearchService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,6 +22,7 @@ public class SearchController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'REFERENT', 'PARTENAIRE', 'MEMBRE')")
     public List<SearchResult> search(
             @RequestParam(name = "q", required = false) String query,
             @RequestParam(name = "types", required = false) List<String> types,

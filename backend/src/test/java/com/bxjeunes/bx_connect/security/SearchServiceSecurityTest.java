@@ -29,12 +29,15 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -87,17 +90,28 @@ class SearchServiceSecurityTest {
     }
 
     @Test
-    @DisplayName("SUPER_ADMIN recherche les membres vers la route super admin")
-    void super_admin_recherche_membres_route_super_admin() {
+    @DisplayName("SUPER_ADMIN est refuse avant toute recherche metier")
+    void super_admin_est_refuse_avant_toute_recherche_metier() {
         User superAdmin = user(7L, "super@test.be", Role.SUPER_ADMIN);
-        User membre = user(2L, "membre@test.be", Role.MEMBRE);
         when(userRepository.findByEmail(superAdmin.getEmail())).thenReturn(Optional.of(superAdmin));
-        when(userRepository.searchActiveUsersByRoles(eq("membre"), anyList())).thenReturn(List.of(membre));
 
-        var results = searchService.search(superAdmin.getEmail(), "membre", List.of("MEMBRE"), 10);
+        assertThatThrownBy(() -> searchService.search(
+                superAdmin.getEmail(),
+                "membre",
+                List.of("MEMBRE", "GROUPE", "ACTIVITE", "PROJET", "PARTENAIRE", "OPPORTUNITE"),
+                60))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
+                .hasMessageContaining("SUPER_ADMIN");
 
-        assertThat(results).hasSize(1);
-        assertThat(results.get(0).getUrl()).isEqualTo("/super-admin/utilisateurs");
+        verify(userRepository).findByEmail(superAdmin.getEmail());
+        verifyNoMoreInteractions(userRepository);
+        verifyNoInteractions(
+                activiteRepository,
+                groupeRepository,
+                projetRepository,
+                partenaireProfilRepository,
+                annonceRepository,
+                membreGroupeRepository);
     }
 
     @Test
