@@ -43,6 +43,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class ProjetSecurityTest {
@@ -534,18 +536,86 @@ class ProjetSecurityTest {
     }
 
     @Test
-    @DisplayName("SUPER_ADMIN peut consulter les projets sans action metier")
-    void super_admin_peut_consulter_les_projets() {
+    @DisplayName("SUPER_ADMIN consulte uniquement un detail public avec la requete publique")
+    void super_admin_consulte_uniquement_detail_public() {
         Projet projetPublic = projet(42L, StatutProjet.APPROUVE, null, membre);
         projetPublic.setVisibilite(VisibiliteProjet.PUBLIC);
-        Projet projetPrive = projet(43L, StatutProjet.SOUMIS, groupe, membre);
-
-        when(projetRepository.findById(42L)).thenReturn(Optional.of(projetPublic));
-        when(projetRepository.findById(43L)).thenReturn(Optional.of(projetPrive));
         when(userRepository.findByEmail(superAdmin.getEmail())).thenReturn(Optional.of(superAdmin));
+        when(projetRepository.findByIdAndStatutInAndVisibilite(
+                42L,
+                List.of(StatutProjet.APPROUVE, StatutProjet.EN_COURS, StatutProjet.TERMINE),
+                VisibiliteProjet.PUBLIC)).thenReturn(Optional.of(projetPublic));
 
         assertThat(projetService.getProjet(42L, superAdmin.getEmail()).getId()).isEqualTo(42L);
-        assertThat(projetService.getProjet(43L, superAdmin.getEmail()).getId()).isEqualTo(43L);
+        verify(projetRepository, never()).findById(any());
+    }
+
+    @Test
+    @DisplayName("SUPER_ADMIN ne peut pas reveler un projet prive par son identifiant")
+    void super_admin_ne_peut_pas_consulter_detail_prive() {
+        when(userRepository.findByEmail(superAdmin.getEmail())).thenReturn(Optional.of(superAdmin));
+        when(projetRepository.findByIdAndStatutInAndVisibilite(
+                43L,
+                List.of(StatutProjet.APPROUVE, StatutProjet.EN_COURS, StatutProjet.TERMINE),
+                VisibiliteProjet.PUBLIC)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projetService.getProjet(43L, superAdmin.getEmail()))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Projet introuvable");
+        verify(projetRepository, never()).findById(any());
+    }
+
+    @Test
+    @DisplayName("SUPER_ADMIN liste exactement le catalogue public sans findAll")
+    void super_admin_liste_uniquement_catalogue_public() {
+        Projet projetPublic = projet(42L, StatutProjet.APPROUVE, null, membre);
+        projetPublic.setVisibilite(VisibiliteProjet.PUBLIC);
+        when(userRepository.findByEmail(superAdmin.getEmail())).thenReturn(Optional.of(superAdmin));
+        when(projetRepository.findByStatutInAndVisibilite(
+                List.of(StatutProjet.APPROUVE, StatutProjet.EN_COURS, StatutProjet.TERMINE),
+                VisibiliteProjet.PUBLIC)).thenReturn(List.of(projetPublic));
+
+        assertThat(projetService.listerProjetsVisibles(superAdmin.getEmail()))
+                .extracting(ProjetResponse::getId)
+                .containsExactly(42L);
+        verify(projetRepository, never()).findAll();
+    }
+
+    @Test
+    @DisplayName("SUPER_ADMIN pagine uniquement le catalogue public sans findAll")
+    void super_admin_pagine_uniquement_catalogue_public() {
+        Projet projetPublic = projet(42L, StatutProjet.TERMINE, null, membre);
+        projetPublic.setVisibilite(VisibiliteProjet.PUBLIC);
+        when(userRepository.findByEmail(superAdmin.getEmail())).thenReturn(Optional.of(superAdmin));
+        when(projetRepository.findByStatutInAndVisibilite(
+                org.mockito.ArgumentMatchers.eq(List.of(StatutProjet.APPROUVE, StatutProjet.EN_COURS, StatutProjet.TERMINE)),
+                org.mockito.ArgumentMatchers.eq(VisibiliteProjet.PUBLIC),
+                any(Pageable.class))).thenReturn(new PageImpl<>(List.of(projetPublic)));
+
+        assertThat(projetService.listerProjetsVisiblesPage(superAdmin.getEmail(), 0, 20).content())
+                .extracting(ProjetResponse::getId)
+                .containsExactly(42L);
+        verify(projetRepository, never()).findAll(any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("SUPER_ADMIN est refuse sur les commentaires avant les repositories projet et commentaire")
+    void super_admin_est_refuse_sur_commentaires_avant_repositories_metier() {
+        CommentaireRequest request = new CommentaireRequest();
+        request.setContenu("Interdit");
+        when(userRepository.findByEmail(superAdmin.getEmail())).thenReturn(Optional.of(superAdmin));
+
+        assertThatThrownBy(() -> projetService.commenterProjet(42L, request, superAdmin.getEmail()))
+                .isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> projetService.getCommentaires(42L, superAdmin.getEmail()))
+                .isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> projetService.getCommentairesPage(42L, superAdmin.getEmail(), 0, 20))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(userRepository, org.mockito.Mockito.times(3)).findByEmail(superAdmin.getEmail());
+        verifyNoMoreInteractions(userRepository);
+        verifyNoInteractions(projetRepository, commentaireRepository, participationRepository,
+                groupeRepository, membreGroupeRepository, notificationService, auditLogService);
     }
 
     @Test

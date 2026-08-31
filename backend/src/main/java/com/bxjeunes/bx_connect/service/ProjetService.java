@@ -66,6 +66,13 @@ public class ProjetService {
 
         User user = userRepository.findByEmail(emailUser)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        if (user.getRole() == Role.SUPER_ADMIN) {
+            return projetRepository.findByStatutInAndVisibilite(
+                            STATUTS_DIFFUSABLES, VisibiliteProjet.PUBLIC)
+                    .stream()
+                    .map(ProjetResponse::fromEntity)
+                    .collect(Collectors.toList());
+        }
         return projetRepository.findAll()
                 .stream()
                 .filter(projet -> peutConsulterProjet(projet, user))
@@ -84,7 +91,13 @@ public class ProjetService {
         User user = userRepository.findByEmail(emailUser)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
 
-        if (user.getRole() == Role.ADMIN || user.getRole() == Role.SUPER_ADMIN) {
+        if (user.getRole() == Role.SUPER_ADMIN) {
+            return PagedResponse.fromPage(projetRepository
+                    .findByStatutInAndVisibilite(STATUTS_DIFFUSABLES, VisibiliteProjet.PUBLIC, pageable)
+                    .map(ProjetResponse::fromEntity));
+        }
+
+        if (user.getRole() == Role.ADMIN) {
             return PagedResponse.fromPage(projetRepository
                     .findAll(pageable)
                     .map(ProjetResponse::fromEntity));
@@ -156,6 +169,16 @@ public class ProjetService {
     }
 
     public ProjetResponse getProjet(Long id, String emailUser) {
+        if (emailUser != null) {
+            User user = userRepository.findByEmail(emailUser)
+                    .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+            if (user.getRole() == Role.SUPER_ADMIN) {
+                return projetRepository.findByIdAndStatutInAndVisibilite(
+                                id, STATUTS_DIFFUSABLES, VisibiliteProjet.PUBLIC)
+                        .map(ProjetResponse::fromEntity)
+                        .orElseThrow(() -> new RuntimeException("Projet introuvable"));
+            }
+        }
         Projet projet = projetRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Projet introuvable"));
         verifierAccesProjet(projet, emailUser);
@@ -454,6 +477,9 @@ public class ProjetService {
     public CommentaireResponse commenterProjet(Long projetId, CommentaireRequest request, String emailUser) {
         User user = userRepository.findByEmail(emailUser)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        if (user.getRole() == Role.SUPER_ADMIN) {
+            throw new AccessDeniedException("Le SUPER_ADMIN technique n'a pas acces aux commentaires de projet.");
+        }
         Projet projet = projetRepository.findById(projetId)
                 .orElseThrow(() -> new RuntimeException("Projet introuvable"));
 
@@ -480,6 +506,7 @@ public class ProjetService {
     }
 
     public List<CommentaireResponse> getCommentaires(Long projetId, String emailUser) {
+        refuserCommentairesSuperAdmin(emailUser);
         Projet projet = projetRepository.findById(projetId)
                 .orElseThrow(() -> new RuntimeException("Projet introuvable"));
         verifierAccesProjet(projet, emailUser);
@@ -495,6 +522,7 @@ public class ProjetService {
             int page,
             int size
     ) {
+        refuserCommentairesSuperAdmin(emailUser);
         Projet projet = projetRepository.findById(projetId)
                 .orElseThrow(() -> new RuntimeException("Projet introuvable"));
         verifierAccesProjet(projet, emailUser);
@@ -581,7 +609,7 @@ public class ProjetService {
     }
 
     private boolean peutConsulterProjet(Projet projet, User user) {
-        if (user.getRole() == Role.ADMIN || user.getRole() == Role.SUPER_ADMIN) {
+        if (user.getRole() == Role.ADMIN) {
             return true;
         }
         if (estPorteur(user, projet)) {
@@ -615,6 +643,17 @@ public class ProjetService {
         return projet.getPorteur() != null
                 && projet.getPorteur().getId() != null
                 && projet.getPorteur().getId().equals(user.getId());
+    }
+
+    private void refuserCommentairesSuperAdmin(String emailUser) {
+        if (emailUser == null) {
+            return;
+        }
+        User user = userRepository.findByEmail(emailUser)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        if (user.getRole() == Role.SUPER_ADMIN) {
+            throw new AccessDeniedException("Le SUPER_ADMIN technique n'a pas acces aux commentaires de projet.");
+        }
     }
 
     private void notifierAdminsProjetSoumis(Projet projet) {

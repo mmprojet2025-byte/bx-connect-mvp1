@@ -20,6 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @WebMvcTest(ProjetController.class)
 @Import(SecurityConfig.class)
@@ -65,6 +66,33 @@ class ProjetEndpointSecurityTest {
     @DisplayName("SUPER_ADMIN recoit 403 sur rejoindreProjet")
     void super_admin_recoit_403_sur_rejoindre_projet() throws Exception {
         assertRejoindreProjetForbidden();
+    }
+
+    @Test
+    @WithMockUser(username = "super@test.be", roles = "SUPER_ADMIN")
+    @DisplayName("SUPER_ADMIN utilise les endpoints de catalogue sans privilege metier")
+    void super_admin_utilise_catalogue_projets() throws Exception {
+        mockMvc.perform(get("/api/projets")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/projets/page")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/projets/42")).andExpect(status().isOk());
+
+        verify(projetService).listerProjetsVisibles("super@test.be");
+        verify(projetService).listerProjetsVisiblesPage("super@test.be", 0, 20);
+        verify(projetService).getProjet(42L, "super@test.be");
+    }
+
+    @Test
+    @WithMockUser(username = "super@test.be", roles = "SUPER_ADMIN")
+    @DisplayName("SUPER_ADMIN recoit 403 sur toutes les routes de commentaires projet")
+    void super_admin_recoit_403_sur_commentaires() throws Exception {
+        mockMvc.perform(get("/api/projets/42/commentaires")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/projets/42/commentaires/page")).andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/projets/42/commentaires")
+                        .contentType("application/json")
+                        .content("{\"contenu\":\"Commentaire interdit\"}"))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(projetService);
     }
 
     @Test

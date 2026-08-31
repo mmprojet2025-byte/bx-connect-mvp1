@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ProjetRepository extends JpaRepository<Projet, Long> {
@@ -26,6 +27,11 @@ public interface ProjetRepository extends JpaRepository<Projet, Long> {
             List<StatutProjet> statuts,
             VisibiliteProjet visibilite,
             Pageable pageable);
+
+    Optional<Projet> findByIdAndStatutInAndVisibilite(
+            Long id,
+            List<StatutProjet> statuts,
+            VisibiliteProjet visibilite);
 
     List<Projet> findByStatutInAndVisibiliteIn(
             List<StatutProjet> statuts,

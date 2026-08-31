@@ -194,6 +194,7 @@ public class ProjetController {
     // ─── GET /api/projets/{id}/commentaires — Commentaires d'un projet ────────
 
     @GetMapping("/{id}/commentaires")
+    @PreAuthorize("!hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<CommentaireResponse>> getCommentaires(
             @PathVariable Long id,
             Authentication authentication) {
@@ -201,6 +202,7 @@ public class ProjetController {
     }
 
     @GetMapping("/{id}/commentaires/page")
+    @PreAuthorize("!hasRole('SUPER_ADMIN')")
     public ResponseEntity<PagedResponse<CommentaireResponse>> getCommentairesPage(
             @PathVariable Long id,
             @RequestParam(defaultValue = "0") int page,
