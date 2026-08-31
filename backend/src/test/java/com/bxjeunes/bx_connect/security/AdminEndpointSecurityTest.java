@@ -22,6 +22,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @WebMvcTest(controllers = {
         SuperAdminController.class,
@@ -68,6 +69,38 @@ class AdminEndpointSecurityTest {
                         .param("action", "CREATE_ADMIN")
                         .param("cibleType", "USER")
                         .param("acteurRole", "SUPER_ADMIN"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    @DisplayName("SUPER_ADMIN recoit 403 sur l'ancien annuaire general")
+    void super_admin_recoit_403_sur_annuaire_general() throws Exception {
+        mockMvc.perform(get("/api/super-admin/utilisateurs"))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(superAdminService);
+    }
+
+    @Test
+    @WithMockUser(username = "root@test.be", roles = "SUPER_ADMIN")
+    @DisplayName("SUPER_ADMIN conserve la gestion technique des comptes ADMIN")
+    void super_admin_conserve_gestion_technique_admin() throws Exception {
+        mockMvc.perform(get("/api/super-admin/admins"))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/super-admin/admins")
+                        .contentType("application/json")
+                        .content("""
+                                {"prenom":"Ada","nom":"Admin","email":"ada@test.be","motDePasseTemporaire":"Temp1234!"}
+                                """))
+                .andExpect(status().isCreated());
+        mockMvc.perform(patch("/api/super-admin/admins/2/disable"))
+                .andExpect(status().isOk());
+        mockMvc.perform(patch("/api/super-admin/admins/2/enable"))
+                .andExpect(status().isOk());
+        mockMvc.perform(patch("/api/super-admin/admins/2/reset-password")
+                        .contentType("application/json")
+                        .content("{\"nouveauMotDePasseTemporaire\":\"Temp5678!\"}"))
                 .andExpect(status().isOk());
     }
 

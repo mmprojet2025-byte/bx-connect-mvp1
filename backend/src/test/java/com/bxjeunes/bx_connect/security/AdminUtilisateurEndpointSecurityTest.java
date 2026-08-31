@@ -24,7 +24,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @WebMvcTest(AdminController.class)
@@ -75,5 +79,35 @@ class AdminUtilisateurEndpointSecurityTest {
     void partenaire_ne_peut_pas_appeler_utilisateurs_page() throws Exception {
         mockMvc.perform(get("/api/admin/utilisateurs/page"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    @DisplayName("SUPER_ADMIN ne peut utiliser aucune gestion generale ADMIN des utilisateurs")
+    void super_admin_ne_peut_utiliser_gestion_generale_utilisateurs() throws Exception {
+        mockMvc.perform(get("/api/admin/utilisateurs")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/admin/utilisateurs/page")).andExpect(status().isForbidden());
+        mockMvc.perform(patch("/api/admin/utilisateurs/42/role").param("role", "REFERENT"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(patch("/api/admin/utilisateurs/42/actif")).andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/admin/utilisateurs/42")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/admin/referents")).andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/admin/referents")
+                        .contentType("application/json")
+                        .content("""
+                                {"prenom":"Ref","nom":"Test","email":"ref@test.be","motDePasseTemporaire":"Temp1234!"}
+                                """))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(patch("/api/admin/utilisateurs/42/nommer-referent"))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(
+                userRepository,
+                activiteRepository,
+                inscriptionRepository,
+                groupeRepository,
+                groupeService,
+                adminReferentService,
+                prestationService);
     }
 }

@@ -11,6 +11,8 @@ import com.bxjeunes.bx_connect.service.SuperAdminService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -27,6 +29,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,6 +59,19 @@ class SuperAdminServiceTest {
         assertThat(response.getDerniersLogs()).isEmpty();
         verify(auditLogService).compterActionsTechniques();
         verify(auditLogService).derniersLogs();
+    }
+
+    @Test
+    @DisplayName("L'annuaire technique demande exclusivement les comptes ADMIN")
+    void annuaire_technique_demande_exclusivement_admin() {
+        User admin = user(2L, "admin@test.be", Role.ADMIN, true);
+        when(userRepository.findByRole(Role.ADMIN)).thenReturn(List.of(admin));
+
+        var response = superAdminService.listerAdmins();
+
+        assertThat(response).hasSize(1);
+        assertThat(response.get(0).getEmail()).isEqualTo("admin@test.be");
+        verify(userRepository).findByRole(Role.ADMIN);
     }
 
     @Test
@@ -127,6 +143,43 @@ class SuperAdminServiceTest {
         assertThatThrownBy(() -> superAdminService.desactiverAdmin(1L, "root@test.be"))
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("SUPER_ADMIN");
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Role.class, names = {"MEMBRE", "REFERENT", "PARTENAIRE"})
+    @DisplayName("Une cible non ADMIN est refusee par identifiant direct")
+    void cible_non_admin_refusee_par_identifiant_direct(Role role) {
+        User superAdmin = user(1L, "root@test.be", Role.SUPER_ADMIN, true);
+        User cible = user(9L, "cible@test.be", role, true);
+        when(userRepository.findByEmail("root@test.be")).thenReturn(Optional.of(superAdmin));
+        when(userRepository.findById(9L)).thenReturn(Optional.of(cible));
+
+        assertThatThrownBy(() -> superAdminService.desactiverAdmin(9L, "root@test.be"))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("uniquement les ADMIN");
+
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("SUPER_ADMIN conserve activation et desactivation d'un ADMIN")
+    void super_admin_conserve_activation_et_desactivation_admin() {
+        User superAdmin = user(1L, "root@test.be", Role.SUPER_ADMIN, true);
+        User admin = user(2L, "admin@test.be", Role.ADMIN, true);
+        when(userRepository.findByEmail("root@test.be")).thenReturn(Optional.of(superAdmin));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(admin));
+        when(userRepository.countByRoleAndActifTrue(Role.ADMIN)).thenReturn(2L);
+        when(userRepository.save(admin)).thenReturn(admin);
+
+        superAdminService.desactiverAdmin(2L, "root@test.be");
+        superAdminService.reactiverAdmin(2L, "root@test.be");
+
+        assertThat(admin.isActif()).isTrue();
+        verify(userRepository, times(2)).save(admin);
+        verify(auditLogService).log(superAdmin, "DISABLE_ADMIN", "USER", admin,
+                "Desactivation d'un compte ADMIN.");
+        verify(auditLogService).log(superAdmin, "ENABLE_ADMIN", "USER", admin,
+                "Reactivation d'un compte ADMIN.");
     }
 
     @Test

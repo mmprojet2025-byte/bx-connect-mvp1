@@ -22,7 +22,7 @@ public class UserController {
 
     // ─── GET /api/users/me — Voir son profil (M01 CDC) ──────────────────────
     @GetMapping("/me")
-    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT', 'PARTENAIRE', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT', 'PARTENAIRE', 'ADMIN')")
     public ResponseEntity<UserProfileResponse> getMonProfil(Authentication authentication) {
         String email = authentication.getName();
         return ResponseEntity.ok(userService.getMonProfil(email));
@@ -30,7 +30,7 @@ public class UserController {
 
     // ─── PUT /api/users/me — Modifier son profil (M02/M03 CDC) ─────────────
     @PutMapping("/me")
-    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT', 'PARTENAIRE', 'ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT', 'PARTENAIRE', 'ADMIN')")
     public ResponseEntity<UserProfileResponse> modifierMonProfil(
             @Valid @RequestBody UserProfileRequest request,
             Authentication authentication) {

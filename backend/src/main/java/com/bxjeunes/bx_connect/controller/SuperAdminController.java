@@ -6,7 +6,6 @@ import com.bxjeunes.bx_connect.dto.superadmin.AuditLogResponse;
 import com.bxjeunes.bx_connect.dto.superadmin.CreateAdminRequest;
 import com.bxjeunes.bx_connect.dto.superadmin.ResetAdminPasswordRequest;
 import com.bxjeunes.bx_connect.dto.superadmin.SuperAdminDashboardResponse;
-import com.bxjeunes.bx_connect.dto.UserResponse;
 import com.bxjeunes.bx_connect.service.AuditLogService;
 import com.bxjeunes.bx_connect.service.SuperAdminService;
 import jakarta.validation.Valid;
@@ -48,8 +47,9 @@ public class SuperAdminController {
     }
 
     @GetMapping("/utilisateurs")
-    public ResponseEntity<List<UserResponse>> listerUtilisateursMetier() {
-        return ResponseEntity.ok(superAdminService.listerUtilisateursMetier());
+    @PreAuthorize("denyAll()")
+    public ResponseEntity<Void> listerUtilisateursMetier() {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
     @PostMapping("/admins")
