@@ -646,6 +646,13 @@
     "preferences": "Préférences",
     "notificationPreferencesDesc": "Les préférences détaillées seront disponibles prochainement.",
     "userProfile": "Profil utilisateur"
+    ,"securityAccount": "Sécurité du compte"
+    ,"securityAccountDescription": "Modifiez uniquement le mot de passe de votre compte technique."
+    ,"passwordRules": "Le nouveau mot de passe doit contenir entre 12 et 128 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial."
+    ,"passwordMismatch": "Les nouveaux mots de passe ne correspondent pas."
+    ,"passwordInvalid": "Le nouveau mot de passe ne respecte pas toutes les règles de sécurité."
+    ,"passwordChanging": "Modification en cours…"
+    ,"passwordChangedLoginAgain": "Votre mot de passe a été modifié. Reconnectez-vous pour continuer."
   },
   "errors": {
     "session_expired": "Session expirée. Reconnectez-vous.",

@@ -646,6 +646,13 @@
     "preferences": "Preferences",
     "notificationPreferencesDesc": "Detailed notification preferences will be available soon.",
     "userProfile": "User profile"
+    ,"securityAccount": "Account security"
+    ,"securityAccountDescription": "Change only the password for your technical account."
+    ,"passwordRules": "The new password must contain 12 to 128 characters, an uppercase letter, a lowercase letter, a number, and a special character."
+    ,"passwordMismatch": "The new passwords do not match."
+    ,"passwordInvalid": "The new password does not meet all security requirements."
+    ,"passwordChanging": "Updating…"
+    ,"passwordChangedLoginAgain": "Your password has been changed. Sign in again to continue."
   },
   "errors": {
     "session_expired": "Session expired. Please log in again.",

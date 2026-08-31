@@ -22,6 +22,7 @@ import LegalPage        from './pages/legal/LegalPage'
 // Pages membres connectés
 import Dashboard        from './pages/dashboard/Dashboard'
 import Profil           from './pages/profil/Profil'
+import SuperAdminAccountSecurity from './pages/super-admin/SuperAdminAccountSecurity'
 import Groupes          from './pages/groupes/Groupes'
 import GroupeEspace     from './pages/groupes/GroupeEspace'
 import Messagerie       from './pages/messagerie/Messagerie'
@@ -58,6 +59,11 @@ import { trackDashboardView } from './monitoring/analytics'
 function PrivateRoute({ children }) {
   const { isAuthenticated } = useAuth()
   return isAuthenticated ? children : <Navigate to="/login" replace />
+}
+
+function AccountRoute() {
+  const { isSuperAdmin } = useAuth()
+  return isSuperAdmin ? <SuperAdminAccountSecurity /> : <Profil />
 }
 
 function AdminRoute({ children }) {
@@ -202,7 +208,7 @@ export default function App() {
           {/* ── Pages membres connectés ── */}
           <Route path="/messagerie"    element={<MembreRoute><Messagerie /></MembreRoute>} />
           <Route path="/dashboard"     element={<MembreRoute><Dashboard /></MembreRoute>} />
-          <Route path="/profil"        element={<PrivateRoute><Profil /></PrivateRoute>} />
+          <Route path="/profil"        element={<PrivateRoute><AccountRoute /></PrivateRoute>} />
           <Route path="/notifications" element={<SuperAdminExcludedRoute><PrivateRoute><Notifications /></PrivateRoute></SuperAdminExcludedRoute>} />
 
           {/* MVP1.5 / masqué volontairement */}

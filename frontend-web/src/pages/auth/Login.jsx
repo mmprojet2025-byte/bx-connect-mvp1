@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
@@ -13,6 +13,7 @@ import logoBxConnect from '../../assets/images/logo-bx-connect.png'
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const { t } = useTranslation()
 
   const [erreur, setErreur] = useState(null)
@@ -83,6 +84,13 @@ export default function Login() {
               <div className="mb-5 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
                 <AppIcon name="XCircle" className="h-4 w-4 shrink-0" />
                 <span>{erreur}</span>
+              </div>
+            )}
+
+            {location.state?.passwordChanged && (
+              <div className="mb-5 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800" role="status">
+                <AppIcon name="CheckCircle" className="h-4 w-4 shrink-0" />
+                <span>{t('profile.passwordChangedLoginAgain')}</span>
               </div>
             )}
 

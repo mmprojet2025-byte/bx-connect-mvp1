@@ -233,7 +233,15 @@ function AccountDropdown({ open, active, notificationsActive, onToggle, isAuthen
 
           {isAuthenticated ? (
             <>
-              <NavItem item={{ to: '/profil', label: t('nav.profile'), icon: 'User' }} active={active} dropdown />
+              <NavItem
+                item={{
+                  to: '/profil',
+                  label: user?.role === 'SUPER_ADMIN' ? t('profile.securityAccount') : t('nav.profile'),
+                  icon: user?.role === 'SUPER_ADMIN' ? 'Shield' : 'User',
+                }}
+                active={active}
+                dropdown
+              />
               {user?.role !== 'SUPER_ADMIN' && (
                 <NavItem item={{ to: '/notifications', label: t('nav.notifications'), icon: 'Bell' }} active={notificationsActive} dropdown />
               )}
