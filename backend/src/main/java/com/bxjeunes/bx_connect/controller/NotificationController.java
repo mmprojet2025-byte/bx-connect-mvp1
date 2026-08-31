@@ -12,7 +12,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/notifications")
-@PreAuthorize("isAuthenticated()")
+@PreAuthorize("hasAnyRole('ADMIN', 'REFERENT', 'PARTENAIRE', 'MEMBRE')")
 public class NotificationController {
 
     private final NotificationService notificationService;

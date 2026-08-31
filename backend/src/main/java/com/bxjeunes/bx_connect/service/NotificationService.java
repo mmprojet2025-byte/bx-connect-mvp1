@@ -2,6 +2,7 @@ package com.bxjeunes.bx_connect.service;
 
 import com.bxjeunes.bx_connect.dto.PagedResponse;
 import com.bxjeunes.bx_connect.entity.Notification;
+import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.event.PushNotificationEvent;
 import com.bxjeunes.bx_connect.repository.NotificationRepository;
@@ -9,6 +10,7 @@ import com.bxjeunes.bx_connect.repository.UserRepository;
 import com.bxjeunes.bx_connect.util.PaginationUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -37,6 +39,9 @@ public class NotificationService {
     }
 
     public void creer(User destinataire, String titre, String message, String type, String lienAction) {
+        if (destinataire != null && destinataire.getRole() == Role.SUPER_ADMIN) {
+            return;
+        }
         Notification notif = new Notification(destinataire, titre, message, type);
         notif.setLienAction(lienAction);
         notificationRepository.save(notif);
@@ -51,8 +56,7 @@ public class NotificationService {
 
     // ─── Mes notifications ────────────────────────────────────────────────────
     public List<Map<String, Object>> mesNotifications(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        User user = requireNotificationUser(email);
 
         return notificationRepository
                 .findByDestinataireIdOrderByDateCreationDesc(user.getId())
@@ -62,8 +66,7 @@ public class NotificationService {
     }
 
     public PagedResponse<Map<String, Object>> mesNotificationsPage(String email, int page, int size) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        User user = requireNotificationUser(email);
 
         return PagedResponse.fromPage(notificationRepository
                 .findByDestinataireId(
@@ -75,15 +78,13 @@ public class NotificationService {
 
     // ─── Compter les non lues (badge) ─────────────────────────────────────────
     public long compterNonLues(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        User user = requireNotificationUser(email);
         return notificationRepository.countByDestinataireIdAndLueFalse(user.getId());
     }
 
     // ─── Marquer une notification comme lue ──────────────────────────────────
     public void marquerLue(Long notifId, String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        User user = requireNotificationUser(email);
         Notification notif = notificationRepository.findByIdAndDestinataireId(notifId, user.getId())
                 .orElseThrow(() -> new RuntimeException("Notification introuvable"));
         notif.setLue(true);
@@ -92,18 +93,25 @@ public class NotificationService {
 
     // ─── Marquer toutes comme lues ────────────────────────────────────────────
     public void marquerToutesLues(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        User user = requireNotificationUser(email);
         notificationRepository.marquerToutesLues(user.getId());
     }
 
     // ─── Supprimer une notification ───────────────────────────────────────────
     public void supprimer(Long notifId, String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        User user = requireNotificationUser(email);
         notificationRepository.findByIdAndDestinataireId(notifId, user.getId())
                 .orElseThrow(() -> new RuntimeException("Notification introuvable"));
         notificationRepository.deleteByIdAndDestinataireId(notifId, user.getId());
+    }
+
+    private User requireNotificationUser(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        if (user.getRole() == Role.SUPER_ADMIN) {
+            throw new AccessDeniedException("Le SUPER_ADMIN ne peut pas utiliser les notifications.");
+        }
+        return user;
     }
 
     // ─── Convertir en Map ─────────────────────────────────────────────────────
