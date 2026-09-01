@@ -1,11 +1,20 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import AppIcon from '../components/AppIcon';
 import { Badge, Card, COLORS, EmptyState, SectionHeader } from '../components/MobileUI';
 
-const ROLE_FILTERS = ['', 'SUPER_ADMIN', 'ADMIN', 'REFERENT', 'MEMBRE', 'PARTENAIRE'];
+const ROLE_FILTERS = ['', 'SUPER_ADMIN', 'SYSTEM'];
+const ACTION_FILTERS = [
+  '',
+  'CREATE_ADMIN',
+  'DISABLE_ADMIN',
+  'ENABLE_ADMIN',
+  'RESET_ADMIN_PASSWORD',
+  'BOOTSTRAP_SUPER_ADMIN_CREATED',
+];
+const TARGET_FILTERS = ['', 'USER'];
 
 export default function SuperAdminLogsScreen() {
   const { t, i18n } = useTranslation();
@@ -14,7 +23,6 @@ export default function SuperAdminLogsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
-  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
     loadLogs();
@@ -46,8 +54,7 @@ export default function SuperAdminLogsScreen() {
     }
   };
 
-  const actionOptions = useMemo(() => uniqueOptions(logs.map((log) => log.action)), [logs]);
-  const cibleOptions = useMemo(() => uniqueOptions(logs.map((log) => log.cibleType)), [logs]);
+  const actionOptions = ACTION_FILTERS;
 
   if (loading) {
     return (
@@ -71,7 +78,6 @@ export default function SuperAdminLogsScreen() {
           filters={filters}
           setFilters={setFilters}
           actionOptions={actionOptions}
-          cibleOptions={cibleOptions}
           t={t}
         />
       </View>
@@ -99,8 +105,6 @@ export default function SuperAdminLogsScreen() {
           renderItem={({ item }) => (
             <LogCard
               log={item}
-              expanded={expandedId === item.id}
-              onToggle={() => setExpandedId(expandedId === item.id ? null : item.id)}
               language={i18n.language}
               t={t}
             />
@@ -114,19 +118,19 @@ export default function SuperAdminLogsScreen() {
   );
 }
 
-function FilterBlock({ filters, setFilters, actionOptions, cibleOptions, t }) {
+function FilterBlock({ filters, setFilters, actionOptions, t }) {
   return (
     <View style={styles.filters}>
       <FilterRow
         label={t('superAdmin.filterAction')}
-        options={['', ...actionOptions]}
+        options={actionOptions}
         value={filters.action}
         onChange={(action) => setFilters((current) => ({ ...current, action }))}
         formatter={(value) => value ? humanAction(value) : t('common.all')}
       />
       <FilterRow
         label={t('superAdmin.filterTarget')}
-        options={['', ...cibleOptions]}
+        options={TARGET_FILTERS}
         value={filters.cibleType}
         onChange={(cibleType) => setFilters((current) => ({ ...current, cibleType }))}
         formatter={(value) => value || t('common.all')}
@@ -166,9 +170,7 @@ function FilterRow({ label, options, value, onChange, formatter }) {
   );
 }
 
-function LogCard({ log, expanded, onToggle, language, t }) {
-  const target = log.cibleNom || log.cibleEmail || log.cibleType || t('common.notAvailable');
-
+function LogCard({ log, language, t }) {
   return (
     <Card style={styles.card}>
       <View style={styles.cardHeader}>
@@ -183,31 +185,9 @@ function LogCard({ log, expanded, onToggle, language, t }) {
       </View>
 
       <View style={styles.metaBox}>
-        <Meta label={t('superAdmin.actor')} value={log.acteurEmail || t('common.notAvailable')} />
-        <Meta label={t('superAdmin.target')} value={target} />
+        <Meta label={t('superAdmin.actorRole')} value={log.acteurRole || 'SYSTEM'} />
         <Meta label={t('superAdmin.targetType')} value={log.cibleType || t('common.notAvailable')} />
-        <Meta label={t('superAdmin.oldStatus')} value={log.ancienStatut || '—'} />
-        <Meta label={t('superAdmin.newStatus')} value={log.nouveauStatut || '—'} />
       </View>
-
-      {log.metadataJson || log.details ? (
-        <>
-          <TouchableOpacity style={styles.detailsButton} onPress={onToggle}>
-            <Text style={styles.detailsButtonText}>
-              {expanded
-                ? t('superAdmin.hideDetails')
-                : t('superAdmin.showDetails')}
-            </Text>
-            <AppIcon name={expanded ? 'chevron-up-outline' : 'chevron-down-outline'} size={17} color={COLORS.bxBlueLight} />
-          </TouchableOpacity>
-          {expanded ? (
-            <View style={styles.detailsBox}>
-              {log.details ? <Text style={styles.detailsText}>{log.details}</Text> : null}
-              {log.metadataJson ? <Text style={styles.detailsText}>{formatMetadata(log.metadataJson)}</Text> : null}
-            </View>
-          ) : null}
-        </>
-      ) : null}
     </Card>
   );
 }
@@ -221,26 +201,11 @@ function Meta({ label, value }) {
   );
 }
 
-function uniqueOptions(values) {
-  return Array.from(new Set(values.filter(Boolean))).sort().slice(0, 7);
-}
-
 function humanAction(action) {
   return String(action || '')
     .replaceAll('_', ' ')
     .toLowerCase()
     .replace(/(^|\s)\S/g, (letter) => letter.toUpperCase());
-}
-
-function formatMetadata(metadataJson) {
-  try {
-    const parsed = JSON.parse(metadataJson);
-    return Object.entries(parsed)
-      .map(([key, value]) => `${key}: ${String(value)}`)
-      .join('\n');
-  } catch {
-    return metadataJson;
-  }
 }
 
 function formatDate(value, language, t) {
@@ -256,9 +221,6 @@ function formatDate(value, language, t) {
 
 function roleColor(role) {
   if (role === 'SUPER_ADMIN') return COLORS.danger;
-  if (role === 'ADMIN') return COLORS.bxBlueLight;
-  if (role === 'REFERENT') return '#0f766e';
-  if (role === 'PARTENAIRE') return COLORS.impactOrange;
   return COLORS.info;
 }
 
@@ -292,8 +254,4 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
   metaLabel: { color: COLORS.muted, fontSize: 11 },
   metaValue: { color: COLORS.bxBlue, fontSize: 11, fontWeight: '900', maxWidth: '58%', textAlign: 'right' },
-  detailsButton: { marginTop: 10, minHeight: 40, borderRadius: 12, backgroundColor: '#eff6ff', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 },
-  detailsButtonText: { color: COLORS.bxBlueLight, fontSize: 13, fontWeight: '900' },
-  detailsBox: { marginTop: 8, borderRadius: 12, backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#eef2f7', padding: 10 },
-  detailsText: { color: '#334155', fontSize: 12, lineHeight: 18 },
 });

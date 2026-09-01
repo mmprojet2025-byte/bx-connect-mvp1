@@ -26,7 +26,7 @@ const benefits = [
 ];
 
 export default function LoginScreen({ navigation }) {
-  const { login } = useAuth();
+  const { login, postLogoutNotice } = useAuth();
   const { t } = useTranslation();
   const { height } = useWindowDimensions();
 
@@ -98,6 +98,13 @@ export default function LoginScreen({ navigation }) {
           <View style={styles.errorBox}>
             <AppIcon name="warning" size={17} color={COLORS.danger} />
             <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
+        {postLogoutNotice !== '' && (
+          <View style={styles.successBox} accessibilityRole="alert">
+            <AppIcon name="checkmark-circle-outline" size={17} color={COLORS.success} />
+            <Text style={styles.successText}>{postLogoutNotice}</Text>
           </View>
         )}
 
@@ -272,6 +279,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   errorText: { color: COLORS.danger, fontSize: 13, flex: 1, lineHeight: 18 },
+  successBox: {
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  successText: { color: '#166534', fontSize: 13, flex: 1, lineHeight: 18 },
   field: { marginBottom: 11 },
   label: { fontSize: 13, fontWeight: '900', color: '#334155', marginBottom: 8 },
   inputShell: {

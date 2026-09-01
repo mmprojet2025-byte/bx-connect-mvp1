@@ -15,6 +15,7 @@ export function AuthProvider({ children }) {
   const [user, setUser]       = useState(null);
   const [token, setToken]     = useState(null);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [postLogoutNotice, setPostLogoutNotice] = useState('');
   const [loading, setLoading] = useState(true); // ← vrai pendant le chargement initial
 
   // ─── Charger le token sécurisé et le user au démarrage ────────────────────
@@ -47,6 +48,7 @@ export function AuthProvider({ children }) {
   // ─── Login : appelé après /api/auth/login ─────────────────────────────────
   const login = async (newToken, userData) => {
     setSessionExpired(false);
+    setPostLogoutNotice('');
     setToken(newToken);
     setUser(userData);
     await setStoredToken(newToken);
@@ -55,8 +57,9 @@ export function AuthProvider({ children }) {
   };
 
   // ─── Logout : vide tout ───────────────────────────────────────────────────
-  const logout = async () => {
+  const logout = async (notice = '') => {
     setSessionExpired(false);
+    setPostLogoutNotice(notice);
     setToken(null);
     setUser(null);
     await clearStoredAuth();
@@ -77,6 +80,7 @@ export function AuthProvider({ children }) {
       token,
       loading,
       sessionExpired,
+      postLogoutNotice,
       login,
       logout,
       isAuthenticated,

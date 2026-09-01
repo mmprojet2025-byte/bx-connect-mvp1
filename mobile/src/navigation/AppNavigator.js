@@ -35,6 +35,7 @@ import AdminReferentsScreen from '../screens/AdminReferentsScreen';
 import AdminPartnerSupportsScreen from '../screens/AdminPartnerSupportsScreen';
 import AdminSubmittedProjectsScreen from '../screens/AdminSubmittedProjectsScreen';
 import SuperAdminLogsScreen from '../screens/SuperAdminLogsScreen';
+import SuperAdminAccountSecurityScreen from '../screens/SuperAdminAccountSecurityScreen';
 import PartnerProfileScreen from '../screens/PartnerProfileScreen';
 import AnnoncesScreen from '../screens/AnnoncesScreen';
 import GlobalSearchScreen from '../screens/GlobalSearchScreen';
@@ -218,6 +219,24 @@ function makeStack(ScreenComponent, title, roleLabel, unreadNotifications) {
         />
         {commonPrivateScreens(t)}
         {legalScreens(t)}
+      </Stack.Navigator>
+    );
+  };
+}
+
+function makeTechnicalStack(ScreenComponent, title, roleLabel) {
+  return function TechnicalStackWrapper() {
+    return (
+      <Stack.Navigator>
+        <Stack.Screen
+          name="Main"
+          component={ScreenComponent}
+          options={{
+            ...headerStyle,
+            headerTitle: () => <HeaderTitle title={title} roleLabel={roleLabel} />,
+            headerBackVisible: false,
+          }}
+        />
       </Stack.Navigator>
     );
   };
@@ -677,6 +696,10 @@ function PrivateTabs() {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useEffect(() => {
+    if (isSuperAdmin) {
+      setUnreadNotifications(0);
+      return undefined;
+    }
     let cancelled = false;
     getUnreadCount()
       .then((count) => {
@@ -715,6 +738,14 @@ function PrivateTabs() {
   const BusinessConversationsStack = makeStack(BusinessConversationsScreen, t('navigation.conversations'), roleLabel, unreadNotifications);
   const NotificationsStack = makeStack(NotificationsScreen, t('navigation.notifications'), roleLabel, unreadNotifications);
   const ProfileStack       = makeStack(ProfileScreen, t('navigation.profile'), roleLabel, unreadNotifications);
+  const SuperAdminDashboardStack = makeTechnicalStack(DashboardScreen, 'BX-CONNECT', roleLabel);
+  const SuperAdminUsersStack = makeTechnicalStack(AdminUsersScreen, t('superAdmin.admins'), roleLabel);
+  const SuperAdminLogsStack = makeTechnicalStack(SuperAdminLogsScreen, t('superAdmin.logsTitle'), roleLabel);
+  const SuperAdminSecurityStack = makeTechnicalStack(
+    SuperAdminAccountSecurityScreen,
+    t('superAdmin.security'),
+    roleLabel
+  );
 
   const tabs = getTabsForRole({
     isMembre,
@@ -735,6 +766,10 @@ function PrivateTabs() {
       BusinessConversationsStack,
       NotificationsStack,
       ProfileStack,
+      SuperAdminDashboardStack,
+      SuperAdminUsersStack,
+      SuperAdminLogsStack,
+      SuperAdminSecurityStack,
     },
     labels: communityLabels,
   });
@@ -817,7 +852,16 @@ function PrivateTabs() {
 }
 
 function getTabsForRole({ isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire, t, stacks, labels }) {
-  if (isSuperAdmin || isAdmin) {
+  if (isSuperAdmin) {
+    return [
+      tab('TabDashboard', t('navigation.home'), 'home', stacks.SuperAdminDashboardStack),
+      tab('TabUsers', t('superAdmin.admins'), 'shield', stacks.SuperAdminUsersStack),
+      tab('TabLogs', t('superAdmin.logs'), 'lock', stacks.SuperAdminLogsStack),
+      tab('TabSecurity', t('superAdmin.security'), 'profile', stacks.SuperAdminSecurityStack),
+    ];
+  }
+
+  if (isAdmin) {
     return [
       tab('TabDashboard', t('navigation.home'), 'home', stacks.DashboardStack),
       tab('TabUsers', labels.management, 'shield', stacks.ManagementStack),
@@ -1057,7 +1101,7 @@ const navigatorStyles = {
 
 // ─── Navigateur principal ─────────────────────────────────────────────────────
 export default function AppNavigator() {
-  const { isAuthenticated, loading, sessionExpired } = useAuth();
+  const { isAuthenticated, loading, sessionExpired, postLogoutNotice } = useAuth();
 
   if (loading) {
     return (
@@ -1071,7 +1115,7 @@ export default function AppNavigator() {
     <NavigationContainer key={isAuthenticated ? 'private' : 'public'}>
       {isAuthenticated
         ? <PrivateTabs />
-        : <PublicStack initialRouteName={sessionExpired ? 'Login' : 'Home'} />}
+        : <PublicStack initialRouteName={sessionExpired || postLogoutNotice ? 'Login' : 'Home'} />}
     </NavigationContainer>
   );
 }

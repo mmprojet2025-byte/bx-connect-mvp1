@@ -757,12 +757,19 @@ function RoleDashboard({ user, role, isAdmin, isSuperAdmin, isPartenaire, dashbo
           <Text style={styles.brandSlogan}>{t('brand.slogan')}</Text>
         </View>
         <View style={styles.roleHeroMain}>
-          <Avatar prenom={user?.prenom} nom={user?.nom} size={46} color="rgba(255,255,255,0.18)" />
+          <Avatar
+            prenom={isSuperAdmin ? '' : user?.prenom}
+            nom={isSuperAdmin ? '' : user?.nom}
+            size={46}
+            color="rgba(255,255,255,0.18)"
+          />
         <View style={styles.roleHeroText}>
             <Text style={styles.roleHeroTitle}>
-              {t('memberDashboard.hello', {
-                name: user?.prenom || t('memberDashboard.userFallback'),
-              })}
+              {isSuperAdmin
+                ? t('superAdmin.mobile.title')
+                : t('memberDashboard.hello', {
+                  name: user?.prenom || t('memberDashboard.userFallback'),
+                })}
             </Text>
           <Text style={styles.roleHeroMeta}>{roleLabel}</Text>
         </View>
@@ -774,7 +781,7 @@ function RoleDashboard({ user, role, isAdmin, isSuperAdmin, isPartenaire, dashbo
         <PartnerInstitutionCard profile={dashboard.profil} t={t} />
       ) : null}
 
-      <GlobalSearchAccess navigation={navigation} t={t} />
+      {!isSuperAdmin ? <GlobalSearchAccess navigation={navigation} t={t} /> : null}
 
       {isPartenaire ? (
         <PartnerQuickAccess dashboard={dashboard} navigation={navigation} t={t} />
@@ -830,9 +837,8 @@ function roleDashboardConfig({ roleLabel, isAdmin, isSuperAdmin, isPartenaire, d
       ],
       actions: [
         action(t('navigation.users'), t('superAdmin.mobile.usersAction'), 'group', COLORS.info, () => navigateAccess(navigation, 'TabUsers')),
-        action(t('superAdmin.logsTitle'), t('superAdmin.logsAction'), 'lock', COLORS.impactOrange, () => navigation.navigate('SuperAdminLogsAccess')),
-        action(t('navigation.notifications'), t('superAdmin.mobile.notificationsAction'), 'bell', COLORS.impactOrange, () => navigateAccess(navigation, 'TabNotifications')),
-        action(t('navigation.profile'), t('superAdmin.mobile.profileAction'), 'profile', COLORS.info, () => navigateAccess(navigation, 'TabProfile')),
+        action(t('superAdmin.logsTitle'), t('superAdmin.logsAction'), 'lock', COLORS.impactOrange, () => navigateAccess(navigation, 'TabLogs')),
+        action(t('superAdmin.security'), t('superAdmin.mobile.securityAction'), 'profile', COLORS.info, () => navigateAccess(navigation, 'TabSecurity')),
       ],
     };
   }
