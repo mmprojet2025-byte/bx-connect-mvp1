@@ -20,8 +20,14 @@ import ErrorState from '../../components/ui/ErrorState'
 import AppIcon from '../../components/ui/AppIcons'
 
 const MEMBER_VISIBILITIES = ['GROUPE', 'COMMUNAUTE']
-const PROJECT_STATUSES = ['BROUILLON', 'SOUMIS', 'A_CORRIGER_REFERENT', 'VALIDE_REFERENT', 'A_CORRIGER_ADMIN', 'REFUSE_REFERENT', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE', 'ANNULE', 'ARCHIVE']
 const PROJECT_VISIBILITIES = ['GROUPE', 'COMMUNAUTE', 'PARTENAIRES', 'PUBLIC']
+const PROJECT_STAGES = [
+  { id: 'PREPARATION', statuses: ['BROUILLON'], icon: 'PlusCircle' },
+  { id: 'REFERENT_REVIEW', statuses: ['SOUMIS'], icon: 'Shield' },
+  { id: 'ASSOCIATION_DECISION', statuses: ['VALIDE_REFERENT'], icon: 'CheckCircle' },
+  { id: 'DELIVERY', statuses: ['APPROUVE', 'EN_COURS'], icon: 'Activity' },
+  { id: 'COMPLETED', statuses: ['TERMINE'], icon: 'Rocket' },
+]
 
 export default function Projets() {
   const { isAuthenticated, isMembre, isAdmin, isPartenaire } = useAuth()
@@ -29,6 +35,8 @@ export default function Projets() {
   const { t } = useTranslation()
   const [projets, setProjets] = useState([])
   const [adhesions, setAdhesions] = useState([])
+  const [adhesionsLoading, setAdhesionsLoading] = useState(isAuthenticated && isMembre)
+  const [adhesionsError, setAdhesionsError] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -77,13 +85,18 @@ export default function Projets() {
   }, [isAdmin, isAuthenticated, isPartenaire, t])
 
   const fetchAdhesions = useCallback(async () => {
+    setAdhesionsLoading(true)
     try {
       const res = await api.get('/groupes/mes-adhesions')
       setAdhesions(res.data)
+      setAdhesionsError('')
     } catch {
       setAdhesions([])
+      setAdhesionsError(t('groups.error_load'))
+    } finally {
+      setAdhesionsLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     fetchProjets()
@@ -110,18 +123,7 @@ export default function Projets() {
     () => [...new Set(projets.map(projet => projet.groupeNom).filter(Boolean))],
     [projets]
   )
-  const projetsParStatut = useMemo(() => {
-    return PROJECT_STATUSES.reduce((acc, statut) => {
-      acc[statut] = projets.filter(projet => projet.statut === statut).length
-      return acc
-    }, {})
-  }, [projets])
-  const projetsRecents = useMemo(() => {
-    return [...projets]
-      .sort((a, b) => new Date(b.dateSoumission || b.dateCreation || 0) - new Date(a.dateSoumission || a.dateCreation || 0))
-      .slice(0, 3)
-  }, [projets])
-  const projetsEnAction = (projetsParStatut.SOUMIS || 0) + (projetsParStatut.VALIDE_REFERENT || 0) + (projetsParStatut.APPROUVE || 0) + (projetsParStatut.EN_COURS || 0)
+  const afficherFiltres = !isMembre || !!groupeActif
   const projetsFiltres = useMemo(() => {
     return projets.filter(projet => {
       if (focusedProjectId && String(projet.id) !== String(focusedProjectId)) return false
@@ -133,7 +135,8 @@ export default function Projets() {
         projet.porteurNom,
       ].filter(Boolean).join(' ').toLowerCase()
       const matchRecherche = texte.includes(recherche.trim().toLowerCase())
-      const matchStatut = filtreStatut ? projet.statut === filtreStatut : true
+      const etapeSelectionnee = PROJECT_STAGES.find(etape => etape.id === filtreStatut)
+      const matchStatut = etapeSelectionnee ? etapeSelectionnee.statuses.includes(projet.statut) : true
       const matchGroupe = filtreGroupe ? projet.groupeNom === filtreGroupe : true
       const matchVisibilite = filtreVisibilite ? projet.visibilite === filtreVisibilite : true
       return matchRecherche && matchStatut && matchGroupe && matchVisibilite
@@ -271,7 +274,7 @@ export default function Projets() {
           eyebrow={t('ux.projects.eyebrow')}
           title={t('ux.projects.title')}
           description={t('ux.projects.intro')}
-          action={isMembre && (
+          action={isMembre && peutProposer && (
             <button
               type="button"
               onClick={() => setShowForm(open => !open)}
@@ -284,50 +287,22 @@ export default function Projets() {
         />
 
         {message && <Alert>{message}</Alert>}
-        {error && projets.length > 0 && <Alert type="error">{error}</Alert>}
-
-        <section className="mb-5 grid gap-3 sm:grid-cols-4">
-          <ProjectStat icon="Rocket" label={t('nav.projects', { defaultValue: 'Projets' })} value={projets.length} />
-          <ProjectStat icon="Clock" label={t('statuses.SOUMIS', { defaultValue: 'Soumis' })} value={projetsParStatut.SOUMIS || 0} tone="amber" />
-          <ProjectStat icon="CheckCircle" label={t('statuses.APPROUVE', { defaultValue: 'Approuvés' })} value={projetsParStatut.APPROUVE || 0} tone="green" />
-          <ProjectStat icon="Activity" label={t('projects.activeProjects', { defaultValue: 'En action' })} value={projetsEnAction} tone="blue" />
-        </section>
-
-        <section className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 mb-5">
-          <div>
-            <h2 className="font-semibold text-slate-950">{t('projects.workspaceTitle', { defaultValue: 'Projets à suivre' })}</h2>
-            <p className="text-sm text-slate-500 mt-1">
-              {t('projects.workspaceDesc', {
-                count: projets.length,
-                defaultValue: `${projets.length} projet(s) visibles avec leur statut, leur groupe et leur besoin de soutien.`,
-              })}
-            </p>
-            {isMembre && !groupeActif && (
-              <p className="text-sm text-amber-700 mt-2">{t('ux.projects.needGroup')}</p>
-            )}
-            {groupeActif && (
-              <p className="text-sm text-green-700 mt-2">{t('ux.projects.attachedGroup', { group: groupeActif.groupeNom })}</p>
-            )}
-          </div>
-          {projetsRecents.length > 0 && (
-            <div className="mt-4 grid gap-2 md:grid-cols-3">
-              {projetsRecents.map(projet => (
-                <button
-                  key={projet.id}
-                  type="button"
-                  onClick={() => setExpandedProjectId(projet.id)}
-                  className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-left transition hover:border-blue-200 hover:bg-blue-50"
-                >
-                  <span className="block truncate text-xs font-black text-slate-950">{projet.titre}</span>
-                  <span className="mt-1 flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-500">
-                    <span className="truncate">{projet.groupeNom || t('projects.typeInstitutional')}</span>
-                    <StatusBadge status={projet.statut}>{t(`statuses.${projet.statut}`, { defaultValue: projet.statut })}</StatusBadge>
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </section>
+        {error && projets.length > 0 && (
+          <Alert type="error">
+            <span>{error}</span>{' '}
+            <button type="button" onClick={fetchProjets} className="font-black underline">
+              {t('common.retry')}
+            </button>
+          </Alert>
+        )}
+        {adhesionsError && isMembre && projets.length > 0 && (
+          <Alert type="error">
+            <span>{adhesionsError}</span>{' '}
+            <button type="button" onClick={fetchAdhesions} className="font-black underline">
+              {t('common.retry')}
+            </button>
+          </Alert>
+        )}
 
         {focusedProjectId && (
           <div className="mb-6 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-800">
@@ -338,13 +313,13 @@ export default function Projets() {
         )}
 
         <WorkflowStepper
-          counts={projetsParStatut}
+          projets={projets}
           activeStatus={filtreStatut}
-          onSelectStatus={(statut) => setFiltreStatut(current => current === statut ? '' : statut)}
+          onSelectStatus={setFiltreStatut}
           t={t}
         />
 
-        <section className="mb-5 rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+        {afficherFiltres && <section className="mb-5 rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
           <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-sm font-black text-slate-950">{t('common.filters', { defaultValue: 'Filtres' })}</h2>
@@ -356,7 +331,7 @@ export default function Projets() {
               {t('activities.reset_filters', { defaultValue: 'Réinitialiser' })}
             </button>
           </div>
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-3">
             <input
               type="search"
               value={recherche}
@@ -364,10 +339,6 @@ export default function Projets() {
               placeholder={t('projects.searchPlaceholder', { defaultValue: 'Rechercher un projet...' })}
               className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
-            <select value={filtreStatut} onChange={event => setFiltreStatut(event.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
-              <option value="">{t('partnerSupport.admin.allStatuses', { defaultValue: 'Tous les statuts' })}</option>
-              {PROJECT_STATUSES.map(statut => <option key={statut} value={statut}>{t(`statuses.${statut}`, { defaultValue: statut })}</option>)}
-            </select>
             <select value={filtreGroupe} onChange={event => setFiltreGroupe(event.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
               <option value="">{t('projects.allGroups', { defaultValue: 'Tous les groupes' })}</option>
               {groupesDisponibles.map(groupe => <option key={groupe} value={groupe}>{groupe}</option>)}
@@ -377,7 +348,7 @@ export default function Projets() {
               {PROJECT_VISIBILITIES.map(visibilite => <option key={visibilite} value={visibilite}>{t(`projectVisibility.${visibilite}`, { defaultValue: visibilite })}</option>)}
             </select>
           </div>
-        </section>
+        </section>}
 
         {showForm && peutProposer && (
           <section className="bg-white rounded-xl border border-slate-100 shadow-lg shadow-slate-900/5 p-5 mb-6">
@@ -433,19 +404,36 @@ export default function Projets() {
             actionLabel={t('common.showAll', { defaultValue: 'Voir tous' })}
             actionTo="/projets"
           />
+        ) : projets.length === 0 && isMembre && adhesionsLoading ? (
+          <LoadingState label={t('common.loading')} />
+        ) : projets.length === 0 && isMembre && adhesionsError ? (
+          <ErrorState
+            title={t('common.loadErrorTitle')}
+            description={adhesionsError}
+            actionLabel={t('common.retry')}
+            action={fetchAdhesions}
+          />
+        ) : projets.length === 0 && isMembre && !groupeActif ? (
+          <EmptyState
+            icon="Users"
+            title={t('projects.emptyNoGroupTitle')}
+            description={t('projects.emptyNoGroupDescription')}
+            actionLabel={t('groups.view_groups')}
+            actionTo="/groupes"
+          />
         ) : projets.length === 0 ? (
           <EmptyState
             icon="Rocket"
-            title={t('ux.projects.emptyTitle')}
-            description={t('ux.projects.emptyDesc')}
-            actionLabel={isAuthenticated ? t('groups.view_groups') : t('auth.register_btn')}
-            actionTo={isAuthenticated ? '/groupes' : '/register'}
+            title={t('projects.emptyWithGroupTitle')}
+            description={t('projects.emptyWithGroupDescription')}
+            actionLabel={peutProposer ? t('ux.projects.propose') : undefined}
+            action={peutProposer ? () => setShowForm(true) : undefined}
           />
         ) : projetsFiltres.length === 0 ? (
           <EmptyState
             icon="Search"
-            title={t('projects.noFilteredProjects', { defaultValue: 'Aucun projet ne correspond aux filtres.' })}
-            description={t('projects.noFilteredProjectsDesc', { defaultValue: 'Modifie la recherche, le statut, le groupe ou la visibilité pour retrouver des projets.' })}
+            title={t('projects.noFilteredProjects')}
+            description={t('projects.noFilteredProjectsDesc')}
             actionLabel={t('activities.reset_filters', { defaultValue: 'Réinitialiser' })}
             action={resetFilters}
           />
@@ -467,7 +455,7 @@ export default function Projets() {
                 onToggleDetails={() => setExpandedProjectId(current => current === projet.id ? null : projet.id)}
                 onFollow={() => handleFollow(projet)}
                 onJoin={() => handleJoinProject(projet)}
-                canSubmit={projet.statut === 'BROUILLON' && projet.estPorteurConnecte}
+                canSubmit={['BROUILLON', 'A_CORRIGER_REFERENT', 'A_CORRIGER_ADMIN'].includes(projet.statut) && projet.estPorteurConnecte}
                 onSubmit={() => handleSubmitDraft(projet)}
                 onCommentChange={(value) => setCommentDrafts(current => ({ ...current, [projet.id]: value }))}
                 onCommentSubmit={() => handleCommentSubmit(projet)}
@@ -482,44 +470,41 @@ export default function Projets() {
   )
 }
 
-function WorkflowStepper({ counts, activeStatus, onSelectStatus, t }) {
-  const steps = [
-    { label: t('projects.workflowSteps.created'), status: 'BROUILLON', icon: 'PlusCircle' },
-    { label: t('projects.workflowSteps.submitted'), status: 'SOUMIS', icon: 'Clock' },
-    { label: t('statuses.A_CORRIGER_REFERENT'), status: 'A_CORRIGER_REFERENT', icon: 'Edit' },
-    { label: t('projects.workflowSteps.referentValidation'), status: 'VALIDE_REFERENT', icon: 'Shield' },
-    { label: t('statuses.A_CORRIGER_ADMIN'), status: 'A_CORRIGER_ADMIN', icon: 'Edit' },
-    { label: t('projects.workflowSteps.referentRejected'), status: 'REFUSE_REFERENT', icon: 'XCircle' },
-    { label: t('projects.workflowSteps.adminValidation'), status: 'APPROUVE', icon: 'CheckCircle' },
-    { label: t('projects.workflowSteps.adminRejected'), status: 'REJETE', icon: 'XCircle' },
-    { label: t('projects.workflowSteps.running'), status: 'EN_COURS', icon: 'Activity' },
-    { label: t('projects.workflowSteps.done'), status: 'TERMINE', icon: 'Rocket' },
-    { label: t('statuses.ANNULE'), status: 'ANNULE', icon: 'XCircle' },
-    { label: t('projects.workflowSteps.archived'), status: 'ARCHIVE', icon: 'Archive' },
-  ]
-
+function WorkflowStepper({ projets, activeStatus, onSelectStatus, t }) {
   return (
     <section className="mb-5 rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
       <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-sm font-black text-slate-950">{t('ux.projects.workflow')}</h2>
-          <p className="text-xs text-slate-500">{t('projects.workflowFilterHint', { defaultValue: 'Clique sur une étape pour filtrer les projets par statut.' })}</p>
+          <h2 className="text-sm font-black text-slate-950">{t('projects.mainStepsTitle')}</h2>
+          <p className="text-xs text-slate-500">{t('projects.mainStepsDescription')}</p>
         </div>
-        {activeStatus && (
-          <button type="button" onClick={() => onSelectStatus(activeStatus)} className="text-xs font-bold text-blue-700 hover:underline">
-            {t('activities.reset_filters', { defaultValue: 'Réinitialiser' })}
-          </button>
-        )}
       </div>
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {steps.map((step, index) => (
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-6">
+        <button
+          type="button"
+          aria-pressed={!activeStatus}
+          onClick={() => onSelectStatus('')}
+          className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-700 ${
+            !activeStatus ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-slate-100 bg-white hover:border-blue-200 hover:bg-slate-50'
+          }`}
+        >
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+            <AppIcon name="ClipboardList" className="h-4 w-4" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-xs font-black text-slate-700">{t('projects.allProjects')}</span>
+            <span className="block text-[11px] font-semibold text-slate-400">{projets.length} {t('nav.projects').toLowerCase()}</span>
+          </span>
+        </button>
+        {PROJECT_STAGES.map((step) => (
           <button
-            key={`${step.label}-${index}`}
+            key={step.id}
             type="button"
-            onClick={() => onSelectStatus(step.status)}
-            className={`flex min-w-[108px] items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition ${
-              activeStatus === step.status
-                ? 'border-blue-300 bg-blue-50 shadow-sm'
+            aria-pressed={activeStatus === step.id}
+            onClick={() => onSelectStatus(step.id)}
+            className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-700 ${
+              activeStatus === step.id
+                ? 'border-blue-500 bg-blue-50 shadow-sm'
                 : 'border-slate-100 bg-white hover:border-blue-200 hover:bg-slate-50'
             }`}
           >
@@ -527,9 +512,9 @@ function WorkflowStepper({ counts, activeStatus, onSelectStatus, t }) {
               <AppIcon name={step.icon} className="h-4 w-4" />
             </span>
             <span className="min-w-0">
-              <span className="block text-xs font-black text-slate-700">{step.label}</span>
+              <span className="block text-xs font-black text-slate-700">{t(`projects.mainSteps.${step.id}`)}</span>
               <span className="block text-[11px] font-semibold text-slate-400">
-                {counts[step.status] ?? 0} {t('nav.projects').toLowerCase()}
+                {projets.filter(projet => step.statuses.includes(projet.statut)).length} {t('nav.projects').toLowerCase()}
               </span>
             </span>
           </button>
@@ -561,6 +546,7 @@ function ProjectCard({
 }) {
   const besoinSoutien = Number(projet.budgetDemande) > 0
   const nextStep = projectNextStep(projet, isPartenaire, isMembre, isParticipant, t)
+  const actor = projectCurrentActor(projet, t)
 
   return (
     <article className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition flex flex-col">
@@ -589,6 +575,16 @@ function ProjectCard({
         <p className="text-sm text-slate-500 leading-relaxed line-clamp-2">
           {projet.description || t('projects.description_soon')}
         </p>
+        <dl className="mt-3 grid gap-2 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs sm:grid-cols-2">
+          <div>
+            <dt className="font-black text-slate-700">{t('projects.whoActs')}</dt>
+            <dd className="mt-1 text-slate-600">{actor}</dd>
+          </div>
+          <div>
+            <dt className="font-black text-slate-700">{t('projects.nextStep')}</dt>
+            <dd className="mt-1 text-slate-600">{nextStep}</dd>
+          </div>
+        </dl>
         <div className="grid grid-cols-2 gap-2 text-xs mt-3">
           <InfoPill
             label={t('projects.owner')}
@@ -712,28 +708,6 @@ function ProjectAlivePanel({ projet, nextStep, comments, commentsLoading, commen
             </button>
           </div>
         )}
-      </div>
-    </div>
-  )
-}
-
-function ProjectStat({ icon, label, value, tone = 'slate' }) {
-  const tones = {
-    slate: 'bg-slate-50 text-slate-700',
-    blue: 'bg-blue-50 text-blue-700',
-    green: 'bg-green-50 text-green-700',
-    amber: 'bg-amber-50 text-amber-700',
-  }
-  return (
-    <div className="rounded-lg border border-slate-100 bg-white p-3 shadow-sm">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</p>
-          <p className="mt-1 text-xl font-black text-slate-950">{value}</p>
-        </div>
-        <span className={`grid h-9 w-9 place-items-center rounded-lg ${tones[tone] || tones.slate}`}>
-          <AppIcon name={icon} className="h-4 w-4" />
-        </span>
       </div>
     </div>
   )
@@ -875,6 +849,17 @@ function projectNextStep(projet, isPartenaire, isMembre, isParticipant, t) {
   }
   if (projet.statut === 'ANNULE') return t('statuses.ANNULE')
   return t('projects.nextDefault', { defaultValue: 'Suivre l’évolution du projet.' })
+}
+
+function projectCurrentActor(projet, t) {
+  if (['BROUILLON', 'A_CORRIGER_REFERENT', 'A_CORRIGER_ADMIN'].includes(projet.statut)) {
+    return t('projects.actors.owner')
+  }
+  if (projet.statut === 'SOUMIS') return t('projects.actors.referent')
+  if (['VALIDE_REFERENT', 'APPROUVE', 'EN_COURS'].includes(projet.statut)) {
+    return t('projects.actors.association')
+  }
+  return t('projects.actors.none')
 }
 
 function buildProjectRecentEvents(projet, comments, t) {
