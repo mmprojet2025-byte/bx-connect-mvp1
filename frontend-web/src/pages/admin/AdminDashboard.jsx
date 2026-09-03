@@ -59,10 +59,12 @@ export default function AdminDashboard() {
     <CollaborativeDashboardLayout
       emoji="Shield"
       title={t('ux.adminDashboard.title', { defaultValue: 'Centre de pilotage BX-Connect' })}
-      subtitle={t('admin.dashboardSummary', {
-        count: pendingTotal,
-        defaultValue: `${pendingTotal} action(s) à traiter aujourd’hui.`,
-      })}
+      subtitle={error
+        ? t('admin.dashboardDataUnavailable')
+        : t('admin.dashboardSummary', {
+            count: pendingTotal,
+            defaultValue: `${pendingTotal} action(s) à traiter aujourd’hui.`,
+          })}
       accentHeader
       compact
     >
@@ -137,7 +139,7 @@ function AdminWorkFeed({ projetsSoumis, activitesAPublier, groupesEnAttente, t }
       title: getDisplayTitle(groupesEnAttente[0], t('admin.workFeed.groupFallback')),
       description: t('admin.workFeed.groupDescription'),
       actionLabel: t('admin.workFeed.process'),
-      to: '/admin/groupes',
+      to: '/admin/groupes?vue=en-attente',
     },
   ].filter(Boolean).slice(0, 5)
 

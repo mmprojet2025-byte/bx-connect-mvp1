@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import api from '../../api/axios';
 import StatusBadge from '../../components/StatusBadge';
@@ -28,6 +28,8 @@ const emptyGroupeForm = {
 
 export default function AdminGroupes() {
   const { t, i18n } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const isPendingQueue = searchParams.get('vue') === 'en-attente';
   const [groupes, setGroupes] = useState([]);
   const [groupesEnAttente, setGroupesEnAttente] = useState([]);
   const [referents, setReferents] = useState([]);
@@ -38,6 +40,7 @@ export default function AdminGroupes() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [assigningId, setAssigningId] = useState(null);
+  const [decisionId, setDecisionId] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [filtrePilotage, setFiltrePilotage] = useState('tous');
@@ -48,6 +51,8 @@ export default function AdminGroupes() {
   const [groupeForm, setGroupeForm] = useState(emptyGroupeForm);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
+  const refusalReasonRef = useRef(null);
+  const refusalOpenerRef = useRef(null);
 
   const referentsActifs = referents.filter(referent => referent.actif);
 
@@ -62,7 +67,19 @@ export default function AdminGroupes() {
 
   const fetchGroupes = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
+      if (isPendingQueue) {
+        const pendingResult = await api.get('/admin/groupes/en-attente');
+        const pendingGroups = Array.isArray(pendingResult.data) ? pendingResult.data : [];
+        setGroupes(pendingGroups);
+        setGroupesEnAttente(pendingGroups);
+        setActivites([]);
+        setProjets([]);
+        setActivitesDisponibles(false);
+        setProjetsDisponibles(false);
+        return;
+      }
       const [groupesResult, pendingResult, activitesResult, projetsResult] = await Promise.allSettled([
         api.get('/admin/groupes'),
         api.get('/admin/groupes/en-attente'),
@@ -85,12 +102,42 @@ export default function AdminGroupes() {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [isPendingQueue, t]);
 
   useEffect(() => {
     fetchGroupes();
     fetchReferents();
   }, [fetchGroupes, fetchReferents]);
+
+  useEffect(() => {
+    setRecherche('');
+    setFiltrePilotage('tous');
+    setFiltreStatut('');
+    setSelectedGroup(null);
+    setShowCreateForm(false);
+  }, [isPendingQueue]);
+
+  const closeRefusalDialog = useCallback(() => {
+    if (decisionId === groupeARefuser) return;
+    setGroupeARefuser(null);
+    setMotifRefus('');
+    requestAnimationFrame(() => refusalOpenerRef.current?.focus());
+  }, [decisionId, groupeARefuser]);
+
+  useEffect(() => {
+    if (!groupeARefuser) return undefined;
+    refusalReasonRef.current?.focus();
+    const handleEscape = event => {
+      if (event.key === 'Escape' && decisionId !== groupeARefuser) closeRefusalDialog();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [closeRefusalDialog, decisionId, groupeARefuser]);
+
+  const openRefusalDialog = (id, opener) => {
+    refusalOpenerRef.current = opener;
+    setGroupeARefuser(id);
+  };
 
   const handleFormChange = (field, value) => {
     setGroupeForm(prev => ({ ...prev, [field]: value }));
@@ -141,24 +188,33 @@ export default function AdminGroupes() {
   };
 
   const handleValider = async (id) => {
+    if (!window.confirm(t('admin.confirmGroupValidation'))) return;
+    setDecisionId(id);
+    setError('');
     try {
       await api.patch(`/admin/groupes/${id}/valider`);
       setMessage(t('admin.groupValidated'));
-      fetchGroupes();
+      setSelectedGroup(null);
+      await fetchGroupes();
       setTimeout(() => setMessage(''), 3000);
     } catch { setError(t('admin.errorGroupValidate')); }
+    finally { setDecisionId(null); }
   };
 
   const handleRefuser = async () => {
     if (!groupeARefuser) return;
+    setDecisionId(groupeARefuser);
+    setError('');
     try {
       await api.patch(`/admin/groupes/${groupeARefuser}/refuser`, { motif: motifRefus || t('admin.notSpecified') });
       setMessage(t('admin.groupRefused'));
+      setSelectedGroup(null);
       setGroupeARefuser(null);
       setMotifRefus('');
-      fetchGroupes();
+      await fetchGroupes();
       setTimeout(() => setMessage(''), 3000);
     } catch { setError(t('admin.errorGroupRefuse')); }
+    finally { setDecisionId(null); }
   };
 
   const referentLabel = (referent) => `${referent.prenom || ''} ${referent.nom || ''}`.trim() || referent.email;
@@ -170,7 +226,9 @@ export default function AdminGroupes() {
   };
 
   const statutsDisponibles = [...new Set(groupes.map(groupe => groupe.statut).filter(Boolean))];
-  const groupesPilotage = groupes.filter(groupe => matchesGroupPilotageFilter(groupe, filtrePilotage, groupesEnAttente));
+  const groupesPilotage = isPendingQueue
+    ? groupes
+    : groupes.filter(groupe => matchesGroupPilotageFilter(groupe, filtrePilotage, groupesEnAttente));
   const groupesFiltres = groupesPilotage.filter(groupe => {
     const texte = `${groupe.nom || ''} ${groupe.description || ''} ${groupe.categorie || ''} ${groupe.theme || ''} ${referentAssigne(groupe)}`.toLowerCase();
     const matchRecherche = texte.includes(recherche.toLowerCase());
@@ -185,9 +243,9 @@ export default function AdminGroupes() {
 
         <PageHeader
           eyebrow={t('nav.groups')}
-          title={t('admin.groupsManagement')}
-          description={t('admin.groupsDescription', { defaultValue: 'Créez les groupes, attribuez un référent et suivez leur statut.' })}
-          action={(
+          title={isPendingQueue ? t('admin.pendingGroupsTitle') : t('admin.groupsManagement')}
+          description={isPendingQueue ? t('admin.pendingGroupsQueueDescription') : t('admin.groupsDescription', { defaultValue: 'Créez les groupes, attribuez un référent et suivez leur statut.' })}
+          action={!isPendingQueue && (
             <button
               type="button"
               onClick={() => setShowCreateForm(current => !current)}
@@ -199,10 +257,15 @@ export default function AdminGroupes() {
           )}
         />
 
-        {message && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>}
-        {error && groupes.length > 0 && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>}
+        {message && <div role="status" className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>}
+        {error && groupes.length > 0 && (
+          <div role="alert" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">
+            <span>{error}</span>{' '}
+            <button type="button" onClick={fetchGroupes} className="font-black underline">{t('common.retry')}</button>
+          </div>
+        )}
 
-        {!loading && groupes.length > 0 && (
+        {!isPendingQueue && !loading && groupes.length > 0 && (
           <p className="mb-3 rounded-xl border border-slate-100 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm">
             {t('admin.groupsPilotSummary', {
               total: stats.total,
@@ -213,7 +276,7 @@ export default function AdminGroupes() {
           </p>
         )}
 
-        {showCreateForm && (
+        {!isPendingQueue && showCreateForm && (
         <section className="mb-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
@@ -333,7 +396,7 @@ export default function AdminGroupes() {
         </section>
         )}
 
-        <section className="mb-4 rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
+        {!isPendingQueue && <section className="mb-4 rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
           <div className="mb-3 flex flex-wrap gap-2">
             {groupFilterOptions(t).map(option => (
               <button key={option.id} type="button" onClick={() => setFiltrePilotage(option.id)}
@@ -367,10 +430,27 @@ export default function AdminGroupes() {
               ))}
             </select>
           </div>
-        </section>
+        </section>}
+
+        {isPendingQueue && groupes.length > 1 && (
+          <section className="mb-4 rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
+            <label htmlFor="pending-group-search" className="sr-only">{t('admin.searchPendingGroups')}</label>
+            <div className="relative">
+              <AppIcon name="Search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                id="pending-group-search"
+                type="search"
+                value={recherche}
+                onChange={event => setRecherche(event.target.value)}
+                placeholder={t('admin.searchPendingGroups')}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+          </section>
+        )}
 
         {loading ? (
-          <LoadingState label={t('common.loading')} />
+          <LoadingState label={isPendingQueue ? t('admin.loadingPendingGroups') : t('common.loading')} />
         ) : error && groupes.length === 0 ? (
           <ErrorState
             title={t('common.loadErrorTitle')}
@@ -378,10 +458,23 @@ export default function AdminGroupes() {
             actionLabel={t('common.retry')}
             action={fetchGroupes}
           />
+        ) : isPendingQueue && groupes.length === 0 ? (
+          <EmptyState
+            icon="CheckCircle"
+            title={t('admin.pendingGroupsEmptyTitle')}
+            description={t('admin.pendingGroupsEmptyDescription')}
+          />
         ) : groupes.length === 0 ? (
           <EmptyState
             icon="Users"
             title={t('admin.noGroups')}
+          />
+        ) : isPendingQueue && groupesFiltres.length === 0 ? (
+          <EmptyState
+            icon="Search"
+            title={t('admin.pendingGroupsSearchEmpty')}
+            actionLabel={t('activities.reset_filters')}
+            action={() => setRecherche('')}
           />
         ) : filtrePilotage === 'en-attente' && groupesFiltres.length === 0 ? (
           <div className="rounded-xl border border-slate-100 bg-white px-4 py-3 text-sm font-semibold text-slate-600 shadow-sm">
@@ -430,7 +523,7 @@ export default function AdminGroupes() {
                 {g.description && <p className="line-clamp-2 text-gray-600 text-sm mb-3">{g.description}</p>}
 
                 <div className="mb-3 flex flex-wrap gap-2">
-                  <FollowUpBadge followUp={groupFollowUp(g, t)} />
+                  {!isPendingQueue && <FollowUpBadge followUp={groupFollowUp(g, t)} />}
                   <InfoChip>{groupMembersCapacity(g, t)}</InfoChip>
                 </div>
 
@@ -442,13 +535,13 @@ export default function AdminGroupes() {
                   <InfoChip>{new Date(g.dateCreation).toLocaleDateString(i18n.language || 'fr-BE')}</InfoChip>
                 </div>
 
-                {g.motifRefus && (
+                {!isPendingQueue && g.motifRefus && (
                   <div className="bg-red-50 rounded-xl p-3 mb-4 text-sm text-red-700">
                     <strong>{t('admin.refusalReason')} :</strong> {g.motifRefus}
                   </div>
                 )}
 
-                <details className="mb-4 rounded-xl border border-slate-100 bg-slate-50 p-3">
+                {!isPendingQueue && <details className="mb-4 rounded-xl border border-slate-100 bg-slate-50 p-3">
                   <summary className="cursor-pointer text-xs font-black uppercase tracking-wide text-slate-500">
                     {t('admin.assignedReferent')}
                   </summary>
@@ -466,7 +559,7 @@ export default function AdminGroupes() {
                       <option key={referent.id} value={referent.id}>{referentLabel(referent)}</option>
                     ))}
                   </select>
-                </details>
+                </details>}
 
                 <div className="flex flex-wrap gap-2">
                   <button
@@ -475,26 +568,26 @@ export default function AdminGroupes() {
                     className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-100 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-200"
                   >
                     <AppIcon name="ClipboardList" className="h-3.5 w-3.5" />
-                    {t('admin.manageGroup')}
+                    {isPendingQueue ? t('admin.examineGroup') : t('admin.manageGroup')}
                   </button>
-                  <Link
+                  {!isPendingQueue && <Link
                     to={`/groupes/${g.id}`}
                     className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
                   >
                     <AppIcon name="Eye" className="h-3.5 w-3.5" />
                     {t('admin.viewGroup')}
-                  </Link>
+                  </Link>}
                 </div>
 
                 {g.statut === 'EN_ATTENTE' && (
                   <div className="mt-3 flex gap-3">
-                    <button onClick={() => handleValider(g.id)}
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-green-600 py-2.5 text-sm font-semibold text-white transition hover:bg-green-500">
+                    <button type="button" onClick={() => handleValider(g.id)} disabled={decisionId === g.id}
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-green-600 py-2.5 text-sm font-semibold text-white transition hover:bg-green-500 disabled:cursor-wait disabled:opacity-60">
                       <AppIcon name="CheckCircle" className="h-4 w-4" />
-                      {t('admin.validateGroup')}
+                      {decisionId === g.id ? t('admin.processingDecision') : t('admin.validateGroup')}
                     </button>
-                    <button onClick={() => setGroupeARefuser(g.id)}
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-600 py-2.5 text-sm font-semibold text-white transition hover:bg-red-500">
+                    <button type="button" onClick={event => openRefusalDialog(g.id, event.currentTarget)} disabled={decisionId === g.id}
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-600 py-2.5 text-sm font-semibold text-white transition hover:bg-red-500 disabled:cursor-wait disabled:opacity-60">
                       <AppIcon name="XCircle" className="h-4 w-4" />
                       {t('admin.refuse')}
                     </button>
@@ -513,23 +606,27 @@ export default function AdminGroupes() {
             projets={itemsForGroup(projets, selectedGroup)}
             activitesDisponibles={activitesDisponibles}
             projetsDisponibles={projetsDisponibles}
+            pendingQueue={isPendingQueue}
+            decisionInProgress={decisionId === selectedGroup.id}
             referentsActifs={referentsActifs}
             assigning={assigningId === selectedGroup.id}
             t={t}
             onClose={() => setSelectedGroup(null)}
             onAssign={(referentId) => handleAssignerReferent(selectedGroup.id, referentId)}
             onValidate={() => handleValider(selectedGroup.id)}
-            onRefuse={() => setGroupeARefuser(selectedGroup.id)}
+            onRefuse={(event) => openRefusalDialog(selectedGroup.id, event.currentTarget)}
           />
         )}
 
         {/* Modal refus */}
         {groupeARefuser && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-              <h2 className="text-lg font-bold text-blue-900 mb-4">{t('admin.refuseGroup')}</h2>
-              <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin.refusalReason')}</label>
+            <div role="dialog" aria-modal="true" aria-labelledby="refuse-group-title" className="bg-white rounded-2xl p-6 w-full max-w-md">
+              <h2 id="refuse-group-title" className="text-lg font-bold text-blue-900 mb-4">{t('admin.refuseGroup')}</h2>
+              <label htmlFor="refuse-group-reason" className="block text-sm font-medium text-gray-700 mb-2">{t('admin.refusalReason')}</label>
               <textarea
+                id="refuse-group-reason"
+                ref={refusalReasonRef}
                 value={motifRefus}
                 onChange={e => setMotifRefus(e.target.value)}
                 rows={3}
@@ -537,12 +634,12 @@ export default function AdminGroupes() {
                 className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none mb-4"
               />
               <div className="flex gap-3">
-                <button onClick={handleRefuser}
-                  className="flex-1 bg-red-600 hover:bg-red-500 text-white font-semibold py-2.5 rounded-xl transition">
-                  {t('admin.confirmRefusal')}
+                <button type="button" onClick={handleRefuser} disabled={decisionId === groupeARefuser}
+                  className="flex-1 bg-red-600 hover:bg-red-500 text-white font-semibold py-2.5 rounded-xl transition disabled:cursor-wait disabled:opacity-60">
+                  {decisionId === groupeARefuser ? t('admin.processingDecision') : t('admin.confirmRefusal')}
                 </button>
-                <button onClick={() => { setGroupeARefuser(null); setMotifRefus(''); }}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl transition">
+                <button type="button" disabled={decisionId === groupeARefuser} onClick={closeRefusalDialog}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl transition disabled:cursor-wait disabled:opacity-60">
                   {t('common.cancel')}
                 </button>
               </div>
@@ -562,6 +659,8 @@ function GroupFollowUpDrawer({
   projets,
   activitesDisponibles,
   projetsDisponibles,
+  pendingQueue,
+  decisionInProgress,
   referentsActifs,
   assigning,
   t,
@@ -590,10 +689,10 @@ function GroupFollowUpDrawer({
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-          <div className="mb-4 grid grid-cols-3 gap-2">
+          <div className={`mb-4 grid gap-2 ${pendingQueue ? 'grid-cols-1' : 'grid-cols-3'}`}>
             <DrawerMetric label={t('activities.capacity')} value={groupMembersCapacity(groupe, t)} icon="Users" />
-            <DrawerMetric label={t('nav.activities')} value={activitesDisponibles ? activites.length : '—'} icon="Calendar" />
-            <DrawerMetric label={t('nav.projects')} value={projetsDisponibles ? projets.length : '—'} icon="Rocket" />
+            {!pendingQueue && <DrawerMetric label={t('nav.activities')} value={activitesDisponibles ? activites.length : '—'} icon="Calendar" />}
+            {!pendingQueue && <DrawerMetric label={t('nav.projects')} value={projetsDisponibles ? projets.length : '—'} icon="Rocket" />}
           </div>
 
           <DrawerSection title={t('admin.groupFollowUp')} icon="ClipboardList">
@@ -619,14 +718,14 @@ function GroupFollowUpDrawer({
                 <AppIcon name="Eye" className="h-4 w-4" />
                 {t('admin.viewGroup')}
               </Link>
-              <Link to="/admin/activites" className="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
+              {!pendingQueue && <Link to="/admin/activites" className="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                 <AppIcon name="Calendar" className="h-4 w-4" />
                 {t('admin.viewLinkedActivities')}
-              </Link>
-              <Link to="/admin/projets" className="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
+              </Link>}
+              {!pendingQueue && <Link to="/admin/projets" className="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                 <AppIcon name="Rocket" className="h-4 w-4" />
                 {t('admin.viewLinkedProjects')}
-              </Link>
+              </Link>}
             </div>
             <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
               <label className="mb-1 block text-xs font-black uppercase tracking-wide text-slate-400">{t('admin.assignedReferent')}</label>
@@ -649,11 +748,11 @@ function GroupFollowUpDrawer({
             </div>
             {groupe.statut === 'EN_ATTENTE' && (
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                <button type="button" onClick={onValidate} className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500">
+                <button type="button" onClick={onValidate} disabled={decisionInProgress} className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-wait disabled:opacity-60">
                   <AppIcon name="CheckCircle" className="h-4 w-4" />
-                  {t('admin.validateGroup')}
+                  {decisionInProgress ? t('admin.processingDecision') : t('admin.validateGroup')}
                 </button>
-                <button type="button" onClick={onRefuse} className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-500">
+                <button type="button" onClick={onRefuse} disabled={decisionInProgress} className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-500 disabled:cursor-wait disabled:opacity-60">
                   <AppIcon name="XCircle" className="h-4 w-4" />
                   {t('admin.refuse')}
                 </button>
