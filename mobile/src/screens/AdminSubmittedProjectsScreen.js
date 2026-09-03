@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Modal, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import AppIcon from '../components/AppIcon';
@@ -13,6 +13,8 @@ export default function AdminSubmittedProjectsScreen() {
   const [processingId, setProcessingId] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [commentDecision, setCommentDecision] = useState(null);
+  const [comment, setComment] = useState('');
 
   const loadProjects = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -33,35 +35,37 @@ export default function AdminSubmittedProjectsScreen() {
     loadProjects();
   }, [loadProjects]);
 
-  const confirmAction = (project, statut) => {
-    const approved = statut === 'APPROUVE';
+  const confirmApprove = project => {
     Alert.alert(
-      approved
-        ? t('adminMobile.approveProject')
-        : t('adminMobile.rejectProject'),
-      approved
-        ? t('adminMobile.confirmApproveProject')
-        : t('adminMobile.confirmRejectProject'),
+      t('adminMobile.approveProject'),
+      t('adminMobile.confirmApproveProject'),
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
-          text: approved ? t('adminMobile.validate') : t('adminMobile.refuse'),
-          style: approved ? 'default' : 'destructive',
-          onPress: () => processProject(project, statut),
+          text: t('adminMobile.validate'),
+          onPress: () => processProject(project, 'APPROUVE', ''),
         },
       ],
     );
   };
 
-  const processProject = async (project, statut) => {
+  const openCommentDecision = (project, type) => {
+    setComment('');
+    setCommentDecision({ project, type });
+  };
+
+  const processProject = async (project, statut, decisionComment) => {
     setProcessingId(project.id);
     setMessage('');
     setError('');
     try {
-      await api.patch(`/projets/${project.id}/statut?statut=${statut}`);
-      setMessage(statut === 'APPROUVE'
-        ? t('adminMobile.projectApproved')
-        : t('adminMobile.projectRejected'));
+      const url = statut === 'A_CORRIGER_ADMIN'
+        ? `/projets/${project.id}/correction-admin`
+        : `/projets/${project.id}/valider?approuver=${statut === 'APPROUVE'}`;
+      await api.patch(url, decisionComment ? { texte: decisionComment } : undefined);
+      setMessage(statut === 'APPROUVE' ? t('adminMobile.projectApproved')
+        : statut === 'REJETE' ? t('adminMobile.projectRejected') : t('adminMobile.projectCorrectionRequested'));
+      setCommentDecision(null);
       await loadProjects();
     } catch (err) {
       setError(getApiError(err, t, t('adminMobile.projectProcessError')));
@@ -109,8 +113,9 @@ export default function AdminSubmittedProjectsScreen() {
             <ProjectCard
               project={item}
               processing={processingId === item.id}
-              onApprove={() => confirmAction(item, 'APPROUVE')}
-              onReject={() => confirmAction(item, 'REJETE')}
+              onApprove={() => confirmApprove(item)}
+              onReject={() => openCommentDecision(item, 'REJETE')}
+              onCorrection={() => openCommentDecision(item, 'A_CORRIGER_ADMIN')}
               t={t}
             />
           )}
@@ -119,11 +124,38 @@ export default function AdminSubmittedProjectsScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
+      <Modal visible={Boolean(commentDecision)} transparent animationType="fade" onRequestClose={() => setCommentDecision(null)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>{commentDecision?.type === 'REJETE' ? t('adminMobile.rejectProject') : t('adminMobile.requestProjectCorrection')}</Text>
+            <TextInput
+              style={styles.commentInput}
+              value={comment}
+              onChangeText={setComment}
+              multiline
+              autoFocus
+              maxLength={500}
+              placeholder={t('adminMobile.projectDecisionCommentPlaceholder')}
+              accessibilityLabel={t('adminMobile.projectDecisionCommentPlaceholder')}
+              accessibilityHint={t('adminMobile.projectDecisionCommentHelp')}
+            />
+            <Text style={styles.commentCount}>{t('adminMobile.projectDecisionCharacterCount', { count: comment.length })}</Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setCommentDecision(null)}><Text>{t('common.cancel')}</Text></TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.confirmButton, !comment.trim() && styles.disabled]}
+                disabled={!comment.trim() || Boolean(processingId)}
+                onPress={() => processProject(commentDecision.project, commentDecision.type, comment.trim())}
+              ><Text style={styles.actionText}>{t('common.confirm')}</Text></TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
-function ProjectCard({ project, processing, onApprove, onReject, t }) {
+function ProjectCard({ project, processing, onApprove, onReject, onCorrection, t }) {
   return (
     <Card style={styles.card}>
       <View style={styles.cardHeader}>
@@ -151,6 +183,9 @@ function ProjectCard({ project, processing, onApprove, onReject, t }) {
         <TouchableOpacity style={[styles.rejectButton, processing && styles.disabled]} disabled={processing} onPress={onReject}>
           <AppIcon name="close" size={16} color="#fff" />
           <Text style={styles.actionText}>{t('adminMobile.refuse')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.correctionButton, processing && styles.disabled]} disabled={processing} onPress={onCorrection}>
+          <Text style={styles.correctionText}>{t('adminMobile.requestProjectCorrection')}</Text>
         </TouchableOpacity>
       </View>
     </Card>
@@ -206,11 +241,21 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
   metaLabel: { color: COLORS.muted, fontSize: 11 },
   metaValue: { color: COLORS.bxBlue, fontSize: 11, fontWeight: '900', maxWidth: '58%', textAlign: 'right' },
-  actions: { flexDirection: 'row', gap: 8, marginTop: 12 },
-  approveButton: { flex: 1, minHeight: 44, backgroundColor: COLORS.success, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 },
-  rejectButton: { flex: 1, minHeight: 44, backgroundColor: COLORS.danger, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  approveButton: { flexGrow: 1, flexBasis: 120, minHeight: 44, backgroundColor: COLORS.success, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 },
+  rejectButton: { flexGrow: 1, flexBasis: 120, minHeight: 44, backgroundColor: COLORS.danger, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 },
+  correctionButton: { flexGrow: 1, flexBasis: '100%', minHeight: 44, backgroundColor: '#fef3c7', borderRadius: 14, paddingVertical: 11, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
+  correctionText: { color: '#92400e', fontSize: 12, fontWeight: '900', textAlign: 'center' },
   actionText: { color: '#fff', fontSize: 13, fontWeight: '900' },
   disabled: { opacity: 0.55 },
   infoBox: { marginHorizontal: 14, marginTop: 10, padding: 12, borderRadius: 10, borderLeftWidth: 4 },
   infoText: { fontSize: 13, lineHeight: 18 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.55)', alignItems: 'center', justifyContent: 'center', padding: 20 },
+  modalCard: { width: '100%', maxWidth: 480, borderRadius: 18, backgroundColor: '#fff', padding: 18 },
+  modalTitle: { color: COLORS.bxBlue, fontSize: 18, fontWeight: '900', marginBottom: 12 },
+  commentInput: { minHeight: 110, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, padding: 12, textAlignVertical: 'top', color: '#0f172a' },
+  commentCount: { marginTop: 6, textAlign: 'right', color: COLORS.muted, fontSize: 12 },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 14 },
+  cancelButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 16 },
+  confirmButton: { minHeight: 44, justifyContent: 'center', borderRadius: 12, backgroundColor: COLORS.bxBlue, paddingHorizontal: 18 },
 });

@@ -162,6 +162,11 @@ public class ProjetService {
                 .map(ProjetResponse::fromEntity));
     }
 
+    public ProjetAdminResponse getProjetAdmin(Long id, String emailAdmin) {
+        exigerAdmin(emailAdmin);
+        return ProjetAdminResponse.fromEntity(chargerProjet(id));
+    }
+
     // ─── Détail d'un projet ───────────────────────────────────────────────────
 
     public ProjetResponse getProjet(Long id) {
@@ -201,17 +206,29 @@ public class ProjetService {
         projet.setVisibilite(request.getVisibilite());
 
         if (porteur.getRole() == Role.MEMBRE) {
+            if (request.getGroupeId() == null) {
+                throw new RuntimeException("Le groupe doit etre choisi explicitement.");
+            }
             MembreGroupe adhesionActive = membreGroupeRepository
-                    .findFirstByUserIdAndStatut(porteur.getId(), StatutMembre.ACCEPTE)
-                    .orElseThrow(() -> new RuntimeException("Vous devez etre accepte dans un groupe pour proposer un projet."));
+                    .findByUserIdAndGroupeId(porteur.getId(), request.getGroupeId())
+                    .filter(adhesion -> adhesion.getStatut() == StatutMembre.ACCEPTE)
+                    .orElseThrow(() -> new RuntimeException("Vous devez etre accepte dans le groupe choisi pour proposer un projet."));
             projet.setGroupe(adhesionActive.getGroupe());
+            verifierGroupeActifEtValide(projet.getGroupe());
             verifierVisibiliteCreateur(porteur, projet.getVisibilite());
         } else if (porteur.getRole() == Role.REFERENT) {
             Groupe groupe = chargerGroupeEncadre(request.getGroupeId(), porteur);
+            verifierGroupeActifEtValide(groupe);
             projet.setGroupe(groupe);
             verifierVisibiliteCreateur(porteur, projet.getVisibilite());
         } else if (porteur.getRole() == Role.ADMIN) {
-            projet.setGroupe(chargerGroupeOptionnel(request.getGroupeId()));
+            Groupe groupe = chargerGroupeOptionnel(request.getGroupeId());
+            if (groupe != null) {
+                verifierGroupeActifEtValide(groupe);
+                exigerTexte(request.getJustificationAdmin(), "Une justification est obligatoire pour un projet ADMIN rattache a un groupe.");
+            }
+            projet.setGroupe(groupe);
+            projet.setJustificationAdmin(normaliserTexte(request.getJustificationAdmin()));
         } else {
             throw new AccessDeniedException(
                     "Seuls les membres, les referents et les administrateurs peuvent creer un projet.");
@@ -236,17 +253,45 @@ public class ProjetService {
         if (!projet.getPorteur().getId().equals(porteur.getId())) {
             throw new RuntimeException("Seul le porteur peut soumettre ce projet");
         }
-        if (projet.getStatut() != StatutProjet.BROUILLON) {
+        if (projet.getStatut() != StatutProjet.BROUILLON
+                && projet.getStatut() != StatutProjet.A_CORRIGER_REFERENT
+                && projet.getStatut() != StatutProjet.A_CORRIGER_ADMIN) {
             throw new RuntimeException("Ce projet ne peut pas être soumis dans son état actuel");
         }
 
         StatutProjet ancienStatut = projet.getStatut();
-        projet.setStatut(StatutProjet.SOUMIS);
+        if (projet.getGroupe() != null) {
+            verifierGroupeActifEtValide(projet.getGroupe());
+        }
+        StatutProjet nouveauStatut;
+        if (porteur.getRole() == Role.ADMIN) {
+            if (ancienStatut != StatutProjet.BROUILLON) {
+                throw new RuntimeException("Un projet ADMIN ne peut etre soumis que depuis BROUILLON.");
+            }
+            nouveauStatut = StatutProjet.APPROUVE;
+            projet.setDateValidation(LocalDateTime.now());
+        } else if (ancienStatut == StatutProjet.A_CORRIGER_ADMIN) {
+            nouveauStatut = StatutProjet.VALIDE_REFERENT;
+        } else {
+            nouveauStatut = StatutProjet.SOUMIS;
+        }
+        projet.setStatut(nouveauStatut);
         projet.setDateSoumission(LocalDateTime.now());
         Projet saved = projetRepository.save(projet);
-        notifierAdminsProjetSoumis(saved);
-        auditerStatut(porteur, "PROJECT_SUBMITTED", saved, nomStatut(ancienStatut), nomStatut(saved.getStatut()),
-                "Projet soumis pour validation.", metadataProjet(saved));
+        if (nouveauStatut == StatutProjet.APPROUVE) {
+            auditerStatut(porteur, "PROJECT_ADMIN_AUTO_APPROVED", saved,
+                    nomStatut(ancienStatut), nomStatut(nouveauStatut),
+                    "Projet ADMIN approuve automatiquement lors de sa soumission.", metadataProjet(saved));
+        } else {
+            if (ancienStatut == StatutProjet.A_CORRIGER_ADMIN) {
+                notifierAdminsProjetValideReferent(saved);
+                notifierReferentValidateurApresCorrectionAdmin(saved, porteur);
+            } else {
+                notifierReferentProjetSoumis(saved, porteur);
+            }
+            auditerStatut(porteur, "PROJECT_SUBMITTED", saved, nomStatut(ancienStatut), nomStatut(saved.getStatut()),
+                    "Projet soumis pour validation.", metadataProjet(saved));
+        }
         return ProjetResponse.fromEntity(saved);
     }
 
@@ -259,11 +304,11 @@ public class ProjetService {
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
 
         verifierAccesProjet(projet, user, ActionProjet.MODIFIER);
-        boolean isAdmin = user.getRole() == Role.ADMIN;
         boolean isPorteur = projet.getPorteur().getId().equals(user.getId());
-        if (!isAdmin && !isPorteur) {
+        if (!isPorteur) {
             throw new AccessDeniedException("Accès refusé");
         }
+        verifierStatutModifiable(projet);
 
         projet.setTitre(request.getTitre());
         projet.setDescription(request.getDescription());
@@ -271,8 +316,14 @@ public class ProjetService {
         projet.setBudgetDemande(request.getBudgetDemande());
         projet.setVisibilite(request.getVisibilite());
 
-        if (isAdmin) {
-            projet.setGroupe(chargerGroupeOptionnel(request.getGroupeId()));
+        if (user.getRole() == Role.ADMIN) {
+            Groupe groupe = chargerGroupeOptionnel(request.getGroupeId());
+            if (groupe != null) {
+                verifierGroupeActifEtValide(groupe);
+                exigerTexte(request.getJustificationAdmin(), "Une justification est obligatoire pour un projet ADMIN rattache a un groupe.");
+            }
+            projet.setGroupe(groupe);
+            projet.setJustificationAdmin(normaliserTexte(request.getJustificationAdmin()));
         } else if (user.getRole() == Role.REFERENT) {
             projet.setGroupe(chargerGroupeEncadre(request.getGroupeId(), user));
             verifierVisibiliteCreateur(user, projet.getVisibilite());
@@ -297,6 +348,10 @@ public class ProjetService {
         if (referent.getRole() != Role.REFERENT || !referentEncadreProjet(referent, projet)) {
             throw new AccessDeniedException("Vous ne pouvez modifier que les projets des groupes que vous encadrez.");
         }
+        if (!estPorteur(referent, projet)) {
+            throw new AccessDeniedException("Seul le porteur peut corriger ce projet.");
+        }
+        verifierStatutModifiable(projet);
 
         projet.setTitre(request.getTitre());
         projet.setDescription(request.getDescription());
@@ -304,6 +359,7 @@ public class ProjetService {
         projet.setBudgetDemande(request.getBudgetDemande());
         projet.setVisibilite(request.getVisibilite());
         projet.setGroupe(chargerGroupeEncadre(request.getGroupeId(), referent));
+        verifierGroupeActifEtValide(projet.getGroupe());
         verifierVisibiliteCreateur(referent, projet.getVisibilite());
         verifierCoherenceGroupeVisibilite(projet);
 
@@ -329,7 +385,7 @@ public class ProjetService {
         projet.setDateRefusReferent(null);
 
         Projet saved = projetRepository.save(projet);
-        notifierAdminsProjetValideReferent(saved, referent);
+        notifierAdminsProjetValideReferent(saved);
         notificationService.creer(
                 saved.getPorteur(),
                 "Projet validé par votre référent",
@@ -348,6 +404,7 @@ public class ProjetService {
         User referent = chargerUtilisateur(emailReferent);
 
         verifierDecisionReferentAutorisee(projet, referent);
+        exigerTexte(commentaire, "Le motif du refus est obligatoire.");
 
         StatutProjet ancienStatut = projet.getStatut();
         projet.setStatut(StatutProjet.REFUSE_REFERENT);
@@ -369,15 +426,28 @@ public class ProjetService {
         return ProjetResponse.fromEntity(saved);
     }
 
+    public ProjetResponse demanderCorrectionReferent(Long id, String commentaire, String emailReferent) {
+        Projet projet = projetRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Projet introuvable"));
+        User referent = chargerUtilisateur(emailReferent);
+        verifierDecisionReferentAutorisee(projet, referent);
+        exigerTexte(commentaire, "Le commentaire de correction est obligatoire.");
+        return appliquerTransition(projet, referent, StatutProjet.A_CORRIGER_REFERENT,
+                "PROJECT_REFERENT_CORRECTION_REQUESTED", commentaire, true);
+    }
+
     // ─── Valider ou rejeter un projet (ADMIN / REFERENT) — A09, R13 ──────────
 
     public ProjetResponse validerProjet(Long id, boolean approuver, String commentaire, String emailAdmin) {
         Projet projet = projetRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Projet introuvable"));
-        User admin = chargerUtilisateur(emailAdmin);
+        User admin = exigerAdmin(emailAdmin);
 
         if (!projetPretPourDecisionAdmin(projet)) {
             throw new RuntimeException("Ce projet n'est pas en attente de validation administrative");
+        }
+        if (!approuver) {
+            exigerTexte(commentaire, "Le motif du rejet est obligatoire.");
         }
 
         StatutProjet ancienStatut = projet.getStatut();
@@ -399,30 +469,74 @@ public class ProjetService {
         return ProjetResponse.fromEntity(saved);
     }
 
+    public ProjetResponse demanderCorrectionAdmin(Long id, String commentaire, String emailAdmin) {
+        Projet projet = projetRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Projet introuvable"));
+        User admin = exigerAdmin(emailAdmin);
+        if (!projetPretPourDecisionAdmin(projet)) {
+            throw new RuntimeException("Ce projet n'est pas en attente de validation administrative");
+        }
+        exigerTexte(commentaire, "Le commentaire de correction est obligatoire.");
+        projet.setCommentaireAdmin(commentaire.trim());
+        return appliquerTransition(projet, admin, StatutProjet.A_CORRIGER_ADMIN,
+                "PROJECT_ADMIN_CORRECTION_REQUESTED", commentaire, true);
+    }
+
     // ─── Changer le statut d'un projet (ADMIN) — A10 ─────────────────────────
 
     public ProjetResponse changerStatut(Long id, StatutProjet nouveauStatut, String emailAdmin) {
         Projet projet = projetRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Projet introuvable"));
-        User admin = chargerUtilisateur(emailAdmin);
-
-        StatutProjet ancienStatut = projet.getStatut();
-        projet.setStatut(nouveauStatut);
-
-        if (nouveauStatut == StatutProjet.TERMINE || nouveauStatut == StatutProjet.ARCHIVE) {
-            projet.setDateCloture(LocalDateTime.now());
+        User admin = exigerAdmin(emailAdmin);
+        if (projet.getStatut() == StatutProjet.APPROUVE && nouveauStatut == StatutProjet.EN_COURS) {
+            return demarrerProjetCharge(projet, admin);
         }
+        if ((projet.getStatut() == StatutProjet.TERMINE
+                || projet.getStatut() == StatutProjet.ANNULE
+                || projet.getStatut() == StatutProjet.REJETE
+                || projet.getStatut() == StatutProjet.REFUSE_REFERENT)
+                && nouveauStatut == StatutProjet.ARCHIVE) {
+            return archiverProjetCharge(projet, admin);
+        }
+        throw new RuntimeException("Transition de statut interdite; utilisez l'operation metier dediee.");
+    }
 
-        Projet saved = projetRepository.save(projet);
-        notificationService.creer(
-                saved.getPorteur(),
-                "Statut du projet mis à jour",
-                "Le projet \"" + saved.getTitre() + "\" est maintenant " + nouveauStatut + ".",
-                "PROJET",
-                "/projets/" + saved.getId());
-        auditerStatut(admin, "PROJECT_STATUS_CHANGED", saved, nomStatut(ancienStatut), nomStatut(saved.getStatut()),
-                "Statut du projet modifie.", metadataProjet(saved));
-        return ProjetResponse.fromEntity(saved);
+    public ProjetResponse demarrerProjet(Long id, String emailAdmin) {
+        return demarrerProjetCharge(chargerProjet(id), exigerAdmin(emailAdmin));
+    }
+
+    public ProjetResponse terminerProjet(Long id, String bilan, String emailAdmin) {
+        Projet projet = chargerProjet(id);
+        User admin = exigerAdmin(emailAdmin);
+        verifierTransition(projet, StatutProjet.EN_COURS, StatutProjet.TERMINE);
+        exigerTexte(bilan, "Le bilan est obligatoire pour terminer un projet.");
+        projet.setBilan(bilan.trim());
+        projet.setDateCloture(LocalDateTime.now());
+        return appliquerTransition(projet, admin, StatutProjet.TERMINE, "PROJECT_COMPLETED", bilan, true);
+    }
+
+    public ProjetResponse archiverProjet(Long id, String emailAdmin) {
+        return archiverProjetCharge(chargerProjet(id), exigerAdmin(emailAdmin));
+    }
+
+    public ProjetResponse annulerProjet(Long id, String motif, String emailUser) {
+        Projet projet = chargerProjet(id);
+        User user = chargerUtilisateur(emailUser);
+        boolean porteur = estPorteur(user, projet);
+        boolean admin = user.getRole() == Role.ADMIN;
+        if (!porteur && !admin) {
+            throw new AccessDeniedException("Seul le porteur ou un ADMIN autorise peut annuler ce projet.");
+        }
+        if (projet.getStatut() == StatutProjet.APPROUVE || projet.getStatut() == StatutProjet.EN_COURS) {
+            if (!admin) throw new AccessDeniedException("Seul un ADMIN peut annuler un projet approuve ou en cours.");
+            exigerTexte(motif, "Le motif d'annulation est obligatoire.");
+        } else if (!List.of(StatutProjet.BROUILLON, StatutProjet.SOUMIS,
+                StatutProjet.A_CORRIGER_REFERENT, StatutProjet.VALIDE_REFERENT,
+                StatutProjet.A_CORRIGER_ADMIN).contains(projet.getStatut())) {
+            throw new RuntimeException("Ce projet ne peut pas etre annule dans son etat actuel.");
+        }
+        projet.setDateCloture(LocalDateTime.now());
+        return appliquerTransition(projet, user, StatutProjet.ANNULE, "PROJECT_CANCELLED", motif, true);
     }
 
     // ─── Supprimer un projet (ADMIN) ─────────────────────────────────────────
@@ -434,9 +548,15 @@ public class ProjetService {
     public void supprimerProjet(Long id, String emailAdmin) {
         Projet projet = projetRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Projet introuvable"));
-        User admin = chargerUtilisateurOptionnel(emailAdmin);
-        projetRepository.deleteById(id);
-        auditerAction(admin, "PROJECT_DELETED", projet, "Projet supprime.", metadataProjet(projet));
+        User acteur = chargerUtilisateurOptionnel(emailAdmin);
+        if (projet.getStatut() != StatutProjet.BROUILLON) {
+            throw new RuntimeException("Seul un brouillon jamais soumis peut etre supprime.");
+        }
+        if (acteur != null && acteur.getRole() != Role.ADMIN && !estPorteur(acteur, projet)) {
+            throw new AccessDeniedException("Acces refuse");
+        }
+        projetRepository.delete(projet);
+        auditerAction(acteur, "PROJECT_DELETED", projet, "Projet supprime.", metadataProjet(projet));
     }
 
     // ─── Rejoindre un projet (M26) ────────────────────────────────────────────
@@ -559,10 +679,7 @@ public class ProjetService {
     // ─── Projets soumis en attente (ADMIN / REFERENT) ────────────────────────
 
     public List<ProjetResponse> projetsSoumis() {
-        // Transition douce V2.3 : les nouveaux projets arrivent en VALIDE_REFERENT.
-        // Les anciens projets deja SOUMIS restent visibles temporairement pour ne pas
-        // bloquer la file admin avant migration.
-        return projetRepository.findByStatutIn(List.of(StatutProjet.VALIDE_REFERENT, StatutProjet.SOUMIS))
+        return projetRepository.findByStatut(StatutProjet.VALIDE_REFERENT)
                 .stream()
                 .map(ProjetResponse::fromEntity)
                 .collect(Collectors.toList());
@@ -656,26 +773,40 @@ public class ProjetService {
         }
     }
 
-    private void notifierAdminsProjetSoumis(Projet projet) {
-        for (User admin : userRepository.findByRoleAndActifTrue(Role.ADMIN)) {
+    private void notifierReferentProjetSoumis(Projet projet, User acteur) {
+        User referent = projet.getGroupe() == null ? null : projet.getGroupe().getReferent();
+        if (referent != null && referent.isActif()
+                && (acteur == null || !referent.getId().equals(acteur.getId()))) {
             notificationService.creer(
-                    admin,
+                    referent,
                     "Projet soumis",
-                    "Le projet \"" + projet.getTitre() + "\" attend une validation.",
+                    "Le projet \"" + projet.getTitre() + "\" attend votre validation.",
                     "PROJET",
-                    "/admin/projets");
+                    "/referent/projets");
         }
     }
 
-    private void notifierAdminsProjetValideReferent(Projet projet, User referent) {
-        String nomReferent = referent.getPrenom() != null ? referent.getPrenom() : referent.getEmail();
+    private void notifierAdminsProjetValideReferent(Projet projet) {
         for (User admin : userRepository.findByRoleAndActifTrue(Role.ADMIN)) {
             notificationService.creer(
                     admin,
                     "Projet validé par référent",
-                    "Le projet \"" + projet.getTitre() + "\" a été validé par " + nomReferent + " et attend une décision finale.",
+                    "Le projet \"" + projet.getTitre() + "\" attend une décision finale.",
                     "VALIDATION_REFERENT_PROJET",
                     "/admin/projets");
+        }
+    }
+
+    private void notifierReferentValidateurApresCorrectionAdmin(Projet projet, User acteur) {
+        User referent = projet.getReferentValidateur();
+        if (referent != null && referent.isActif()
+                && (acteur == null || !referent.getId().equals(acteur.getId()))) {
+            notificationService.creer(
+                    referent,
+                    "Projet corrigé et resoumis",
+                    "Le projet \"" + projet.getTitre() + "\" a été renvoyé à l'administration.",
+                    "CORRECTION_ADMIN_PROJET",
+                    "/referent/projets");
         }
     }
 
@@ -748,8 +879,89 @@ public class ProjetService {
     }
 
     private boolean projetPretPourDecisionAdmin(Projet projet) {
-        return projet.getStatut() == StatutProjet.VALIDE_REFERENT
-                || projet.getStatut() == StatutProjet.SOUMIS;
+        return projet.getStatut() == StatutProjet.VALIDE_REFERENT;
+    }
+
+    private Projet chargerProjet(Long id) {
+        return projetRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Projet introuvable"));
+    }
+
+    private User exigerAdmin(String email) {
+        User user = chargerUtilisateur(email);
+        if (user.getRole() != Role.ADMIN) {
+            throw new AccessDeniedException("Seul un ADMIN peut effectuer cette transition.");
+        }
+        return user;
+    }
+
+    private void verifierTransition(Projet projet, StatutProjet attendu, StatutProjet cible) {
+        if (projet.getStatut() != attendu) {
+            throw new RuntimeException("Transition interdite de " + projet.getStatut() + " vers " + cible + ".");
+        }
+    }
+
+    private ProjetResponse demarrerProjetCharge(Projet projet, User admin) {
+        verifierTransition(projet, StatutProjet.APPROUVE, StatutProjet.EN_COURS);
+        return appliquerTransition(projet, admin, StatutProjet.EN_COURS, "PROJECT_STARTED", null, true);
+    }
+
+    private ProjetResponse archiverProjetCharge(Projet projet, User admin) {
+        if (!List.of(StatutProjet.TERMINE, StatutProjet.ANNULE,
+                StatutProjet.REJETE, StatutProjet.REFUSE_REFERENT).contains(projet.getStatut())) {
+            throw new RuntimeException("Ce projet ne peut pas etre archive dans son etat actuel.");
+        }
+        projet.setDateCloture(LocalDateTime.now());
+        return appliquerTransition(projet, admin, StatutProjet.ARCHIVE, "PROJECT_ARCHIVED", null, false);
+    }
+
+    private ProjetResponse appliquerTransition(
+            Projet projet,
+            User acteur,
+            StatutProjet cible,
+            String action,
+            String commentaire,
+            boolean notifierPorteur) {
+        StatutProjet ancienStatut = projet.getStatut();
+        projet.setStatut(cible);
+        Projet saved = projetRepository.save(projet);
+        if (notifierPorteur && saved.getPorteur() != null && !saved.getPorteur().getId().equals(acteur.getId())) {
+            notificationService.creer(
+                    saved.getPorteur(),
+                    "Projet mis à jour",
+                    "Le projet \"" + saved.getTitre() + "\" est maintenant " + cible + ".",
+                    "PROJET",
+                    "/projets/" + saved.getId());
+        }
+        auditerStatut(acteur, action, saved, nomStatut(ancienStatut), nomStatut(cible),
+                "Transition technique du projet.", metadataProjet(saved));
+        return ProjetResponse.fromEntity(saved);
+    }
+
+    private void verifierStatutModifiable(Projet projet) {
+        if (!List.of(StatutProjet.BROUILLON, StatutProjet.A_CORRIGER_REFERENT,
+                StatutProjet.A_CORRIGER_ADMIN).contains(projet.getStatut())) {
+            throw new RuntimeException("Le contenu de ce projet ne peut pas etre modifie dans son etat actuel.");
+        }
+    }
+
+    private void verifierGroupeActifEtValide(Groupe groupe) {
+        if (groupe == null || !groupe.isActif() || groupe.getStatut() != StatutGroupe.VALIDE) {
+            throw new RuntimeException("Le groupe doit etre actif et valide.");
+        }
+    }
+
+    private void exigerTexte(String valeur, String message) {
+        if (valeur == null || valeur.isBlank()) {
+            throw new RuntimeException(message);
+        }
+        if (valeur.trim().length() > 500) {
+            throw new RuntimeException("Le texte ne peut pas depasser 500 caracteres.");
+        }
+    }
+
+    private String normaliserTexte(String valeur) {
+        return valeur == null || valeur.isBlank() ? null : valeur.trim();
     }
 
     private User chargerUtilisateur(String email) {
@@ -808,7 +1020,7 @@ public class ProjetService {
         return metadata(
                 "groupeId", idGroupe(projet),
                 "porteurId", idPorteur(projet),
-                "budgetDemande", projet.getBudgetDemande());
+                "version", projet.getVersion());
     }
 
     private Long idGroupe(Projet projet) {

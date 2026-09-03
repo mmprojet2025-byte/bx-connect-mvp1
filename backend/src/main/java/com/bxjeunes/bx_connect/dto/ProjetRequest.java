@@ -2,6 +2,7 @@ package com.bxjeunes.bx_connect.dto;
 
 import com.bxjeunes.bx_connect.entity.VisibiliteProjet;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
 public class ProjetRequest {
@@ -16,6 +17,9 @@ public class ProjetRequest {
     private BigDecimal budgetDemande;
 
     private Long groupeId; // optionnel : rattacher à un groupe
+
+    @Size(max = 500, message = "La justification ne peut pas depasser 500 caracteres")
+    private String justificationAdmin;
 
     private VisibiliteProjet visibilite = VisibiliteProjet.GROUPE;
 
@@ -35,6 +39,9 @@ public class ProjetRequest {
 
     public Long getGroupeId() { return groupeId; }
     public void setGroupeId(Long groupeId) { this.groupeId = groupeId; }
+
+    public String getJustificationAdmin() { return justificationAdmin; }
+    public void setJustificationAdmin(String justificationAdmin) { this.justificationAdmin = justificationAdmin; }
 
     public VisibiliteProjet getVisibilite() {
         return visibilite == null ? VisibiliteProjet.GROUPE : visibilite;

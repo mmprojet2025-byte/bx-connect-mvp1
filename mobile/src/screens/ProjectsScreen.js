@@ -40,6 +40,7 @@ export default function ProjectsScreen() {
     objectifs: '',
     budgetDemande: '',
     groupeId: '',
+    justificationAdmin: '',
     visibilite: isAdmin ? 'PUBLIC' : 'GROUPE',
   });
 
@@ -58,11 +59,12 @@ export default function ProjectsScreen() {
 
     try {
       if (isAdmin) {
-        const [projetsRes, groupesRes] = await Promise.all([
+        const [projetsRes, groupesRes, propresRes] = await Promise.all([
           api.get('/projets/admin/tous'),
           api.get('/admin/groupes'),
+          api.get('/projets/mes-projets'),
         ]);
-        setProjets(projetsRes.data || []);
+        setProjets(markOwnedProjects(projetsRes.data, propresRes.data));
         setGroupesCreateur(groupesRes.data || []);
         setMembreDashboard(null);
         return;
@@ -77,11 +79,12 @@ export default function ProjectsScreen() {
       }
 
       if (isReferent) {
-        const [projetsRes, groupesRes] = await Promise.all([
+        const [projetsRes, groupesRes, propresRes] = await Promise.all([
           api.get('/projets/referent/mes-groupes'),
           api.get('/referent/groupes'),
+          api.get('/projets/mes-projets'),
         ]);
-        setProjets(projetsRes.data || []);
+        setProjets(markOwnedProjects(projetsRes.data, propresRes.data));
         setGroupesCreateur(groupesRes.data || []);
         setMembreDashboard(null);
         return;
@@ -92,7 +95,7 @@ export default function ProjectsScreen() {
           api.get('/projets'),
           api.get('/projets/mes-projets'),
         ]);
-        setProjets(mergeProjects(projetsRes.data, mesProjetsRes.data));
+        setProjets(markOwnedProjects(mergeProjects(projetsRes.data, mesProjetsRes.data), mesProjetsRes.data));
       } else {
         const projetsRes = await api.get('/projets');
         setProjets(projetsRes.data || []);
@@ -149,7 +152,10 @@ export default function ProjectsScreen() {
         description: form.description.trim(),
         objectifs: form.objectifs.trim(),
         budgetDemande: form.budgetDemande ? parseFloat(form.budgetDemande) : null,
-        groupeId: isMembre || !form.groupeId ? null : Number(form.groupeId),
+        groupeId: isMembre
+          ? Number(groupeActif?.groupeId || groupeActif?.id)
+          : (!form.groupeId ? null : Number(form.groupeId)),
+        justificationAdmin: isAdmin && form.groupeId ? form.justificationAdmin.trim() : null,
         visibilite: form.visibilite,
       };
 
@@ -161,13 +167,8 @@ export default function ProjectsScreen() {
         return;
       }
 
-      const response = await api.post('/projets', payload);
-      if (!isAdmin) {
-        await api.patch(`/projets/${response.data.id}/soumettre`);
-      }
-      setMessage(isAdmin
-        ? t('projects.project_created_admin')
-        : t('projects.project_submitted_mobile'));
+      await api.post('/projets', payload);
+      setMessage(t('projects.project_draft_created'));
       closeProjectFormAfterSave();
       await chargerProjets();
     } catch (err) {
@@ -208,11 +209,21 @@ export default function ProjectsScreen() {
     setShowForm(true);
   };
 
-  const openEditProjectForm = (projet) => {
-    setEditingProject(projet);
+  const openEditProjectForm = async (projet) => {
+    let projectToEdit = projet;
+    if (isAdmin) {
+      try {
+        const response = await api.get(`/projets/admin/${projet.id}`);
+        projectToEdit = { ...response.data.projet, justificationAdmin: response.data.justificationAdmin };
+      } catch (err) {
+        setError(getApiError(err, t, t('projects.error_load')));
+        return;
+      }
+    }
+    setEditingProject(projectToEdit);
     setError('');
     setMessage('');
-    setForm(projectToForm(projet, groupesCreateur, isAdmin));
+    setForm(projectToForm(projectToEdit, groupesCreateur, isAdmin));
     setShowForm(true);
   };
 
@@ -231,6 +242,7 @@ export default function ProjectsScreen() {
       objectifs: '',
       budgetDemande: '',
       groupeId: '',
+      justificationAdmin: '',
       visibilite: isAdmin ? 'PUBLIC' : 'GROUPE',
     });
   };
@@ -239,6 +251,21 @@ export default function ProjectsScreen() {
     const texte = `${projet.titre || ''} ${projet.description || ''} ${projet.groupeNom || ''}`;
     return texte.toLowerCase().includes(recherche.toLowerCase());
   });
+
+  const submitDraft = async projet => {
+    setCreating(true);
+    setError('');
+    setMessage('');
+    try {
+      const response = await api.patch(`/projets/${projet.id}/soumettre`);
+      setMessage(t(`projects.submissionResult.${response.data.statut}`));
+      await chargerProjets();
+    } catch (err) {
+      setError(getApiError(err, t, t('projects.error_submit')));
+    } finally {
+      setCreating(false);
+    }
+  };
 
   if (isSuperAdmin) {
     return (
@@ -342,8 +369,13 @@ export default function ProjectsScreen() {
               t={t}
               language={i18n.language}
               isPartenaire={isPartenaire}
-              editable={isReferent && canEditReferentProject(item, groupesCreateur)}
+              editable={item.estPorteurConnecte
+                && ['BROUILLON', 'A_CORRIGER_REFERENT', 'A_CORRIGER_ADMIN'].includes(item.statut)
+                && (!isReferent || canEditReferentProject(item, groupesCreateur))}
               onEdit={() => openEditProjectForm(item)}
+              canSubmit={item.statut === 'BROUILLON' && item.estPorteurConnecte}
+              submitting={creating}
+              onSubmit={() => submitDraft(item)}
             />
           )}
           contentContainerStyle={styles.listContent}
@@ -377,7 +409,7 @@ export default function ProjectsScreen() {
   );
 }
 
-function ProjectCard({ projet, t, language, isPartenaire, editable, onEdit }) {
+function ProjectCard({ projet, t, language, isPartenaire, editable, onEdit, canSubmit, submitting, onSubmit }) {
   return (
     <View style={[styles.card, { borderTopColor: statusColor(projet.statut) }]}>
       <View style={styles.cardHeader}>
@@ -420,6 +452,18 @@ function ProjectCard({ projet, t, language, isPartenaire, editable, onEdit }) {
         <TouchableOpacity style={styles.editButton} onPress={onEdit}>
           <AppIcon name="edit" size={16} color="#2563EB" />
           <Text style={styles.editButtonText}>{t('common.edit')}</Text>
+        </TouchableOpacity>
+      ) : null}
+      {canSubmit ? (
+        <TouchableOpacity
+          style={[styles.submitButton, submitting && styles.btnNewDisabled]}
+          disabled={submitting}
+          onPress={onSubmit}
+          accessibilityRole="button"
+          accessibilityLabel={t('projects.submit_draft')}
+        >
+          <AppIcon name="check" size={16} color="#fff" />
+          <Text style={styles.submitButtonText}>{t('projects.submit_draft')}</Text>
         </TouchableOpacity>
       ) : null}
     </View>
@@ -519,6 +563,20 @@ function ProjectFormModal({
               onChangeText={(val) => setForm({ ...form, budgetDemande: val })}
               keyboardType="numeric"
             />
+
+            {allowNoGroup && form.groupeId ? (
+              <>
+                <Text style={styles.label}>{t('projects.admin_group_justification')}</Text>
+                <TextInput
+                  style={[styles.input, styles.inputMultiline]}
+                  value={form.justificationAdmin}
+                  onChangeText={(val) => setForm({ ...form, justificationAdmin: val })}
+                  maxLength={500}
+                  multiline
+                  numberOfLines={3}
+                />
+              </>
+            ) : null}
 
             {groupes.length > 0 && (
               <>
@@ -652,6 +710,10 @@ function statusColor(statut) {
     case 'EN_COURS': return '#38BDF8';
     case 'TERMINE': return '#64748b';
     case 'REJETE': return '#EF4444';
+    case 'REFUSE_REFERENT': return '#EF4444';
+    case 'ANNULE': return '#64748b';
+    case 'A_CORRIGER_REFERENT':
+    case 'A_CORRIGER_ADMIN': return '#d97706';
     case 'SOUMIS': return '#0891b2';
     default: return '#d97706';
   }
@@ -674,6 +736,14 @@ function mergeProjects(...collections) {
   return Array.from(projectsById.values());
 }
 
+function markOwnedProjects(projects, ownProjects) {
+  const ownIds = new Set((ownProjects || []).map((project) => String(project.id)));
+  return (projects || []).map((project) => ({
+    ...project,
+    estPorteurConnecte: ownIds.has(String(project.id)),
+  }));
+}
+
 function projectToForm(projet, groupes, isAdmin) {
   const groupeId = projet.groupeId
     || groupes.find((groupe) => groupe.nom === projet.groupeNom)?.id
@@ -685,6 +755,7 @@ function projectToForm(projet, groupes, isAdmin) {
     objectifs: projet.objectifs || '',
     budgetDemande: projet.budgetDemande != null ? String(projet.budgetDemande) : '',
     groupeId: groupeId ? String(groupeId) : '',
+    justificationAdmin: projet.justificationAdmin || '',
     visibilite: projet.visibilite || (isAdmin ? 'PUBLIC' : 'GROUPE'),
   };
 }
@@ -882,6 +953,17 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   editButtonText: { color: '#2563EB', fontSize: 12, fontWeight: '900' },
+  submitButton: {
+    marginTop: 8,
+    minHeight: 44,
+    borderRadius: 11,
+    backgroundColor: '#1d4ed8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 7,
+  },
+  submitButtonText: { color: '#fff', fontSize: 12, fontWeight: '900' },
 
   centered: {
     flex: 1,

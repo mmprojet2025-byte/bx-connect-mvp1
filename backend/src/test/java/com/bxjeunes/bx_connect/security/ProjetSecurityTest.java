@@ -35,6 +35,7 @@ import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -48,6 +49,39 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class ProjetSecurityTest {
+
+    @Test
+    @DisplayName("Le DTO projet general n'expose aucune donnee interne de workflow")
+    void dto_projet_general_masque_donnees_internes() {
+        assertThat(Arrays.stream(ProjetResponse.class.getDeclaredFields()).map(java.lang.reflect.Field::getName))
+                .doesNotContain("justificationAdmin", "bilan", "version", "porteurId");
+    }
+
+    @Test
+    @DisplayName("Le detail administratif expose justification et bilan seulement a ADMIN")
+    void detail_administratif_est_reserve_admin() {
+        Projet projet = projet(90L, StatutProjet.TERMINE, groupe, membre);
+        projet.setJustificationAdmin("Justification interne");
+        projet.setBilan("Bilan interne");
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(projetRepository.findById(90L)).thenReturn(Optional.of(projet));
+
+        var response = projetService.getProjetAdmin(90L, admin.getEmail());
+
+        assertThat(response.justificationAdmin()).isEqualTo("Justification interne");
+        assertThat(response.bilan()).isEqualTo("Bilan interne");
+        assertThat(response.projet().getId()).isEqualTo(90L);
+    }
+
+    @Test
+    @DisplayName("Le detail administratif refuse les autres roles avant lecture projet")
+    void detail_administratif_refuse_non_admin_avant_projet() {
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+
+        assertThatThrownBy(() -> projetService.getProjetAdmin(90L, membre.getEmail()))
+                .isInstanceOf(AccessDeniedException.class);
+        verifyNoInteractions(projetRepository);
+    }
 
     @Mock private ProjetRepository projetRepository;
     @Mock private ParticipationProjetRepository participationRepository;
@@ -81,11 +115,15 @@ class ProjetSecurityTest {
         groupe.setId(10L);
         groupe.setNom("Groupe Creatif");
         groupe.setReferent(referent);
+        groupe.setActif(true);
+        groupe.setStatut(com.bxjeunes.bx_connect.entity.StatutGroupe.VALIDE);
 
         autreGroupe = new Groupe();
         autreGroupe.setId(20L);
         autreGroupe.setNom("Groupe Solidaire");
         autreGroupe.setReferent(referentAutreGroupe);
+        autreGroupe.setActif(true);
+        autreGroupe.setStatut(com.bxjeunes.bx_connect.entity.StatutGroupe.VALIDE);
     }
 
     @Test
@@ -135,12 +173,9 @@ class ProjetSecurityTest {
     @DisplayName("MEMBRE sans groupe actif ne peut pas proposer un projet")
     void membre_sans_groupe_ne_peut_pas_proposer_projet() {
         when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
-        when(membreGroupeRepository.findFirstByUserIdAndStatut(membre.getId(), StatutMembre.ACCEPTE))
-                .thenReturn(Optional.empty());
-
         assertThatThrownBy(() -> projetService.proposerProjet(request(), membre.getEmail()))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("accepte dans un groupe");
+                .hasMessageContaining("choisi explicitement");
     }
 
     @Test
@@ -152,11 +187,13 @@ class ProjetSecurityTest {
         adhesion.setStatut(StatutMembre.ACCEPTE);
 
         when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
-        when(membreGroupeRepository.findFirstByUserIdAndStatut(membre.getId(), StatutMembre.ACCEPTE))
+        ProjetRequest request = request();
+        request.setGroupeId(groupe.getId());
+        when(membreGroupeRepository.findByUserIdAndGroupeId(membre.getId(), groupe.getId()))
                 .thenReturn(Optional.of(adhesion));
         when(projetRepository.save(any(Projet.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        assertThat(projetService.proposerProjet(request(), membre.getEmail()).getGroupeNom())
+        assertThat(projetService.proposerProjet(request, membre.getEmail()).getGroupeNom())
                 .isEqualTo("Groupe Creatif");
     }
 
@@ -209,9 +246,9 @@ class ProjetSecurityTest {
     }
 
     @Test
-    @DisplayName("REFERENT peut modifier un projet de son groupe")
+    @DisplayName("REFERENT porteur peut modifier son brouillon")
     void referent_peut_modifier_projet_de_son_groupe() {
-        Projet projet = projet(42L, StatutProjet.SOUMIS, groupe, membre);
+        Projet projet = projet(42L, StatutProjet.BROUILLON, groupe, referent);
         ProjetRequest request = request();
         request.setTitre("Projet modifie");
         request.setGroupeId(groupe.getId());
@@ -246,8 +283,6 @@ class ProjetSecurityTest {
         when(projetRepository.findById(42L)).thenReturn(Optional.of(projet));
         when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
         when(projetRepository.save(projet)).thenReturn(projet);
-        when(userRepository.findByRoleAndActifTrue(Role.ADMIN)).thenReturn(List.of(admin));
-
         projetService.soumettreProjet(42L, membre.getEmail());
 
         verify(auditLogService).logStatusChange(
@@ -302,26 +337,17 @@ class ProjetSecurityTest {
     }
 
     @Test
-    @DisplayName("ADMIN peut encore valider temporairement un ancien projet SOUMIS")
-    void admin_valide_ancien_projet_soumis_compatibilite_transition() {
+    @DisplayName("ADMIN ne peut pas contourner la validation REFERENT depuis SOUMIS")
+    void admin_ne_valide_pas_directement_un_projet_soumis() {
         Projet projet = projet(44L, StatutProjet.SOUMIS, groupe, membre);
         when(projetRepository.findById(44L)).thenReturn(Optional.of(projet));
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
-        when(projetRepository.save(projet)).thenReturn(projet);
 
-        ProjetResponse response = projetService.validerProjet(44L, true, "transition", admin.getEmail());
-
-        assertThat(response.getStatut()).isEqualTo(StatutProjet.APPROUVE);
-        verify(auditLogService).logStatusChange(
-                org.mockito.ArgumentMatchers.same(admin),
-                org.mockito.ArgumentMatchers.eq("PROJECT_APPROVED"),
-                org.mockito.ArgumentMatchers.eq("PROJECT"),
-                org.mockito.ArgumentMatchers.eq(44L),
-                org.mockito.ArgumentMatchers.eq("Projet test"),
-                org.mockito.ArgumentMatchers.eq("SOUMIS"),
-                org.mockito.ArgumentMatchers.eq("APPROUVE"),
-                org.mockito.ArgumentMatchers.eq("Projet approuve."),
-                org.mockito.ArgumentMatchers.contains("\"groupeId\":10"));
+        assertThatThrownBy(() -> projetService.validerProjet(44L, true, "transition", admin.getEmail()))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("validation administrative");
+        verify(projetRepository, never()).save(any());
+        verifyNoInteractions(notificationService, auditLogService);
     }
 
     @Test
@@ -400,16 +426,15 @@ class ProjetSecurityTest {
     }
 
     @Test
-    @DisplayName("File admin contient les projets valides referent et les anciens soumis")
-    void file_admin_contient_valides_referent_et_anciens_soumis() {
+    @DisplayName("File admin contient uniquement les projets valides par referent")
+    void file_admin_contient_uniquement_valides_referent() {
         Projet valideReferent = projet(49L, StatutProjet.VALIDE_REFERENT, groupe, membre);
-        Projet ancienSoumis = projet(50L, StatutProjet.SOUMIS, groupe, membre);
-        when(projetRepository.findByStatutIn(List.of(StatutProjet.VALIDE_REFERENT, StatutProjet.SOUMIS)))
-                .thenReturn(List.of(valideReferent, ancienSoumis));
+        when(projetRepository.findByStatut(StatutProjet.VALIDE_REFERENT))
+                .thenReturn(List.of(valideReferent));
 
         assertThat(projetService.projetsSoumis())
                 .extracting(ProjetResponse::getStatut)
-                .containsExactly(StatutProjet.VALIDE_REFERENT, StatutProjet.SOUMIS);
+                .containsExactly(StatutProjet.VALIDE_REFERENT);
     }
 
     @Test
@@ -471,6 +496,7 @@ class ProjetSecurityTest {
         ProjetRequest request = request();
         request.setGroupeId(groupe.getId());
         request.setVisibilite(VisibiliteProjet.GROUPE);
+        request.setJustificationAdmin("Projet organise par l'association");
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
         when(groupeRepository.findById(groupe.getId())).thenReturn(Optional.of(groupe));
         when(projetRepository.save(any(Projet.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -478,6 +504,17 @@ class ProjetSecurityTest {
         assertThat(projetService.proposerProjet(request, admin.getEmail()).getGroupeId())
                 .isEqualTo(groupe.getId());
         verify(groupeRepository).findById(groupe.getId());
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(admin),
+                org.mockito.ArgumentMatchers.eq("PROJECT_CREATED"),
+                org.mockito.ArgumentMatchers.eq("PROJECT"),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq("BROUILLON"),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.argThat(metadata -> !metadata.contains("justificationAdmin")
+                        && !metadata.contains("Projet organise") && !metadata.contains("budgetDemande")));
     }
 
     @Test
@@ -661,6 +698,161 @@ class ProjetSecurityTest {
 
         assertThatThrownBy(() -> projetService.rejoindrProjet(42L, admin.getEmail()))
                 .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    @DisplayName("La soumission d'un projet ADMIN approuve automatiquement et est auditee")
+    void soumission_admin_approuve_automatiquement() {
+        Projet projet = projet(70L, StatutProjet.BROUILLON, null, admin);
+        projet.setVisibilite(VisibiliteProjet.PUBLIC);
+        when(projetRepository.findById(70L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(projetRepository.save(projet)).thenReturn(projet);
+
+        ProjetResponse response = projetService.soumettreProjet(70L, admin.getEmail());
+
+        assertThat(response.getStatut()).isEqualTo(StatutProjet.APPROUVE);
+        assertThat(response.getDateValidation()).isNotNull();
+        verify(auditLogService).logStatusChange(
+                org.mockito.ArgumentMatchers.same(admin),
+                org.mockito.ArgumentMatchers.eq("PROJECT_ADMIN_AUTO_APPROVED"),
+                org.mockito.ArgumentMatchers.eq("PROJECT"),
+                org.mockito.ArgumentMatchers.eq(70L),
+                org.mockito.ArgumentMatchers.eq("Projet test"),
+                org.mockito.ArgumentMatchers.eq("BROUILLON"),
+                org.mockito.ArgumentMatchers.eq("APPROUVE"),
+                org.mockito.ArgumentMatchers.contains("automatiquement"),
+                org.mockito.ArgumentMatchers.contains("\"porteurId\":1"));
+        verify(notificationService, never()).creer(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Une correction referent resoumise revient au referent responsable uniquement")
+    void correction_referent_resoumise_notifie_referent_responsable() {
+        Projet projet = projet(73L, StatutProjet.A_CORRIGER_REFERENT, groupe, membre);
+        when(projetRepository.findById(73L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        when(projetRepository.save(projet)).thenReturn(projet);
+
+        ProjetResponse response = projetService.soumettreProjet(73L, membre.getEmail());
+
+        assertThat(response.getStatut()).isEqualTo(StatutProjet.SOUMIS);
+        verify(notificationService).creer(org.mockito.ArgumentMatchers.same(referent), any(), any(), any(), any());
+        verify(userRepository, never()).findByRoleAndActifTrue(Role.ADMIN);
+    }
+
+    @Test
+    @DisplayName("Une correction admin resoumise notifie la file ADMIN et le referent validateur sans doublon")
+    void correction_admin_resoumise_notifie_admins_et_referent_validateur() {
+        Projet projet = projet(74L, StatutProjet.A_CORRIGER_ADMIN, groupe, membre);
+        projet.setReferentValidateur(referent);
+        when(projetRepository.findById(74L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        when(userRepository.findByRoleAndActifTrue(Role.ADMIN)).thenReturn(List.of(admin));
+        when(projetRepository.save(projet)).thenReturn(projet);
+
+        ProjetResponse response = projetService.soumettreProjet(74L, membre.getEmail());
+
+        assertThat(response.getStatut()).isEqualTo(StatutProjet.VALIDE_REFERENT);
+        verify(notificationService).creer(org.mockito.ArgumentMatchers.same(admin), any(), any(), any(), any());
+        verify(notificationService).creer(org.mockito.ArgumentMatchers.same(referent), any(), any(), any(), any());
+        verifyNoMoreInteractions(notificationService);
+    }
+
+    @Test
+    @DisplayName("Une transition generique interdite ne sauvegarde, n'audite et ne notifie rien")
+    void transition_generique_interdite_sans_effet() {
+        Projet projet = projet(71L, StatutProjet.BROUILLON, groupe, membre);
+        when(projetRepository.findById(71L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+
+        assertThatThrownBy(() -> projetService.changerStatut(71L, StatutProjet.TERMINE, admin.getEmail()))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Transition de statut interdite");
+
+        verify(projetRepository, never()).save(any());
+        verifyNoInteractions(notificationService, auditLogService);
+        assertThat(projet.getStatut()).isEqualTo(StatutProjet.BROUILLON);
+    }
+
+    @Test
+    @DisplayName("Le cycle d'execution ADMIN impose APPROUVE puis EN_COURS puis TERMINE puis ARCHIVE")
+    void cycle_execution_admin_est_strict() {
+        Projet projet = projet(72L, StatutProjet.APPROUVE, groupe, membre);
+        when(projetRepository.findById(72L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(projetRepository.save(projet)).thenReturn(projet);
+
+        assertThat(projetService.demarrerProjet(72L, admin.getEmail()).getStatut()).isEqualTo(StatutProjet.EN_COURS);
+        assertThat(projetService.terminerProjet(72L, "Bilan final", admin.getEmail()).getStatut()).isEqualTo(StatutProjet.TERMINE);
+        assertThat(projetService.archiverProjet(72L, admin.getEmail()).getStatut()).isEqualTo(StatutProjet.ARCHIVE);
+        assertThat(projet.getBilan()).isEqualTo("Bilan final");
+    }
+
+    @Test
+    @DisplayName("Les demandes de correction referent et admin suivent uniquement leurs statuts sources")
+    void corrections_referent_et_admin_sont_strictes() {
+        Projet soumis = projet(80L, StatutProjet.SOUMIS, groupe, membre);
+        Projet valide = projet(81L, StatutProjet.VALIDE_REFERENT, groupe, membre);
+        when(projetRepository.findById(80L)).thenReturn(Optional.of(soumis));
+        when(projetRepository.findById(81L)).thenReturn(Optional.of(valide));
+        when(userRepository.findByEmail(referent.getEmail())).thenReturn(Optional.of(referent));
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(projetRepository.save(soumis)).thenReturn(soumis);
+        when(projetRepository.save(valide)).thenReturn(valide);
+
+        assertThat(projetService.demanderCorrectionReferent(80L, "Preciser les objectifs", referent.getEmail()).getStatut())
+                .isEqualTo(StatutProjet.A_CORRIGER_REFERENT);
+        assertThat(projetService.demanderCorrectionAdmin(81L, "Preciser le budget", admin.getEmail()).getStatut())
+                .isEqualTo(StatutProjet.A_CORRIGER_ADMIN);
+    }
+
+    @Test
+    @DisplayName("Annulation et archivage respectent les roles et les etats terminaux")
+    void annulation_et_archivage_sont_stricts() {
+        Projet brouillon = projet(82L, StatutProjet.BROUILLON, groupe, membre);
+        Projet approuve = projet(83L, StatutProjet.APPROUVE, groupe, membre);
+        Projet annule = projet(84L, StatutProjet.ANNULE, groupe, membre);
+        when(projetRepository.findById(82L)).thenReturn(Optional.of(brouillon));
+        when(projetRepository.findById(83L)).thenReturn(Optional.of(approuve));
+        when(projetRepository.findById(84L)).thenReturn(Optional.of(annule));
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(projetRepository.save(brouillon)).thenReturn(brouillon);
+        when(projetRepository.save(annule)).thenReturn(annule);
+
+        assertThat(projetService.annulerProjet(82L, null, membre.getEmail()).getStatut()).isEqualTo(StatutProjet.ANNULE);
+        assertThatThrownBy(() -> projetService.annulerProjet(83L, "motif", membre.getEmail()))
+                .isInstanceOf(AccessDeniedException.class);
+        assertThat(projetService.archiverProjet(84L, admin.getEmail()).getStatut()).isEqualTo(StatutProjet.ARCHIVE);
+        assertThatThrownBy(() -> projetService.archiverProjet(83L, admin.getEmail()))
+                .isInstanceOf(RuntimeException.class).hasMessageContaining("archive");
+    }
+
+    @Test
+    @DisplayName("Une decision admin refusee ne sauvegarde, n'audite et ne notifie rien")
+    void decision_admin_refusee_est_sans_effet() {
+        Projet soumis = projet(85L, StatutProjet.SOUMIS, groupe, membre);
+        when(projetRepository.findById(85L)).thenReturn(Optional.of(soumis));
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+
+        assertThatThrownBy(() -> projetService.demanderCorrectionAdmin(85L, "Correction", admin.getEmail()))
+                .isInstanceOf(RuntimeException.class);
+        verify(projetRepository, never()).save(any());
+        verifyNoInteractions(notificationService, auditLogService);
+    }
+
+    @Test
+    @DisplayName("Les textes de transition sont limites a 500 caracteres au service")
+    void texte_transition_est_limite_au_service() {
+        Projet valide = projet(86L, StatutProjet.VALIDE_REFERENT, groupe, membre);
+        when(projetRepository.findById(86L)).thenReturn(Optional.of(valide));
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+
+        assertThatThrownBy(() -> projetService.demanderCorrectionAdmin(86L, "x".repeat(501), admin.getEmail()))
+                .isInstanceOf(RuntimeException.class).hasMessageContaining("500");
+        verify(projetRepository, never()).save(any());
+        verifyNoInteractions(notificationService, auditLogService);
     }
 
     private ProjetRequest request() {

@@ -64,6 +64,14 @@ public class ProjetController {
         return ResponseEntity.ok(projetService.projetsSoumis());
     }
 
+    @GetMapping("/admin/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProjetAdminResponse> getProjetAdmin(
+            @PathVariable Long id,
+            Authentication authentication) {
+        return ResponseEntity.ok(projetService.getProjetAdmin(id, authentication.getName()));
+    }
+
     @GetMapping("/referent/mes-groupes")
     @PreAuthorize("hasRole('REFERENT')")
     public ResponseEntity<List<ProjetResponse>> projetsGroupesReferent(Authentication authentication) {
@@ -83,18 +91,28 @@ public class ProjetController {
     @PreAuthorize("hasRole('REFERENT')")
     public ResponseEntity<ProjetResponse> validerProjetReferent(
             @PathVariable Long id,
-            @RequestParam(required = false) String commentaire,
+            @RequestBody(required = false) ProjetTransitionRequest request,
             Authentication authentication) {
-        return ResponseEntity.ok(projetService.validerProjetReferent(id, commentaire, authentication.getName()));
+        return ResponseEntity.ok(projetService.validerProjetReferent(
+                id, request == null ? null : request.texte(), authentication.getName()));
+    }
+
+    @PatchMapping("/referent/{id}/correction")
+    @PreAuthorize("hasRole('REFERENT')")
+    public ResponseEntity<ProjetResponse> demanderCorrectionReferent(
+            @PathVariable Long id,
+            @Valid @RequestBody ProjetTransitionRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(projetService.demanderCorrectionReferent(id, request.texte(), authentication.getName()));
     }
 
     @PatchMapping("/referent/{id}/refuser")
     @PreAuthorize("hasRole('REFERENT')")
     public ResponseEntity<ProjetResponse> refuserProjetReferent(
             @PathVariable Long id,
-            @RequestParam(required = false) String commentaire,
+            @Valid @RequestBody ProjetTransitionRequest request,
             Authentication authentication) {
-        return ResponseEntity.ok(projetService.refuserProjetReferent(id, commentaire, authentication.getName()));
+        return ResponseEntity.ok(projetService.refuserProjetReferent(id, request.texte(), authentication.getName()));
     }
 
     // ─── GET /api/projets/{id} — Détail d'un projet ──────────────────────────
@@ -143,9 +161,50 @@ public class ProjetController {
     public ResponseEntity<ProjetResponse> validerProjet(
             @PathVariable Long id,
             @RequestParam boolean approuver,
-            @RequestParam(required = false) String commentaire,
+            @RequestBody(required = false) ProjetTransitionRequest request,
             Authentication authentication) {
-        return ResponseEntity.ok(projetService.validerProjet(id, approuver, commentaire, authentication.getName()));
+        return ResponseEntity.ok(projetService.validerProjet(
+                id, approuver, request == null ? null : request.texte(), authentication.getName()));
+    }
+
+    @PatchMapping("/{id}/correction-admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProjetResponse> demanderCorrectionAdmin(
+            @PathVariable Long id,
+            @Valid @RequestBody ProjetTransitionRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(projetService.demanderCorrectionAdmin(id, request.texte(), authentication.getName()));
+    }
+
+    @PatchMapping("/{id}/demarrer")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProjetResponse> demarrerProjet(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(projetService.demarrerProjet(id, authentication.getName()));
+    }
+
+    @PatchMapping("/{id}/terminer")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProjetResponse> terminerProjet(
+            @PathVariable Long id,
+            @Valid @RequestBody ProjetTransitionRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(projetService.terminerProjet(id, request.texte(), authentication.getName()));
+    }
+
+    @PatchMapping("/{id}/annuler")
+    @PreAuthorize("hasAnyRole('MEMBRE', 'REFERENT', 'ADMIN')")
+    public ResponseEntity<ProjetResponse> annulerProjet(
+            @PathVariable Long id,
+            @RequestBody(required = false) ProjetTransitionRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(projetService.annulerProjet(
+                id, request == null ? null : request.texte(), authentication.getName()));
+    }
+
+    @PatchMapping("/{id}/archiver")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProjetResponse> archiverProjet(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(projetService.archiverProjet(id, authentication.getName()));
     }
 
     // ─── PATCH /api/projets/{id}/statut — Changer le statut (A10) ────────────

@@ -326,6 +326,8 @@
     "loading": "Projecten laden...",
     "error_submit": "Fout bij het indienen van het project.",
     "submit_project": "Project indienen",
+    "submit_draft": "Ontwerp indienen",
+    "draftCreated": "Ontwerp opgeslagen. Dien het in wanneer u klaar bent.",
     "description_soon": "Beschrijving volgt binnenkort.",
     "fallback_image": "BX-Connect-project",
     "group_label": "Groep: {{group}}",
@@ -336,6 +338,7 @@
     "noGroup": "Verenigingsproject zonder groep",
     "participationSoon": "Deelname aanvragen wordt in een volgende fase beschikbaar.",
     "successSubmitted": "Project aangemaakt en ter goedkeuring ingediend.",
+    "submissionResult": { "SOUMIS": "Project ingediend bij de verantwoordelijke referent.", "VALIDE_REFERENT": "Project teruggestuurd naar de administratieve beslissingswachtrij.", "APPROUVE": "Project automatisch goedgekeurd volgens de ADMIN-workflow." },
     "type": "Projecttype",
     "typeGroup": "Groepsproject",
     "typeInstitutional": "Verenigingsproject",
@@ -806,6 +809,40 @@
     "errorProjectUpdate": "Fout bij het bijwerken van het project.",
     "confirmDeleteProject": "Project \"{{title}}\" definitief verwijderen?",
     "projectDeleted": "Project verwijderd.",
+    "projectGroupJustification": "Motivering voor de koppeling aan de groep",
+    "confirmFinalApprove": "De definitieve goedkeuring van dit project bevestigen?",
+    "confirmFinalReject": "De definitieve afwijzing van dit project bevestigen?",
+    "projectRejectReasonPrompt": "Geef de precieze reden voor de afwijzing op.",
+    "projectCorrectionPrompt": "Geef aan welke correcties de indiener moet uitvoeren.",
+    "projectCorrectionRequested": "Het correctieverzoek is verzonden.",
+    "requestProjectCorrection": "Correctie vragen",
+    "projectCompletionReportPrompt": "Voer het verplichte projectverslag in.",
+    "projectsToValidateDescription": "Projecten die door een referent zijn gevalideerd en op een administratieve beslissing wachten.",
+    "noProjectsToValidate": "Er wacht geen project op een administratieve beslissing.",
+    "projectCommand": {
+      "required": "Deze tekst is verplicht.", "tooLong": "De tekst mag niet langer zijn dan 500 tekens.", "characters": "{{count}} / 500 tekens",
+      "rejeter": { "title": "Project afwijzen", "label": "Reden van afwijzing", "help": "Leg de indiener duidelijk uit waarom deze beslissing definitief is." },
+      "correction": { "title": "Correctie vragen", "label": "Gevraagde correcties", "help": "Geef precies aan wat de indiener vóór een nieuwe indiening moet corrigeren." },
+      "terminer": { "title": "Project afronden", "label": "Eindverslag", "help": "Vat de projectresultaten samen vóór de afsluiting." }
+    },
+    "projectActions": {
+      "soumettre": "Indienen",
+      "demarrer": "Starten",
+      "terminer": "Voltooien",
+      "archiver": "Archiveren",
+      "confirm": {
+        "soumettre": "Dit ontwerp indienen?",
+        "demarrer": "Dit goedgekeurde project starten?",
+        "terminer": "Dit project voltooien met het ingevoerde verslag?",
+        "archiver": "Dit project definitief archiveren?"
+      },
+      "success": {
+        "soumettre": "Project ingediend volgens de workflow.",
+        "demarrer": "Project gestart.",
+        "terminer": "Project voltooid.",
+        "archiver": "Project gearchiveerd."
+      }
+    },
     "searchProjectPlaceholder": "Zoeken op titel...",
     "noProjectFound": "Geen project gevonden.",
     "budgetLabel": "Budget:",
@@ -1168,7 +1205,10 @@
     "EN_ATTENTE_PAIEMENT": "Betaling in behandeling",
     "PAYEE": "Betaald",
     "VALIDE_REFERENT": "Goedgekeurd referent",
-    "REFUSE_REFERENT": "Geweigerd referent"
+    "REFUSE_REFERENT": "Geweigerd referent",
+    "A_CORRIGER_REFERENT": "Te corrigeren na beoordeling door referent",
+    "A_CORRIGER_ADMIN": "Te corrigeren na beslissing van beheerder",
+    "ANNULE": "Geannuleerd"
   },
   "users": {
     "errorLoad": "Kan gebruikers niet laden.",
@@ -1333,6 +1373,9 @@
       "TOUS": "Alle"
     },
     "validateForAdmin": "Doorsturen naar admin",
+    "requestProjectCorrection": "Correctie vragen",
+    "projectCorrectionRequested": "Correctieverzoek naar de indiener verzonden.",
+    "projectDecisionCommentRequired": "Een duidelijke opmerking is verplicht.",
     "refuseWithComment": "Weigeren",
     "referentComment": "Commentaar referent",
     "referentCommentPlaceholder": "Licht je beslissing kort toe indien nodig.",

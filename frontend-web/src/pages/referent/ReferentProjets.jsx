@@ -49,11 +49,16 @@ export default function ReferentProjets() {
   const fetchProjets = useCallback(async () => {
     setLoading(true)
     try {
-      const [projetsRes, groupesRes] = await Promise.all([
+      const [projetsRes, groupesRes, propresRes] = await Promise.all([
         api.get('/projets/referent/mes-groupes'),
         api.get('/referent/groupes'),
+        api.get('/projets/mes-projets'),
       ])
-      setProjets(Array.isArray(projetsRes.data) ? projetsRes.data : [])
+      const propres = new Set((propresRes.data || []).map(projet => String(projet.id)))
+      setProjets((Array.isArray(projetsRes.data) ? projetsRes.data : []).map(projet => ({
+        ...projet,
+        estPorteurConnecte: propres.has(String(projet.id)),
+      })))
       setGroupes(Array.isArray(groupesRes.data) ? groupesRes.data : [])
       setError('')
     } catch {
@@ -110,9 +115,8 @@ export default function ReferentProjets() {
         setProjets(prev => prev.map(projet => projet.id === editingProject.id ? response.data : projet))
         setMessage(t('referent.projectUpdated', { defaultValue: 'Projet mis à jour.' }))
       } else {
-        const response = await api.post('/projets', payload)
-        await api.patch(`/projets/${response.data.id}/soumettre`)
-        setMessage(t('projects.successSubmitted'))
+        await api.post('/projets', payload)
+        setMessage(t('projects.draftCreated'))
         await fetchProjets()
       }
       resetForm()
@@ -136,6 +140,19 @@ export default function ReferentProjets() {
     setDecisionComment(projet.commentaireReferent || '')
   }
 
+  const submitDraft = async projet => {
+    try {
+      const response = await api.patch(`/projets/${projet.id}/soumettre`)
+      setProjets(current => current.map(item => item.id === projet.id
+        ? { ...response.data, estPorteurConnecte: true }
+        : item))
+      setMessage(t(`projects.submissionResult.${response.data.statut}`))
+      setError('')
+    } catch (requestError) {
+      setError(userFriendlyError(requestError, t('projects.error_submit')))
+    }
+  }
+
   const closeDecision = () => {
     setDecisionProject(null)
     setDecisionAction('')
@@ -145,17 +162,23 @@ export default function ReferentProjets() {
   const submitDecision = async event => {
     event.preventDefault()
     if (!decisionProject || !decisionAction) return
+    if (decisionAction !== 'valider' && !decisionComment.trim()) {
+      setError(t('referent.projectDecisionCommentRequired'))
+      return
+    }
     setDecisionLoading(true)
     setError('')
     setMessage('')
-    const encodedComment = encodeURIComponent(decisionComment.trim())
-    const endpoint = `/projets/referent/${decisionProject.id}/${decisionAction}${encodedComment ? `?commentaire=${encodedComment}` : ''}`
+    const endpoint = `/projets/referent/${decisionProject.id}/${decisionAction}`
     try {
-      const response = await api.patch(endpoint)
+      const texte = decisionComment.trim()
+      const response = await api.patch(endpoint, texte ? { texte } : undefined)
       setProjets(current => current.map(projet => projet.id === decisionProject.id ? response.data : projet))
       setMessage(decisionAction === 'valider'
         ? t('referent.projectValidatedForAdmin')
-        : t('referent.projectRejectedByReferent'))
+        : decisionAction === 'correction'
+          ? t('referent.projectCorrectionRequested')
+          : t('referent.projectRejectedByReferent'))
       closeDecision()
     } catch (requestError) {
       setError(requestError?.response?.status === 403
@@ -302,7 +325,7 @@ export default function ReferentProjets() {
         {decisionProject && (
           <SectionCard
             className="mb-6 border-teal-100"
-            title={decisionAction === 'valider' ? t('referent.validateForAdmin') : t('referent.refuseWithComment')}
+            title={decisionAction === 'valider' ? t('referent.validateForAdmin') : decisionAction === 'correction' ? t('referent.requestProjectCorrection') : t('referent.refuseWithComment')}
             subtitle={decisionProject.titre}
           >
             <form onSubmit={submitDecision} className="space-y-4">
@@ -328,10 +351,10 @@ export default function ReferentProjets() {
                   type="submit"
                   disabled={decisionLoading}
                   className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-60 ${
-                    decisionAction === 'valider' ? 'bg-teal-700 hover:bg-teal-600' : 'bg-red-700 hover:bg-red-600'
+                    decisionAction === 'valider' ? 'bg-teal-700 hover:bg-teal-600' : decisionAction === 'correction' ? 'bg-amber-600 hover:bg-amber-500' : 'bg-red-700 hover:bg-red-600'
                   }`}
                 >
-                  {decisionLoading ? t('common.saving') : decisionAction === 'valider' ? t('referent.validateForAdmin') : t('referent.refuseWithComment')}
+                  {decisionLoading ? t('common.saving') : decisionAction === 'valider' ? t('referent.validateForAdmin') : decisionAction === 'correction' ? t('referent.requestProjectCorrection') : t('referent.refuseWithComment')}
                 </button>
               </div>
             </form>
@@ -432,6 +455,9 @@ export default function ReferentProjets() {
                       <AppIcon name="CheckCircle" className="h-4 w-4" />
                       {t('referent.validateForAdmin')}
                     </button>
+                    <button type="button" onClick={() => openDecision(projet, 'correction')} className="inline-flex items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100">
+                      {t('referent.requestProjectCorrection')}
+                    </button>
                     <button
                       type="button"
                       onClick={() => openDecision(projet, 'refuser')}
@@ -442,7 +468,12 @@ export default function ReferentProjets() {
                     </button>
                   </div>
                 )}
-                {groupesModifiables.has(Number(projet.groupeId)) && (
+                {projet.statut === 'BROUILLON' && projet.estPorteurConnecte && (
+                  <button type="button" onClick={() => submitDraft(projet)} className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-teal-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-teal-600">
+                    {t('projects.submit_draft')}
+                  </button>
+                )}
+                {['BROUILLON', 'A_CORRIGER_REFERENT', 'A_CORRIGER_ADMIN'].includes(projet.statut) && projet.estPorteurConnecte && (
                   <button
                     type="button"
                     onClick={() => openEditForm(projet)}

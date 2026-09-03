@@ -47,6 +47,15 @@ public class Projet {
     @Column(length = 500)
     private String commentaireReferent;
 
+    @Column(length = 500)
+    private String justificationAdmin;
+
+    @Column(columnDefinition = "TEXT")
+    private String bilan;
+
+    @Version
+    private Long version;
+
     private LocalDateTime dateValidationReferent;
     private LocalDateTime dateRefusReferent;
 
@@ -116,6 +125,15 @@ public class Projet {
 
     public String getCommentaireReferent() { return commentaireReferent; }
     public void setCommentaireReferent(String commentaireReferent) { this.commentaireReferent = commentaireReferent; }
+
+    public String getJustificationAdmin() { return justificationAdmin; }
+    public void setJustificationAdmin(String justificationAdmin) { this.justificationAdmin = justificationAdmin; }
+
+    public String getBilan() { return bilan; }
+    public void setBilan(String bilan) { this.bilan = bilan; }
+
+    public Long getVersion() { return version; }
+    public void setVersion(Long version) { this.version = version; }
 
     public LocalDateTime getDateValidationReferent() { return dateValidationReferent; }
     public void setDateValidationReferent(LocalDateTime dateValidationReferent) { this.dateValidationReferent = dateValidationReferent; }

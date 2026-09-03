@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../../api/axios';
 import Navbar from '../../components/Navbar';
@@ -11,19 +12,22 @@ import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 
-const STATUTS = ['BROUILLON', 'SOUMIS', 'VALIDE_REFERENT', 'REFUSE_REFERENT', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE', 'ARCHIVE'];
 const VISIBILITES = ['GROUPE', 'COMMUNAUTE', 'PARTENAIRES', 'PUBLIC'];
-const emptyForm = { titre: '', description: '', budgetDemande: '', groupeId: '', visibilite: 'PUBLIC' };
+const STATUTS = ['BROUILLON', 'SOUMIS', 'A_CORRIGER_REFERENT', 'VALIDE_REFERENT', 'A_CORRIGER_ADMIN', 'REFUSE_REFERENT', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE', 'ANNULE', 'ARCHIVE'];
+const emptyForm = { titre: '', description: '', budgetDemande: '', groupeId: '', justificationAdmin: '', visibilite: 'PUBLIC' };
 
 export default function AdminProjets() {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
   const [projets, setProjets] = useState([]);
   const [groupes, setGroupes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [recherche, setRecherche] = useState('');
-  const [filtrePilotage, setFiltrePilotage] = useState('tous');
+  const [filtrePilotage, setFiltrePilotage] = useState(
+    searchParams.get('vue') === 'a-valider' ? 'a-valider' : 'tous',
+  );
   const [statutTechnique, setStatutTechnique] = useState('');
   const [filtreGroupe, setFiltreGroupe] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -31,11 +35,37 @@ export default function AdminProjets() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [command, setCommand] = useState(null);
+  const [commandText, setCommandText] = useState('');
+  const [commandError, setCommandError] = useState('');
+  const [commandSubmitting, setCommandSubmitting] = useState(false);
+  const commandInputRef = useRef(null);
+  const commandOpenerRef = useRef(null);
+  const validationView = searchParams.get('vue') === 'a-valider';
+
+  useEffect(() => {
+    if (!command) return undefined;
+    commandInputRef.current?.focus();
+    const handleEscape = event => {
+      if (event.key === 'Escape' && !commandSubmitting) {
+        setCommand(null);
+        setCommandText('');
+        setCommandError('');
+        requestAnimationFrame(() => commandOpenerRef.current?.focus());
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [command, commandSubmitting]);
 
   const fetchProjets = useCallback(async () => {
     try {
-      const res = await api.get('/projets/admin/tous');
-      setProjets(res.data);
+      const [res, ownRes] = await Promise.all([
+        api.get('/projets/admin/tous'),
+        api.get('/projets/mes-projets'),
+      ]);
+      const ownIds = new Set((ownRes.data || []).map(projet => String(projet.id)));
+      setProjets((res.data || []).map(projet => ({ ...projet, estPorteurConnecte: ownIds.has(String(projet.id)) })));
     } catch (err) {
       setError(userFriendlyError(err, t('admin.error_load')));
     } finally {
@@ -64,16 +94,39 @@ export default function AdminProjets() {
     setShowForm(true);
   };
 
-  const modifierProjet = (projet) => {
+  const chargerDetailAdmin = async projet => {
+    const response = await api.get(`/projets/admin/${projet.id}`);
+    return { ...response.data.projet, justificationAdmin: response.data.justificationAdmin, bilan: response.data.bilan };
+  };
+
+  const ouvrirDetailProjet = async projet => {
     setMessage('');
     setError('');
+    try {
+      setSelectedProject(await chargerDetailAdmin(projet));
+    } catch (err) {
+      setError(userFriendlyError(err, t('admin.error_load')));
+    }
+  };
+
+  const modifierProjet = async (projet) => {
+    setMessage('');
+    setError('');
+    let projetAdmin;
+    try {
+      projetAdmin = await chargerDetailAdmin(projet);
+    } catch (err) {
+      setError(userFriendlyError(err, t('admin.error_load')));
+      return;
+    }
     setEditingId(projet.id);
     setForm({
-      titre: projet.titre || '',
-      description: projet.description || '',
-      budgetDemande: projet.budgetDemande ?? '',
-      groupeId: projet.groupeId ?? '',
-      visibilite: projet.visibilite || 'GROUPE',
+      titre: projetAdmin.titre || '',
+      description: projetAdmin.description || '',
+      budgetDemande: projetAdmin.budgetDemande ?? '',
+      groupeId: projetAdmin.groupeId ?? '',
+      justificationAdmin: projetAdmin.justificationAdmin || '',
+      visibilite: projetAdmin.visibilite || 'GROUPE',
     });
     setShowForm(true);
   };
@@ -107,15 +160,19 @@ export default function AdminProjets() {
     }
   };
 
-  const changerStatut = async (id, statut) => {
-    if (!confirmSensitiveAction(t('admin.confirmAdvancedStatusChange', {
-      status: adminProjectStatusLabel(statut, t),
-    }))) return;
+  const executerAction = async (projet, action) => {
+    if (action === 'terminer') {
+      openCommand(projet, 'terminer');
+      return;
+    }
+    if (!confirmSensitiveAction(t(`admin.projectActions.confirm.${action}`))) return;
     try {
-      const res = await api.patch(`/projets/${id}/statut?statut=${statut}`);
-      setProjets(prev => prev.map(p => p.id === id ? res.data : p));
-      setSelectedProject(current => current?.id === id ? res.data : current);
-      setMessage(t('admin.statusUpdatedWithValue', { status: adminProjectStatusLabel(statut, t) }));
+      const res = await api.patch(`/projets/${projet.id}/${action}`);
+      setProjets(prev => prev.map(p => p.id === projet.id ? res.data : p));
+      setSelectedProject(current => current?.id === projet.id ? res.data : current);
+      setMessage(action === 'soumettre'
+        ? t(`projects.submissionResult.${res.data.statut}`)
+        : t(`admin.projectActions.success.${action}`));
       setError('');
     } catch (err) {
       setError(userFriendlyError(err, t('admin.errorStatusChange')));
@@ -123,14 +180,74 @@ export default function AdminProjets() {
   };
 
   const deciderProjet = async (projet, approuver) => {
+    if (!approuver) {
+      openCommand(projet, 'rejeter');
+      return;
+    }
+    if (!confirmSensitiveAction(t('admin.confirmFinalApprove'))) return;
     try {
-      const res = await api.patch(`/projets/${projet.id}/valider?approuver=${approuver}`);
+      const res = await api.patch(`/projets/${projet.id}/valider?approuver=true`);
       setProjets(prev => prev.map(p => p.id === projet.id ? res.data : p));
       setSelectedProject(current => current?.id === projet.id ? res.data : current);
-      setMessage(approuver ? t('admin.projectFinallyApproved') : t('admin.projectFinallyRejected'));
+      setMessage(t('admin.projectFinallyApproved'));
       setError('');
     } catch (err) {
       setError(userFriendlyError(err, t('admin.errorStatusChange')));
+    }
+  };
+
+  const openCommand = (projet, type) => {
+    commandOpenerRef.current = document.activeElement;
+    setCommand({ projet, type });
+    setCommandText('');
+    setCommandError('');
+  };
+
+  const closeCommand = () => {
+    if (commandSubmitting) return;
+    setCommand(null);
+    setCommandText('');
+    setCommandError('');
+    requestAnimationFrame(() => commandOpenerRef.current?.focus());
+  };
+
+  const submitCommand = async event => {
+    event.preventDefault();
+    const texte = commandText.trim();
+    if (!texte) {
+      setCommandError(t('admin.projectCommand.required'));
+      commandInputRef.current?.focus();
+      return;
+    }
+    if (texte.length > 500) {
+      setCommandError(t('admin.projectCommand.tooLong'));
+      return;
+    }
+    setCommandSubmitting(true);
+    setCommandError('');
+    try {
+      const { projet, type } = command;
+      const url = type === 'rejeter'
+        ? `/projets/${projet.id}/valider?approuver=false`
+        : type === 'correction'
+          ? `/projets/${projet.id}/correction-admin`
+          : `/projets/${projet.id}/terminer`;
+      const res = await api.patch(url, { texte });
+      setProjets(prev => prev.map(p => p.id === projet.id ? res.data : p));
+      setSelectedProject(current => current?.id === projet.id ? res.data : current);
+      setMessage(type === 'rejeter'
+        ? t('admin.projectFinallyRejected')
+        : type === 'correction'
+          ? t('admin.projectCorrectionRequested')
+          : t('admin.projectActions.success.terminer'));
+      setError('');
+      setCommand(null);
+      setCommandText('');
+      requestAnimationFrame(() => commandOpenerRef.current?.focus());
+    } catch (err) {
+      setCommandError(userFriendlyError(err, t('admin.errorStatusChange')));
+    } finally {
+      setCommandSubmitting(false);
     }
   };
 
@@ -150,7 +267,9 @@ export default function AdminProjets() {
   const projetsFiltres = projets.filter(p => {
     const texte = `${p.titre || ''} ${p.description || ''} ${p.porteurPrenom || ''} ${p.porteurNom || ''}`.toLowerCase();
     const matchRecherche = texte.includes(recherche.toLowerCase());
-    const matchStatut = statutTechnique ? p.statut === statutTechnique : matchesProjectPilotageFilter(p, filtrePilotage);
+    const matchStatut = validationView
+      ? p.statut === 'VALIDE_REFERENT'
+      : statutTechnique ? p.statut === statutTechnique : matchesProjectPilotageFilter(p, filtrePilotage);
     const matchGroupe = filtreGroupe ? p.groupeNom === filtreGroupe : true;
     return matchRecherche && matchStatut && matchGroupe;
   });
@@ -163,9 +282,9 @@ export default function AdminProjets() {
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
         <PageHeader
           eyebrow={t('nav.projects')}
-          title={t('admin.projects_title')}
-          description={t('statistics.projectsTotal', { count: projets.length })}
-          action={(
+          title={validationView ? t('admin.projectsToValidate') : t('admin.projects_title')}
+          description={validationView ? t('admin.projectsToValidateDescription') : t('statistics.projectsTotal', { count: projets.length })}
+          action={!validationView ? (
             <button
               type="button"
               onClick={showForm ? resetForm : openCreateForm}
@@ -174,7 +293,7 @@ export default function AdminProjets() {
               <AppIcon name={showForm ? 'XCircle' : 'PlusCircle'} className="h-4 w-4" />
               {showForm ? t('common.cancel') : t('admin.createProject')}
             </button>
-          )}
+          ) : null}
         />
 
         {message && (
@@ -184,7 +303,7 @@ export default function AdminProjets() {
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>
         )}
 
-        {!loading && projets.length > 0 && (
+        {!validationView && !loading && projets.length > 0 && (
           <p className="mb-3 rounded-xl border border-slate-100 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm">
             {t('admin.projectsPilotSummary', {
               total: stats.total,
@@ -196,7 +315,7 @@ export default function AdminProjets() {
           </p>
         )}
 
-        {showForm && (
+        {!validationView && showForm && (
           <form onSubmit={enregistrerProjet} className="mb-4 grid rounded-2xl border border-slate-100 bg-white p-4 shadow-sm md:grid-cols-2 gap-3">
             <div className="md:col-span-2 flex items-center justify-between gap-3">
               <h2 className="text-lg font-bold text-blue-900">
@@ -221,6 +340,12 @@ export default function AdminProjets() {
               options={groupes.map(groupe => ({ value: groupe.id, label: groupe.nom }))}
               emptyLabel={t('projects.noGroup')}
             />
+            {form.groupeId && (
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-sm font-semibold text-gray-700">{t('admin.projectGroupJustification')}</label>
+                <textarea required maxLength={500} value={form.justificationAdmin} onChange={event => setForm({ ...form, justificationAdmin: event.target.value })} rows={2} className="w-full resize-none rounded-xl border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              </div>
+            )}
             <Select
               label={t('projects.visibility')}
               value={form.visibilite}
@@ -249,7 +374,7 @@ export default function AdminProjets() {
           </form>
         )}
 
-        <section className="mb-4 rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
+        {!validationView && <section className="mb-4 rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
           <div className="mb-3 flex flex-wrap gap-2">
             {projectPilotageFilters(t).map(filter => (
               <button
@@ -295,7 +420,7 @@ export default function AdminProjets() {
               ))}
             </select>
           </div>
-        </section>
+        </section>}
 
         {loading ? (
           <LoadingState label={t('common.loading')} />
@@ -307,7 +432,7 @@ export default function AdminProjets() {
             action={fetchProjets}
           />
         ) : projetsFiltres.length === 0 ? (
-          <EmptyState icon="Search" title={t('admin.noProjectFound')} />
+          <EmptyState icon="Search" title={validationView ? t('admin.noProjectsToValidate') : t('admin.noProjectFound')} />
         ) : (
           <div className="space-y-3">
             {projetsFiltres.map(p => (
@@ -319,7 +444,7 @@ export default function AdminProjets() {
                 <div className="flex gap-3">
                   <button
                     type="button"
-                    onClick={() => setSelectedProject(p)}
+                    onClick={() => ouvrirDetailProjet(p)}
                     className="hidden shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50 text-left transition hover:opacity-90 sm:block"
                     aria-label={t('admin.openProjectSheet', { title: p.titre })}
                   >
@@ -331,7 +456,7 @@ export default function AdminProjets() {
                       <div className="min-w-0">
                         <button
                           type="button"
-                          onClick={() => setSelectedProject(p)}
+                          onClick={() => ouvrirDetailProjet(p)}
                           className="block text-left text-base font-black leading-tight text-blue-950 transition hover:text-blue-700"
                         >
                           {p.titre}
@@ -358,7 +483,7 @@ export default function AdminProjets() {
                     )}
 
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      {['VALIDE_REFERENT', 'SOUMIS'].includes(p.statut) && (
+                      {p.statut === 'VALIDE_REFERENT' && (
                         <>
                           <button
                             type="button"
@@ -376,49 +501,22 @@ export default function AdminProjets() {
                             <AppIcon name="XCircle" className="h-3.5 w-3.5" />
                             {t('admin.finalReject')}
                           </button>
+                          <button type="button" onClick={() => openCommand(p, 'correction')} className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 transition hover:bg-amber-100">
+                            {t('admin.requestProjectCorrection')}
+                          </button>
                         </>
                       )}
-                      <button
-                        onClick={() => modifierProjet(p)}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-100 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-200"
-                      >
-                        <AppIcon name="Edit" className="h-3.5 w-3.5" />
-                        {t('common.edit')}
-                      </button>
+                      {p.statut === 'BROUILLON' && <button onClick={() => modifierProjet(p)} className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-100 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-200"><AppIcon name="Edit" className="h-3.5 w-3.5" />{t('common.edit')}</button>}
+                      {projectActionForStatus(p.statut) && <button type="button" onClick={() => executerAction(p, projectActionForStatus(p.statut))} className="inline-flex items-center justify-center rounded-lg bg-blue-700 px-3 py-2 text-xs font-bold text-white">{t(`admin.projectActions.${projectActionForStatus(p.statut)}`)}</button>}
                       <button
                         type="button"
-                        onClick={() => setSelectedProject(p)}
+                        onClick={() => ouvrirDetailProjet(p)}
                         className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
                       >
                         <AppIcon name="Eye" className="h-3.5 w-3.5" />
                         {t('common.details')}
                       </button>
-                      <details className="group relative">
-                        <summary className="inline-flex cursor-pointer list-none items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-200">
-                          <AppIcon name="Settings" className="h-3.5 w-3.5" />
-                          {t('common.more')}
-                        </summary>
-                        <div className="absolute right-0 z-20 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
-                          <label className="block px-2 pb-1 text-[10px] font-black uppercase tracking-wide text-slate-400">
-                            {t('admin.advancedStatusChange')}
-                          </label>
-                          <select
-                            value={p.statut}
-                            onChange={e => changerStatut(p.id, e.target.value)}
-                            className="mb-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400"
-                          >
-                            {STATUTS.map(s => <option key={s} value={s}>{adminProjectStatusLabel(s, t)}</option>)}
-                          </select>
-                          <button
-                            type="button"
-                            onClick={() => supprimerProjet(p.id, p.titre)}
-                            className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-xs font-medium text-red-700 transition hover:bg-red-50"
-                          >
-                            <AppIcon name="XCircle" className="h-3.5 w-3.5" />
-                            {t('common.delete')}
-                          </button>
-                        </div>
-                      </details>
+                      {p.statut === 'BROUILLON' && <button type="button" onClick={() => supprimerProjet(p.id, p.titre)} className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"><AppIcon name="XCircle" className="h-3.5 w-3.5" />{t('common.delete')}</button>}
                     </div>
                   </div>
                 </div>
@@ -432,10 +530,28 @@ export default function AdminProjets() {
             t={t}
             onClose={() => setSelectedProject(null)}
             onEdit={() => modifierProjet(selectedProject)}
-            onStatusChange={changerStatut}
+            onExecute={executerAction}
             onDelete={supprimerProjet}
             onDecide={deciderProjet}
+            onCorrection={projet => openCommand(projet, 'correction')}
+            validationView={validationView}
           />
+        )}
+        {command && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-4" role="presentation">
+            <form onSubmit={submitCommand} role="dialog" aria-modal="true" aria-labelledby="project-command-title" className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl">
+              <h2 id="project-command-title" className="text-lg font-black text-slate-950">{t(`admin.projectCommand.${command.type}.title`)}</h2>
+              <p id="project-command-help" className="mt-1 text-sm text-slate-600">{t(`admin.projectCommand.${command.type}.help`)}</p>
+              <label htmlFor="project-command-text" className="mt-4 block text-sm font-bold text-slate-800">{t(`admin.projectCommand.${command.type}.label`)}</label>
+              <textarea id="project-command-text" ref={commandInputRef} value={commandText} onChange={event => { setCommandText(event.target.value); setCommandError(''); }} maxLength={500} rows={5} aria-describedby="project-command-help project-command-count project-command-error" aria-invalid={Boolean(commandError)} className="mt-1 w-full resize-y rounded-xl border border-slate-300 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <p id="project-command-count" className="mt-1 text-right text-xs text-slate-500">{t('admin.projectCommand.characters', { count: commandText.length })}</p>
+              {commandError && <p id="project-command-error" role="alert" className="mt-2 text-sm font-semibold text-red-700">{commandError}</p>}
+              <div className="mt-5 flex justify-end gap-2">
+                <button type="button" onClick={closeCommand} disabled={commandSubmitting} className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 disabled:opacity-50">{t('common.cancel')}</button>
+                <button type="submit" disabled={commandSubmitting || !commandText.trim()} className="rounded-xl bg-blue-700 px-4 py-2 text-sm font-bold text-white disabled:bg-slate-300">{commandSubmitting ? t('common.saving') : t('common.confirm')}</button>
+              </div>
+            </form>
+          </div>
         )}
       </main>
 
@@ -443,7 +559,7 @@ export default function AdminProjets() {
   );
 }
 
-function ProjectDetailDrawer({ projet, t, onClose, onEdit, onStatusChange, onDelete, onDecide }) {
+function ProjectDetailDrawer({ projet, t, onClose, onEdit, onExecute, onDelete, onDecide, onCorrection, validationView }) {
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/30 p-3 backdrop-blur-sm">
       <button type="button" className="absolute inset-0 cursor-default" aria-label={t('common.close')} onClick={onClose} />
@@ -490,8 +606,14 @@ function ProjectDetailDrawer({ projet, t, onClose, onEdit, onStatusChange, onDel
             </ProjectDrawerSection>
           )}
 
+          {projet.statut === 'TERMINE' && projet.bilan && (
+            <ProjectDrawerSection title={t('admin.projectCommand.terminer.label')} icon="FileText">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-600">{projet.bilan}</p>
+            </ProjectDrawerSection>
+          )}
+
           <ProjectDrawerSection title={t('admin.availableActions')} icon="Settings">
-            {['VALIDE_REFERENT', 'SOUMIS'].includes(projet.statut) && (
+            {projet.statut === 'VALIDE_REFERENT' && (
               <div className="mb-3 grid gap-2 sm:grid-cols-2">
                 <button
                   type="button"
@@ -509,34 +631,26 @@ function ProjectDetailDrawer({ projet, t, onClose, onEdit, onStatusChange, onDel
                   <AppIcon name="XCircle" className="h-3.5 w-3.5" />
                   {t('admin.finalReject')}
                 </button>
+                <button type="button" onClick={() => onCorrection(projet)} className="inline-flex items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">{t('admin.requestProjectCorrection')}</button>
               </div>
             )}
-            <button
+            {!validationView && projet.statut === 'BROUILLON' && <button
               type="button"
               onClick={onEdit}
               className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-100 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-200"
             >
               <AppIcon name="Edit" className="h-4 w-4" />
               {t('common.edit')}
-            </button>
-            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-              <label className="mb-1 block text-xs font-black uppercase tracking-wide text-slate-400">{t('admin.advancedStatusChange')}</label>
-              <select
-                value={projet.statut}
-                onChange={event => onStatusChange(projet.id, event.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              >
-                {STATUTS.map(status => <option key={status} value={status}>{adminProjectStatusLabel(status, t)}</option>)}
-              </select>
-              <button
+            </button>}
+            {!validationView && projectActionForStatus(projet.statut) && <button type="button" onClick={() => onExecute(projet, projectActionForStatus(projet.statut))} className="mb-3 inline-flex w-full items-center justify-center rounded-lg bg-blue-700 px-3 py-2 text-sm font-semibold text-white">{t(`admin.projectActions.${projectActionForStatus(projet.statut)}`)}</button>}
+            {!validationView && projet.statut === 'BROUILLON' && <div className="rounded-lg border border-slate-100 bg-slate-50 p-3"><button
                 type="button"
                 onClick={() => onDelete(projet.id, projet.titre)}
                 className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-100 bg-white px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50"
               >
                 <AppIcon name="XCircle" className="h-4 w-4" />
                 {t('common.delete')}
-              </button>
-            </div>
+              </button></div>}
           </ProjectDrawerSection>
         </div>
       </aside>
@@ -547,10 +661,10 @@ function ProjectDetailDrawer({ projet, t, onClose, onEdit, onStatusChange, onDel
 function buildProjectStats(projets) {
   return {
     total: projets.length,
-    toValidate: projets.filter(projet => ['SOUMIS', 'VALIDE_REFERENT'].includes(projet.statut)).length,
+    toValidate: projets.filter(projet => projet.statut === 'VALIDE_REFERENT').length,
     inProgress: projets.filter(projet => ['BROUILLON', 'EN_COURS'].includes(projet.statut)).length,
     approved: projets.filter(projet => ['APPROUVE', 'TERMINE'].includes(projet.statut)).length,
-    refused: projets.filter(projet => ['REFUSE_REFERENT', 'REJETE', 'REFUSE'].includes(projet.statut)).length,
+    refused: projets.filter(projet => ['REFUSE_REFERENT', 'REJETE'].includes(projet.statut)).length,
   };
 }
 
@@ -565,11 +679,19 @@ function projectPilotageFilters(t) {
 }
 
 function matchesProjectPilotageFilter(projet, filter) {
-  if (filter === 'a-valider') return ['SOUMIS', 'VALIDE_REFERENT'].includes(projet.statut);
+  if (filter === 'a-valider') return projet.statut === 'VALIDE_REFERENT';
   if (filter === 'en-cours') return ['BROUILLON', 'EN_COURS'].includes(projet.statut);
   if (filter === 'approuves') return ['APPROUVE', 'TERMINE'].includes(projet.statut);
-  if (filter === 'refuses') return ['REFUSE_REFERENT', 'REJETE', 'REFUSE'].includes(projet.statut);
+  if (filter === 'refuses') return ['REFUSE_REFERENT', 'REJETE'].includes(projet.statut);
   return true;
+}
+
+function projectActionForStatus(status) {
+  if (status === 'BROUILLON') return 'soumettre';
+  if (status === 'APPROUVE') return 'demarrer';
+  if (status === 'EN_COURS') return 'terminer';
+  if (['TERMINE', 'ANNULE', 'REJETE', 'REFUSE_REFERENT'].includes(status)) return 'archiver';
+  return null;
 }
 
 function projectMetaLine(projet, t) {

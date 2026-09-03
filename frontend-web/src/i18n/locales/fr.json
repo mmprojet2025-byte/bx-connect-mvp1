@@ -326,6 +326,8 @@
     "loading": "Chargement des projets...",
     "error_submit": "Erreur lors de la soumission du projet.",
     "submit_project": "Soumettre le projet",
+    "submit_draft": "Soumettre le brouillon",
+    "draftCreated": "Brouillon enregistré. Soumettez-le lorsque vous êtes prêt.",
     "description_soon": "Description à venir.",
     "fallback_image": "Projet BX-Connect",
     "group_label": "Groupe : {{group}}",
@@ -336,6 +338,7 @@
     "noGroup": "Projet institutionnel sans groupe",
     "participationSoon": "La demande de participation sera disponible dans une prochaine étape.",
     "successSubmitted": "Projet créé et soumis à validation.",
+    "submissionResult": { "SOUMIS": "Projet soumis au référent responsable.", "VALIDE_REFERENT": "Projet renvoyé dans la file de décision administrative.", "APPROUVE": "Projet approuvé automatiquement conformément au workflow ADMIN." },
     "type": "Type de projet",
     "typeGroup": "Projet de groupe",
     "typeInstitutional": "Projet institutionnel",
@@ -806,6 +809,40 @@
     "errorProjectUpdate": "Erreur lors de la modification du projet.",
     "confirmDeleteProject": "Supprimer définitivement le projet \"{{title}}\" ?",
     "projectDeleted": "Projet supprimé.",
+    "projectGroupJustification": "Justification du rattachement au groupe",
+    "confirmFinalApprove": "Confirmer l’approbation définitive de ce projet ?",
+    "confirmFinalReject": "Confirmer le rejet définitif de ce projet ?",
+    "projectRejectReasonPrompt": "Indiquez le motif précis du rejet.",
+    "projectCorrectionPrompt": "Indiquez les corrections demandées au porteur.",
+    "projectCorrectionRequested": "La demande de correction a été envoyée.",
+    "requestProjectCorrection": "Demander une correction",
+    "projectCompletionReportPrompt": "Saisissez le bilan obligatoire du projet.",
+    "projectsToValidateDescription": "Projets validés par un référent et en attente d’une décision administrative.",
+    "noProjectsToValidate": "Aucun projet n’attend de décision administrative.",
+    "projectCommand": {
+      "required": "Ce texte est obligatoire.", "tooLong": "Le texte ne peut pas dépasser 500 caractères.", "characters": "{{count}} / 500 caractères",
+      "rejeter": { "title": "Rejeter le projet", "label": "Motif du rejet", "help": "Expliquez clairement au porteur pourquoi la décision est définitive." },
+      "correction": { "title": "Demander une correction", "label": "Corrections demandées", "help": "Indiquez précisément ce que le porteur doit corriger avant une nouvelle soumission." },
+      "terminer": { "title": "Terminer le projet", "label": "Bilan final", "help": "Résumez les résultats du projet avant sa clôture." }
+    },
+    "projectActions": {
+      "soumettre": "Soumettre",
+      "demarrer": "Démarrer",
+      "terminer": "Terminer",
+      "archiver": "Archiver",
+      "confirm": {
+        "soumettre": "Soumettre ce brouillon ?",
+        "demarrer": "Démarrer ce projet approuvé ?",
+        "terminer": "Terminer ce projet avec le bilan saisi ?",
+        "archiver": "Archiver définitivement ce projet ?"
+      },
+      "success": {
+        "soumettre": "Projet soumis selon le workflow prévu.",
+        "demarrer": "Projet démarré.",
+        "terminer": "Projet terminé.",
+        "archiver": "Projet archivé."
+      }
+    },
     "searchProjectPlaceholder": "Rechercher par titre...",
     "noProjectFound": "Aucun projet trouvé.",
     "budgetLabel": "Budget :",
@@ -1168,7 +1205,10 @@
     "EN_ATTENTE_PAIEMENT": "Paiement en attente",
     "PAYEE": "Payée",
     "VALIDE_REFERENT": "Validé référent",
-    "REFUSE_REFERENT": "Refusé référent"
+    "REFUSE_REFERENT": "Refusé référent",
+    "A_CORRIGER_REFERENT": "À corriger après relecture référent",
+    "A_CORRIGER_ADMIN": "À corriger après décision admin",
+    "ANNULE": "Annulé"
   },
   "users": {
     "errorLoad": "Impossible de charger les utilisateurs.",
@@ -1333,6 +1373,9 @@
       "TOUS": "Tous"
     },
     "validateForAdmin": "Valider pour admin",
+    "requestProjectCorrection": "Demander une correction",
+    "projectCorrectionRequested": "Demande de correction envoyée au porteur.",
+    "projectDecisionCommentRequired": "Un commentaire précis est obligatoire.",
     "refuseWithComment": "Refuser",
     "referentComment": "Commentaire référent",
     "referentCommentPlaceholder": "Expliquez brièvement votre décision si nécessaire.",

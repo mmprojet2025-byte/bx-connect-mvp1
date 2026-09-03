@@ -326,6 +326,8 @@
     "loading": "Loading projects...",
     "error_submit": "Error submitting the project.",
     "submit_project": "Submit project",
+    "submit_draft": "Submit draft",
+    "draftCreated": "Draft saved. Submit it when you are ready.",
     "description_soon": "Description coming soon.",
     "fallback_image": "BX-Connect project",
     "group_label": "Group: {{group}}",
@@ -336,6 +338,7 @@
     "noGroup": "Association project without a group",
     "participationSoon": "Participation requests will be available in a later phase.",
     "successSubmitted": "Project created and submitted for approval.",
+    "submissionResult": { "SOUMIS": "Project submitted to the responsible coordinator.", "VALIDE_REFERENT": "Project returned to the administrative decision queue.", "APPROUVE": "Project automatically approved according to the ADMIN workflow." },
     "type": "Project type",
     "typeGroup": "Group project",
     "typeInstitutional": "Association project",
@@ -806,6 +809,40 @@
     "errorProjectUpdate": "Error while updating the project.",
     "confirmDeleteProject": "Permanently delete project \"{{title}}\"?",
     "projectDeleted": "Project deleted.",
+    "projectGroupJustification": "Reason for linking the project to the group",
+    "confirmFinalApprove": "Confirm final approval of this project?",
+    "confirmFinalReject": "Confirm final rejection of this project?",
+    "projectRejectReasonPrompt": "Enter the precise reason for rejection.",
+    "projectCorrectionPrompt": "Describe the corrections requested from the owner.",
+    "projectCorrectionRequested": "The correction request has been sent.",
+    "requestProjectCorrection": "Request corrections",
+    "projectCompletionReportPrompt": "Enter the required project completion report.",
+    "projectsToValidateDescription": "Projects validated by a coordinator and awaiting an administrative decision.",
+    "noProjectsToValidate": "No project is awaiting an administrative decision.",
+    "projectCommand": {
+      "required": "This text is required.", "tooLong": "The text cannot exceed 500 characters.", "characters": "{{count}} / 500 characters",
+      "rejeter": { "title": "Reject project", "label": "Reason for rejection", "help": "Clearly explain to the owner why this decision is final." },
+      "correction": { "title": "Request corrections", "label": "Requested corrections", "help": "State precisely what the owner must correct before resubmitting." },
+      "terminer": { "title": "Complete project", "label": "Final report", "help": "Summarise the project results before closing it." }
+    },
+    "projectActions": {
+      "soumettre": "Submit",
+      "demarrer": "Start",
+      "terminer": "Complete",
+      "archiver": "Archive",
+      "confirm": {
+        "soumettre": "Submit this draft?",
+        "demarrer": "Start this approved project?",
+        "terminer": "Complete this project with the entered report?",
+        "archiver": "Permanently archive this project?"
+      },
+      "success": {
+        "soumettre": "Project submitted through the expected workflow.",
+        "demarrer": "Project started.",
+        "terminer": "Project completed.",
+        "archiver": "Project archived."
+      }
+    },
     "searchProjectPlaceholder": "Search by title...",
     "noProjectFound": "No project found.",
     "budgetLabel": "Budget:",
@@ -1168,7 +1205,10 @@
     "EN_ATTENTE_PAIEMENT": "Payment pending",
     "PAYEE": "Paid",
     "VALIDE_REFERENT": "Validated by referent",
-    "REFUSE_REFERENT": "Rejected by referent"
+    "REFUSE_REFERENT": "Rejected by referent",
+    "A_CORRIGER_REFERENT": "Corrections requested by coordinator",
+    "A_CORRIGER_ADMIN": "Corrections requested by administrator",
+    "ANNULE": "Cancelled"
   },
   "users": {
     "errorLoad": "Unable to load users.",
@@ -1333,6 +1373,9 @@
       "TOUS": "All"
     },
     "validateForAdmin": "Validate for admin",
+    "requestProjectCorrection": "Request corrections",
+    "projectCorrectionRequested": "Correction request sent to the owner.",
+    "projectDecisionCommentRequired": "A precise comment is required.",
     "refuseWithComment": "Reject",
     "referentComment": "Referent comment",
     "referentCommentPlaceholder": "Briefly explain your decision if needed.",

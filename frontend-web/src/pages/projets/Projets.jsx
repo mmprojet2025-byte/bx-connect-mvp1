@@ -20,7 +20,7 @@ import ErrorState from '../../components/ui/ErrorState'
 import AppIcon from '../../components/ui/AppIcons'
 
 const MEMBER_VISIBILITIES = ['GROUPE', 'COMMUNAUTE']
-const PROJECT_STATUSES = ['BROUILLON', 'SOUMIS', 'VALIDE_REFERENT', 'REFUSE_REFERENT', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE', 'REFUSE', 'ARCHIVE']
+const PROJECT_STATUSES = ['BROUILLON', 'SOUMIS', 'A_CORRIGER_REFERENT', 'VALIDE_REFERENT', 'A_CORRIGER_ADMIN', 'REFUSE_REFERENT', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE', 'ANNULE', 'ARCHIVE']
 const PROJECT_VISIBILITIES = ['GROUPE', 'COMMUNAUTE', 'PARTENAIRES', 'PUBLIC']
 
 export default function Projets() {
@@ -59,15 +59,22 @@ export default function Projets() {
         : isPartenaire
           ? '/partenaire/projets-ouverts'
           : '/projets'
-      const res = await api.get(endpoint)
-      setProjets(res.data)
+      const [res, ownRes] = await Promise.all([
+        api.get(endpoint),
+        isAuthenticated && !isPartenaire ? api.get('/projets/mes-projets') : Promise.resolve({ data: [] }),
+      ])
+      const ownIds = new Set((ownRes.data || []).map(projet => String(projet.id)))
+      setProjets((res.data || []).map(projet => ({
+        ...projet,
+        estPorteurConnecte: ownIds.has(String(projet.id)),
+      })))
       setError('')
     } catch {
       setError(t('projects.error_load'))
     } finally {
       setLoading(false)
     }
-  }, [isAdmin, isPartenaire, t])
+  }, [isAdmin, isAuthenticated, isPartenaire, t])
 
   const fetchAdhesions = useCallback(async () => {
     try {
@@ -147,14 +154,13 @@ export default function Projets() {
     setMessage('')
     setError('')
     try {
-      const res = await api.post('/projets', {
+      await api.post('/projets', {
         ...form,
         budgetDemande: parseFloat(form.budgetDemande) || 0,
         groupeId: groupeActif?.groupeId,
       })
-      await api.patch(`/projets/${res.data.id}/soumettre`)
-      setMessage(t('ux.projects.submitted'))
-      toast.success(t('ux.projects.submitted'))
+      setMessage(t('projects.draftCreated'))
+      toast.success(t('projects.draftCreated'))
       setShowForm(false)
       setForm({ titre: '', description: '', budgetDemande: '', imageUrl: '', visibilite: 'GROUPE' })
       fetchProjets()
@@ -170,6 +176,24 @@ export default function Projets() {
       title: projet.titre,
       defaultValue: 'Vous participez déjà à ce projet. Les nouvelles interactions apparaîtront dans vos notifications.',
     }))
+  }
+
+  const handleSubmitDraft = async projet => {
+    setActionLoading(`${projet.id}-SUBMIT`)
+    setError('')
+    try {
+      const response = await api.patch(`/projets/${projet.id}/soumettre`)
+      const feedback = t(`projects.submissionResult.${response.data.statut}`)
+      setMessage(feedback)
+      toast.success(feedback)
+      await fetchProjets()
+    } catch (err) {
+      const feedback = userFriendlyError(err, t('projects.error_submit'))
+      setError(feedback)
+      toast.error(feedback)
+    } finally {
+      setActionLoading(null)
+    }
   }
 
   const handleJoinProject = async (projet) => {
@@ -443,6 +467,8 @@ export default function Projets() {
                 onToggleDetails={() => setExpandedProjectId(current => current === projet.id ? null : projet.id)}
                 onFollow={() => handleFollow(projet)}
                 onJoin={() => handleJoinProject(projet)}
+                canSubmit={projet.statut === 'BROUILLON' && projet.estPorteurConnecte}
+                onSubmit={() => handleSubmitDraft(projet)}
                 onCommentChange={(value) => setCommentDrafts(current => ({ ...current, [projet.id]: value }))}
                 onCommentSubmit={() => handleCommentSubmit(projet)}
                 t={t}
@@ -460,12 +486,15 @@ function WorkflowStepper({ counts, activeStatus, onSelectStatus, t }) {
   const steps = [
     { label: t('projects.workflowSteps.created'), status: 'BROUILLON', icon: 'PlusCircle' },
     { label: t('projects.workflowSteps.submitted'), status: 'SOUMIS', icon: 'Clock' },
+    { label: t('statuses.A_CORRIGER_REFERENT'), status: 'A_CORRIGER_REFERENT', icon: 'Edit' },
     { label: t('projects.workflowSteps.referentValidation'), status: 'VALIDE_REFERENT', icon: 'Shield' },
+    { label: t('statuses.A_CORRIGER_ADMIN'), status: 'A_CORRIGER_ADMIN', icon: 'Edit' },
     { label: t('projects.workflowSteps.referentRejected'), status: 'REFUSE_REFERENT', icon: 'XCircle' },
     { label: t('projects.workflowSteps.adminValidation'), status: 'APPROUVE', icon: 'CheckCircle' },
     { label: t('projects.workflowSteps.adminRejected'), status: 'REJETE', icon: 'XCircle' },
     { label: t('projects.workflowSteps.running'), status: 'EN_COURS', icon: 'Activity' },
     { label: t('projects.workflowSteps.done'), status: 'TERMINE', icon: 'Rocket' },
+    { label: t('statuses.ANNULE'), status: 'ANNULE', icon: 'XCircle' },
     { label: t('projects.workflowSteps.archived'), status: 'ARCHIVE', icon: 'Archive' },
   ]
 
@@ -524,6 +553,8 @@ function ProjectCard({
   onToggleDetails,
   onFollow,
   onJoin,
+  canSubmit,
+  onSubmit,
   onCommentChange,
   onCommentSubmit,
   t,
@@ -602,6 +633,8 @@ function ProjectCard({
           onToggleDetails={onToggleDetails}
           onFollow={onFollow}
           onJoin={onJoin}
+          canSubmit={canSubmit}
+          onSubmit={onSubmit}
           t={t}
         />
       </div>
@@ -706,13 +739,18 @@ function ProjectStat({ icon, label, value, tone = 'slate' }) {
   )
 }
 
-function ProjectActions({ projet, isAuthenticated, isMembre, isPartenaire, isParticipant, actionLoading, onToggleDetails, onFollow, onJoin, t }) {
+function ProjectActions({ projet, isAuthenticated, isMembre, isPartenaire, isParticipant, actionLoading, onToggleDetails, onFollow, onJoin, canSubmit, onSubmit, t }) {
   return (
     <div className="mt-auto flex flex-wrap gap-2 pt-4">
       <button type="button" onClick={onToggleDetails} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-200">
         <AppIcon name="Eye" className="h-3.5 w-3.5" />
         {t('common.open', { defaultValue: 'Voir' })}
       </button>
+      {canSubmit && (
+        <button type="button" onClick={onSubmit} disabled={actionLoading === `${projet.id}-SUBMIT`} className="inline-flex flex-1 items-center justify-center rounded-lg bg-blue-700 px-3 py-2 text-xs font-black text-white disabled:opacity-60">
+          {t('projects.submit_draft')}
+        </button>
+      )}
       {isMembre && (
         <button
           type="button"
@@ -776,8 +814,12 @@ function projectWorkflowText(projet, t) {
       return t('projects.workflowDraft', { defaultValue: 'Ce projet est encore en préparation.' })
     case 'SOUMIS':
       return t('projects.workflowSubmitted', { defaultValue: 'Ce projet attend la relecture du référent.' })
+    case 'A_CORRIGER_REFERENT':
+      return t('statuses.A_CORRIGER_REFERENT')
     case 'VALIDE_REFERENT':
       return t('projects.workflowReferentApproved', { defaultValue: 'Ce projet a été validé par le référent et attend la décision admin.' })
+    case 'A_CORRIGER_ADMIN':
+      return t('statuses.A_CORRIGER_ADMIN')
     case 'REFUSE_REFERENT':
       return t('projects.workflowReferentRejected', { defaultValue: 'Ce projet a été refusé par le référent.' })
     case 'APPROUVE':
@@ -787,8 +829,9 @@ function projectWorkflowText(projet, t) {
     case 'TERMINE':
       return t('projects.workflowDone', { defaultValue: 'Ce projet est terminé.' })
     case 'REJETE':
-    case 'REFUSE':
       return t('projects.workflowRejected', { defaultValue: 'Ce projet a été refusé.' })
+    case 'ANNULE':
+      return t('statuses.ANNULE')
     case 'ARCHIVE':
       return t('projects.workflowArchived', { defaultValue: 'Ce projet est archivé.' })
     default:
@@ -821,12 +864,16 @@ function projectNextStep(projet, isPartenaire, isMembre, isParticipant, t) {
   if (projet.statut === 'TERMINE') {
     return t('projects.nextDone', { defaultValue: 'Consulter le bilan et les contributions.' })
   }
-  if (['REJETE', 'REFUSE'].includes(projet.statut)) {
+  if (projet.statut === 'REJETE') {
     return t('projects.nextRejected', { defaultValue: 'Consulter le motif ou revoir la proposition.' })
   }
   if (projet.statut === 'ARCHIVE') {
     return t('projects.nextArchived', { defaultValue: 'Consulter l’historique du projet.' })
   }
+  if (projet.statut === 'A_CORRIGER_REFERENT' || projet.statut === 'A_CORRIGER_ADMIN') {
+    return t(`statuses.${projet.statut}`)
+  }
+  if (projet.statut === 'ANNULE') return t('statuses.ANNULE')
   return t('projects.nextDefault', { defaultValue: 'Suivre l’évolution du projet.' })
 }
 
