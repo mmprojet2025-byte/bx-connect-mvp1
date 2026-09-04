@@ -9,7 +9,7 @@ import api from '../api/axios';
 import AppIcon from '../components/AppIcon';
 import { EmptyState as SharedEmptyState, LoadingState } from '../components/MobileUI';
 
-export default function MessagerieScreen() {
+export default function MessagerieScreen({ navigation }) {
   const { t, i18n } = useTranslation();
   const { user, isMembre, isReferent, isAdmin, isSuperAdmin } = useAuth();
 
@@ -167,6 +167,28 @@ export default function MessagerieScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={90}
     >
+      {isReferent ? (
+        <TouchableOpacity
+          style={styles.businessConversationsLink}
+          onPress={() => navigation.getParent()?.navigate('TabBusinessConversations')}
+          activeOpacity={0.78}
+          accessibilityRole="button"
+          accessibilityLabel={`${t('messaging.businessConversations')}. ${t('messaging.businessConversationsDescription')}`}
+          accessibilityHint={t('messaging.businessConversationsHint')}
+        >
+          <View style={styles.businessConversationsIcon}>
+            <AppIcon name="message" size={20} color="#1E3A8A" />
+          </View>
+          <View style={styles.businessConversationsText}>
+            <Text style={styles.businessConversationsTitle}>{t('messaging.businessConversations')}</Text>
+            <Text style={styles.businessConversationsDescription}>
+              {t('messaging.businessConversationsDescription')}
+            </Text>
+          </View>
+          <AppIcon name="chevron-forward" size={19} color="#64748B" />
+        </TouchableOpacity>
+      ) : null}
+
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>{t('messaging.groupMessaging')}</Text>
@@ -419,6 +441,32 @@ function formatDate(dateStr, language) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
+  businessConversationsLink: {
+    minHeight: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 12,
+    marginTop: 10,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  businessConversationsIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    backgroundColor: '#EFF6FF',
+  },
+  businessConversationsText: { flex: 1, paddingRight: 8 },
+  businessConversationsTitle: { color: '#1E3A8A', fontSize: 14, lineHeight: 19, fontWeight: '800' },
+  businessConversationsDescription: { color: '#64748B', fontSize: 12, lineHeight: 17, marginTop: 2 },
 
   header: {
     flexDirection: 'row',

@@ -157,6 +157,8 @@
     "register_subtitle": "Rejoins la communauté BX-CONNECT",
     "firstname": "Prénom",
     "lastname": "Nom",
+    "birthdate_label": "Date de naissance",
+    "birthdate_hint": "Obligatoire pour vérifier que vous avez au moins 16 ans.",
     "confirm_password": "Confirmer le mot de passe",
     "role": "Je suis",
     "role_membre": "Membre",
@@ -172,6 +174,11 @@
     "error_password_min": "Le mot de passe doit contenir au moins 8 caractères.",
     "error_firstname_required": "Le prénom est obligatoire.",
     "error_lastname_required": "Le nom est obligatoire.",
+    "error_birthdate_required": "La date de naissance est obligatoire.",
+    "error_birthdate_invalid": "Saisissez une date de naissance valide.",
+    "error_birthdate_future": "La date de naissance ne peut pas être dans le futur.",
+    "error_birthdate_too_young": "Vous devez avoir au moins 16 ans pour créer un compte BX-Connect.",
+    "error_birthdate_implausible": "Cette date de naissance semble invraisemblable.",
     "error_email_required": "L’adresse e-mail est obligatoire.",
     "error_email_invalid": "L’adresse e-mail n’est pas valide.",
     "error_password_required": "Le mot de passe est obligatoire.",
@@ -1462,7 +1469,7 @@
           },
           {
             "title": "2. Création et sécurité du compte",
-            "body": "L’utilisateur fournit des informations exactes et conserve ses identifiants confidentiels. Toute utilisation réalisée depuis son compte est présumée faite par lui. En cas de suspicion d’accès non autorisé, il doit contacter rapidement l’équipe BX-Connect."
+            "body": "L’inscription autonome est réservée aux personnes âgées d’au moins 16 ans. L’utilisateur fournit des informations exactes et conserve ses identifiants confidentiels. BX-Connect ne propose actuellement aucun parcours de consentement parental pour les moins de 16 ans. En cas de suspicion d’accès non autorisé, il doit contacter rapidement l’équipe BX-Connect."
           },
           {
             "title": "3. Rôles et accès",
@@ -1500,11 +1507,11 @@
           },
           {
             "title": "2. Données traitées",
-            "body": "Nous pouvons traiter : identité, coordonnées, rôle, langue, date d’inscription, données de groupe, activités et inscriptions, projets et participations, messages, notifications, soutiens financiers, journaux techniques et preuve d’acceptation des documents légaux."
+            "body": "Nous pouvons traiter : identité, coordonnées, date de naissance, rôle, langue, date d’inscription, données de groupe, activités et inscriptions, projets et participations, messages, notifications, soutiens financiers, journaux techniques et preuve d’acceptation des documents légaux. La date de naissance complète est obligatoire à la création d’un nouveau compte et reste privée."
           },
           {
             "title": "3. Finalités",
-            "body": "Les données sont utilisées pour créer et sécuriser les comptes, gérer les rôles, groupes, activités, inscriptions, projets, messages et notifications, traiter les soutiens partenaires, assurer le support, prévenir les abus et produire des statistiques internes."
+            "body": "Les données sont utilisées pour créer et sécuriser les comptes, vérifier l’âge minimal de 16 ans, gérer les rôles, groupes, activités, inscriptions, projets, messages et notifications, traiter les soutiens partenaires, assurer le support et prévenir les abus. L’âge pourra ultérieurement servir à adapter l’expérience ou certaines activités, sous réserve d’une information appropriée."
           },
           {
             "title": "4. Bases juridiques",
@@ -1516,11 +1523,11 @@
           },
           {
             "title": "6. Conservation et sécurité",
-            "body": "Les données sont conservées pendant la durée utile au compte et aux activités concernées, puis supprimées ou anonymisées, sauf obligation légale. Des mesures de contrôle d’accès, authentification, journalisation et sauvegarde limitent les risques."
+            "body": "La date de naissance est conservée avec le compte pendant sa durée utile. Les données sont ensuite supprimées ou anonymisées conformément aux règles applicables, sauf obligation légale. Des mesures de contrôle d’accès, authentification, journalisation et sauvegarde limitent les risques."
           },
           {
             "title": "7. Vos droits",
-            "body": "Vous disposez des droits d’accès, de rectification, de suppression, de limitation et d’opposition, ainsi que du droit à la portabilité lorsque celui-ci s’applique. Vous pouvez retirer un consentement sans affecter les traitements antérieurs."
+            "body": "Vous disposez notamment des droits d’accès, de rectification et de suppression de vos données, y compris de la date de naissance, ainsi que des droits de limitation, d’opposition et de portabilité lorsqu’ils s’appliquent. Vous pouvez retirer un consentement sans affecter les traitements antérieurs."
           },
           {
             "title": "8. Exercer vos droits",

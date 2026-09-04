@@ -11,8 +11,10 @@ import { getUnreadCount } from '../api/notifications';
 
 // ─── Écrans publics ───────────────────────────────────────────────────────────
 import HomeScreen          from '../screens/HomeScreen';
+import WelcomeScreen       from '../screens/WelcomeScreen';
 import LoginScreen         from '../screens/LoginScreen';
 import RegisterScreen      from '../screens/RegisterScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import ActivitiesScreen    from '../screens/ActivitiesScreen';
 import LegalScreen         from '../screens/LegalScreen';
 
@@ -56,17 +58,12 @@ const headerStyle = {
   },
 };
 
-function HeaderTitle({ title, roleLabel }) {
+function HeaderTitle({ title }) {
   return (
     <View style={{ minWidth: 0 }}>
       <Text numberOfLines={1} style={{ color: '#111827', fontSize: 17, lineHeight: 21, fontWeight: '700' }}>
         {title}
       </Text>
-      {roleLabel ? (
-        <Text numberOfLines={1} style={{ color: '#64748B', fontSize: 11, lineHeight: 14, fontWeight: '600' }}>
-          {roleLabel}
-        </Text>
-      ) : null}
     </View>
   );
 }
@@ -129,14 +126,50 @@ function SearchButton({ onPress, label }) {
 }
 
 // ─── Stack public ─────────────────────────────────────────────────────────────
-function PublicStack({ initialRouteName = 'Home' }) {
+function PublicStack({ initialRouteName = 'Welcome' }) {
   const { t } = useTranslation();
 
   return (
     <Stack.Navigator initialRouteName={initialRouteName} screenOptions={headerStyle}>
+      <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Home"       component={HomeScreen}      options={{ title: 'BX-CONNECT', headerBackVisible: false }} />
-      <Stack.Screen name="Login"      component={LoginScreen}     options={{ title: t('navigation.login') }} />
-      <Stack.Screen name="Register"   component={RegisterScreen}  options={{ title: t('navigation.createAccount') }} />
+      <Stack.Screen
+        name="Login"
+        component={LoginScreen}
+        options={({ navigation }) => ({
+          title: t('navigation.login'),
+          headerBackVisible: false,
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Welcome')}
+              accessibilityRole="button"
+              accessibilityLabel={t('auth.back_home_short')}
+              style={{ width: 44, height: 44, alignItems: 'flex-start', justifyContent: 'center' }}
+            >
+              <AppIcon name="chevron-back" size={24} color="#111827" />
+            </TouchableOpacity>
+          ),
+        })}
+      />
+      <Stack.Screen
+        name="Register"
+        component={RegisterScreen}
+        options={({ navigation }) => ({
+          title: t('navigation.createAccount'),
+          headerBackVisible: false,
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Welcome')}
+              accessibilityRole="button"
+              accessibilityLabel={t('welcome.back')}
+              style={{ width: 44, height: 44, alignItems: 'flex-start', justifyContent: 'center' }}
+            >
+              <AppIcon name="chevron-back" size={24} color="#111827" />
+            </TouchableOpacity>
+          ),
+        })}
+      />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: t('auth.forgot_password_title') }} />
       <Stack.Screen name="Activities" component={ActivitiesScreen} options={{ title: t('navigation.activities') }} />
       <Stack.Screen name="Groupes"    component={GroupesScreen}    options={{ title: t('navigation.groups') }} />
       <Stack.Screen name="LegalTerms" component={LegalScreen} initialParams={{ document: 'terms' }} options={{ title: t('legal.links.terms') }} />
@@ -147,16 +180,18 @@ function PublicStack({ initialRouteName = 'Home' }) {
 }
 
 // ─── Stacks privés (un par onglet) ───────────────────────────────────────────
-function privateScreenOptions({ title, roleLabel, unreadNotifications, notificationLabel, searchLabel, navigation }) {
+function privateScreenOptions({ title, unreadNotifications, notificationLabel, searchLabel, navigation, showSearch = false }) {
   return {
     ...headerStyle,
-    headerTitle: () => <HeaderTitle title={title} roleLabel={roleLabel} />,
+    headerTitle: () => <HeaderTitle title={title} />,
     headerRight: () => (
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <SearchButton
-          label={searchLabel}
-          onPress={() => navigation.navigate('GlobalSearch')}
-        />
+        {showSearch ? (
+          <SearchButton
+            label={searchLabel}
+            onPress={() => navigation.navigate('GlobalSearch')}
+          />
+        ) : null}
         <NotificationButton
           count={unreadNotifications}
           label={notificationLabel}
@@ -192,7 +227,7 @@ function legalScreens(t) {
   ];
 }
 
-function makeStack(ScreenComponent, title, roleLabel, unreadNotifications) {
+function makeStack(ScreenComponent, title, unreadNotifications, showSearch = false) {
   return function StackWrapper() {
     const { t } = useTranslation();
     return (
@@ -203,11 +238,11 @@ function makeStack(ScreenComponent, title, roleLabel, unreadNotifications) {
           options={({ navigation }) => ({
             ...privateScreenOptions({
               title,
-              roleLabel,
               unreadNotifications,
               notificationLabel: t('navigation.notifications'),
               searchLabel: t('search.title'),
               navigation,
+              showSearch,
             }),
             headerBackVisible: false,
           })}
@@ -224,7 +259,7 @@ function makeStack(ScreenComponent, title, roleLabel, unreadNotifications) {
   };
 }
 
-function makeTechnicalStack(ScreenComponent, title, roleLabel) {
+function makeTechnicalStack(ScreenComponent, title) {
   return function TechnicalStackWrapper() {
     return (
       <Stack.Navigator>
@@ -233,7 +268,7 @@ function makeTechnicalStack(ScreenComponent, title, roleLabel) {
           component={ScreenComponent}
           options={{
             ...headerStyle,
-            headerTitle: () => <HeaderTitle title={title} roleLabel={roleLabel} />,
+            headerTitle: () => <HeaderTitle title={title} />,
             headerBackVisible: false,
           }}
         />
@@ -242,7 +277,7 @@ function makeTechnicalStack(ScreenComponent, title, roleLabel) {
   };
 }
 
-function makeDashboardStack(t, roleLabel, unreadNotifications, access) {
+function makeDashboardStack(t, unreadNotifications, access) {
   return function DashboardStackWrapper() {
     return (
       <Stack.Navigator>
@@ -252,11 +287,11 @@ function makeDashboardStack(t, roleLabel, unreadNotifications, access) {
           options={({ navigation }) => ({
             ...privateScreenOptions({
               title: 'BX-CONNECT',
-              roleLabel,
               unreadNotifications,
               notificationLabel: t('navigation.notifications'),
               searchLabel: t('search.title'),
               navigation,
+              showSearch: true,
             }),
             headerBackVisible: false,
           })}
@@ -353,7 +388,7 @@ function makeDashboardStack(t, roleLabel, unreadNotifications, access) {
   };
 }
 
-function makeNetworkStack(title, roleLabel, unreadNotifications) {
+function makeNetworkStack(title, unreadNotifications) {
   return function NetworkStackWrapper() {
     const { t } = useTranslation();
     return (
@@ -364,11 +399,11 @@ function makeNetworkStack(title, roleLabel, unreadNotifications) {
           options={({ navigation }) => ({
             ...privateScreenOptions({
               title,
-              roleLabel,
               unreadNotifications,
               notificationLabel: t('navigation.notifications'),
               searchLabel: t('search.title'),
               navigation,
+              showSearch: true,
             }),
             headerBackVisible: false,
           })}
@@ -383,7 +418,7 @@ function makeNetworkStack(title, roleLabel, unreadNotifications) {
   };
 }
 
-function makeManagementStack(title, roleLabel, unreadNotifications) {
+function makeManagementStack(title, unreadNotifications) {
   return function ManagementStackWrapper() {
     const { t } = useTranslation();
     const { isAdmin, isSuperAdmin } = useAuth();
@@ -395,11 +430,11 @@ function makeManagementStack(title, roleLabel, unreadNotifications) {
           options={({ navigation }) => ({
             ...privateScreenOptions({
               title,
-              roleLabel,
               unreadNotifications,
               notificationLabel: t('navigation.notifications'),
               searchLabel: t('search.title'),
               navigation,
+              showSearch: true,
             }),
             headerBackVisible: false,
           })}
@@ -691,7 +726,7 @@ function HubLink({ icon, title, description, onPress }) {
 
 // ─── Tab Navigator privé ─────────────────────────────────────────────────────
 function PrivateTabs() {
-  const { role, isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire } = useAuth();
+  const { isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire } = useAuth();
   const { t, i18n } = useTranslation();
   const [unreadNotifications, setUnreadNotifications] = useState(0);
 
@@ -713,9 +748,8 @@ function PrivateTabs() {
     return () => { cancelled = true; };
   }, [isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire]);
 
-  const roleLabel = role ? t(`roles.${role}`) : '';
   const communityLabels = getCommunityLabels(i18n.language);
-  const DashboardStack = makeDashboardStack(t, roleLabel, unreadNotifications, {
+  const DashboardStack = makeDashboardStack(t, unreadNotifications, {
     groups: isAdmin || isReferent,
     projects: isAdmin || isReferent,
     supports: isPartenaire,
@@ -728,23 +762,22 @@ function PrivateTabs() {
     opportunities: isAdmin,
     logs: isSuperAdmin,
   });
-  const MemberHomeStack    = makeStack(MemberHomeScreen, 'BX-CONNECT', roleLabel, unreadNotifications);
-  const ActivitiesStack    = makeStack(ActivitiesScreen, t('navigation.activities'), roleLabel, unreadNotifications);
-  const ProjectsStack      = makeStack(ProjectsScreen, t('navigation.projects'), roleLabel, unreadNotifications);
-  const SupportsStack      = makeStack(PartnerSupportsScreen, t('partner.supportsAndOpportunities'), roleLabel, unreadNotifications);
-  const NetworkStack       = makeNetworkStack(communityLabels.network, roleLabel, unreadNotifications);
-  const ManagementStack    = makeManagementStack(communityLabels.management, roleLabel, unreadNotifications);
-  const MessagerieStack    = makeStack(MessagerieScreen, t('navigation.messaging'), roleLabel, unreadNotifications);
-  const BusinessConversationsStack = makeStack(BusinessConversationsScreen, t('navigation.conversations'), roleLabel, unreadNotifications);
-  const NotificationsStack = makeStack(NotificationsScreen, t('navigation.notifications'), roleLabel, unreadNotifications);
-  const ProfileStack       = makeStack(ProfileScreen, t('navigation.profile'), roleLabel, unreadNotifications);
-  const SuperAdminDashboardStack = makeTechnicalStack(DashboardScreen, 'BX-CONNECT', roleLabel);
-  const SuperAdminUsersStack = makeTechnicalStack(AdminUsersScreen, t('superAdmin.admins'), roleLabel);
-  const SuperAdminLogsStack = makeTechnicalStack(SuperAdminLogsScreen, t('superAdmin.logsTitle'), roleLabel);
+  const MemberHomeStack    = makeStack(MemberHomeScreen, 'BX-CONNECT', unreadNotifications, true);
+  const ActivitiesStack    = makeStack(ActivitiesScreen, t('navigation.activities'), unreadNotifications);
+  const ProjectsStack      = makeStack(ProjectsScreen, t('navigation.projects'), unreadNotifications);
+  const SupportsStack      = makeStack(PartnerSupportsScreen, t('partner.supportsAndOpportunities'), unreadNotifications);
+  const NetworkStack       = makeNetworkStack(communityLabels.network, unreadNotifications);
+  const ManagementStack    = makeManagementStack(communityLabels.management, unreadNotifications);
+  const MessagerieStack    = makeStack(MessagerieScreen, t('navigation.messaging'), unreadNotifications);
+  const BusinessConversationsStack = makeStack(BusinessConversationsScreen, t('navigation.conversations'), unreadNotifications);
+  const NotificationsStack = makeStack(NotificationsScreen, t('navigation.notifications'), unreadNotifications);
+  const ProfileStack       = makeStack(ProfileScreen, t('navigation.profile'), unreadNotifications);
+  const SuperAdminDashboardStack = makeTechnicalStack(DashboardScreen, 'BX-CONNECT');
+  const SuperAdminUsersStack = makeTechnicalStack(AdminUsersScreen, t('superAdmin.admins'));
+  const SuperAdminLogsStack = makeTechnicalStack(SuperAdminLogsScreen, t('superAdmin.logsTitle'));
   const SuperAdminSecurityStack = makeTechnicalStack(
     SuperAdminAccountSecurityScreen,
-    t('superAdmin.security'),
-    roleLabel
+    t('superAdmin.security')
   );
 
   const tabs = getTabsForRole({
@@ -782,9 +815,7 @@ function PrivateTabs() {
           backgroundColor: '#FFFFFF',
           borderTopColor: '#E5E7EB',
           borderTopWidth: 1,
-          paddingTop: 5,
-          paddingBottom: 5,
-          height: 64,
+          paddingTop: 6,
           shadowColor: '#111827',
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.04,
@@ -794,25 +825,22 @@ function PrivateTabs() {
         tabBarActiveTintColor: '#2563EB',
         tabBarInactiveTintColor: '#64748B',
         tabBarHideOnKeyboard: true,
-        tabBarItemStyle: { minHeight: 54 },
-        tabBarLabel: ({ color, children }) => (
-          <Text
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.9}
-            style={{
-              color,
-              fontSize: 11,
-              lineHeight: 14,
-              fontWeight: '600',
-              maxWidth: 74,
-              textAlign: 'center',
-              marginTop: 1,
-            }}
-          >
-            {children}
-          </Text>
-        ),
+        tabBarItemStyle: {
+          flex: 1,
+          minHeight: 44,
+          paddingVertical: 2,
+        },
+        tabBarIconStyle: {
+          marginTop: 0,
+          marginBottom: 0,
+        },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          lineHeight: 13,
+          fontWeight: '600',
+          textAlign: 'center',
+          marginTop: 2,
+        },
       }}
     >
       {tabs.map((tab) => (
@@ -822,6 +850,7 @@ function PrivateTabs() {
           component={tab.component}
           options={{
             tabBarLabel: tab.label,
+            tabBarAccessibilityLabel: tab.label,
             tabBarButton: tab.hidden ? () => null : undefined,
             tabBarBadge: tab.name === 'TabNotifications' && unreadNotifications > 0
               ? unreadNotifications
@@ -832,18 +861,7 @@ function PrivateTabs() {
               fontSize: 10,
               fontWeight: '800',
             },
-            tabBarIcon: ({ color, focused }) => (
-              <View style={{
-                width: 40,
-                height: 28,
-                borderRadius: 14,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: focused ? '#EFF6FF' : 'transparent',
-              }}>
-                <AppIcon name={tab.icon} size={focused ? 22 : 21} color={color} />
-              </View>
-            ),
+            tabBarIcon: ({ color }) => <AppIcon name={tab.icon} size={22} color={color} />,
           }}
         />
       ))}
@@ -1115,7 +1133,7 @@ export default function AppNavigator() {
     <NavigationContainer key={isAuthenticated ? 'private' : 'public'}>
       {isAuthenticated
         ? <PrivateTabs />
-        : <PublicStack initialRouteName={sessionExpired || postLogoutNotice ? 'Login' : 'Home'} />}
+        : <PublicStack initialRouteName={sessionExpired || postLogoutNotice ? 'Login' : 'Welcome'} />}
     </NavigationContainer>
   );
 }

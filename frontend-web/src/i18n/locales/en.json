@@ -157,6 +157,8 @@
     "register_subtitle": "Join the BX-CONNECT community",
     "firstname": "First name",
     "lastname": "Last name",
+    "birthdate_label": "Date of birth",
+    "birthdate_hint": "Required to verify that you are at least 16 years old.",
     "confirm_password": "Confirm password",
     "role": "I am a",
     "role_membre": "Member",
@@ -172,6 +174,11 @@
     "error_password_min": "The password must contain at least 8 characters.",
     "error_firstname_required": "First name is required.",
     "error_lastname_required": "Last name is required.",
+    "error_birthdate_required": "Date of birth is required.",
+    "error_birthdate_invalid": "Enter a valid date of birth.",
+    "error_birthdate_future": "Date of birth cannot be in the future.",
+    "error_birthdate_too_young": "You must be at least 16 years old to create a BX-Connect account.",
+    "error_birthdate_implausible": "This date of birth appears implausible.",
     "error_email_required": "Email address is required.",
     "error_email_invalid": "The email address is invalid.",
     "error_password_required": "Password is required.",
@@ -1462,7 +1469,7 @@
           },
           {
             "title": "2. Account creation and security",
-            "body": "Users must provide accurate information and keep their credentials confidential. Activity performed through an account is presumed to come from its owner. Suspected unauthorised access must be reported promptly."
+            "body": "Independent registration is reserved for people aged at least 16. Users must provide accurate information and keep their credentials confidential. BX-Connect currently provides no parental-consent process for people under 16. Suspected unauthorised access must be reported promptly."
           },
           {
             "title": "3. Roles and access",
@@ -1500,11 +1507,11 @@
           },
           {
             "title": "2. Data processed",
-            "body": "We may process identity and contact details, role, language, registration date, group information, activities and registrations, projects and participation, messages, notifications, financial support, technical logs and evidence of legal acceptance."
+            "body": "We may process identity and contact details, date of birth, role, language, registration date, group information, activities and registrations, projects and participation, messages, notifications, financial support, technical logs and evidence of legal acceptance. The full date of birth is required when creating a new account and remains private."
           },
           {
             "title": "3. Purposes",
-            "body": "Data is used to create and secure accounts, manage roles, groups, activities, registrations, projects, messages and notifications, process partner support, provide assistance, prevent abuse and produce internal statistics."
+            "body": "Data is used to create and secure accounts, verify the minimum age of 16, manage roles, groups, activities, registrations, projects, messages and notifications, process partner support, provide assistance and prevent abuse. Age may later be used to adapt the experience or certain activities, subject to appropriate notice."
           },
           {
             "title": "4. Legal bases",
@@ -1516,11 +1523,11 @@
           },
           {
             "title": "6. Retention and security",
-            "body": "Data is retained for as long as needed for the account and relevant activities, then deleted or anonymised unless a legal duty applies. Access controls, authentication, logging and backups reduce risks."
+            "body": "The date of birth is retained with the account for as long as needed. Data is then deleted or anonymised in accordance with applicable rules unless a legal duty applies. Access controls, authentication, logging and backups reduce risks."
           },
           {
             "title": "7. Your rights",
-            "body": "You have rights of access, rectification, erasure, restriction and objection, and a right to portability where applicable. Consent may be withdrawn without affecting earlier lawful processing."
+            "body": "You have rights including access to, rectification and erasure of your data, including your date of birth, as well as restriction, objection and portability where applicable. Consent may be withdrawn without affecting earlier lawful processing."
           },
           {
             "title": "8. Exercising your rights",

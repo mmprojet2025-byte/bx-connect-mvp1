@@ -1,11 +1,13 @@
 package com.bxjeunes.bx_connect.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -30,6 +32,10 @@ public class User implements UserDetails {
 
     @Column(nullable = false, unique = true, length = 100)
     private String email;
+
+    @Column(name = "date_naissance")
+    @JsonIgnore
+    private LocalDate dateNaissance;
 
     @Column(nullable = false)
     private String motDePasse;

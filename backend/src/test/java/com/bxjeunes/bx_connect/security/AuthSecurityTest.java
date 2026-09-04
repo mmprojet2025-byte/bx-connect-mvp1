@@ -16,6 +16,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDate;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,6 +54,70 @@ class AuthSecurityTest {
 
         var response = authService.register(buildRequest("lucas@test.be"));
         assertThat(response.getRole()).isEqualTo(Role.MEMBRE);
+    }
+
+    @Test
+    @DisplayName("L'inscription accepte une personne qui a exactement 16 ans aujourd'hui")
+    void inscription_accepte_exactement_seize_ans() {
+        mockSuccessfulRegistration();
+        RegisterRequest request = buildRequest("seize@test.be");
+        request.setDateNaissance(LocalDate.now().minusYears(16));
+
+        authService.register(request);
+
+        verify(userRepository).save(org.mockito.ArgumentMatchers.argThat(user ->
+                request.getDateNaissance().equals(user.getDateNaissance())));
+    }
+
+    @Test
+    @DisplayName("L'inscription refuse la veille du seizieme anniversaire")
+    void inscription_refuse_moins_de_seize_ans() {
+        RegisterRequest request = buildRequest("mineur@test.be");
+        request.setDateNaissance(LocalDate.now().minusYears(16).plusDays(1));
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("16 ans");
+        org.mockito.Mockito.verifyNoInteractions(userRepository, passwordEncoder, jwtService, authenticationManager);
+    }
+
+    @Test
+    @DisplayName("L'inscription refuse une date absente")
+    void inscription_refuse_date_absente() {
+        RegisterRequest request = buildRequest("sans-date@test.be");
+        request.setDateNaissance(null);
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("obligatoire");
+        org.mockito.Mockito.verifyNoInteractions(userRepository, passwordEncoder, jwtService, authenticationManager);
+    }
+
+    @Test
+    @DisplayName("L'inscription refuse une date future")
+    void inscription_refuse_date_future() {
+        RegisterRequest request = buildRequest("futur@test.be");
+        request.setDateNaissance(LocalDate.now().plusDays(1));
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("futur");
+        org.mockito.Mockito.verifyNoInteractions(userRepository, passwordEncoder, jwtService, authenticationManager);
+    }
+
+    @Test
+    @DisplayName("L'inscription accepte exactement 120 ans et refuse au-dela")
+    void inscription_applique_limite_cent_vingt_ans() {
+        mockSuccessfulRegistration();
+        RegisterRequest limite = buildRequest("limite@test.be");
+        limite.setDateNaissance(LocalDate.now().minusYears(120));
+        authService.register(limite);
+
+        RegisterRequest tropAncien = buildRequest("ancien@test.be");
+        tropAncien.setDateNaissance(LocalDate.now().minusYears(120).minusDays(1));
+        assertThatThrownBy(() -> authService.register(tropAncien))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("invraisemblable");
     }
 
     @Test
@@ -143,6 +209,7 @@ class AuthSecurityTest {
         req.setPrenom("Test");
         req.setNom("User");
         req.setEmail(email);
+        req.setDateNaissance(LocalDate.of(1995, 6, 15));
         req.setMotDePasse("Password123!");
         req.setTermsAccepted(true);
         req.setPrivacyAccepted(true);

@@ -1,10 +1,15 @@
 package com.bxjeunes.bx_connect.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+
+import java.time.LocalDate;
 
 /**
  * DTO inscription publique.
@@ -25,6 +30,11 @@ public class RegisterRequest {
     @NotBlank(message = "L'email est obligatoire")
     @Email(message = "Format email invalide")
     private String email;
+
+    @NotNull(message = "La date de naissance est obligatoire")
+    @PastOrPresent(message = "La date de naissance ne peut pas etre dans le futur")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate dateNaissance;
 
     @NotBlank(message = "Le mot de passe est obligatoire")
     @Size(min = 8, message = "Le mot de passe doit contenir au moins 8 caracteres")

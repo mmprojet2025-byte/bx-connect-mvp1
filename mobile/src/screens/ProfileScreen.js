@@ -17,12 +17,10 @@ import {
 } from '../services/pushNotifications';
 import { getStoredToken } from '../services/secureAuthStorage';
 import {
-  ActionCard,
   Badge,
   BORDER_RADIUS,
   Card,
   COLORS,
-  SHADOWS,
   SPACING,
   TYPOGRAPHY,
   ErrorState,
@@ -205,12 +203,6 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
-  const handlePhotoSoon = () => {
-    setError('');
-    setMessage(t('profile.photo_soon'));
-    setTimeout(() => setMessage(''), 3000);
-  };
-
   if (loading) {
     return <LoadingState label={t('common.loading')} />;
   }
@@ -238,7 +230,7 @@ export default function ProfileScreen({ navigation }) {
         keyboardShouldPersistTaps="handled"
       >
       {message !== '' && (
-        <View style={styles.successBox}>
+        <View style={styles.successBox} accessibilityRole="alert">
           <Text style={styles.successText}>{message}</Text>
         </View>
       )}
@@ -249,90 +241,74 @@ export default function ProfileScreen({ navigation }) {
         </View>
       )}
       {error !== '' && (
-        <View style={styles.errorBox}>
+        <View style={styles.errorBox} accessibilityRole="alert">
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
 
-      <View style={styles.profileHero}>
-        <View style={styles.heroAccent} />
-        <View style={styles.heroBrand}>
-          <Image
-            source={require('../../assets/images/logo-bx-connect.png')}
-            style={styles.heroBrandLogo}
-            resizeMode="contain"
-          />
-        </View>
-        <View style={styles.avatarFrame}>
+      <Card style={styles.identityCard}>
+        <View style={styles.avatarFrame} accessibilityRole="image">
           <Image
             source={require('../../assets/images/avatars/default-avatar.png')}
             style={styles.avatarImage}
             resizeMode="cover"
             accessibilityLabel={t('profile.default_avatar')}
           />
-          <TouchableOpacity
-            style={styles.photoButton}
-            onPress={handlePhotoSoon}
-            accessibilityLabel={t('profile.change_photo')}
-          >
-            <AppIcon name="camera-outline" size={15} color={COLORS.bxBlue} />
-          </TouchableOpacity>
         </View>
         <Text style={styles.profileName}>{profil?.prenom} {profil?.nom}</Text>
         <Badge
           label={t(`roles.${profil?.role}`)}
           color={COLORS.info}
         />
-        <TouchableOpacity style={styles.photoLabelButton} onPress={handlePhotoSoon}>
-          <AppIcon name="camera-outline" size={14} color="#fff" />
-          <Text style={styles.photoLabel}>{t('profile.change_photo')}</Text>
-          <Text style={styles.soonLabel}>{t('profile.soon')}</Text>
+        <TouchableOpacity
+          style={styles.primaryProfileButton}
+          onPress={() => {
+            setShowPasswordForm(false);
+            setEditMode(true);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={t('profile.edit_btn')}
+        >
+          <AppIcon name="edit" size={17} color="#fff" />
+          <Text style={styles.primaryProfileButtonText}>{t('profile.edit_btn')}</Text>
         </TouchableOpacity>
-      </View>
+      </Card>
 
-      <View style={styles.infoGrid}>
-        <InfoChip icon="mail-outline" text={profil?.email || t('common.notAvailable')} />
-        <InfoChip
+      <SectionTitle title={t('profile.title')} />
+      <Card style={styles.sectionCard}>
+        <InfoRow icon="mail-outline" text={profil?.email || t('common.notAvailable')} />
+        <InfoRow
           icon="globe-outline"
           text={languageLabel(profil?.languePreference, t)}
         />
-        <InfoChip
+        <InfoRow
           icon="calendar-outline"
           text={t('profile.since_short', {
             date: formatMonthYear(profil?.dateInscription, i18n.language, t),
           })}
         />
-        <InfoChip
-          icon="checkmark-circle-outline"
-          text={profil?.actif === false ? t('common.inactive') : t('common.active')}
-        />
-      </View>
+      </Card>
 
-      <View style={styles.sectionHeading}>
-        <Text style={styles.sectionTitle}>{t('profile.account')}</Text>
-        <Text style={styles.sectionSubtitle}>{t('profile.account_subtitle')}</Text>
-      </View>
-
-      <ActionCard
+      <SectionTitle title={t('profile.account')} />
+      <Card style={styles.sectionCard}>
+      <ProfileAction
         label={t('profile.edit_btn')}
-        description={t('profile.edit_action_description')}
         icon="edit"
-        color={COLORS.bxBlueLight}
         onPress={() => {
           setShowPasswordForm(false);
           setEditMode(true);
         }}
       />
-      <ActionCard
+      <ProfileAction
         label={t('profile.change_password')}
-        description={t('profile.password_action_description')}
         icon="lock"
-        color={COLORS.impactOrange}
+        last
         onPress={() => {
           setEditMode(false);
           setShowPasswordForm(true);
         }}
       />
+      </Card>
 
       {editMode && (
         <Card style={styles.formCard}>
@@ -352,6 +328,7 @@ export default function ProfileScreen({ navigation }) {
               value={form.prenom}
               onChangeText={(val) => setForm({ ...form, prenom: val })}
               autoCapitalize="words"
+              accessibilityLabel={t('profile.firstname')}
             />
 
           <Text style={styles.label}>{t('profile.lastname')}</Text>
@@ -360,6 +337,7 @@ export default function ProfileScreen({ navigation }) {
               value={form.nom}
               onChangeText={(val) => setForm({ ...form, nom: val })}
               autoCapitalize="words"
+              accessibilityLabel={t('profile.lastname')}
             />
 
           <Text style={styles.label}>{t('profile.language')}</Text>
@@ -372,6 +350,8 @@ export default function ProfileScreen({ navigation }) {
                   form.languePreference === l.value && styles.langueBtnActive,
                 ]}
                 onPress={() => setForm({ ...form, languePreference: l.value })}
+                accessibilityRole="button"
+                accessibilityState={{ selected: form.languePreference === l.value }}
               >
                 <Text style={[
                   styles.langueBtnText,
@@ -389,6 +369,7 @@ export default function ProfileScreen({ navigation }) {
               onPress={handleSaveProfil}
               disabled={saving}
               activeOpacity={0.8}
+              accessibilityRole="button"
             >
               {saving ? (
                 <ActivityIndicator color="#fff" size="small" />
@@ -399,7 +380,7 @@ export default function ProfileScreen({ navigation }) {
                 </>
               )}
             </TouchableOpacity>
-            <TouchableOpacity style={styles.btnCancel} onPress={() => setEditMode(false)}>
+            <TouchableOpacity style={styles.btnCancel} onPress={() => setEditMode(false)} accessibilityRole="button">
               <Text style={styles.btnCancelText}>{t('profile.cancel_btn')}</Text>
             </TouchableOpacity>
           </View>
@@ -424,6 +405,7 @@ export default function ProfileScreen({ navigation }) {
             onChangeText={(val) => setPasswordForm({ ...passwordForm, ancienMotDePasse: val })}
             secureTextEntry
             autoCapitalize="none"
+            accessibilityLabel={t('profile.old_password')}
           />
           <Text style={styles.label}>{t('profile.new_password')}</Text>
           <TextInput
@@ -432,12 +414,14 @@ export default function ProfileScreen({ navigation }) {
             onChangeText={(val) => setPasswordForm({ ...passwordForm, nouveauMotDePasse: val })}
             secureTextEntry
             autoCapitalize="none"
+            accessibilityLabel={t('profile.new_password')}
           />
           <View style={styles.editActions}>
             <TouchableOpacity
               style={[styles.btnSave, saving && styles.btnDisabled]}
               onPress={handleChangePassword}
               disabled={saving}
+              accessibilityRole="button"
             >
               {saving ? (
                 <ActivityIndicator color="#fff" size="small" />
@@ -451,6 +435,7 @@ export default function ProfileScreen({ navigation }) {
             <TouchableOpacity
               style={styles.btnCancel}
               onPress={() => setShowPasswordForm(false)}
+              accessibilityRole="button"
             >
               <Text style={styles.btnCancelText}>{t('profile.cancel_btn')}</Text>
             </TouchableOpacity>
@@ -458,10 +443,7 @@ export default function ProfileScreen({ navigation }) {
         </Card>
       )}
 
-      <View style={styles.sectionHeading}>
-        <Text style={styles.sectionTitle}>{t('push.title')}</Text>
-        <Text style={styles.sectionSubtitle}>{t('push.description')}</Text>
-      </View>
+      <SectionTitle title={t('push.title')} />
       <Card style={styles.pushCard}>
         <View style={styles.pushIcon}>
           <AppIcon name="bell" size={20} color={COLORS.bxBlueLight} />
@@ -485,10 +467,7 @@ export default function ProfileScreen({ navigation }) {
         )}
       </Card>
 
-      <View style={styles.sectionHeading}>
-        <Text style={styles.sectionTitle}>{t('legal.profileTitle')}</Text>
-        <Text style={styles.sectionSubtitle}>{t('legal.profileDescription')}</Text>
-      </View>
+      <SectionTitle title={t('legal.profileTitle')} />
       <Card style={styles.legalCard}>
         <LegalAction icon="shield" label={t('legal.links.terms')} onPress={() => navigation.navigate('LegalTerms')} />
         <LegalAction icon="lock" label={t('legal.links.privacy')} onPress={() => navigation.navigate('LegalPrivacy')} />
@@ -502,6 +481,8 @@ export default function ProfileScreen({ navigation }) {
         style={styles.btnLogout}
         onPress={handleLogout}
         activeOpacity={0.75}
+        accessibilityRole="button"
+        accessibilityLabel={t('profile.logout')}
       >
         <AppIcon name="logout" size={17} color={COLORS.muted} />
         <Text style={styles.btnLogoutText}>{t('profile.logout')}</Text>
@@ -513,7 +494,7 @@ export default function ProfileScreen({ navigation }) {
 
 function LegalAction({ icon, label, onPress }) {
   return (
-    <TouchableOpacity style={styles.legalAction} onPress={onPress}>
+    <TouchableOpacity style={styles.legalAction} onPress={onPress} accessibilityRole="button" accessibilityLabel={label}>
       <View style={styles.legalActionIcon}>
         <AppIcon name={icon} size={16} color={COLORS.bxBlueLight} />
       </View>
@@ -523,16 +504,35 @@ function LegalAction({ icon, label, onPress }) {
   );
 }
 
-function InfoChip({ icon, text }) {
+function SectionTitle({ title }) {
+  return <Text style={styles.sectionTitle}>{title}</Text>;
+}
+
+function InfoRow({ icon, text }) {
   return (
-    <View style={styles.infoChip}>
-      <View style={styles.infoChipIcon}>
+    <View style={styles.infoRow}>
+      <View style={styles.rowIcon}>
         <AppIcon name={icon} size={15} color={COLORS.bxBlueLight} />
       </View>
-      <Text style={styles.infoChipText} numberOfLines={1} adjustsFontSizeToFit>
-        {text}
-      </Text>
+      <Text style={styles.infoRowText}>{text}</Text>
     </View>
+  );
+}
+
+function ProfileAction({ icon, label, onPress, last = false }) {
+  return (
+    <TouchableOpacity
+      style={[styles.profileAction, last && styles.lastRow]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <View style={styles.rowIcon}>
+        <AppIcon name={icon} size={17} color={COLORS.bxBlueLight} />
+      </View>
+      <Text style={styles.profileActionText}>{label}</Text>
+      <AppIcon name="chevron-forward-outline" size={18} color={COLORS.muted} />
+    </TouchableOpacity>
   );
 }
 
@@ -584,7 +584,7 @@ function formatMonthYear(dateStr, language, t) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.page },
-  content: { padding: SPACING.sm, paddingBottom: SPACING.xl },
+  content: { padding: SPACING.md, paddingBottom: 96 },
   noticeBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -630,106 +630,69 @@ const styles = StyleSheet.create({
   },
   errorText: { color: '#EF4444', fontSize: 13 },
 
-  profileHero: {
-    overflow: 'hidden',
+  identityCard: {
     alignItems: 'center',
-    backgroundColor: COLORS.bxBlue,
-    borderRadius: BORDER_RADIUS.xl,
-    paddingHorizontal: SPACING.md,
-    paddingTop: 6,
-    paddingBottom: 9,
-    marginBottom: SPACING.xs,
-    borderWidth: 1,
-    borderColor: COLORS.info,
-    ...SHADOWS.colored(COLORS.bxBlue),
+    paddingVertical: SPACING.lg,
+    marginBottom: SPACING.lg,
   },
-  heroAccent: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    width: '46%',
-    height: '100%',
-    backgroundColor: COLORS.bxBlueLight,
-    opacity: 0.42,
-    transform: [{ skewX: '-14deg' }, { translateX: 34 }],
-  },
-  heroBrand: {
-    alignSelf: 'stretch',
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.xs,
-  },
-  heroBrandLogo: { width: 108, height: 28 },
   avatarFrame: {
-    padding: 2,
+    padding: 3,
     borderRadius: BORDER_RADIUS.pill,
-    backgroundColor: '#fff',
-    marginBottom: SPACING.xs,
-  },
-  avatarImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-  },
-  photoButton: {
-    position: 'absolute',
-    right: -3,
-    bottom: -1,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: COLORS.softBlue,
-  },
-  profileName: { color: '#fff', fontSize: 16, lineHeight: 20, fontWeight: '900', marginBottom: 3 },
-  photoLabelButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: SPACING.xs,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: BORDER_RADIUS.pill,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
-  photoLabel: { color: '#fff', ...TYPOGRAPHY.tiny, fontWeight: '800' },
-  soonLabel: { color: '#BAE6FD', ...TYPOGRAPHY.tiny },
-  infoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.sm,
+    backgroundColor: COLORS.softBlue,
     marginBottom: SPACING.sm,
   },
-  infoChip: {
-    minWidth: '48%',
-    flexGrow: 1,
-    flexBasis: 150,
+  avatarImage: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+  },
+  profileName: { color: COLORS.text, fontSize: 20, lineHeight: 26, fontWeight: '800', marginBottom: SPACING.xs },
+  primaryProfileButton: {
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    justifyContent: 'center',
+    gap: 7,
+    marginTop: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     borderRadius: BORDER_RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.borderSoft,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    ...SHADOWS.soft,
+    backgroundColor: COLORS.bxBlue,
   },
-  infoChipIcon: {
-    width: 28,
-    height: 28,
+  primaryProfileButtonText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  sectionTitle: {
+    color: COLORS.text,
+    ...TYPOGRAPHY.section,
+    marginBottom: SPACING.sm,
+    marginTop: SPACING.xs,
+  },
+  sectionCard: { paddingVertical: 0, marginBottom: SPACING.lg },
+  infoRow: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.borderSoft,
+  },
+  rowIcon: {
+    width: 34,
+    height: 34,
     borderRadius: BORDER_RADIUS.sm,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.softBlue,
     marginRight: SPACING.sm,
   },
-  infoChipText: { flex: 1, color: COLORS.text, fontSize: 11, fontWeight: '700' },
-  sectionHeading: { marginBottom: SPACING.sm },
-  sectionTitle: { color: COLORS.bxBlue, ...TYPOGRAPHY.section },
-  sectionSubtitle: { color: COLORS.muted, ...TYPOGRAPHY.caption, marginTop: 2 },
+  infoRowText: { flex: 1, color: COLORS.text, ...TYPOGRAPHY.body },
+  profileAction: {
+    minHeight: 54,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.borderSoft,
+  },
+  lastRow: { borderBottomWidth: 0 },
+  profileActionText: { flex: 1, color: COLORS.text, ...TYPOGRAPHY.body, fontWeight: '700' },
   formCard: { marginTop: SPACING.xs, marginBottom: SPACING.md },
   formHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.lg },
   formIcon: {
@@ -751,6 +714,7 @@ const styles = StyleSheet.create({
   },
   languesRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.lg },
   langueBtn: {
+    minHeight: 44,
     flex: 1, borderWidth: 1, borderColor: COLORS.border,
     borderRadius: BORDER_RADIUS.sm, padding: 9, alignItems: 'center',
   },
@@ -759,18 +723,19 @@ const styles = StyleSheet.create({
   langueBtnTextActive: { color: COLORS.bxBlue, fontWeight: '900' },
   editActions: { flexDirection: 'row', gap: SPACING.sm },
   btnSave: {
-    flex: 1, backgroundColor: COLORS.bxBlue, paddingVertical: 12,
+    minHeight: 44, flex: 1, backgroundColor: COLORS.bxBlue, paddingVertical: 12,
     borderRadius: BORDER_RADIUS.md, alignItems: 'center', justifyContent: 'center',
     flexDirection: 'row', gap: 7,
   },
   btnDisabled: { backgroundColor: '#94a3b8', opacity: 0.7 },
   btnSaveText: { color: '#fff', fontWeight: '600', fontSize: 14 },
   btnCancel: {
-    flex: 1, backgroundColor: '#f1f5f9', paddingVertical: 12,
+    minHeight: 44, flex: 1, backgroundColor: '#f1f5f9', paddingVertical: 12,
     borderRadius: BORDER_RADIUS.md, alignItems: 'center',
   },
   btnCancelText: { color: COLORS.muted, fontWeight: '700', fontSize: 14 },
   btnLogout: {
+    minHeight: 44,
     alignSelf: 'center',
     paddingVertical: 10,
     paddingHorizontal: SPACING.lg,
@@ -804,6 +769,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: SPACING.lg,
+    minHeight: 68,
   },
   pushIcon: {
     width: 42,

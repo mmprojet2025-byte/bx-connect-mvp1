@@ -2,7 +2,69 @@
   "brand": {
     "slogan": "Connecter • Inspirer • Impacter"
   },
+  "welcome": {
+    "title": "Rejoins la communauté BX-Connect",
+    "description": "Découvre les activités et rejoins la communauté BX-Jeunes Impact.",
+    "discover": "Découvrir sans compte",
+    "back": "Retour à BX-Connect"
+  },
+  "registerWizard": {
+    "progress": "Étape {{step}} sur {{total}}",
+    "back": "Revenir à l’étape précédente",
+    "continue": "Continuer",
+    "acceptance": "J’accepte les Conditions d’utilisation et la Politique de confidentialité.",
+    "nameTooLong": "Le prénom et le nom ne peuvent pas dépasser 50 caractères.",
+    "google": {
+      "continue": "Continuer avec Google",
+      "soon": "Bientôt disponible"
+    },
+    "birthDate": {
+      "label": "Date de naissance",
+      "placeholder": "JJ/MM/AAAA",
+      "hint": "Format attendu : jour, mois et année, par exemple 03/09/2000.",
+      "required": "La date de naissance est obligatoire.",
+      "invalid": "Saisis une date de naissance valide au format JJ/MM/AAAA.",
+      "future": "La date de naissance ne peut pas être dans le futur.",
+      "tooYoung": "Tu dois avoir au moins 16 ans pour créer un compte BX-Connect.",
+      "implausible": "Cette date de naissance semble invraisemblable."
+    },
+    "step1": {
+      "title": "Découvre BX-Connect",
+      "subtitle": "Découvre les activités, rejoins un groupe et participe aux projets de BX-Jeunes Impact.",
+      "features": {
+        "activities": "Activités",
+        "groups": "Groupes",
+        "projects": "Projets",
+        "community": "Communauté"
+      }
+    },
+    "step2": {
+      "title": "Faisons connaissance",
+      "subtitle": "Indique les informations nécessaires à la création de ton compte."
+    },
+    "step3": {
+      "title": "Protège ton compte",
+      "subtitle": "Choisis un mot de passe sûr que tu n’utilises pas ailleurs."
+    }
+  },
   "home": {
+    "title": "Découvre, participe, agis.",
+    "subtitle": "Retrouve les prochaines activités et les groupes de BX-Jeunes Impact.",
+    "toConfirm": "À confirmer",
+    "activities": {
+      "title": "Prochaines activités",
+      "seeAll": "Voir toutes les activités",
+      "empty": "Aucune activité n’est prévue pour le moment.",
+      "error": "Les activités ne peuvent pas être chargées pour le moment.",
+      "open": "Découvrir l’activité {{title}}"
+    },
+    "groups": {
+      "title": "Groupes à découvrir",
+      "seeAll": "Voir tous les groupes",
+      "empty": "Aucun groupe n’est disponible pour le moment.",
+      "error": "Les groupes ne peuvent pas être chargés pour le moment.",
+      "open": "Découvrir le groupe {{name}}"
+    },
     "heroText": "La plateforme communautaire pour découvrir des activités, rejoindre un groupe et porter des projets qui ont du sens.",
     "viewActivities": "Voir les activités",
     "discover": "Découvrir",
@@ -363,6 +425,9 @@
     "PUBLIC": "Public"
   },
   "messaging": {
+    "businessConversations": "Conversations métier",
+    "businessConversationsDescription": "Échanges liés aux projets, soutiens et affectations.",
+    "businessConversationsHint": "Ouvre vos conversations métier.",
     "title": "Messagerie",
     "type_message": "Écrire un message...",
     "groupMessaging": "Messagerie de groupe",
@@ -424,7 +489,7 @@
   "auth": {
     "login_hero_title": "Connecte-toi à la communauté BX-Connect",
     "login_hero_text": "Retrouve tes activités, tes groupes, tes projets et tes messages.",
-    "login_subtitle": "Accède à ton espace communautaire.",
+    "login_subtitle": "Accède à ton espace BX-Connect.",
     "register_hero_title": "Rejoins la communauté BX-Connect",
     "register_hero_text": "Crée ton compte pour retrouver tes activités, tes groupes, tes projets et tes messages.",
     "register_subtitle": "Quelques informations suffisent pour ouvrir ton espace.",
@@ -445,6 +510,9 @@
     "login_btn": "Se connecter",
     "register_btn": "Créer mon compte",
     "create_free_account": "Créer un compte gratuitement",
+    "no_account": "Pas encore de compte ?",
+    "show_password": "Afficher le mot de passe",
+    "hide_password": "Masquer le mot de passe",
     "already_account": "Déjà inscrit ? Se connecter",
     "separator_or": "ou",
     "view_activities_guest": "Voir les activités sans se connecter →",
@@ -1013,7 +1081,7 @@
           },
           {
             "title": "Compte et accès",
-            "body": "Vous fournissez des informations exactes, protégez vos identifiants et utilisez uniquement les fonctionnalités autorisées pour votre rôle. Toute tentative d’accès aux données d’un autre utilisateur ou groupe est interdite."
+            "body": "L’inscription autonome est réservée aux personnes âgées d’au moins 16 ans. Vous fournissez des informations exactes et protégez vos identifiants. BX-Connect ne propose actuellement aucun parcours de consentement parental pour les moins de 16 ans."
           },
           {
             "title": "Comportement et contenus",
@@ -1035,11 +1103,11 @@
         "sections": [
           {
             "title": "Responsable et données",
-            "body": "Bx-Jeunes Impact ASBL, Bruxelles, traite notamment votre identité, vos coordonnées, votre rôle, vos groupes, activités, inscriptions, projets, messages, notifications, soutiens et preuves d’acceptation légale."
+            "body": "Bx-Jeunes Impact ASBL, Bruxelles, traite notamment votre identité, vos coordonnées, votre date de naissance, votre rôle, vos groupes, activités, inscriptions, projets, messages, notifications, soutiens et preuves d’acceptation légale. La date complète est obligatoire à la création d’un nouveau compte et reste privée."
           },
           {
             "title": "Utilisation des données",
-            "body": "Les données servent à gérer et sécuriser les comptes, rôles, groupes, activités, inscriptions, projets, messages et notifications, à traiter les soutiens, fournir le support et prévenir les abus."
+            "body": "Les données servent à gérer et sécuriser les comptes, vérifier l’âge minimal de 16 ans, gérer les rôles et services, fournir le support et prévenir les abus. L’âge pourra ultérieurement servir à adapter l’expérience ou certaines activités, sous réserve d’une information appropriée."
           },
           {
             "title": "Bases et destinataires",
@@ -1047,11 +1115,11 @@
           },
           {
             "title": "Conservation et sécurité",
-            "body": "Les données sont conservées pendant la durée nécessaire puis supprimées ou anonymisées, sauf obligation légale. Des contrôles d’accès, journaux et sauvegardes limitent les risques."
+            "body": "La date de naissance est conservée avec le compte pendant sa durée utile. Les données sont ensuite supprimées ou anonymisées conformément aux règles applicables, sauf obligation légale. Des contrôles d’accès, journaux et sauvegardes limitent les risques."
           },
           {
             "title": "Vos droits",
-            "body": "Vous pouvez demander l’accès, la rectification, la suppression, la limitation ou l’opposition, et la portabilité lorsqu’elle s’applique. Contact : contact@bxconnect.be. Vous pouvez saisir l’Autorité de protection des données belge."
+            "body": "Vous pouvez demander l’accès, la rectification ou la suppression de vos données, y compris votre date de naissance, ainsi que la limitation, l’opposition et la portabilité lorsqu’elles s’appliquent. Contact : contact@bxconnect.be."
           }
         ]
       },

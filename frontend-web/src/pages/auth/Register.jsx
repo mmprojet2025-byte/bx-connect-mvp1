@@ -12,7 +12,7 @@ export default function Register() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const [form, setForm] = useState({ prenom:'', nom:'', email:'', motDePasse:'', confirmation:'' })
+  const [form, setForm] = useState({ prenom:'', nom:'', dateNaissance:'', email:'', motDePasse:'', confirmation:'' })
   const [legalAccepted, setLegalAccepted] = useState(false)
   const [erreur, setErreur] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -27,6 +27,8 @@ export default function Register() {
     setErreur(null)
     if (!form.prenom.trim()) { setErreur(t('auth.error_firstname_required')); return }
     if (!form.nom.trim()) { setErreur(t('auth.error_lastname_required')); return }
+    const birthDateError = validateBirthDate(form.dateNaissance, t)
+    if (birthDateError) { setErreur(birthDateError); return }
     if (!form.email.trim()) { setErreur(t('auth.error_email_required')); return }
     if (!isValidEmail(form.email)) { setErreur(t('auth.error_email_invalid')); return }
     if (!form.motDePasse) { setErreur(t('auth.error_password_required')); return }
@@ -38,6 +40,7 @@ export default function Register() {
     try {
       const res = await api.post('/auth/register', {
         prenom: form.prenom.trim(), nom: form.nom.trim(),
+        dateNaissance: form.dateNaissance,
         email: form.email.trim(), motDePasse: form.motDePasse,
         termsAccepted: true,
         privacyAccepted: true,
@@ -77,6 +80,23 @@ export default function Register() {
               <input id="register-lastname" required value={form.nom} onChange={e=>setForm({...form,nom:e.target.value})}
                 className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
             </div>
+          </div>
+          <div>
+            <label htmlFor="register-birthdate" className="block text-sm font-medium text-gray-700 mb-1">
+              {t('auth.birthdate_label')} *
+            </label>
+            <input
+              id="register-birthdate"
+              type="date"
+              required
+              min={getBirthDateLimits().min}
+              max={getBirthDateLimits().max}
+              value={form.dateNaissance}
+              onChange={e => setForm({ ...form, dateNaissance: e.target.value })}
+              aria-describedby="register-birthdate-help"
+              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <p id="register-birthdate-help" className="mt-1 text-xs text-slate-500">{t('auth.birthdate_hint')}</p>
           </div>
           <div>
             <label htmlFor="register-email" className="block text-sm font-medium text-gray-700 mb-1">{t('auth.email')} *</label>
@@ -223,6 +243,61 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
 }
 
+function validateBirthDate(value, t) {
+  if (!value) return t('auth.error_birthdate_required')
+  const birthDate = parseIsoDate(value)
+  if (!birthDate) return t('auth.error_birthdate_invalid')
+
+  const today = getLocalDateParts()
+  const age = calculateAge(birthDate, today)
+  if (compareDateParts(birthDate, today) > 0) return t('auth.error_birthdate_future')
+  if (age < 16) return t('auth.error_birthdate_too_young')
+  if (age > 120 || compareDateParts(birthDate, shiftYears(today, -120)) < 0) return t('auth.error_birthdate_implausible')
+  return ''
+}
+
+function getBirthDateLimits() {
+  const today = getLocalDateParts()
+  return {
+    min: formatIsoDate(shiftYears(today, -120)),
+    max: formatIsoDate(shiftYears(today, -16)),
+  }
+}
+
+function getLocalDateParts() {
+  const date = new Date()
+  return { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() }
+}
+
+function parseIsoDate(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!match) return null
+  const parts = { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) }
+  const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day))
+  if (date.getUTCFullYear() !== parts.year || date.getUTCMonth() + 1 !== parts.month || date.getUTCDate() !== parts.day) return null
+  return parts
+}
+
+function calculateAge(birthDate, today) {
+  let age = today.year - birthDate.year
+  if (today.month < birthDate.month || (today.month === birthDate.month && today.day < birthDate.day)) age -= 1
+  return age
+}
+
+function compareDateParts(left, right) {
+  return (left.year - right.year) || (left.month - right.month) || (left.day - right.day)
+}
+
+function shiftYears(date, years) {
+  const year = date.year + years
+  const lastDay = new Date(Date.UTC(year, date.month, 0)).getUTCDate()
+  return { year, month: date.month, day: Math.min(date.day, lastDay) }
+}
+
+function formatIsoDate(parts) {
+  return `${String(parts.year).padStart(4, '0')}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`
+}
+
 function LegalLinks({ t }) {
   return (
     <div className="mt-4 flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs text-slate-400">
@@ -235,6 +310,13 @@ function LegalLinks({ t }) {
 
 function formatAuthError(err, fallback, t) {
   if (err.response?.status === 403) return t('errors.forbidden')
+  const birthDateErrors = {
+    BIRTH_DATE_REQUIRED: 'error_birthdate_required',
+    BIRTH_DATE_FUTURE: 'error_birthdate_future',
+    BIRTH_DATE_MIN_AGE: 'error_birthdate_too_young',
+    BIRTH_DATE_IMPLAUSIBLE: 'error_birthdate_implausible',
+  }
+  if (birthDateErrors[err.response?.data?.code]) return t(`auth.${birthDateErrors[err.response.data.code]}`)
   const message = err.response?.data?.message?.toLowerCase() || ''
   if (message.includes('existe')) return t('auth.error_email_exists')
   return fallback

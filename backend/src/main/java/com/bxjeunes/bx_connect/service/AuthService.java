@@ -9,6 +9,7 @@ import com.bxjeunes.bx_connect.entity.Langue;
 import com.bxjeunes.bx_connect.entity.AuthProvider;
 import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.User;
+import com.bxjeunes.bx_connect.exception.BirthDateValidationException;
 import com.bxjeunes.bx_connect.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,11 +19,16 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+
+    private static final int MIN_REGISTRATION_AGE = 16;
+    private static final int MAX_REASONABLE_AGE = 120;
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -35,6 +41,7 @@ public class AuthService {
      */
     public AuthResponse register(RegisterRequest request) {
         verifierConsentementLegal(request);
+        verifierDateNaissance(request.getDateNaissance(), LocalDate.now());
 
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Un compte existe deja avec cet email.");
@@ -45,6 +52,7 @@ public class AuthService {
                 .prenom(request.getPrenom())
                 .nom(request.getNom())
                 .email(request.getEmail())
+                .dateNaissance(request.getDateNaissance())
                 .motDePasse(passwordEncoder.encode(request.getMotDePasse()))
                 .role(Role.MEMBRE)  // SECURITE : toujours MEMBRE, jamais depuis le client
                 .languePreference(Langue.FR)
@@ -77,6 +85,23 @@ public class AuthService {
         if (!LegalConstants.CURRENT_VERSION.equals(request.getLegalVersion())) {
             throw new IllegalArgumentException(
                     "La version des documents legaux a change. Veuillez les consulter et les accepter a nouveau.");
+        }
+    }
+
+    private void verifierDateNaissance(LocalDate dateNaissance, LocalDate aujourdHui) {
+        if (dateNaissance == null) {
+            throw new BirthDateValidationException("BIRTH_DATE_REQUIRED", "La date de naissance est obligatoire.");
+        }
+        if (dateNaissance.isAfter(aujourdHui)) {
+            throw new BirthDateValidationException("BIRTH_DATE_FUTURE", "La date de naissance ne peut pas etre dans le futur.");
+        }
+
+        int age = Period.between(dateNaissance, aujourdHui).getYears();
+        if (age < MIN_REGISTRATION_AGE) {
+            throw new BirthDateValidationException("BIRTH_DATE_MIN_AGE", "Vous devez avoir au moins 16 ans pour creer un compte BX-Connect.");
+        }
+        if (age > MAX_REASONABLE_AGE || dateNaissance.isBefore(aujourdHui.minusYears(MAX_REASONABLE_AGE))) {
+            throw new BirthDateValidationException("BIRTH_DATE_IMPLAUSIBLE", "La date de naissance est invraisemblable.");
         }
     }
 

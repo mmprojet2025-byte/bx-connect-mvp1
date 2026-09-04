@@ -2,7 +2,69 @@
   "brand": {
     "slogan": "Connect • Inspire • Make an impact"
   },
+  "welcome": {
+    "title": "Join the BX-Connect community",
+    "description": "Discover activities and join the BX-Jeunes Impact community.",
+    "discover": "Explore without an account",
+    "back": "Back to BX-Connect"
+  },
+  "registerWizard": {
+    "progress": "Step {{step}} of {{total}}",
+    "back": "Go back to the previous step",
+    "continue": "Continue",
+    "acceptance": "I accept the Terms of use and the Privacy policy.",
+    "nameTooLong": "First and last names cannot exceed 50 characters.",
+    "google": {
+      "continue": "Continue with Google",
+      "soon": "Coming soon"
+    },
+    "birthDate": {
+      "label": "Date of birth",
+      "placeholder": "DD/MM/YYYY",
+      "hint": "Expected format: day, month and year, for example 03/09/2000.",
+      "required": "Date of birth is required.",
+      "invalid": "Enter a valid date of birth in DD/MM/YYYY format.",
+      "future": "Date of birth cannot be in the future.",
+      "tooYoung": "You must be at least 16 years old to create a BX-Connect account.",
+      "implausible": "This date of birth appears implausible."
+    },
+    "step1": {
+      "title": "Discover BX-Connect",
+      "subtitle": "Discover activities, join a group and take part in BX-Jeunes Impact projects.",
+      "features": {
+        "activities": "Activities",
+        "groups": "Groups",
+        "projects": "Projects",
+        "community": "Community"
+      }
+    },
+    "step2": {
+      "title": "Let’s get acquainted",
+      "subtitle": "Enter the information needed to create your account."
+    },
+    "step3": {
+      "title": "Protect your account",
+      "subtitle": "Choose a secure password that you do not use elsewhere."
+    }
+  },
   "home": {
+    "title": "Discover, participate, take action.",
+    "subtitle": "Find upcoming BX-Jeunes Impact activities and groups.",
+    "toConfirm": "To be confirmed",
+    "activities": {
+      "title": "Upcoming activities",
+      "seeAll": "View all activities",
+      "empty": "No activities are scheduled at the moment.",
+      "error": "Activities cannot be loaded right now.",
+      "open": "Discover the activity {{title}}"
+    },
+    "groups": {
+      "title": "Groups to discover",
+      "seeAll": "View all groups",
+      "empty": "No groups are available at the moment.",
+      "error": "Groups cannot be loaded right now.",
+      "open": "Discover the group {{name}}"
+    },
     "heroText": "The community platform for discovering activities, joining a group and developing meaningful projects.",
     "viewActivities": "View activities",
     "discover": "Discover",
@@ -363,6 +425,9 @@
     "PUBLIC": "Public"
   },
   "messaging": {
+    "businessConversations": "Business conversations",
+    "businessConversationsDescription": "Discussions about projects, support and assignments.",
+    "businessConversationsHint": "Opens your business conversations.",
     "title": "Messaging",
     "type_message": "Write a message...",
     "groupMessaging": "Group messaging",
@@ -422,7 +487,7 @@
   "auth": {
     "login_hero_title": "Sign in to the BX-Connect community",
     "login_hero_text": "Find your activities, groups, projects and messages.",
-    "login_subtitle": "Access your community space.",
+    "login_subtitle": "Access your BX-Connect space.",
     "register_hero_title": "Join the BX-Connect community",
     "register_hero_text": "Create your account to find your activities, groups, projects and messages.",
     "register_subtitle": "Enter a few details to open your space.",
@@ -443,6 +508,9 @@
     "login_btn": "Log in",
     "register_btn": "Create my account",
     "create_free_account": "Create a free account",
+    "no_account": "No account yet?",
+    "show_password": "Show password",
+    "hide_password": "Hide password",
     "already_account": "Already registered? Log in",
     "separator_or": "or",
     "view_activities_guest": "View activities without logging in →",
@@ -1009,7 +1077,7 @@
           },
           {
             "title": "Account and access",
-            "body": "You must provide accurate information, protect your credentials and only use features authorised for your role. Attempting to access another user’s or group’s restricted data is prohibited."
+            "body": "Independent registration is reserved for people aged at least 16. You must provide accurate information and protect your credentials. BX-Connect currently provides no parental-consent process for people under 16."
           },
           {
             "title": "Conduct and content",
@@ -1031,11 +1099,11 @@
         "sections": [
           {
             "title": "Controller and data",
-            "body": "Bx-Jeunes Impact ASBL, Brussels, processes identity and contact details, roles, groups, activities, registrations, projects, messages, notifications, support and evidence of legal acceptance."
+            "body": "Bx-Jeunes Impact ASBL, Brussels, processes identity and contact details, date of birth, role, groups, activities, registrations, projects, messages, notifications, support and evidence of legal acceptance. The full date of birth is required for a new account and remains private."
           },
           {
             "title": "How data is used",
-            "body": "Data is used to manage and secure accounts, roles, groups, activities, registrations, projects, messages and notifications, process support, provide assistance and prevent abuse."
+            "body": "Data is used to manage and secure accounts, verify the minimum age of 16, manage roles and services, provide assistance and prevent abuse. Age may later be used to adapt the experience or certain activities, subject to appropriate notice."
           },
           {
             "title": "Legal bases and recipients",
@@ -1043,11 +1111,11 @@
           },
           {
             "title": "Retention and security",
-            "body": "Data is retained as needed, then deleted or anonymised unless a legal duty applies. Access controls, logs and backups reduce risks."
+            "body": "The date of birth is retained with the account for as long as needed. Data is then deleted or anonymised in accordance with applicable rules unless a legal duty applies. Access controls, logs and backups reduce risks."
           },
           {
             "title": "Your rights",
-            "body": "You may request access, rectification, erasure, restriction, objection and portability where applicable. Contact: contact@bxconnect.be. You may complain to the Belgian Data Protection Authority."
+            "body": "You may request access to, rectification or erasure of your data, including your date of birth, as well as restriction, objection and portability where applicable. Contact: contact@bxconnect.be."
           }
         ]
       },

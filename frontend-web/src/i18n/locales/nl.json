@@ -157,6 +157,8 @@
     "register_subtitle": "Word lid van de BX-CONNECT gemeenschap",
     "firstname": "Voornaam",
     "lastname": "Achternaam",
+    "birthdate_label": "Geboortedatum",
+    "birthdate_hint": "Verplicht om te controleren dat je minstens 16 jaar bent.",
     "confirm_password": "Wachtwoord bevestigen",
     "role": "Ik ben",
     "role_membre": "Lid",
@@ -172,6 +174,11 @@
     "error_password_min": "Het wachtwoord moet minstens 8 tekens bevatten.",
     "error_firstname_required": "Voornaam is verplicht.",
     "error_lastname_required": "Achternaam is verplicht.",
+    "error_birthdate_required": "Geboortedatum is verplicht.",
+    "error_birthdate_invalid": "Voer een geldige geboortedatum in.",
+    "error_birthdate_future": "De geboortedatum kan niet in de toekomst liggen.",
+    "error_birthdate_too_young": "Je moet minstens 16 jaar zijn om een BX-Connect-account aan te maken.",
+    "error_birthdate_implausible": "Deze geboortedatum lijkt niet aannemelijk.",
     "error_email_required": "E-mailadres is verplicht.",
     "error_email_invalid": "Het e-mailadres is ongeldig.",
     "error_password_required": "Wachtwoord is verplicht.",
@@ -1462,7 +1469,7 @@
           },
           {
             "title": "2. Account en beveiliging",
-            "body": "Gebruikers verstrekken correcte informatie en houden hun toegangsgegevens vertrouwelijk. Activiteiten via een account worden geacht door de eigenaar te zijn uitgevoerd. Vermoed ongeoorloofd gebruik moet snel worden gemeld."
+            "body": "Zelfstandige registratie is voorbehouden aan personen van minstens 16 jaar. Gebruikers verstrekken correcte informatie en houden hun toegangsgegevens vertrouwelijk. BX-Connect biedt momenteel geen procedure voor ouderlijke toestemming voor personen jonger dan 16 jaar. Vermoed ongeoorloofd gebruik moet snel worden gemeld."
           },
           {
             "title": "3. Rollen en toegang",
@@ -1500,11 +1507,11 @@
           },
           {
             "title": "2. Verwerkte gegevens",
-            "body": "Wij kunnen identiteit, contactgegevens, rol, taal, registratiedatum, groepsgegevens, activiteiten en inschrijvingen, projecten en deelnames, berichten, meldingen, financiële steun, technische logs en bewijs van juridische aanvaarding verwerken."
+            "body": "Wij kunnen identiteit, contactgegevens, geboortedatum, rol, taal, registratiedatum, groepsgegevens, activiteiten en inschrijvingen, projecten en deelnames, berichten, meldingen, financiële steun, technische logs en bewijs van juridische aanvaarding verwerken. De volledige geboortedatum is verplicht bij het aanmaken van een nieuw account en blijft privé."
           },
           {
             "title": "3. Doeleinden",
-            "body": "Gegevens worden gebruikt om accounts aan te maken en te beveiligen, rollen, groepen, activiteiten, inschrijvingen, projecten, berichten en meldingen te beheren, partnersteun te behandelen, ondersteuning te bieden en misbruik te voorkomen."
+            "body": "Gegevens worden gebruikt om accounts aan te maken en te beveiligen, de minimumleeftijd van 16 jaar te controleren, rollen, groepen, activiteiten, inschrijvingen, projecten, berichten en meldingen te beheren, partnersteun te behandelen, ondersteuning te bieden en misbruik te voorkomen. Leeftijd kan later, na passende informatie, worden gebruikt om de ervaring of bepaalde activiteiten aan te passen."
           },
           {
             "title": "4. Rechtsgronden",
@@ -1516,11 +1523,11 @@
           },
           {
             "title": "6. Bewaring en beveiliging",
-            "body": "Gegevens worden bewaard zolang dat nodig is voor het account en de betrokken activiteiten, en daarna verwijderd of geanonimiseerd tenzij een wettelijke plicht geldt. Toegangscontrole, authenticatie, logging en back-ups beperken risico’s."
+            "body": "De geboortedatum wordt samen met het account bewaard zolang dat nodig is. Gegevens worden daarna volgens de toepasselijke regels verwijderd of geanonimiseerd, tenzij een wettelijke plicht geldt. Toegangscontrole, authenticatie, logging en back-ups beperken risico’s."
           },
           {
             "title": "7. Jouw rechten",
-            "body": "Je hebt recht op inzage, rectificatie, verwijdering, beperking en bezwaar, en waar van toepassing op overdraagbaarheid. Toestemming kan worden ingetrokken zonder eerdere rechtmatige verwerkingen aan te tasten."
+            "body": "Je hebt onder meer recht op inzage, rectificatie en verwijdering van je gegevens, waaronder je geboortedatum, en waar van toepassing op beperking, bezwaar en overdraagbaarheid. Toestemming kan worden ingetrokken zonder eerdere rechtmatige verwerkingen aan te tasten."
           },
           {
             "title": "8. Je rechten uitoefenen",

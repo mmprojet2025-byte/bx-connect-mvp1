@@ -2,7 +2,69 @@
   "brand": {
     "slogan": "Verbinden • Inspireren • Impact maken"
   },
+  "welcome": {
+    "title": "Word lid van de BX-Connect-community",
+    "description": "Ontdek activiteiten en sluit je aan bij de BX-Jeunes Impact-community.",
+    "discover": "Ontdekken zonder account",
+    "back": "Terug naar BX-Connect"
+  },
+  "registerWizard": {
+    "progress": "Stap {{step}} van {{total}}",
+    "back": "Terug naar de vorige stap",
+    "continue": "Doorgaan",
+    "acceptance": "Ik aanvaard de Gebruiksvoorwaarden en het Privacybeleid.",
+    "nameTooLong": "Voornaam en achternaam mogen niet langer zijn dan 50 tekens.",
+    "google": {
+      "continue": "Doorgaan met Google",
+      "soon": "Binnenkort beschikbaar"
+    },
+    "birthDate": {
+      "label": "Geboortedatum",
+      "placeholder": "DD/MM/JJJJ",
+      "hint": "Verwacht formaat: dag, maand en jaar, bijvoorbeeld 03/09/2000.",
+      "required": "De geboortedatum is verplicht.",
+      "invalid": "Voer een geldige geboortedatum in als DD/MM/JJJJ.",
+      "future": "De geboortedatum kan niet in de toekomst liggen.",
+      "tooYoung": "Je moet minstens 16 jaar zijn om een BX-Connect-account aan te maken.",
+      "implausible": "Deze geboortedatum lijkt niet aannemelijk."
+    },
+    "step1": {
+      "title": "Ontdek BX-Connect",
+      "subtitle": "Ontdek activiteiten, sluit je aan bij een groep en werk mee aan de projecten van BX-Jeunes Impact.",
+      "features": {
+        "activities": "Activiteiten",
+        "groups": "Groepen",
+        "projects": "Projecten",
+        "community": "Community"
+      }
+    },
+    "step2": {
+      "title": "Laten we kennismaken",
+      "subtitle": "Vul de gegevens in die nodig zijn om je account aan te maken."
+    },
+    "step3": {
+      "title": "Beveilig je account",
+      "subtitle": "Kies een veilig wachtwoord dat je nergens anders gebruikt."
+    }
+  },
   "home": {
+    "title": "Ontdek, doe mee, maak impact.",
+    "subtitle": "Bekijk de volgende activiteiten en groepen van BX-Jeunes Impact.",
+    "toConfirm": "Nog te bevestigen",
+    "activities": {
+      "title": "Volgende activiteiten",
+      "seeAll": "Alle activiteiten bekijken",
+      "empty": "Er zijn momenteel geen activiteiten gepland.",
+      "error": "De activiteiten kunnen momenteel niet worden geladen.",
+      "open": "Activiteit {{title}} ontdekken"
+    },
+    "groups": {
+      "title": "Groepen om te ontdekken",
+      "seeAll": "Alle groepen bekijken",
+      "empty": "Er zijn momenteel geen groepen beschikbaar.",
+      "error": "De groepen kunnen momenteel niet worden geladen.",
+      "open": "Groep {{name}} ontdekken"
+    },
     "heroText": "Het communityplatform om activiteiten te ontdekken, lid te worden van een groep en betekenisvolle projecten uit te werken.",
     "viewActivities": "Activiteiten bekijken",
     "discover": "Ontdekken",
@@ -363,6 +425,9 @@
     "PUBLIC": "Openbaar"
   },
   "messaging": {
+    "businessConversations": "Zakelijke gesprekken",
+    "businessConversationsDescription": "Gesprekken over projecten, steun en toewijzingen.",
+    "businessConversationsHint": "Opent uw zakelijke gesprekken.",
     "title": "Berichten",
     "type_message": "Een bericht schrijven...",
     "groupMessaging": "Groepsberichten",
@@ -422,7 +487,7 @@
   "auth": {
     "login_hero_title": "Meld je aan bij de BX-Connect-community",
     "login_hero_text": "Vind je activiteiten, groepen, projecten en berichten terug.",
-    "login_subtitle": "Ga naar je communityruimte.",
+    "login_subtitle": "Ga naar je BX-Connect-ruimte.",
     "register_hero_title": "Word lid van de BX-Connect-community",
     "register_hero_text": "Maak je account aan om je activiteiten, groepen, projecten en berichten terug te vinden.",
     "register_subtitle": "Vul enkele gegevens in om je ruimte te openen.",
@@ -443,6 +508,9 @@
     "login_btn": "Aanmelden",
     "register_btn": "Mijn account aanmaken",
     "create_free_account": "Gratis account aanmaken",
+    "no_account": "Nog geen account?",
+    "show_password": "Wachtwoord tonen",
+    "hide_password": "Wachtwoord verbergen",
     "already_account": "Al geregistreerd? Aanmelden",
     "separator_or": "of",
     "view_activities_guest": "Activiteiten bekijken zonder aan te melden →",
@@ -1009,7 +1077,7 @@
           },
           {
             "title": "Account en toegang",
-            "body": "Je verstrekt correcte informatie, beschermt je toegangsgegevens en gebruikt alleen functies die bij je rol horen. Toegang proberen te krijgen tot afgeschermde gegevens van anderen is verboden."
+            "body": "Zelfstandige registratie is voorbehouden aan personen van minstens 16 jaar. Je verstrekt correcte informatie en beschermt je toegangsgegevens. BX-Connect biedt momenteel geen procedure voor ouderlijke toestemming voor personen jonger dan 16 jaar."
           },
           {
             "title": "Gedrag en inhoud",
@@ -1031,11 +1099,11 @@
         "sections": [
           {
             "title": "Verantwoordelijke en gegevens",
-            "body": "Bx-Jeunes Impact ASBL, Brussel, verwerkt identiteit, contactgegevens, rollen, groepen, activiteiten, inschrijvingen, projecten, berichten, meldingen, steun en bewijs van juridische aanvaarding."
+            "body": "Bx-Jeunes Impact ASBL, Brussel, verwerkt onder meer je identiteit, contactgegevens, geboortedatum, rol, groepen, activiteiten, inschrijvingen, projecten, berichten, meldingen, steun en bewijs van juridische aanvaarding. De volledige geboortedatum is verplicht bij een nieuw account en blijft privé."
           },
           {
             "title": "Gebruik van gegevens",
-            "body": "Gegevens dienen om accounts, rollen, groepen, activiteiten, inschrijvingen, projecten, berichten en meldingen te beheren en beveiligen, steun te behandelen, hulp te bieden en misbruik te voorkomen."
+            "body": "Gegevens dienen om accounts te beheren en beveiligen, de minimumleeftijd van 16 jaar te controleren, rollen en diensten te beheren, hulp te bieden en misbruik te voorkomen. Leeftijd kan later, na passende informatie, worden gebruikt om de ervaring of bepaalde activiteiten aan te passen."
           },
           {
             "title": "Rechtsgronden en ontvangers",
@@ -1043,11 +1111,11 @@
           },
           {
             "title": "Bewaring en beveiliging",
-            "body": "Gegevens worden bewaard zolang nodig en daarna verwijderd of geanonimiseerd, tenzij een wettelijke plicht geldt. Toegangscontrole, logs en back-ups beperken risico’s."
+            "body": "De geboortedatum wordt samen met het account bewaard zolang dat nodig is. Gegevens worden daarna volgens de toepasselijke regels verwijderd of geanonimiseerd, tenzij een wettelijke plicht geldt. Toegangscontrole, logs en back-ups beperken risico’s."
           },
           {
             "title": "Jouw rechten",
-            "body": "Je kunt inzage, rectificatie, verwijdering, beperking, bezwaar en waar toepasselijk overdraagbaarheid vragen. Contact: contact@bxconnect.be. Je kunt een klacht indienen bij de Belgische Gegevensbeschermingsautoriteit."
+            "body": "Je kunt inzage, rectificatie of verwijdering van je gegevens vragen, waaronder je geboortedatum, en waar toepasselijk beperking, bezwaar en overdraagbaarheid. Contact: contact@bxconnect.be."
           }
         ]
       },

@@ -1,290 +1,253 @@
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../context/AuthContext';
+import api from '../api/axios';
 import AppIcon from '../components/AppIcon';
-import { COLORS, Card, SectionHeader } from '../components/MobileUI';
+import { COLORS } from '../components/MobileUI';
+import { getReadOnlyCache, saveReadOnlyCache } from '../services/readOnlyCache';
 
-const features = [
-  {
-    titleKey: 'home.features.activitiesTitle',
-    textKey: 'home.features.activitiesText',
-    icon: 'activity',
-    color: COLORS.info,
-    route: 'Activities',
-  },
-  {
-    titleKey: 'home.features.projectsTitle',
-    textKey: 'home.features.projectsText',
-    icon: 'project',
-    color: COLORS.impactOrange,
-    route: 'Login',
-  },
-  {
-    titleKey: 'home.features.groupsTitle',
-    textKey: 'home.features.groupsText',
-    icon: 'group',
-    color: COLORS.success,
-    route: 'Groupes',
-  },
-  {
-    titleKey: 'home.features.communityTitle',
-    textKey: 'home.features.communityText',
-    icon: 'message',
-    color: '#8B5CF6',
-    route: 'Login',
-  },
-];
-
-const audiences = [
-  { labelKey: 'home.audiences.members', icon: 'user', color: COLORS.info },
-  { labelKey: 'home.audiences.referents', icon: 'shield', color: COLORS.success },
-  { labelKey: 'home.audiences.partners', icon: 'wallet', color: COLORS.impactOrange },
-];
+const ACTIVITIES_CACHE_KEY = 'activities:public';
+const GROUPS_CACHE_KEY = 'groups:public';
+const loadingState = () => ({ items: [], loading: true, error: '' });
 
 export default function HomeScreen({ navigation }) {
-  const { isAuthenticated, user } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [activities, setActivities] = useState(loadingState);
+  const [groups, setGroups] = useState(loadingState);
 
-  const goTo = (route) => {
-    if (route === 'Login' && isAuthenticated) {
-      navigation.navigate('Activities');
-      return;
+  const loadActivities = useCallback(async () => {
+    setActivities((current) => ({ ...current, loading: true, error: '' }));
+    try {
+      const response = await api.get('/activites', { skipAuth: true });
+      const data = response.data || [];
+      await saveReadOnlyCache(ACTIVITIES_CACHE_KEY, data);
+      setActivities({ items: upcoming(data), loading: false, error: '' });
+    } catch {
+      const cached = await getReadOnlyCache(ACTIVITIES_CACHE_KEY);
+      setActivities(cached?.length
+        ? { items: upcoming(cached), loading: false, error: '' }
+        : { items: [], loading: false, error: t('home.activities.error') });
     }
-    navigation.navigate(route);
-  };
+  }, [t]);
+
+  const loadGroups = useCallback(async () => {
+    setGroups((current) => ({ ...current, loading: true, error: '' }));
+    try {
+      const response = await api.get('/groupes');
+      const data = response.data || [];
+      await saveReadOnlyCache(GROUPS_CACHE_KEY, data);
+      setGroups({ items: data.slice(0, 3), loading: false, error: '' });
+    } catch {
+      const cached = await getReadOnlyCache(GROUPS_CACHE_KEY);
+      setGroups(cached?.length
+        ? { items: cached.slice(0, 3), loading: false, error: '' }
+        : { items: [], loading: false, error: t('home.groups.error') });
+    }
+  }, [t]);
+
+  useEffect(() => {
+    loadActivities();
+    loadGroups();
+  }, [loadActivities, loadGroups]);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.hero}>
-        <Image
-          source={require('../../assets/images/logo-bx-connect.png')}
-          style={styles.brandLogo}
-          resizeMode="contain"
-        />
-
-        <Text style={styles.slogan}>{t('brand.slogan')}</Text>
-        <Text style={styles.heroText}>{t('home.heroText')}</Text>
-
-        <View style={styles.heroActions}>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={() => navigation.navigate(isAuthenticated ? 'Activities' : 'Login')}
-            activeOpacity={0.86}
-          >
-            <AppIcon name={isAuthenticated ? 'activity' : 'lock'} size={18} color="#fff" />
-            <Text style={styles.primaryButtonText}>
-              {isAuthenticated ? t('home.viewActivities') : t('auth.login_btn')}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => navigation.navigate('Activities')}
-            activeOpacity={0.86}
-          >
-            <AppIcon name="search" size={18} color={COLORS.bxBlue} />
-            <Text style={styles.secondaryButtonText}>{t('home.discover')}</Text>
-          </TouchableOpacity>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      contentInsetAdjustmentBehavior="automatic"
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.intro}>
+        <Text style={styles.title}>{t('home.title')}</Text>
+        <Text style={styles.subtitle}>{t('home.subtitle')}</Text>
+        <View style={styles.authActions}>
+          <AuthButton label={t('auth.login_btn')} onPress={() => navigation.navigate('Login')} primary />
+          <AuthButton label={t('auth.create_free_account')} onPress={() => navigation.navigate('Register')} />
         </View>
       </View>
 
-      {isAuthenticated ? (
-        <Card style={styles.welcomeCard}>
-          <View style={styles.welcomeIcon}>
-            <AppIcon name="check" size={22} color={COLORS.success} />
-          </View>
-          <View style={styles.welcomeTextWrap}>
-            <Text style={styles.welcomeTitle}>
-              {user?.prenom
-                ? t('home.welcomeNamed', { name: user.prenom })
-                : t('home.welcome')}
-            </Text>
-            <Text style={styles.welcomeText}>{t('home.welcomeText')}</Text>
-          </View>
-        </Card>
-      ) : null}
-
-      <View style={styles.section}>
-        <SectionHeader
-          title={t('home.featuresTitle')}
-          subtitle={t('home.featuresSubtitle')}
-          icon="project"
-        />
-        <View style={styles.featureGrid}>
-          {features.map((feature) => (
-            <TouchableOpacity
-              key={feature.titleKey}
-              style={styles.featureCard}
-              onPress={() => goTo(feature.route)}
-              activeOpacity={0.86}
-            >
-              <View style={[styles.featureIcon, { backgroundColor: `${feature.color}18` }]}>
-                <AppIcon name={feature.icon} size={22} color={feature.color} />
-              </View>
-              <Text style={styles.featureTitle}>{t(feature.titleKey)}</Text>
-              <Text style={styles.featureText}>{t(feature.textKey)}</Text>
-            </TouchableOpacity>
+      <HomeSection
+        title={t('home.activities.title')}
+        icon="activity"
+        actionLabel={t('home.activities.seeAll')}
+        onAction={() => navigation.navigate('Activities')}
+      >
+        <SectionState state={activities} empty={t('home.activities.empty')} onRetry={loadActivities} t={t}>
+          {activities.items.map((activity) => (
+            <PreviewCard
+              key={activity.id}
+              title={activity.titre}
+              meta={formatDate(activity.dateDebut, i18n.language, t)}
+              detail={[activity.commune, activity.theme].filter(Boolean).join(' · ') || t('home.toConfirm')}
+              color={COLORS.impactOrange}
+              label={t('home.activities.open', { title: activity.titre })}
+              onPress={() => navigation.navigate('Activities')}
+            />
           ))}
-        </View>
-      </View>
+        </SectionState>
+      </HomeSection>
 
-      <View style={styles.section}>
-        <SectionHeader
-          title={t('home.audiencesTitle')}
-          subtitle={t('home.audiencesSubtitle')}
-          icon="group"
-        />
-        <View style={styles.audienceRow}>
-          {audiences.map((audience) => (
-            <View key={audience.labelKey} style={styles.audiencePill}>
-              <View style={[styles.audienceIcon, { backgroundColor: `${audience.color}18` }]}>
-                <AppIcon name={audience.icon} size={18} color={audience.color} />
-              </View>
-              <Text style={styles.audienceText}>{t(audience.labelKey)}</Text>
-            </View>
+      <HomeSection
+        title={t('home.groups.title')}
+        icon="group"
+        actionLabel={t('home.groups.seeAll')}
+        onAction={() => navigation.navigate('Groupes')}
+      >
+        <SectionState state={groups} empty={t('home.groups.empty')} onRetry={loadGroups} t={t}>
+          {groups.items.map((group) => (
+            <PreviewCard
+              key={group.id}
+              title={group.nom}
+              meta={group.commune || group.theme || t('home.toConfirm')}
+              detail={t('groups.members_count', { count: group.nombreMembres ?? 0 })}
+              color={COLORS.success}
+              label={t('home.groups.open', { name: group.nom })}
+              onPress={() => navigation.navigate('Groupes')}
+            />
           ))}
-        </View>
-      </View>
-
-      {!isAuthenticated ? (
-        <Card style={styles.joinCard}>
-          <Image
-            source={require('../../assets/illustrations/community.png')}
-            style={styles.joinIllustration}
-            resizeMode="contain"
-          />
-          <View style={styles.joinContent}>
-            <Text style={styles.joinTitle}>{t('home.joinTitle')}</Text>
-            <Text style={styles.joinText}>{t('home.joinText')}</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.joinButton}
-            onPress={() => navigation.navigate('Register')}
-            activeOpacity={0.86}
-          >
-            <Text style={styles.joinButtonText}>{t('auth.create_free_account')}</Text>
-          </TouchableOpacity>
-        </Card>
-      ) : null}
+        </SectionState>
+      </HomeSection>
     </ScrollView>
   );
 }
 
+function AuthButton({ label, onPress, primary = false }) {
+  return (
+    <TouchableOpacity
+      style={[styles.authButton, primary ? styles.authButtonPrimary : styles.authButtonSecondary]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <Text style={primary ? styles.authButtonPrimaryText : styles.authButtonSecondaryText}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function HomeSection({ title, icon, actionLabel, onAction, children }) {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionTitleRow}>
+          <View style={styles.sectionIcon}><AppIcon name={icon} size={19} color={COLORS.bxBlueLight} /></View>
+          <Text style={styles.sectionTitle}>{title}</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.seeAllButton}
+          onPress={onAction}
+          accessibilityRole="button"
+          accessibilityLabel={actionLabel}
+        >
+          <Text style={styles.seeAllText}>{actionLabel}</Text>
+          <AppIcon name="chevron-forward" size={15} color={COLORS.bxBlueLight} />
+        </TouchableOpacity>
+      </View>
+      {children}
+    </View>
+  );
+}
+
+function SectionState({ state, empty, onRetry, t, children }) {
+  if (state.loading) {
+    return (
+      <View style={styles.feedback} accessibilityRole="progressbar" accessibilityLabel={t('common.loading')}>
+        <ActivityIndicator size="small" color={COLORS.bxBlueLight} />
+        <Text style={styles.feedbackText}>{t('common.loading')}</Text>
+      </View>
+    );
+  }
+  if (state.error) {
+    return (
+      <View style={styles.feedback} accessibilityLiveRegion="polite">
+        <AppIcon name="alert" size={22} color={COLORS.danger} />
+        <Text style={styles.feedbackText}>{state.error}</Text>
+        <RetryButton label={t('common.retry')} onPress={onRetry} />
+      </View>
+    );
+  }
+  if (state.items.length === 0) {
+    return (
+      <View style={styles.feedback}>
+        <Text style={styles.feedbackText}>{empty}</Text>
+        <RetryButton label={t('common.retry')} onPress={onRetry} />
+      </View>
+    );
+  }
+  return <View style={styles.previewList}>{children}</View>;
+}
+
+function RetryButton({ label, onPress }) {
+  return (
+    <TouchableOpacity style={styles.retryButton} onPress={onPress} accessibilityRole="button" accessibilityLabel={label}>
+      <Text style={styles.retryText}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function PreviewCard({ title, meta, detail, color, label, onPress }) {
+  return (
+    <TouchableOpacity style={styles.previewCard} onPress={onPress} accessibilityRole="button" accessibilityLabel={label}>
+      <View style={[styles.previewAccent, { backgroundColor: color }]} />
+      <View style={styles.previewBody}>
+        <Text style={styles.previewTitle} numberOfLines={2}>{title}</Text>
+        <Text style={styles.previewMeta} numberOfLines={1}>{meta}</Text>
+        <Text style={styles.previewDetail} numberOfLines={1}>{detail}</Text>
+      </View>
+      <AppIcon name="chevron-forward" size={18} color={COLORS.muted} />
+    </TouchableOpacity>
+  );
+}
+
+function upcoming(items) {
+  const now = Date.now();
+  return [...items]
+    .filter((item) => item.statut === 'PUBLIEE')
+    .filter((item) => !item.dateFin || new Date(item.dateFin).getTime() >= now)
+    .sort((a, b) => dateValue(a.dateDebut) - dateValue(b.dateDebut))
+    .slice(0, 3);
+}
+
+function dateValue(value) {
+  const parsed = new Date(value).getTime();
+  return Number.isNaN(parsed) ? Number.MAX_SAFE_INTEGER : parsed;
+}
+
+function formatDate(value, language, t) {
+  const date = new Date(value);
+  if (!value || Number.isNaN(date.getTime())) return t('activities.date_to_confirm');
+  return date.toLocaleDateString(language || 'fr-BE', {
+    weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  });
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.page },
-  content: { padding: 14, paddingBottom: 24 },
-  hero: {
-    backgroundColor: COLORS.bxBlue,
-    borderRadius: 20,
-    padding: 15,
-    marginBottom: 12,
-    overflow: 'hidden',
-    shadowColor: COLORS.bxBlue,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    elevation: 4,
-  },
-  brandLogo: { width: 156, height: 46, marginBottom: 8 },
-  slogan: { color: '#fff', fontSize: 19, lineHeight: 23, fontWeight: '900', marginBottom: 5 },
-  heroText: { color: '#DBEAFE', fontSize: 12, lineHeight: 17, marginBottom: 11 },
-  heroActions: { flexDirection: 'row', gap: 8 },
-  primaryButton: {
-    flex: 1,
-    minHeight: 40,
-    borderRadius: 13,
-    backgroundColor: COLORS.impactOrange,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
-  },
-  primaryButtonText: { color: '#fff', fontSize: 12, fontWeight: '900' },
-  secondaryButton: {
-    minHeight: 40,
-    borderRadius: 13,
-    backgroundColor: '#E0F2FE',
-    paddingHorizontal: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 7,
-  },
-  secondaryButtonText: { color: COLORS.bxBlue, fontSize: 12, fontWeight: '900' },
-  welcomeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    padding: 10,
-  },
-  welcomeIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 13,
-    backgroundColor: COLORS.softGreen,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  welcomeTextWrap: { flex: 1 },
-  welcomeTitle: { color: COLORS.bxBlue, fontSize: 14, fontWeight: '900' },
-  welcomeText: { color: COLORS.muted, fontSize: 11, lineHeight: 15, marginTop: 1 },
-  section: { marginBottom: 12 },
-  featureGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  featureCard: {
-    width: '48.8%',
-    minHeight: 92,
-    backgroundColor: COLORS.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 7,
-    elevation: 1,
-  },
-  featureIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  featureTitle: { color: COLORS.bxBlue, fontSize: 13, fontWeight: '900', marginBottom: 3 },
-  featureText: { color: COLORS.muted, fontSize: 10, lineHeight: 13 },
-  audienceRow: { flexDirection: 'row', gap: 7 },
-  audiencePill: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-    borderRadius: 13,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 8,
-    alignItems: 'center',
-  },
-  audienceIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  audienceText: { color: COLORS.bxBlue, fontSize: 11, fontWeight: '900', textAlign: 'center' },
-  joinCard: { padding: 12 },
-  joinIllustration: { width: 96, height: 96, alignSelf: 'center', marginBottom: 6 },
-  joinContent: { marginBottom: 9 },
-  joinTitle: { color: COLORS.bxBlue, fontSize: 15, fontWeight: '900', marginBottom: 3 },
-  joinText: { color: COLORS.muted, fontSize: 12, lineHeight: 16 },
-  joinButton: {
-    minHeight: 40,
-    borderRadius: 13,
-    backgroundColor: COLORS.bxBlue,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  joinButtonText: { color: '#fff', fontSize: 12, fontWeight: '900' },
+  content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 32 },
+  intro: { marginBottom: 24 },
+  title: { color: COLORS.text, fontSize: 28, lineHeight: 34, fontWeight: '900' },
+  subtitle: { color: COLORS.muted, fontSize: 14, lineHeight: 20, marginTop: 6, maxWidth: 520 },
+  authActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 18 },
+  authButton: { minHeight: 46, flexGrow: 1, minWidth: 138, alignItems: 'center', justifyContent: 'center', borderRadius: 14, paddingHorizontal: 18 },
+  authButtonPrimary: { backgroundColor: COLORS.bxBlue },
+  authButtonSecondary: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.bxBlue },
+  authButtonPrimaryText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  authButtonSecondaryText: { color: COLORS.bxBlue, fontSize: 14, fontWeight: '800' },
+  section: { marginBottom: 26 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
+  sectionTitleRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  sectionIcon: { width: 34, height: 34, borderRadius: 12, backgroundColor: COLORS.softBlue, alignItems: 'center', justifyContent: 'center' },
+  sectionTitle: { flex: 1, color: COLORS.text, fontSize: 18, lineHeight: 23, fontWeight: '800' },
+  seeAllButton: { flexDirection: 'row', alignItems: 'center', minHeight: 44, paddingLeft: 6 },
+  seeAllText: { color: COLORS.bxBlueLight, fontSize: 12, fontWeight: '800' },
+  previewList: { gap: 9 },
+  previewCard: { minHeight: 84, flexDirection: 'row', alignItems: 'center', overflow: 'hidden', backgroundColor: COLORS.surface, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, paddingRight: 14 },
+  previewAccent: { alignSelf: 'stretch', width: 5, marginRight: 13 },
+  previewBody: { flex: 1, paddingVertical: 12, paddingRight: 10 },
+  previewTitle: { color: COLORS.text, fontSize: 15, lineHeight: 20, fontWeight: '800' },
+  previewMeta: { color: COLORS.bxBlue, fontSize: 13, lineHeight: 18, fontWeight: '700', marginTop: 3 },
+  previewDetail: { color: COLORS.muted, fontSize: 12, lineHeight: 17, marginTop: 2 },
+  feedback: { minHeight: 112, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 18, backgroundColor: COLORS.surface, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border },
+  feedbackText: { color: COLORS.muted, fontSize: 13, lineHeight: 18, textAlign: 'center' },
+  retryButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 14 },
+  retryText: { color: COLORS.bxBlueLight, fontSize: 13, fontWeight: '800' },
 });

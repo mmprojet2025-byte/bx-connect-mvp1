@@ -1,5 +1,6 @@
 package com.bxjeunes.bx_connect.config;
 
+import com.bxjeunes.bx_connect.exception.BirthDateValidationException;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -98,6 +99,18 @@ public class GlobalExceptionHandler {
                 : environment.getDefaultProfiles();
         return Arrays.stream(profiles)
                 .anyMatch(profile -> profile.equals("dev") || profile.equals("local") || profile.equals("test"));
+    }
+
+    @ExceptionHandler(BirthDateValidationException.class)
+    public ResponseEntity<Map<String, Object>> handleBirthDateValidation(BirthDateValidationException ex) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("timestamp", LocalDateTime.now().toString());
+        error.put("status", HttpStatus.UNPROCESSABLE_ENTITY.value());
+        error.put("error", "Validation Failed");
+        error.put("code", ex.getCode());
+        error.put("fields", Map.of("dateNaissance", ex.getMessage()));
+        addRequestId(error);
+        return ResponseEntity.unprocessableEntity().body(error);
     }
 
     private void addRequestId(Map<String, Object> error) {
