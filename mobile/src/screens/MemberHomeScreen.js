@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import {
   Image,
   RefreshControl,
@@ -32,6 +32,14 @@ export default function MemberHomeScreen({ navigation }) {
   const [messageGroup, setMessageGroup] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+
+  const greeting = user?.prenom
+    ? t('memberHome.welcomeNamed', { name: user.prenom })
+    : t('memberHome.welcome');
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ title: greeting, headerTitle: greeting });
+  }, [greeting, navigation]);
 
   const loadHome = useCallback(async (showRefresh = false) => {
     if (showRefresh) setRefreshing(true);
@@ -114,45 +122,6 @@ export default function MemberHomeScreen({ navigation }) {
         />
       )}
     >
-      <View style={styles.greeting}>
-        <View>
-          <Image
-            source={require('../../assets/images/logo-bx-connect.png')}
-            style={styles.greetingLogo}
-            resizeMode="contain"
-          />
-          <Text style={styles.greetingTitle}>
-            {user?.prenom
-              ? t('memberHome.welcomeNamed', { name: user.prenom })
-              : t('memberHome.welcome')}
-          </Text>
-        </View>
-        <TouchableOpacity onPress={() => openTab('TabProfile')} activeOpacity={0.8}>
-          <Image
-            source={require('../../assets/images/avatars/default-avatar.png')}
-            style={styles.avatar}
-          />
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity
-        style={styles.searchCard}
-        onPress={() => navigation.navigate('GlobalSearch')}
-        activeOpacity={0.82}
-        accessibilityRole="button"
-      >
-        <View style={styles.searchIcon}>
-          <AppIcon name="search" size={20} color={COLORS.interactive} />
-        </View>
-        <View style={styles.searchText}>
-          <Text style={styles.searchTitle}>{t('search.title')}</Text>
-          <Text style={styles.searchSubtitle} numberOfLines={1}>
-            {t('search.startText')}
-          </Text>
-        </View>
-        <AppIcon name="chevron-forward" size={18} color={COLORS.muted} />
-      </TouchableOpacity>
-
       <ContentSection
         title={t('memberHome.upcomingTitle')}
         actionLabel={t('memberHome.seeAll')}
@@ -444,48 +413,8 @@ function formatDate(value, language) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F4F5F7' },
-  content: { paddingHorizontal: 12, paddingTop: 9, paddingBottom: 20 },
-  greeting: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-    paddingHorizontal: 2,
-  },
-  greetingLogo: { width: 116, height: 32, marginBottom: 2 },
-  greetingTitle: {
-    color: COLORS.text,
-    fontSize: 20,
-    lineHeight: 24,
-    fontWeight: '800',
-    marginTop: 3,
-  },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: COLORS.surface },
-  searchCard: {
-    minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: COLORS.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#dbeafe',
-    padding: 10,
-    marginBottom: 10,
-    ...SHADOWS.soft,
-  },
-  searchIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.softBlue,
-  },
-  searchText: { flex: 1, minWidth: 0 },
-  searchTitle: { color: COLORS.bxBlue, fontSize: 13, lineHeight: 17, fontWeight: '900' },
-  searchSubtitle: { color: COLORS.muted, fontSize: 10, lineHeight: 13, marginTop: 1 },
-  section: { marginBottom: 10 },
+  content: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 20 },
+  section: { marginBottom: 12 },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',

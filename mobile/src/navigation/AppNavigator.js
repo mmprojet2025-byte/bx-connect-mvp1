@@ -815,7 +815,6 @@ function PrivateTabs() {
           backgroundColor: '#FFFFFF',
           borderTopColor: '#E5E7EB',
           borderTopWidth: 1,
-          paddingTop: 6,
           shadowColor: '#111827',
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.04,

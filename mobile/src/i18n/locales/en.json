@@ -94,8 +94,8 @@
     "joinText": "Create your account to request to join a group and access messages."
   },
   "memberHome": {
-    "welcome": "Welcome",
-    "welcomeNamed": "Welcome, {{name}}",
+    "welcome": "Hello",
+    "welcomeNamed": "Hello, {{name}}",
     "subtitle": "Easily find your community, activities and conversations.",
     "sectionTitle": "My community space",
     "networkDescription": "Explore community groups and projects.",
@@ -107,7 +107,7 @@
     "kpiActivities": "Activities",
     "kpiMessages": "Messages",
     "upcomingTitle": "Upcoming activities",
-    "popularProjectsTitle": "Popular projects",
+    "popularProjectsTitle": "Recommended project",
     "myGroupTitle": "My group",
     "newsTitle": "BX-Connect news",
     "notificationsTitle": "Notifications",

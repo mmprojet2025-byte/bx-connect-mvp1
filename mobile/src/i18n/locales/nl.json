@@ -94,8 +94,8 @@
     "joinText": "Maak een account aan om lidmaatschap van een groep aan te vragen en toegang te krijgen tot berichten."
   },
   "memberHome": {
-    "welcome": "Welkom",
-    "welcomeNamed": "Welkom, {{name}}",
+    "welcome": "Hallo",
+    "welcomeNamed": "Hallo, {{name}}",
     "subtitle": "Vind eenvoudig je community, activiteiten en gesprekken terug.",
     "sectionTitle": "Mijn communityruimte",
     "networkDescription": "Bekijk de groepen en projecten van de community.",
@@ -107,7 +107,7 @@
     "kpiActivities": "Activiteiten",
     "kpiMessages": "Berichten",
     "upcomingTitle": "Aankomende activiteiten",
-    "popularProjectsTitle": "Populaire projecten",
+    "popularProjectsTitle": "Aanbevolen project",
     "myGroupTitle": "Mijn groep",
     "newsTitle": "BX-Connect-nieuws",
     "notificationsTitle": "Meldingen",

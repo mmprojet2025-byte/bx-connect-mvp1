@@ -94,8 +94,8 @@
     "joinText": "Crée ton compte pour demander à rejoindre un groupe et accéder à la messagerie."
   },
   "memberHome": {
-    "welcome": "Bienvenue",
-    "welcomeNamed": "Bienvenue, {{name}}",
+    "welcome": "Bonjour",
+    "welcomeNamed": "Bonjour, {{name}}",
     "subtitle": "Retrouve facilement ta communauté, les activités et tes échanges.",
     "sectionTitle": "Mon espace communautaire",
     "networkDescription": "Retrouve les groupes et les projets de la communauté.",
@@ -107,7 +107,7 @@
     "kpiActivities": "Activités",
     "kpiMessages": "Messages",
     "upcomingTitle": "Activités à venir",
-    "popularProjectsTitle": "Projets populaires",
+    "popularProjectsTitle": "Projet recommandé",
     "myGroupTitle": "Mon groupe",
     "newsTitle": "Actualités BX-Connect",
     "notificationsTitle": "Notifications",
