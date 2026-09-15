@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { captureApiError } from '../monitoring/captureApiError.js'
+import { shouldCloseSession } from './sessionPolicy.js'
 
 // URL API depuis variable d'environnement Vite
 // Creer .env.local avec : VITE_API_BASE_URL=http://localhost:8080/api
@@ -16,6 +17,12 @@ const PUBLIC_ROUTES = [
   '/auth/forgot-password',
   '/auth/reset-password',
 ]
+const unauthorizedListeners = new Set()
+
+export function onUnauthorized(listener) {
+  unauthorizedListeners.add(listener)
+  return () => unauthorizedListeners.delete(listener)
+}
 
 api.interceptors.request.use(
   (config) => {
@@ -40,10 +47,16 @@ api.interceptors.response.use(
       captureApiError(error, isNetworkError ? 'network_error' : 'http_5xx_error')
     }
 
-    if (error.response?.status === 401) {
+    const isPublicRequest = PUBLIC_ROUTES.some(route => error.config?.url?.includes(route))
+    const hadStoredSession = Boolean(localStorage.getItem('token'))
+    if (shouldCloseSession({
+      status: error.response?.status,
+      isPublicRequest,
+      hadStoredSession,
+    })) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
-      window.location.href = '/login'
+      unauthorizedListeners.forEach(listener => listener())
     }
     return Promise.reject(error)
   }

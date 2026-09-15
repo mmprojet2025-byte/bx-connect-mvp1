@@ -3,6 +3,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { captureApiError } from '../services/captureApiError';
 import { clearStoredAuth, getStoredToken } from '../services/secureAuthStorage';
+import { createSessionInvalidator, isProtectedUnauthorized } from './sessionPolicy';
 
 function getApiBaseUrl() {
   if (process.env.EXPO_PUBLIC_API_BASE_URL) {
@@ -26,13 +27,24 @@ const api = axios.create({
   timeout: 10000,
 });
 
-const PUBLIC_ROUTES = ['/auth/login', '/auth/register'];
+const PUBLIC_ROUTES = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+];
 const unauthorizedListeners = new Set();
 
 export function onUnauthorized(listener) {
   unauthorizedListeners.add(listener);
   return () => unauthorizedListeners.delete(listener);
 }
+
+const invalidateSession = createSessionInvalidator({
+  hasSession: async () => Boolean(await getStoredToken().catch(() => null)),
+  clearSession: clearStoredAuth,
+  notify: () => unauthorizedListeners.forEach(listener => listener()),
+});
 
 api.interceptors.request.use(
   async (config) => {
@@ -59,11 +71,13 @@ api.interceptors.response.use(
       captureApiError(error, isNetworkError ? 'network_error' : 'http_5xx_error');
     }
 
-    const isPublic = error.config?.skipAuth
+    const isPublicRequest = error.config?.skipAuth
       || PUBLIC_ROUTES.some(route => error.config?.url?.includes(route));
-    if (error.response?.status === 401 && !isPublic) {
-      await clearStoredAuth();
-      unauthorizedListeners.forEach(listener => listener());
+    if (isProtectedUnauthorized({
+      status: error.response?.status,
+      isPublicRequest,
+    })) {
+      await invalidateSession();
     }
     return Promise.reject(error);
   }

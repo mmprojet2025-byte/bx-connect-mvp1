@@ -10,6 +10,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -19,6 +20,9 @@ import java.io.IOException;
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
+
+    public static final String INVALID_BEARER_TOKEN_ATTRIBUTE =
+            JwtAuthFilter.class.getName() + ".invalidBearerToken";
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
@@ -42,6 +46,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         try {
             userEmail = jwtService.extractUsername(jwt);
         } catch (RuntimeException ex) {
+            request.setAttribute(INVALID_BEARER_TOKEN_ATTRIBUTE, Boolean.TRUE);
             filterChain.doFilter(request, response);
             return;
         }
@@ -50,7 +55,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             UserDetails userDetails;
             try {
                 userDetails = this.userDetailsService.loadUserByUsername(userEmail);
-            } catch (RuntimeException ex) {
+            } catch (UsernameNotFoundException ex) {
+                request.setAttribute(INVALID_BEARER_TOKEN_ATTRIBUTE, Boolean.TRUE);
                 filterChain.doFilter(request, response);
                 return;
             }
@@ -66,6 +72,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                         new WebAuthenticationDetailsSource().buildDetails(request)
                 );
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+            } else {
+                request.setAttribute(INVALID_BEARER_TOKEN_ATTRIBUTE, Boolean.TRUE);
             }
         }
 

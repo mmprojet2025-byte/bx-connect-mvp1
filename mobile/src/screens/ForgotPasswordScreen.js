@@ -13,6 +13,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import AppIcon from '../components/AppIcon';
 import { COLORS } from '../components/MobileUI';
+import api from '../api/axios';
+import { passwordResetErrorKey, requestPasswordReset } from '../api/auth';
 
 export default function ForgotPasswordScreen({ navigation }) {
   const { t } = useTranslation();
@@ -20,8 +22,9 @@ export default function ForgotPasswordScreen({ navigation }) {
   const [focused, setFocused] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const normalizedEmail = email.trim();
     setError('');
     setSubmitted(false);
@@ -35,7 +38,15 @@ export default function ForgotPasswordScreen({ navigation }) {
       return;
     }
 
-    setSubmitted(true);
+    setSubmitting(true);
+    try {
+      await requestPasswordReset(api, normalizedEmail);
+      setSubmitted(true);
+    } catch (requestError) {
+      setError(t(passwordResetErrorKey(requestError)));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -88,8 +99,15 @@ export default function ForgotPasswordScreen({ navigation }) {
             />
           </View>
 
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} activeOpacity={0.86}>
-            <Text style={styles.submitText}>{t('auth.forgot_password_submit')}</Text>
+          <TouchableOpacity
+            style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            activeOpacity={0.86}
+            disabled={submitting}
+          >
+            <Text style={styles.submitText}>
+              {submitting ? t('auth.forgot_password_sending') : t('auth.forgot_password_submit')}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Login')}>
@@ -176,6 +194,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.bxBlue,
     marginTop: 14,
   },
+  submitButtonDisabled: { opacity: 0.65 },
   submitText: { color: '#fff', fontSize: 15, fontWeight: '900' },
   backButton: {
     alignSelf: 'center',

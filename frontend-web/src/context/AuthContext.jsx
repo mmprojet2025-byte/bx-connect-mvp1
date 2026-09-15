@@ -1,26 +1,27 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { trackLoginSuccessRole } from '../monitoring/analytics'
+import { restoreSession } from './restoreSession'
+import { onUnauthorized } from '../api/axios'
 
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(null)
+  const [isRestoringSession, setIsRestoringSession] = useState(true)
 
   // Charger depuis localStorage au démarrage
   useEffect(() => {
-    const savedToken = localStorage.getItem('token')
-    const savedUser = localStorage.getItem('user')
-    if (savedToken && savedUser) {
-      try {
-        setToken(savedToken)
-        setUser(JSON.parse(savedUser))
-      } catch {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-      }
-    }
+    const session = restoreSession(localStorage)
+    setToken(session.token)
+    setUser(session.user)
+    setIsRestoringSession(false)
   }, [])
+
+  useEffect(() => onUnauthorized(() => {
+    setToken(null)
+    setUser(null)
+  }), [])
 
   // login : appelé après /api/auth/login ou après mise à jour du profil
   const login = (newToken, userData) => {
@@ -53,6 +54,7 @@ export function AuthProvider({ children }) {
       login,
       logout,
       isAuthenticated,
+      isRestoringSession,
       isAdmin,
       isSuperAdmin,
       isReferent,

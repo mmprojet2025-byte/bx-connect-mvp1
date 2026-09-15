@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -109,6 +110,16 @@ public class SecurityConfig {
             })
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            .exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint((request, response, exception) -> {
+                    if (Boolean.TRUE.equals(request.getAttribute(
+                            JwtAuthFilter.INVALID_BEARER_TOKEN_ATTRIBUTE))) {
+                        response.sendError(HttpStatus.UNAUTHORIZED.value(), "Authentication required");
+                        return;
+                    }
+                    response.sendError(HttpStatus.FORBIDDEN.value(), "Access denied");
+                })
             )
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

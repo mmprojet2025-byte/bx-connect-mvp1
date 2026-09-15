@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
+import { useTranslation } from 'react-i18next'
 import AppSidebar from './components/navigation/AppSidebar'
 
 // Pages publiques
@@ -52,7 +53,7 @@ import SuperAdminRoute      from './routes/SuperAdminRoute'
 import SuperAdminDashboard  from './pages/super-admin/SuperAdminDashboard'
 import SuperAdminAdmins     from './pages/super-admin/SuperAdminAdmins'
 import SuperAdminLogs       from './pages/super-admin/SuperAdminLogs'
-import { getDefaultRouteForRole } from './routes/roleRoutes'
+import { getAuthenticatedRootRedirect, getDefaultRouteForRole } from './routes/roleRoutes'
 import { trackDashboardView } from './monitoring/analytics'
 
 // ─── Guards ───────────────────────────────────────────────────────────────────
@@ -144,7 +145,8 @@ const PUBLIC_ONLY_PATHS = new Set([
 ])
 
 export default function App() {
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, isRestoringSession, user } = useAuth()
+  const { t } = useTranslation()
   const location = useLocation()
   const showAppShell = isAuthenticated && !PUBLIC_ONLY_PATHS.has(location.pathname)
   const [contextSidebarCollapsed, setContextSidebarCollapsed] = useState(() => {
@@ -173,6 +175,18 @@ export default function App() {
       trackDashboardView(user?.role, location.pathname)
     }
   }, [isAuthenticated, location.pathname, user?.role])
+
+  // Aucun layout ni guard ne doit interpréter la session avant sa restauration.
+  if (isRestoringSession) {
+    return <div role="status" className="grid min-h-screen place-items-center bg-[#f5f7fb] text-slate-600">{t('common.loading', { defaultValue: 'Chargement...' })}</div>
+  }
+
+  const authenticatedRootRedirect = getAuthenticatedRootRedirect({
+    isAuthenticated,
+    pathname: location.pathname,
+    role: user?.role,
+  })
+  if (authenticatedRootRedirect) return <Navigate to={authenticatedRootRedirect} replace />
 
   return (
     <>

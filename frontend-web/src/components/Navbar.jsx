@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { startTransition, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
+import { logoutAndNavigate } from '../context/logoutSession'
 import api from '../api/axios'
 import AppIcon from './ui/AppIcons'
 import logoBxConnect from '../assets/images/logo-bx-connect.png'
@@ -73,9 +74,15 @@ export default function Navbar() {
   }
 
   const handleLogout = () => {
-    logout()
-    setOpenDropdown(null)
-    navigate('/', { replace: true })
+    // Garder le changement de session et de route dans la même transition :
+    // le guard de l'ancienne page privée ne doit pas rediriger vers /login.
+    startTransition(() => {
+      logoutAndNavigate({
+        logout,
+        closeMenu: () => setOpenDropdown(null),
+        navigate,
+      })
+    })
   }
 
   const toggleDropdown = name => {

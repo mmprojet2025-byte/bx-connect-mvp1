@@ -13,3 +13,16 @@ export function getDefaultRouteForRole(role) {
       return '/dashboard'
   }
 }
+
+const AUTHENTICATED_ROLES = new Set([
+  'SUPER_ADMIN',
+  'ADMIN',
+  'REFERENT',
+  'PARTENAIRE',
+  'MEMBRE',
+])
+
+export function getAuthenticatedRootRedirect({ isAuthenticated, pathname, role }) {
+  if (!isAuthenticated || pathname !== '/' || !AUTHENTICATED_ROLES.has(role)) return null
+  return getDefaultRouteForRole(role)
+}
