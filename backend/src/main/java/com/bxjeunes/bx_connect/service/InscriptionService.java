@@ -58,9 +58,9 @@ public class InscriptionService {
         }
 
         // 4. Vérifier que le membre n'est pas déjà inscrit
-        boolean dejaInscrit = inscriptionRepository
-                .findByMembreIdAndActiviteIdOrderByDateInscriptionDesc(membre.getId(), activite.getId())
-                .stream()
+        List<Inscription> inscriptionsExistantes = inscriptionRepository
+                .findByMembreIdAndActiviteIdOrderByDateInscriptionDesc(membre.getId(), activite.getId());
+        boolean dejaInscrit = inscriptionsExistantes.stream()
                 .anyMatch(i -> i.getStatut() != StatutInscription.ANNULEE);
         if (dejaInscrit) {
             throw new RuntimeException("Vous êtes déjà inscrit à cette activité.");
@@ -77,8 +77,17 @@ public class InscriptionService {
             }
         }
 
-        // 6. Créer l'inscription
-        Inscription inscription = new Inscription();
+        // 6. Une activite gratuite reutilise la ligne annulee : le couple membre/activite est unique.
+        // Les presences restent attachees a la meme personne et a la meme activite.
+        // Le parcours payant reste inchange, hors du lot L1.
+        Inscription inscription = activite.isGratuite()
+                ? inscriptionsExistantes.stream().findFirst().orElseGet(Inscription::new)
+                : new Inscription();
+        boolean reinscription = inscription.getId() != null;
+        if (reinscription) {
+            inscription.setDateInscription(LocalDateTime.now());
+            inscription.setDateAnnulation(null);
+        }
         inscription.setMembre(membre);
         inscription.setActivite(activite);
 
@@ -102,11 +111,11 @@ public class InscriptionService {
         }
         auditerStatut(
                 membre,
-                "ACTIVITY_REGISTRATION_CREATED",
+                reinscription ? "ACTIVITY_REGISTRATION_REACTIVATED" : "ACTIVITY_REGISTRATION_CREATED",
                 inscriptionSauvee,
-                null,
+                reinscription ? StatutInscription.ANNULEE.name() : null,
                 nomStatut(inscriptionSauvee.getStatut()),
-                "Inscription activite creee.");
+                reinscription ? "Inscription activite reactivee." : "Inscription activite creee.");
 
         return InscriptionResponse.fromEntity(inscriptionSauvee);
     }
