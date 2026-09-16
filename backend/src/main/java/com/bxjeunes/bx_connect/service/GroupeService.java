@@ -16,6 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -177,6 +178,7 @@ public class GroupeService {
     /**
      * SECURITE : Un referent ne peut accepter que les adhesions de SES groupes.
      */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public MembreGroupeResponse accepterAdhesion(Long membreGroupeId, String emailReferent) {
         MembreGroupe mg = membreGroupeRepository.findById(membreGroupeId)
                 .orElseThrow(() -> new RuntimeException("Demande introuvable : " + membreGroupeId));
@@ -187,11 +189,22 @@ public class GroupeService {
             !mg.getGroupe().getReferent().getId().equals(referent.getId())) {
             throw new AccessDeniedException("Vous n'etes pas le referent de ce groupe.");
         }
+        Groupe groupe = groupeRepository.findByIdForUpdate(mg.getGroupe().getId())
+                .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + mg.getGroupe().getId()));
+        if (mg.getStatut() != StatutMembre.EN_ATTENTE) {
+            throw new RuntimeException("Cette demande d'adhésion n'est plus en attente.");
+        }
         membreGroupeRepository.findFirstByUserIdAndStatut(mg.getUser().getId(), StatutMembre.ACCEPTE)
                 .filter(adhesion -> !adhesion.getGroupe().getId().equals(mg.getGroupe().getId()))
                 .ifPresent(adhesion -> {
                     throw new RuntimeException("Ce membre appartient deja a un groupe actif.");
                 });
+        if (groupe.getCapaciteMax() > 0) {
+            long membresAcceptes = membreGroupeRepository.countByGroupeIdAndStatut(groupe.getId(), StatutMembre.ACCEPTE);
+            if (membresAcceptes >= groupe.getCapaciteMax()) {
+                throw new RuntimeException("Ce groupe a atteint sa capacité maximale.");
+            }
+        }
 
         StatutMembre ancienStatut = mg.getStatut();
         mg.setStatut(StatutMembre.ACCEPTE);

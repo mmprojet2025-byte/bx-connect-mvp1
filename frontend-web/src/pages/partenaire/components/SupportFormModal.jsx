@@ -6,7 +6,6 @@ export default function SupportFormModal({
   soutienForm,
   setSoutienForm,
   projetsOuverts,
-  activitesOuvertes,
   submittingSupport,
   onSubmit,
   onClose,
@@ -16,7 +15,6 @@ export default function SupportFormModal({
   const titleId = `${instanceId}-support-title`;
   const targetLabelId = `${instanceId}-support-target-label`;
   const projectId = `${instanceId}-support-project`;
-  const activityId = `${instanceId}-support-activity`;
   const amountId = `${instanceId}-support-amount`;
   const messageId = `${instanceId}-support-message`;
   const dialogRef = useAccessibleModal(onClose);
@@ -46,56 +44,29 @@ export default function SupportFormModal({
           <div>
             <span id={targetLabelId} className="block text-sm font-medium text-gray-700 mb-2">{t('partnerSpace.supportTarget')}</span>
             <div className="flex gap-3" role="group" aria-labelledby={targetLabelId}>
-              {['projet', 'activite'].map(type => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setSoutienForm({ ...soutienForm, type })}
-                  className={`flex-1 py-2 rounded-xl text-sm font-semibold border-2 transition ${
-                    soutienForm.type === type
-                      ? 'border-orange-600 bg-orange-50 text-orange-600'
-                      : 'border-gray-200 text-gray-500'
-                  }`}
-                >
-                  <span className="inline-flex items-center justify-center gap-2">
-                    <AppIcon name={type === 'projet' ? 'Rocket' : 'Folder'} className="h-4 w-4" />
-                    {type === 'projet' ? t('partnerSupport.project') : t('partnerSupport.activity')}
-                  </span>
-                </button>
-              ))}
+              <span className="flex-1 rounded-xl border-2 border-orange-600 bg-orange-50 py-2 text-center text-sm font-semibold text-orange-600">
+                <span className="inline-flex items-center justify-center gap-2">
+                  <AppIcon name="Rocket" className="h-4 w-4" />
+                  {t('partnerSupport.project')}
+                </span>
+              </span>
             </div>
           </div>
 
           {/* Sélection cible */}
-          {soutienForm.type === 'projet' ? (
-            <div>
-              <label htmlFor={projectId} className="block text-sm font-medium text-gray-700 mb-1">{t('partnerSupport.project')} *</label>
-              <select
-                id={projectId}
-                required
-                value={soutienForm.projetId || ''}
-                onChange={e => setSoutienForm({ ...soutienForm, projetId: parseInt(e.target.value) })}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-              >
-                <option value="">{t('partnerSpace.selectProject')}</option>
-                {projetsOuverts.map(p => <option key={p.id} value={p.id}>{p.titre}</option>)}
-              </select>
-            </div>
-          ) : (
-            <div>
-              <label htmlFor={activityId} className="block text-sm font-medium text-gray-700 mb-1">{t('partnerSupport.activity')} *</label>
-              <select
-                id={activityId}
-                required
-                value={soutienForm.activiteId || ''}
-                onChange={e => setSoutienForm({ ...soutienForm, activiteId: parseInt(e.target.value) })}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-              >
-                <option value="">{t('partnerSpace.selectActivity')}</option>
-                {activitesOuvertes.map(a => <option key={a.id} value={a.id}>{a.titre}</option>)}
-              </select>
-            </div>
-          )}
+          <div>
+            <label htmlFor={projectId} className="block text-sm font-medium text-gray-700 mb-1">{t('partnerSupport.project')} *</label>
+            <select
+              id={projectId}
+              required
+              value={soutienForm.projetId || ''}
+              onChange={e => setSoutienForm({ ...soutienForm, projetId: parseInt(e.target.value) })}
+              className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            >
+              <option value="">{t('partnerSpace.selectProject')}</option>
+              {projetsOuverts.map(p => <option key={p.id} value={p.id}>{p.titre}</option>)}
+            </select>
+          </div>
 
           {/* Montant */}
           <div>

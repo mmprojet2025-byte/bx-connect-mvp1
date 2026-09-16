@@ -5,12 +5,21 @@ import com.bxjeunes.bx_connect.entity.StatutGroupe;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
+import jakarta.persistence.LockModeType;
 
 @Repository
 public interface GroupeRepository extends JpaRepository<Groupe, Long> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT g FROM Groupe g WHERE g.id = :id")
+    Optional<Groupe> findByIdForUpdate(@Param("id") Long id);
 
     // Groupes validés (public)
     List<Groupe> findByStatut(StatutGroupe statut);

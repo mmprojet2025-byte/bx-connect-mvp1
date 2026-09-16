@@ -21,6 +21,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +53,10 @@ public class ActiviteService {
 
     // ─── Créer une activité ───────────────────────────────────────────────────
     public ActiviteResponse creer(ActiviteRequest request, String emailCreateur) {
+        validerDonneesActivite(request);
+        if (!request.isGratuite()) {
+            throw new RuntimeException("La création d'activités payantes est indisponible dans cette version.");
+        }
         User createur = userRepository.findByEmail(emailCreateur)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + emailCreateur));
 
@@ -62,7 +67,7 @@ public class ActiviteService {
         activite.setDateFin(request.getDateFin());
         appliquerLocalisation(activite, request);
         activite.setGratuite(request.isGratuite());
-        activite.setPrix(request.getPrix());
+        activite.setPrix(null);
         activite.setCapaciteMax(request.getCapaciteMax());
         activite.setCategorie(request.getCategorie());
         activite.setTheme(request.getTheme());
@@ -237,14 +242,15 @@ public class ActiviteService {
         Activite activite = activiteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
         User acteur = verifierDroitGestion(activite, emailUser);
+        validerDonneesActivite(request);
+        validerTarificationInchangee(activite, request);
 
         activite.setTitre(request.getTitre());
         activite.setDescription(request.getDescription());
         activite.setDateDebut(request.getDateDebut());
         activite.setDateFin(request.getDateFin());
         appliquerLocalisation(activite, request);
-        activite.setGratuite(request.isGratuite());
-        activite.setPrix(request.getPrix());
+        // La tarification des activités existantes est figée pour la V1.
         activite.setCapaciteMax(request.getCapaciteMax());
         activite.setCategorie(request.getCategorie());
         activite.setTheme(request.getTheme());
@@ -260,6 +266,7 @@ public class ActiviteService {
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
         User acteur = verifierDroitGestion(activite, emailUser);
         StatutActivite ancienStatut = activite.getStatut();
+        validerTransition(activite, nouveauStatut);
         activite.setStatut(nouveauStatut);
         Activite activiteSauvee = activiteRepository.save(activite);
 
@@ -297,6 +304,69 @@ public class ActiviteService {
             return user;
         }
         throw new AccessDeniedException("Vous ne pouvez gerer que vos propres activites.");
+    }
+
+    private void validerDonneesActivite(ActiviteRequest request) {
+        if (request.getDateDebut() == null || request.getDateFin() == null) {
+            throw new RuntimeException("Les dates de début et de fin sont obligatoires.");
+        }
+        if (request.getDateFin().isBefore(request.getDateDebut())) {
+            throw new RuntimeException("La date de fin ne peut pas précéder la date de début.");
+        }
+        if (request.getCapaciteMax() <= 0) {
+            throw new RuntimeException("La capacité maximale doit être strictement positive.");
+        }
+        if (request.getPrix() != null && request.getPrix().compareTo(BigDecimal.ZERO) < 0) {
+            throw new RuntimeException("Le prix ne peut pas être négatif.");
+        }
+        if (request.isGratuite() && request.getPrix() != null
+                && request.getPrix().compareTo(BigDecimal.ZERO) != 0) {
+            throw new RuntimeException("Une activité gratuite ne peut pas avoir de prix.");
+        }
+        if (!request.isGratuite() && (request.getPrix() == null
+                || request.getPrix().compareTo(BigDecimal.ZERO) <= 0)) {
+            throw new RuntimeException("Une activité payante doit avoir un prix strictement positif.");
+        }
+    }
+
+    private void validerTarificationInchangee(Activite activite, ActiviteRequest request) {
+        if (activite.isGratuite() != request.isGratuite()) {
+            throw new RuntimeException("Le caractère gratuit ou payant d'une activité existante ne peut pas être modifié.");
+        }
+        if (!activite.isGratuite() && !memePrix(activite.getPrix(), request.getPrix())) {
+            throw new RuntimeException("Le prix d'une activité payante existante ne peut pas être modifié.");
+        }
+    }
+
+    private boolean memePrix(BigDecimal actuel, BigDecimal demande) {
+        return actuel == null ? demande == null : demande != null && actuel.compareTo(demande) == 0;
+    }
+
+    private void validerTransition(Activite activite, StatutActivite nouveauStatut) {
+        if (nouveauStatut == null) {
+            throw new RuntimeException("Le nouveau statut est obligatoire.");
+        }
+        StatutActivite actuel = activite.getStatut();
+        if (actuel == nouveauStatut) return;
+        boolean autorisee = switch (actuel) {
+            case BROUILLON -> nouveauStatut == StatutActivite.PUBLIEE || nouveauStatut == StatutActivite.ANNULEE;
+            case PUBLIEE -> nouveauStatut == StatutActivite.ANNULEE || nouveauStatut == StatutActivite.TERMINEE;
+            case ANNULEE, TERMINEE -> false;
+        };
+        if (!autorisee) {
+            throw new RuntimeException("Transition de statut non autorisée : " + actuel + " vers " + nouveauStatut + ".");
+        }
+        if (nouveauStatut == StatutActivite.PUBLIEE) {
+            if (!activite.isGratuite()) {
+                throw new RuntimeException("Une activité payante ne peut pas être publiée dans cette version.");
+            }
+            if (activite.getDateDebut() == null || !activite.getDateDebut().isAfter(LocalDateTime.now())) {
+                throw new RuntimeException("Une activité passée ne peut pas être publiée.");
+            }
+            if (activite.getCapaciteMax() <= 0) {
+                throw new RuntimeException("La capacité maximale doit être strictement positive avant publication.");
+            }
+        }
     }
 
     private void appliquerLocalisation(Activite activite, ActiviteRequest request) {
@@ -427,11 +497,11 @@ public class ActiviteService {
         if (activite.getStatut() != StatutActivite.PUBLIEE) {
             return "NON_PUBLIEE";
         }
-        LocalDateTime now = LocalDateTime.now();
-        if (activite.getDateFin() != null && activite.getDateFin().isBefore(now)) {
-            return "PASSEE";
+        if (!activite.isGratuite()) {
+            return "PAYANTE_INDISPONIBLE";
         }
-        if (activite.getDateFin() == null && activite.getDateDebut() != null && activite.getDateDebut().isBefore(now)) {
+        LocalDateTime now = LocalDateTime.now();
+        if (activite.getDateDebut() == null || !activite.getDateDebut().isAfter(now)) {
             return "PASSEE";
         }
         if (activite.getCapaciteMax() > 0 && responseComplete(activite)) {

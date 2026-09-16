@@ -420,7 +420,7 @@ function buildLocationDetails(activite) {
 function getActivitySituation(activity, t) {
   if (activity?.inscrit || activity?.inscriptionId || activity?.statutInscription) {
     const label = activity.statutInscription === 'EN_ATTENTE_PAIEMENT'
-      ? t('activities.payment_required')
+      ? t('activities.unavailableReasons.PAYANTE_INDISPONIBLE')
       : t('activities.already_registered');
     return { key: 'registered', label };
   }

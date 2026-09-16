@@ -22,7 +22,7 @@ const EMPTY_FORM = {
   date: '',
   heureDebut: '',
   heureFin: '',
-  capaciteMax: '',
+  capaciteMax: '1',
   categorie: '',
   theme: '',
   gratuite: true,
@@ -395,7 +395,7 @@ export default function ActivitiesScreen() {
         visible={showForm}
         form={form}
         setForm={setForm}
-        editing={!!editingActivity}
+        editing={editingActivity}
         saving={saving}
         onClose={closeForm}
         onSubmit={handleSaveActivity}
@@ -424,7 +424,8 @@ function ActivityCard({
 }) {
   const complete = isActiviteComplete(activite);
   const alreadyRegistered = !!inscription && inscription.statut !== 'ANNULEE';
-  const canRegister = !readOnly && isMembre && activite.statut === 'PUBLIEE' && !alreadyRegistered && !complete;
+  const canRegister = !readOnly && isMembre && activite.gratuite === true
+    && activite.statut === 'PUBLIEE' && !alreadyRegistered && !complete;
   const status = getActivityStatus({ activite, inscription, complete }, t);
   const itineraryUrl = buildMapsUrl({
     latitude: activite.latitude,
@@ -501,6 +502,8 @@ function ActivityCard({
             </View>
           ) : readOnly ? (
             <StatusLine text={t('common.cache_read_only')} color="#64748b" />
+          ) : activite.gratuite === false ? (
+            <StatusLine text={t('activities.paid_registration_unavailable')} color="#d97706" />
           ) : complete ? (
             <StatusLine text={t('activities.full')} color="#EF4444" />
           ) : activite.statut !== 'PUBLIEE' ? (
@@ -670,18 +673,10 @@ function ActivityFormModal({
             </View>
 
             <Text style={styles.formLabel}>{t('activities.pricing')}</Text>
-            <View style={styles.pricingOptions}>
-              <ChoiceButton
-                selected={form.gratuite}
-                label={t('activities.free')}
-                onPress={() => update('gratuite', true)}
-              />
-              <ChoiceButton
-                selected={!form.gratuite}
-                label={t('activities.paid')}
-                onPress={() => update('gratuite', false)}
-              />
-            </View>
+            <StatusLine
+              text={form.gratuite ? t('activities.free') : t('activities.paid_pricing_locked')}
+              color={form.gratuite ? '#16a34a' : '#d97706'}
+            />
 
             {!form.gratuite && (
               <FormInput
@@ -690,6 +685,7 @@ function ActivityFormModal({
                 onChangeText={(value) => update('prix', value)}
                 placeholder={t('activities.price_placeholder')}
                 keyboardType="decimal-pad"
+                editable={false}
               />
             )}
 
@@ -728,19 +724,6 @@ function FormInput({ label, style, multiline = false, ...props }) {
         textAlignVertical={multiline ? 'top' : 'center'}
       />
     </View>
-  );
-}
-
-function ChoiceButton({ selected, label, onPress }) {
-  return (
-    <TouchableOpacity
-      style={[styles.choiceButton, selected && styles.choiceButtonActive]}
-      onPress={onPress}
-    >
-      <Text style={[styles.choiceButtonText, selected && styles.choiceButtonTextActive]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
   );
 }
 
@@ -820,6 +803,9 @@ function validateActivityForm(form, t) {
   const fin = new Date(`${form.date}T${form.heureFin}:00`);
   if (Number.isNaN(debut.getTime()) || Number.isNaN(fin.getTime()) || fin <= debut) {
     return t('activities.error_end_after_start');
+  }
+  if (!form.capaciteMax || Number(form.capaciteMax) <= 0) {
+    return t('activities.error_capacity_positive');
   }
   if (!form.gratuite && (!form.prix || Number(form.prix) < 0)) {
     return t('activities.error_price_required');

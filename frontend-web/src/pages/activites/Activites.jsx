@@ -582,7 +582,7 @@ function renderActivityAction({ isAuthenticated, isMembre, situation, actionLoad
 function getActivitySituation(activity, t) {
   if (activity.inscrit || activity.dejaInscrit || activity.inscriptionId || activity.statutInscription) {
     const label = activity.statutInscription === 'EN_ATTENTE_PAIEMENT'
-      ? t('activities.payment_required')
+      ? t('activities.unavailableReasons.PAYANTE_INDISPONIBLE')
       : t('activities.already_registered')
     return { key: 'registered', label, dot: '🟡', className: 'bg-amber-50 text-amber-800' }
   }

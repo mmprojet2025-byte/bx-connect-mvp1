@@ -25,7 +25,7 @@ const emptyForm = {
   longitude: '',
   gratuite: true,
   prix: '',
-  capaciteMax: 0,
+  capaciteMax: 1,
   categorie: '',
   theme: '',
 }
@@ -215,13 +215,13 @@ export default function ReferentActivites() {
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <Input label={t('activities.form_category')} value={form.categorie} onChange={value => updateForm('categorie', value)} />
                 <Input label={t('activities.form_theme')} value={form.theme} onChange={value => updateForm('theme', value)} />
-                <Input label={t('activities.form_capacity')} type="number" min="0" value={form.capaciteMax} onChange={value => updateForm('capaciteMax', value)} />
+                <Input label={t('activities.form_capacity')} type="number" min="1" value={form.capaciteMax} onChange={value => updateForm('capaciteMax', value)} required />
                 <label className="flex items-center gap-2 text-sm text-gray-700 pt-7">
-                  <input type="checkbox" checked={form.gratuite} onChange={e => updateForm('gratuite', e.target.checked)} />
+                  <input type="checkbox" checked={form.gratuite} disabled />
                   {t('activities.form_free')}
                 </label>
                 {!form.gratuite && (
-                  <Input label={t('activities.form_price')} type="number" min="0" value={form.prix} onChange={value => updateForm('prix', value)} />
+                  <Input label={t('activities.form_price')} type="number" min="0" value={form.prix} disabled />
                 )}
               </div>
             </details>
@@ -348,7 +348,7 @@ export default function ReferentActivites() {
   )
 }
 
-function Input({ label, value, onChange, type = 'text', required = false, min, step }) {
+function Input({ label, value, onChange, type = 'text', required = false, min, step, disabled = false }) {
   return (
     <label className="block">
       <span className="block text-sm font-semibold text-gray-700 mb-1">{label}</span>
@@ -358,7 +358,8 @@ function Input({ label, value, onChange, type = 'text', required = false, min, s
         step={step}
         required={required}
         value={value}
-        onChange={e => onChange(e.target.value)}
+        onChange={e => onChange?.(e.target.value)}
+        disabled={disabled}
         className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
       />
     </label>

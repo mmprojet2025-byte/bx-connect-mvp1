@@ -307,7 +307,8 @@
       "TERMINEE": "Activity finished",
       "DEJA_INSCRIT": "Already registered",
       "NON_PUBLIEE": "Registration closed",
-      "ROLE_NON_MEMBRE": "Registration is reserved for members"
+      "ROLE_NON_MEMBRE": "Registration is reserved for members",
+      "PAYANTE_INDISPONIBLE": "Registration for paid activities is unavailable in this version"
     },
     "draftsToPublish": "Activities to publish",
     "draftsToPublishDesc": "Drafts ready to publish.",

@@ -44,10 +44,6 @@ export function createProjectSupport(payload) {
   return api.post('/partenaire/soutenir-projet', payload);
 }
 
-export function createActivitySupport(payload) {
-  return api.post('/partenaire/soutenir-activite', payload);
-}
-
 export function updatePartnerSupport(supportId, payload) {
   return api.put(`/partenaire/mes-soutiens/${supportId}`, payload);
 }

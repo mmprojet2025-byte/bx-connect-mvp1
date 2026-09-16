@@ -10,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -42,6 +44,7 @@ public class InscriptionService {
 
     // ─── S'inscrire à une activité (M06 CDC) ────────────────────────────────
 
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public InscriptionResponse inscrire(InscriptionRequest request, String emailMembre) {
 
         // 1. Récupérer le membre
@@ -49,12 +52,20 @@ public class InscriptionService {
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + emailMembre));
 
         // 2. Récupérer l'activité
-        Activite activite = activiteRepository.findById(request.getActiviteId())
+        Activite activite = activiteRepository.findByIdForUpdate(request.getActiviteId())
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + request.getActiviteId()));
 
         // 3. Vérifier que l'activité est publiée
         if (activite.getStatut() != StatutActivite.PUBLIEE) {
             throw new RuntimeException("Cette activité n'est pas disponible à l'inscription.");
+        }
+
+        if (!activite.isGratuite()) {
+            throw new RuntimeException("Les inscriptions aux activités payantes sont indisponibles dans cette version.");
+        }
+
+        if (activite.getDateDebut() == null || !activite.getDateDebut().isAfter(LocalDateTime.now())) {
+            throw new RuntimeException("Les inscriptions à cette activité sont clôturées.");
         }
 
         // 4. Vérifier que le membre n'est pas déjà inscrit
@@ -79,10 +90,8 @@ public class InscriptionService {
 
         // 6. Une activite gratuite reutilise la ligne annulee : le couple membre/activite est unique.
         // Les presences restent attachees a la meme personne et a la meme activite.
-        // Le parcours payant reste inchange, hors du lot L1.
-        Inscription inscription = activite.isGratuite()
-                ? inscriptionsExistantes.stream().findFirst().orElseGet(Inscription::new)
-                : new Inscription();
+        // Le parcours payant est refusé plus haut pour la V1.
+        Inscription inscription = inscriptionsExistantes.stream().findFirst().orElseGet(Inscription::new);
         boolean reinscription = inscription.getId() != null;
         if (reinscription) {
             inscription.setDateInscription(LocalDateTime.now());
@@ -91,13 +100,8 @@ public class InscriptionService {
         inscription.setMembre(membre);
         inscription.setActivite(activite);
 
-        // Activité gratuite → CONFIRMEE directement
-        // Activité payante → EN_ATTENTE_PAIEMENT (PayPal à venir)
-        if (activite.isGratuite()) {
-            inscription.setStatut(StatutInscription.CONFIRMEE);
-        } else {
-            inscription.setStatut(StatutInscription.EN_ATTENTE_PAIEMENT);
-        }
+        // Les inscriptions de la V1 concernent uniquement les activités gratuites.
+        inscription.setStatut(StatutInscription.CONFIRMEE);
 
         Inscription inscriptionSauvee = inscriptionRepository.save(inscription);
         if (inscriptionSauvee.getStatut() == StatutInscription.CONFIRMEE) {

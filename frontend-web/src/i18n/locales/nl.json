@@ -307,7 +307,8 @@
       "TERMINEE": "Activiteit afgelopen",
       "DEJA_INSCRIT": "Al ingeschreven",
       "NON_PUBLIEE": "Inschrijving gesloten",
-      "ROLE_NON_MEMBRE": "Inschrijving is voorbehouden aan leden"
+      "ROLE_NON_MEMBRE": "Inschrijving is voorbehouden aan leden",
+      "PAYANTE_INDISPONIBLE": "Inschrijven voor betalende activiteiten is niet beschikbaar in deze versie"
     },
     "draftsToPublish": "Activiteiten om te publiceren",
     "draftsToPublishDesc": "Concepten klaar om te publiceren.",

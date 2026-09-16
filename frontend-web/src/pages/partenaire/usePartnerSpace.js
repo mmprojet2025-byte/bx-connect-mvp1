@@ -14,7 +14,6 @@ import {
 } from './partnerSpace.helpers';
 import {
   cancelPartnerSupport,
-  createActivitySupport,
   createPartnerOpportunity,
   createProjectSupport,
   getOpenPartnerActivities,
@@ -158,13 +157,8 @@ export default function usePartnerSpace({ t, searchParams }) {
         montant: parseFloat(soutienForm.montant),
         message: soutienForm.message,
       };
-      if (soutienForm.type === 'projet') {
-        payload.projetId = soutienForm.projetId;
-        await createProjectSupport(payload);
-      } else {
-        payload.activiteId = soutienForm.activiteId;
-        await createActivitySupport(payload);
-      }
+      payload.projetId = soutienForm.projetId;
+      await createProjectSupport(payload);
       const feedback = t('partnerSpace.supportSubmitted');
       setMessage(feedback);
       toast.success(feedback);

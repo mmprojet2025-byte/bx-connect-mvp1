@@ -108,7 +108,7 @@ public class PayPalService {
         payment.setRedirectUrls(redirectUrls);
 
         // ── Appel API PayPal ───────────────────────────────────────────────────
-        Payment createdPayment = payment.create(apiContext);
+        Payment createdPayment = creerPaiementExterne(payment);
 
         // ── Trouver l'URL d'approbation ────────────────────────────────────────
         String approvalUrl = createdPayment.getLinks().stream()
@@ -200,6 +200,10 @@ public class PayPalService {
                 .toList();
     }
 
+    Payment creerPaiementExterne(Payment payment) throws PayPalRESTException {
+        return payment.create(apiContext);
+    }
+
     private void verifierCibleUnique(PaiementRequest request) {
         boolean cibleActivite = request.getActiviteId() != null;
         boolean cibleProjet = request.getProjetId() != null;
@@ -209,9 +213,7 @@ public class PayPalService {
     }
 
     private void verifierActivitePayable(Activite activite) {
-        if (activite.getStatut() != StatutActivite.PUBLIEE) {
-            throw new AccessDeniedException("Cette activité n'est pas ouverte au paiement.");
-        }
+        throw new AccessDeniedException("Les paiements d'activité sont indisponibles dans cette version.");
     }
 
     private void verifierProjetPayable(Projet projet) {

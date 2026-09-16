@@ -131,28 +131,11 @@ public class PartenaireService {
             throw new RuntimeException("L'identifiant de l'activité est obligatoire.");
         }
 
-        Activite activite = activiteRepository.findById(request.getActiviteId())
+        activiteRepository.findById(request.getActiviteId())
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + request.getActiviteId()));
 
-        if (activite.getStatut() != StatutActivite.PUBLIEE) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "Cette activité n'est pas ouverte au soutien partenaire.");
-        }
-
-        SoutienFinancier soutien = new SoutienFinancier();
-        soutien.setMontant(request.getMontant());
-        soutien.setDonateur(partenaire);   // ✅ donateur (pas partenaire)
-        soutien.setActivite(activite);
-        soutien.setMessage(request.getMessage());
-        soutien.setFournisseur("DECLARATION");
-        soutien.setTypeSource("DECLARATION");
-        soutien.setStatutPaiement(StatutPaiement.EN_ATTENTE);
-
-        SoutienFinancier saved = soutienRepository.save(soutien);
-        notifierAdminsNouveauSoutien(saved);
-        auditerStatut(partenaire, "SUPPORT_CREATED", saved, null, nomStatut(saved.getStatutPaiement()),
-                "Soutien partenaire cree.", metadataSoutien(saved));
-        return SoutienResponse.fromEntity(saved);
+        throw new org.springframework.security.access.AccessDeniedException(
+                "Les soutiens financiers aux activités sont indisponibles dans cette version.");
     }
 
     // ─── P07 : Consulter le statut de ses offres ──────────────────────────────
@@ -182,6 +165,10 @@ public class PartenaireService {
 
     public SoutienResponse modifierSoutien(Long soutienId, SoutienRequest request, String emailPartenaire) {
         SoutienFinancier soutien = chargerSoutienEditable(soutienId, emailPartenaire);
+        if (soutien.getActivite() != null) {
+            throw new AccessDeniedException(
+                    "Les soutiens financiers aux activités sont indisponibles dans cette version.");
+        }
         User partenaire = soutien.getDonateur();
         soutien.setMontant(request.getMontant());
         soutien.setMessage(normaliser(request.getMessage()));
@@ -283,6 +270,10 @@ public class PartenaireService {
     public SoutienResponse validerSoutien(Long soutienId, String commentaireAdmin, String emailAdmin) {
         SoutienFinancier soutien = soutienRepository.findById(soutienId)
                 .orElseThrow(() -> new RuntimeException("Soutien introuvable : " + soutienId));
+        if (soutien.getActivite() != null) {
+            throw new AccessDeniedException(
+                    "Les soutiens financiers aux activités sont indisponibles dans cette version.");
+        }
         User admin = chargerUtilisateurOptionnel(emailAdmin);
         StatutPaiement ancienStatut = soutien.getStatutPaiement();
         soutien.setStatutPaiement(StatutPaiement.PAYE);

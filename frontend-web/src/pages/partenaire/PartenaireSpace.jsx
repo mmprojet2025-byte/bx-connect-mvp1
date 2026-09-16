@@ -422,7 +422,6 @@ export default function PartenaireSpace() {
             soutienForm={soutienForm}
             setSoutienForm={setSoutienForm}
             projetsOuverts={projetsOuverts}
-            activitesOuvertes={activitesOuvertes}
             submittingSupport={submittingSupport}
             onSubmit={handleSoumettreSoutien}
             onClose={() => setShowSoutienForm(false)}
@@ -923,17 +922,6 @@ function ProjectsActivitiesPanel({
                     {a.dateDebut && <InlineIconLabel icon="Calendar">{formatDate(a.dateDebut, language)}</InlineIconLabel>}
                     <InlineIconLabel icon="CheckCircle">{t('partnerSpace.receivedSupports')}: {formatEuros(a.totalSoutiensRecus)}</InlineIconLabel>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSoutienForm({ ...soutienForm, type: 'activite', activiteId: a.id });
-                      setShowSoutienForm(true);
-                    }}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-orange-600 py-2 text-sm font-semibold text-white transition hover:bg-orange-500"
-                  >
-                    <AppIcon name="Wallet" className="h-4 w-4" />
-                    {t('partnerSpace.proposeSupport')}
-                  </button>
                 </div>
               </article>
             ))}

@@ -307,7 +307,8 @@
       "TERMINEE": "Activité terminée",
       "DEJA_INSCRIT": "Déjà inscrit",
       "NON_PUBLIEE": "Inscription fermée",
-      "ROLE_NON_MEMBRE": "Inscription réservée aux membres"
+      "ROLE_NON_MEMBRE": "Inscription réservée aux membres",
+      "PAYANTE_INDISPONIBLE": "Inscriptions indisponibles pour les activités payantes dans cette version"
     },
     "draftsToPublish": "Activités à publier",
     "draftsToPublishDesc": "Brouillons prêts à publier.",

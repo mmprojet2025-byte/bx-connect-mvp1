@@ -429,7 +429,7 @@ class ActiviteSecurityTest {
         request.setActiviteId(30L);
 
         when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
-        when(activiteRepository.findById(30L)).thenReturn(Optional.of(activite));
+        when(activiteRepository.findByIdForUpdate(30L)).thenReturn(Optional.of(activite));
         when(inscriptionRepository.findByMembreIdAndActiviteIdOrderByDateInscriptionDesc(4L, 30L)).thenReturn(List.of());
         when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);
         when(inscriptionRepository.save(any(Inscription.class))).thenAnswer(inv -> {

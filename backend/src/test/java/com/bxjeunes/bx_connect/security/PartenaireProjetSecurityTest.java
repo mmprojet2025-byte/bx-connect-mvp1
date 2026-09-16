@@ -185,8 +185,8 @@ class PartenaireProjetSecurityTest {
     }
 
     @Test
-    @DisplayName("Partenaire ne peut pas soutenir une activite non publiee")
-    void partenaire_ne_soutient_pas_activite_non_publiee() {
+    @DisplayName("Partenaire ne peut soutenir aucune activite")
+    void partenaire_ne_soutient_aucune_activite() {
         when(userRepository.findByEmail(partenaire.getEmail())).thenReturn(Optional.of(partenaire));
 
         for (StatutActivite statut : List.of(
@@ -201,13 +201,13 @@ class PartenaireProjetSecurityTest {
 
             assertThatThrownBy(() -> partenaireService.soutenirActivite(request, partenaire.getEmail()))
                     .isInstanceOf(AccessDeniedException.class)
-                    .hasMessageContaining("n'est pas ouverte");
+                    .hasMessage("Les soutiens financiers aux activités sont indisponibles dans cette version.");
         }
     }
 
     @Test
-    @DisplayName("Partenaire peut soutenir une activite publiee")
-    void partenaire_soutient_activite_publiee() {
+    @DisplayName("Partenaire ne peut pas soutenir une activite gratuite publiee")
+    void partenaire_ne_soutient_pas_activite_gratuite_publiee() {
         SoutienRequest request = new SoutienRequest();
         request.setActiviteId(10L);
         request.setMontant(BigDecimal.TEN);
@@ -215,10 +215,49 @@ class PartenaireProjetSecurityTest {
         when(userRepository.findByEmail(partenaire.getEmail())).thenReturn(Optional.of(partenaire));
         when(activiteRepository.findById(10L))
                 .thenReturn(Optional.of(activite(10L, StatutActivite.PUBLIEE)));
-        when(soutienRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        assertThatThrownBy(() -> partenaireService.soutenirActivite(request, partenaire.getEmail()))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Les soutiens financiers aux activités sont indisponibles dans cette version.");
+        verify(soutienRepository, never()).save(any());
+    }
 
-        assertThat(partenaireService.soutenirActivite(request, partenaire.getEmail()).getMontant())
-                .isEqualByComparingTo(BigDecimal.TEN);
+    @Test
+    @DisplayName("Partenaire ne peut pas contourner le refus via une activite payante publiee")
+    void partenaire_ne_soutient_pas_activite_payante_publiee() {
+        SoutienRequest request = new SoutienRequest();
+        request.setActiviteId(10L);
+        request.setMontant(BigDecimal.TEN);
+        Activite activite = activite(10L, StatutActivite.PUBLIEE);
+        activite.setGratuite(false);
+
+        when(userRepository.findByEmail(partenaire.getEmail())).thenReturn(Optional.of(partenaire));
+        when(activiteRepository.findById(10L)).thenReturn(Optional.of(activite));
+
+        assertThatThrownBy(() -> partenaireService.soutenirActivite(request, partenaire.getEmail()))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Les soutiens financiers aux activités sont indisponibles dans cette version.");
+        verify(soutienRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Un ancien soutien d'activite ne peut etre modifie ou valide comme paye")
+    void ancien_soutien_activite_ne_peut_pas_progresser() {
+        SoutienFinancier soutien = soutien(100L, partenaire, StatutPaiement.EN_ATTENTE);
+        soutien.setProjet(null);
+        soutien.setActivite(activite(10L, StatutActivite.PUBLIEE));
+        SoutienRequest request = new SoutienRequest();
+        request.setMontant(new BigDecimal("25.00"));
+
+        when(userRepository.findByEmail(partenaire.getEmail())).thenReturn(Optional.of(partenaire));
+        when(soutienRepository.findById(100L)).thenReturn(Optional.of(soutien));
+
+        assertThatThrownBy(() -> partenaireService.modifierSoutien(100L, request, partenaire.getEmail()))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Les soutiens financiers aux activités sont indisponibles dans cette version.");
+        assertThatThrownBy(() -> partenaireService.validerSoutien(100L, "ok", null))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Les soutiens financiers aux activités sont indisponibles dans cette version.");
+        verify(soutienRepository, never()).save(any());
     }
 
     @Test

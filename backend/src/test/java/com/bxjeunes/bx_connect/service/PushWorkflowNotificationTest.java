@@ -81,7 +81,7 @@ class PushWorkflowNotificationTest {
         request.setActiviteId(8L);
 
         when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
-        when(activiteRepository.findById(8L)).thenReturn(Optional.of(activite));
+        when(activiteRepository.findByIdForUpdate(8L)).thenReturn(Optional.of(activite));
         when(inscriptionRepository.findByMembreIdAndActiviteIdOrderByDateInscriptionDesc(2L, 8L)).thenReturn(List.of());
         when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);
         when(inscriptionRepository.save(any(Inscription.class)))
@@ -105,7 +105,7 @@ class PushWorkflowNotificationTest {
     }
 
     @Test
-    void une_inscription_payante_non_confirmee_ne_declenche_pas_la_confirmation() {
+    void une_inscription_payante_est_refusee_sans_confirmation() {
         User membre = user(2L, "membre@test.be", Role.MEMBRE);
         Activite activite = activite(8L, user(1L, "admin@test.be", Role.ADMIN), false);
         activite.setStatut(StatutActivite.PUBLIEE);
@@ -114,19 +114,18 @@ class PushWorkflowNotificationTest {
         request.setActiviteId(8L);
 
         when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
-        when(activiteRepository.findById(8L)).thenReturn(Optional.of(activite));
-        when(inscriptionRepository.findByMembreIdAndActiviteIdOrderByDateInscriptionDesc(2L, 8L)).thenReturn(List.of());
-        when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);
-        when(inscriptionRepository.save(any(Inscription.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(activiteRepository.findByIdForUpdate(8L)).thenReturn(Optional.of(activite));
 
-        new InscriptionService(
+        InscriptionService service = new InscriptionService(
                 inscriptionRepository,
                 activiteRepository,
                 userRepository,
                 notificationService,
                 auditLogService
-        ).inscrire(request, membre.getEmail());
+        );
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.inscrire(request, membre.getEmail()))
+                .hasMessageContaining("payantes");
 
         verify(notificationService, never()).creer(
                 any(User.class),
@@ -216,6 +215,8 @@ class PushWorkflowNotificationTest {
         activite.setCreateur(createur);
         activite.setGratuite(gratuite);
         activite.setCapaciteMax(20);
+        activite.setDateDebut(java.time.LocalDateTime.now().plusDays(1));
+        activite.setDateFin(java.time.LocalDateTime.now().plusDays(1).plusHours(2));
         return activite;
     }
 

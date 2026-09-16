@@ -204,11 +204,11 @@ function MemberPrioritySection({ groupe, inscriptions, notifications, projets, t
       icon: 'Bell',
     },
     paymentPending && {
-      title: t('memberDashboard.paymentRequired'),
+      title: t('activities.unavailableReasons.PAYANTE_INDISPONIBLE'),
       description: paymentPending.titre || paymentPending.activiteTitre || t('memberDashboard.activities.title'),
       to: '/activites',
       tone: 'amber',
-      icon: 'CreditCard',
+      icon: 'Calendar',
     },
     imminentInscription && {
       title: t('memberDashboard.activitySoon'),

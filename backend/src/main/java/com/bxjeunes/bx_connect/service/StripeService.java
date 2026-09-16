@@ -109,7 +109,7 @@ public class StripeService {
                 )
                 .build();
 
-        Session session = Session.create(params);
+        Session session = creerSessionExterne(params);
 
         // Sauvegarder en base avec statut EN_ATTENTE
         SoutienFinancier soutien = new SoutienFinancier();
@@ -213,6 +213,10 @@ public class StripeService {
         return publishableKey;
     }
 
+    Session creerSessionExterne(SessionCreateParams params) throws StripeException {
+        return Session.create(params);
+    }
+
     private void verifierCibleUnique(PaiementRequest request) {
         boolean cibleActivite = request.getActiviteId() != null;
         boolean cibleProjet = request.getProjetId() != null;
@@ -222,9 +226,7 @@ public class StripeService {
     }
 
     private void verifierActivitePayable(Activite activite) {
-        if (activite.getStatut() != StatutActivite.PUBLIEE) {
-            throw new AccessDeniedException("Cette activité n'est pas ouverte au paiement.");
-        }
+        throw new AccessDeniedException("Les paiements d'activité sont indisponibles dans cette version.");
     }
 
     private void verifierProjetPayable(Projet projet) {

@@ -5,12 +5,16 @@ import com.bxjeunes.bx_connect.dto.InscriptionResponse;
 import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.ActiviteRepository;
 import com.bxjeunes.bx_connect.repository.InscriptionRepository;
+import com.bxjeunes.bx_connect.repository.GroupeRepository;
+import com.bxjeunes.bx_connect.repository.MembreGroupeRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
 import com.bxjeunes.bx_connect.service.AuditLogService;
 import com.bxjeunes.bx_connect.service.InscriptionService;
+import com.bxjeunes.bx_connect.service.GroupeService;
 import com.bxjeunes.bx_connect.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -33,6 +37,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,7 +53,7 @@ import static org.mockito.Mockito.verify;
 @DataJpaTest(showSql = false)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-@Import(InscriptionService.class)
+@Import({InscriptionService.class, GroupeService.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @Testcontainers
 class InscriptionLifecycleMySqlTest {
@@ -67,9 +75,12 @@ class InscriptionLifecycleMySqlTest {
     }
 
     @Autowired InscriptionService service;
+    @Autowired GroupeService groupeService;
     @Autowired UserRepository users;
     @Autowired ActiviteRepository activities;
     @Autowired InscriptionRepository registrations;
+    @Autowired GroupeRepository groups;
+    @Autowired MembreGroupeRepository groupMembers;
     @Autowired PlatformTransactionManager transactionManager;
     @Autowired JdbcTemplate jdbc;
     @MockitoBean NotificationService notifications;
@@ -177,6 +188,67 @@ class InscriptionLifecycleMySqlTest {
         assertPersistedStatus(first.getId(), StatutInscription.ANNULEE);
     }
 
+    @RepeatedTest(10)
+    void concurrentRegistrationsNeverExceedActivityCapacity() throws Exception {
+        List<ConcurrentOutcome> results = runConcurrently(
+                () -> service.inscrire(request, member.getEmail()),
+                () -> service.inscrire(request, otherMember.getEmail()));
+        assertCapacityRace(results, "complète");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM inscriptions WHERE activite_id = ? AND statut IN ('CONFIRMEE','PAYEE')",
+                Integer.class, activity.getId())).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM inscriptions WHERE activite_id = ?", Integer.class,
+                activity.getId())).isEqualTo(1);
+    }
+
+    @RepeatedTest(10)
+    void concurrentGroupAcceptancesNeverExceedGroupCapacity() throws Exception {
+        long[] ids = inTransaction(() -> {
+            Groupe group = new Groupe();
+            group.setNom("Groupe capacite L3");
+            group.setDescription("Test concurrence");
+            group.setReferent(referent);
+            group.setStatut(StatutGroupe.VALIDE);
+            group.setActif(true);
+            group.setCapaciteMax(1);
+            groups.saveAndFlush(group);
+            MembreGroupe first = groupMembers.saveAndFlush(new MembreGroupe(member, group));
+            MembreGroupe second = groupMembers.saveAndFlush(new MembreGroupe(otherMember, group));
+            return new long[]{first.getId(), second.getId(), group.getId()};
+        });
+        List<ConcurrentOutcome> results = runConcurrently(
+                () -> groupeService.accepterAdhesion(ids[0], referent.getEmail()),
+                () -> groupeService.accepterAdhesion(ids[1], referent.getEmail()));
+        assertCapacityRace(results, "capacité maximale");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM membres_groupes WHERE groupe_id = ? AND statut = 'ACCEPTE'",
+                Integer.class, ids[2])).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM membres_groupes WHERE groupe_id = ? AND statut = 'EN_ATTENTE'",
+                Integer.class, ids[2])).isEqualTo(1);
+    }
+
+    @Test
+    void twoAvailableActivityPlacesAcceptBothConcurrentRegistrations() throws Exception {
+        inTransaction(() -> { activities.findById(activity.getId()).orElseThrow().setCapaciteMax(2); return null; });
+        List<ConcurrentOutcome> results = runConcurrently(
+                () -> service.inscrire(request, member.getEmail()),
+                () -> service.inscrire(request, otherMember.getEmail()));
+        assertThat(results).allMatch(ConcurrentOutcome::success);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM inscriptions WHERE activite_id = ? AND statut = 'CONFIRMEE'",
+                Integer.class, activity.getId())).isEqualTo(2);
+    }
+
+    @Test
+    void twoAvailableGroupPlacesAcceptBothAndPendingMembershipsDoNotOccupyPlaces() throws Exception {
+        long[] ids = createGroupWithTwoPendingMembers(2);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM membres_groupes WHERE groupe_id = ? AND statut = 'ACCEPTE'",
+                Integer.class, ids[2])).isZero();
+        List<ConcurrentOutcome> results = runConcurrently(
+                () -> groupeService.accepterAdhesion(ids[0], referent.getEmail()),
+                () -> groupeService.accepterAdhesion(ids[1], referent.getEmail()));
+        assertThat(results).allMatch(ConcurrentOutcome::success);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM membres_groupes WHERE groupe_id = ? AND statut = 'ACCEPTE'",
+                Integer.class, ids[2])).isEqualTo(2);
+    }
+
     @ParameterizedTest
     @EnumSource(value = StatutActivite.class, names = "PUBLIEE", mode = EnumSource.Mode.EXCLUDE)
     void unpublishedActivityStillRejectsFirstRegistrationAndReregistration(StatutActivite status) {
@@ -256,4 +328,47 @@ class InscriptionLifecycleMySqlTest {
     private <T> T inTransaction(Supplier<T> operation) {
         return transaction.execute(status -> operation.get());
     }
+
+    private long[] createGroupWithTwoPendingMembers(int capacity) {
+        return inTransaction(() -> {
+            Groupe group = new Groupe();
+            group.setNom("Groupe capacite L3"); group.setDescription("Test concurrence");
+            group.setReferent(referent); group.setStatut(StatutGroupe.VALIDE); group.setActif(true);
+            group.setCapaciteMax(capacity); groups.saveAndFlush(group);
+            MembreGroupe first = groupMembers.saveAndFlush(new MembreGroupe(member, group));
+            MembreGroupe second = groupMembers.saveAndFlush(new MembreGroupe(otherMember, group));
+            return new long[]{first.getId(), second.getId(), group.getId()};
+        });
+    }
+
+    private List<ConcurrentOutcome> runConcurrently(Runnable first, Runnable second) throws Exception {
+        var executor = Executors.newFixedThreadPool(2);
+        var start = new CountDownLatch(1);
+        try {
+            Future<ConcurrentOutcome> one = executor.submit(() -> runAfter(start, first));
+            Future<ConcurrentOutcome> two = executor.submit(() -> runAfter(start, second));
+            start.countDown();
+            return List.of(one.get(), two.get());
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    private ConcurrentOutcome runAfter(CountDownLatch start, Runnable operation) throws InterruptedException {
+        start.await();
+        try {
+            operation.run();
+            return new ConcurrentOutcome(true, null);
+        } catch (RuntimeException failure) {
+            return new ConcurrentOutcome(false, failure.getMessage());
+        }
+    }
+
+    private void assertCapacityRace(List<ConcurrentOutcome> results, String expectedMessage) {
+        assertThat(results).filteredOn(ConcurrentOutcome::success).hasSize(1);
+        assertThat(results).filteredOn(result -> !result.success()).singleElement()
+                .extracting(ConcurrentOutcome::message).asString().contains(expectedMessage);
+    }
+
+    private record ConcurrentOutcome(boolean success, String message) {}
 }

@@ -342,6 +342,7 @@ class GroupeSecurityTest {
 
         when(membreGroupeRepository.findById(100L)).thenReturn(Optional.of(demande));
         when(userRepository.findByEmail("referent1@test.be")).thenReturn(Optional.of(referent1));
+        when(groupeRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(groupeDeReferent1));
         when(membreGroupeRepository.findFirstByUserIdAndStatut(99L, StatutMembre.ACCEPTE))
                 .thenReturn(Optional.empty());
         when(membreGroupeRepository.save(demande)).thenReturn(demande);
@@ -389,6 +390,7 @@ class GroupeSecurityTest {
 
         when(membreGroupeRepository.findById(100L)).thenReturn(Optional.of(demande));
         when(userRepository.findByEmail("referent1@test.be")).thenReturn(Optional.of(referent1));
+        when(groupeRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(groupe2));
         when(membreGroupeRepository.findFirstByUserIdAndStatut(99L, StatutMembre.ACCEPTE))
                 .thenReturn(Optional.of(adhesionActive));
 
