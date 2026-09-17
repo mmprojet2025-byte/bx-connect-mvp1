@@ -5,7 +5,9 @@ import com.bxjeunes.bx_connect.config.SecurityConfig;
 import com.bxjeunes.bx_connect.controller.ProjetController;
 import com.bxjeunes.bx_connect.dto.ProjetAdminResponse;
 import com.bxjeunes.bx_connect.dto.ProjetResponse;
+import com.bxjeunes.bx_connect.dto.ProjetReviewResponse;
 import com.bxjeunes.bx_connect.entity.Projet;
+import com.bxjeunes.bx_connect.entity.StatutProjet;
 import com.bxjeunes.bx_connect.service.ProjetService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -57,14 +59,37 @@ class ProjetEndpointSecurityTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].justificationAdmin").doesNotExist())
                 .andExpect(jsonPath("$[0].bilan").doesNotExist())
+                .andExpect(jsonPath("$[0].commentaireAdmin").doesNotExist())
+                .andExpect(jsonPath("$[0].commentaireReferent").doesNotExist())
+                .andExpect(jsonPath("$[0].referentValidateurId").doesNotExist())
                 .andExpect(jsonPath("$[0].version").doesNotExist());
+    }
+
+    @Test
+    @WithMockUser(username = "membre@test.be", roles = "MEMBRE")
+    @DisplayName("Le membre voit le motif utile de correction sans les notes internes")
+    void membre_voit_motif_correction_sans_notes_internes() throws Exception {
+        Projet projet = new Projet();
+        projet.setId(1L);
+        projet.setStatut(StatutProjet.A_CORRIGER_REFERENT);
+        projet.setCommentaireReferent("Preciser les objectifs");
+        projet.setCommentaireAdmin("Note interne administration");
+        when(projetService.getProjet(1L, "membre@test.be"))
+                .thenReturn(ProjetResponse.fromEntity(projet));
+
+        mockMvc.perform(get("/api/projets/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.motifCorrection").value("Preciser les objectifs"))
+                .andExpect(jsonPath("$.commentaireReferent").doesNotExist())
+                .andExpect(jsonPath("$.commentaireAdmin").doesNotExist())
+                .andExpect(jsonPath("$.referentValidateurId").doesNotExist());
     }
 
     @Test
     @WithMockUser(username = "admin@test.be", roles = "ADMIN")
     @DisplayName("Seul ADMIN obtient justification et bilan par le detail dedie")
     void admin_obtient_detail_administratif() throws Exception {
-        ProjetResponse response = ProjetResponse.fromEntity(new Projet());
+        ProjetReviewResponse response = ProjetReviewResponse.fromEntity(new Projet());
         when(projetService.getProjetAdmin(1L, "admin@test.be"))
                 .thenReturn(new ProjetAdminResponse(response, "Justification", "Bilan"));
 

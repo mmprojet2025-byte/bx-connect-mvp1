@@ -20,13 +20,7 @@ public class ProjetResponse {
     private LocalDateTime dateSoumission;
     private LocalDateTime dateValidation;
     private LocalDateTime dateCloture;
-    private String commentaireAdmin;
-    private String commentaireReferent;
-    private LocalDateTime dateValidationReferent;
-    private LocalDateTime dateRefusReferent;
-    private Long referentValidateurId;
-    private String referentValidateurPrenom;
-    private String referentValidateurNom;
+    private String motifCorrection;
     private String porteurPrenom;
     private String porteurNom;
     private Long groupeId;
@@ -36,8 +30,8 @@ public class ProjetResponse {
 
     // ─── Factory depuis entité ────────────────────────────────────────────────
 
-    public static ProjetResponse fromEntity(Projet projet) {
-        ProjetResponse r = new ProjetResponse();
+    protected ProjetResponse(Projet projet) {
+        ProjetResponse r = this;
         r.id = projet.getId();
         r.titre = projet.getTitre();
         r.description = projet.getDescription();
@@ -49,14 +43,10 @@ public class ProjetResponse {
         r.dateSoumission = projet.getDateSoumission();
         r.dateValidation = projet.getDateValidation();
         r.dateCloture = projet.getDateCloture();
-        r.commentaireAdmin = projet.getCommentaireAdmin();
-        r.commentaireReferent = projet.getCommentaireReferent();
-        r.dateValidationReferent = projet.getDateValidationReferent();
-        r.dateRefusReferent = projet.getDateRefusReferent();
-        if (projet.getReferentValidateur() != null) {
-            r.referentValidateurId = projet.getReferentValidateur().getId();
-            r.referentValidateurPrenom = projet.getReferentValidateur().getPrenom();
-            r.referentValidateurNom = projet.getReferentValidateur().getNom();
+        if (projet.getStatut() == StatutProjet.A_CORRIGER_REFERENT) {
+            r.motifCorrection = projet.getCommentaireReferent();
+        } else if (projet.getStatut() == StatutProjet.A_CORRIGER_ADMIN) {
+            r.motifCorrection = projet.getCommentaireAdmin();
         }
         if (projet.getPorteur() != null) {
             r.porteurPrenom = projet.getPorteur().getPrenom();
@@ -68,7 +58,10 @@ public class ProjetResponse {
         }
         r.nombreParticipants = projet.getParticipants() != null ? projet.getParticipants().size() : 0;
         r.nombreCommentaires = projet.getCommentaires() != null ? projet.getCommentaires().size() : 0;
-        return r;
+    }
+
+    public static ProjetResponse fromEntity(Projet projet) {
+        return new ProjetResponse(projet);
     }
 
     // ─── Getters ─────────────────────────────────────────────────────────────
@@ -84,13 +77,7 @@ public class ProjetResponse {
     public LocalDateTime getDateSoumission() { return dateSoumission; }
     public LocalDateTime getDateValidation() { return dateValidation; }
     public LocalDateTime getDateCloture() { return dateCloture; }
-    public String getCommentaireAdmin() { return commentaireAdmin; }
-    public String getCommentaireReferent() { return commentaireReferent; }
-    public LocalDateTime getDateValidationReferent() { return dateValidationReferent; }
-    public LocalDateTime getDateRefusReferent() { return dateRefusReferent; }
-    public Long getReferentValidateurId() { return referentValidateurId; }
-    public String getReferentValidateurPrenom() { return referentValidateurPrenom; }
-    public String getReferentValidateurNom() { return referentValidateurNom; }
+    public String getMotifCorrection() { return motifCorrection; }
     public String getPorteurPrenom() { return porteurPrenom; }
     public String getPorteurNom() { return porteurNom; }
     public Long getGroupeId() { return groupeId; }

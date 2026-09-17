@@ -41,6 +41,7 @@ export default function Projets() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [editingProject, setEditingProject] = useState(null)
   const [recherche, setRecherche] = useState('')
   const [filtreStatut, setFiltreStatut] = useState('')
   const [filtreGroupe, setFiltreGroupe] = useState('')
@@ -157,21 +158,48 @@ export default function Projets() {
     setMessage('')
     setError('')
     try {
-      await api.post('/projets', {
+      const payload = {
         ...form,
         budgetDemande: parseFloat(form.budgetDemande) || 0,
         groupeId: groupeActif?.groupeId,
-      })
-      setMessage(t('projects.draftCreated'))
-      toast.success(t('projects.draftCreated'))
+      }
+      if (editingProject) {
+        await api.put(`/projets/${editingProject.id}`, payload)
+      } else {
+        await api.post('/projets', payload)
+      }
+      const feedback = editingProject
+        ? t('projects.projectUpdated', { defaultValue: 'Projet mis à jour.' })
+        : t('projects.draftCreated')
+      setMessage(feedback)
+      toast.success(feedback)
       setShowForm(false)
+      setEditingProject(null)
       setForm({ titre: '', description: '', budgetDemande: '', imageUrl: '', visibilite: 'GROUPE' })
-      fetchProjets()
+      await fetchProjets()
     } catch (err) {
       const feedback = userFriendlyError(err, t('projects.error_submit'))
       setError(feedback)
       toast.error(feedback)
     }
+  }
+
+  const openProjectForm = (projet = null) => {
+    setEditingProject(projet)
+    setForm(projet ? {
+      titre: projet.titre || '',
+      description: projet.description || '',
+      budgetDemande: projet.budgetDemande ?? '',
+      imageUrl: projet.imageUrl || '',
+      visibilite: projet.visibilite || 'GROUPE',
+    } : { titre: '', description: '', budgetDemande: '', imageUrl: '', visibilite: 'GROUPE' })
+    setShowForm(true)
+  }
+
+  const closeProjectForm = () => {
+    setShowForm(false)
+    setEditingProject(null)
+    setForm({ titre: '', description: '', budgetDemande: '', imageUrl: '', visibilite: 'GROUPE' })
   }
 
   const handleFollow = (projet) => {
@@ -277,7 +305,7 @@ export default function Projets() {
           action={isMembre && peutProposer && (
             <button
               type="button"
-              onClick={() => setShowForm(open => !open)}
+              onClick={() => showForm ? closeProjectForm() : openProjectForm()}
               disabled={!peutProposer}
               className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-300 disabled:text-slate-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
             >
@@ -350,9 +378,11 @@ export default function Projets() {
           </div>
         </section>}
 
-        {showForm && peutProposer && (
+        {showForm && (peutProposer || editingProject) && (
           <section className="bg-white rounded-xl border border-slate-100 shadow-lg shadow-slate-900/5 p-5 mb-6">
-            <h2 className="text-lg font-bold text-slate-950 mb-4">{t('ux.projects.new')}</h2>
+            <h2 className="text-lg font-bold text-slate-950 mb-4">
+              {editingProject ? t('common.edit') : t('ux.projects.new')}
+            </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <ImageUpload
                 type="projet"
@@ -381,7 +411,7 @@ export default function Projets() {
                 t={t}
               />
               <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-2 rounded-lg transition">
-                {t('projects.submit_project')}
+                {editingProject ? t('common.save', { defaultValue: 'Enregistrer' }) : t('projects.submit_project')}
               </button>
             </form>
           </section>
@@ -427,7 +457,7 @@ export default function Projets() {
             title={t('projects.emptyWithGroupTitle')}
             description={t('projects.emptyWithGroupDescription')}
             actionLabel={peutProposer ? t('ux.projects.propose') : undefined}
-            action={peutProposer ? () => setShowForm(true) : undefined}
+            action={peutProposer ? () => openProjectForm() : undefined}
           />
         ) : projetsFiltres.length === 0 ? (
           <EmptyState
@@ -457,6 +487,8 @@ export default function Projets() {
                 onJoin={() => handleJoinProject(projet)}
                 canSubmit={['BROUILLON', 'A_CORRIGER_REFERENT', 'A_CORRIGER_ADMIN'].includes(projet.statut) && projet.estPorteurConnecte}
                 onSubmit={() => handleSubmitDraft(projet)}
+                canEdit={['BROUILLON', 'A_CORRIGER_REFERENT', 'A_CORRIGER_ADMIN'].includes(projet.statut) && projet.estPorteurConnecte}
+                onEdit={() => openProjectForm(projet)}
                 onCommentChange={(value) => setCommentDrafts(current => ({ ...current, [projet.id]: value }))}
                 onCommentSubmit={() => handleCommentSubmit(projet)}
                 t={t}
@@ -540,6 +572,8 @@ function ProjectCard({
   onJoin,
   canSubmit,
   onSubmit,
+  canEdit,
+  onEdit,
   onCommentChange,
   onCommentSubmit,
   t,
@@ -575,6 +609,11 @@ function ProjectCard({
         <p className="text-sm text-slate-500 leading-relaxed line-clamp-2">
           {projet.description || t('projects.description_soon')}
         </p>
+        {projet.motifCorrection && (
+          <Alert type="warning" className="mt-3">
+            {projet.motifCorrection}
+          </Alert>
+        )}
         <dl className="mt-3 grid gap-2 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs sm:grid-cols-2">
           <div>
             <dt className="font-black text-slate-700">{t('projects.whoActs')}</dt>
@@ -631,6 +670,8 @@ function ProjectCard({
           onJoin={onJoin}
           canSubmit={canSubmit}
           onSubmit={onSubmit}
+          canEdit={canEdit}
+          onEdit={onEdit}
           t={t}
         />
       </div>
@@ -713,7 +754,7 @@ function ProjectAlivePanel({ projet, nextStep, comments, commentsLoading, commen
   )
 }
 
-function ProjectActions({ projet, isAuthenticated, isMembre, isPartenaire, isParticipant, actionLoading, onToggleDetails, onFollow, onJoin, canSubmit, onSubmit, t }) {
+function ProjectActions({ projet, isAuthenticated, isMembre, isPartenaire, isParticipant, actionLoading, onToggleDetails, onFollow, onJoin, canSubmit, onSubmit, canEdit, onEdit, t }) {
   return (
     <div className="mt-auto flex flex-wrap gap-2 pt-4">
       <button type="button" onClick={onToggleDetails} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-200">
@@ -723,6 +764,11 @@ function ProjectActions({ projet, isAuthenticated, isMembre, isPartenaire, isPar
       {canSubmit && (
         <button type="button" onClick={onSubmit} disabled={actionLoading === `${projet.id}-SUBMIT`} className="inline-flex flex-1 items-center justify-center rounded-lg bg-blue-700 px-3 py-2 text-xs font-black text-white disabled:opacity-60">
           {t('projects.submit_draft')}
+        </button>
+      )}
+      {canEdit && (
+        <button type="button" onClick={onEdit} className="inline-flex flex-1 items-center justify-center rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-black text-blue-700 hover:bg-blue-50">
+          {t('common.edit')}
         </button>
       )}
       {isMembre && (

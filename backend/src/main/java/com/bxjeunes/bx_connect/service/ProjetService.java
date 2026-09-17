@@ -152,14 +152,14 @@ public class ProjetService {
     public List<ProjetResponse> listerTousProjets() {
         return projetRepository.findAll()
                 .stream()
-                .map(ProjetResponse::fromEntity)
+                .map(ProjetReviewResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
     public PagedResponse<ProjetResponse> listerTousProjetsPage(int page, int size) {
         return PagedResponse.fromPage(projetRepository
                 .findAll(PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation")))
-                .map(ProjetResponse::fromEntity));
+                .map(projet -> (ProjetResponse) ProjetReviewResponse.fromEntity(projet)));
     }
 
     public ProjetAdminResponse getProjetAdmin(Long id, String emailAdmin) {
@@ -238,7 +238,7 @@ public class ProjetService {
         Projet saved = projetRepository.save(projet);
         auditerStatut(porteur, "PROJECT_CREATED", saved, null, nomStatut(saved.getStatut()),
                 "Projet cree.", metadataProjet(saved));
-        return ProjetResponse.fromEntity(saved);
+        return reponsePourActeur(saved, porteur);
     }
 
     // ─── Soumettre un projet pour validation ─────────────────────────────────
@@ -292,7 +292,7 @@ public class ProjetService {
             auditerStatut(porteur, "PROJECT_SUBMITTED", saved, nomStatut(ancienStatut), nomStatut(saved.getStatut()),
                     "Projet soumis pour validation.", metadataProjet(saved));
         }
-        return ProjetResponse.fromEntity(saved);
+        return reponsePourActeur(saved, porteur);
     }
 
     // ─── Modifier un projet (porteur / ADMIN) ────────────────────────────────
@@ -334,7 +334,7 @@ public class ProjetService {
 
         Projet saved = projetRepository.save(projet);
         auditerAction(user, "PROJECT_UPDATED", saved, "Projet modifie.", metadataProjet(saved));
-        return ProjetResponse.fromEntity(saved);
+        return reponsePourActeur(saved, user);
     }
 
     // ─── Modifier un projet encadre par un REFERENT ─────────────────────────
@@ -365,7 +365,7 @@ public class ProjetService {
 
         Projet saved = projetRepository.save(projet);
         auditerAction(referent, "PROJECT_UPDATED", saved, "Projet modifie par referent.", metadataProjet(saved));
-        return ProjetResponse.fromEntity(saved);
+        return ProjetReviewResponse.fromEntity(saved);
     }
 
     // ─── Validation terrain par REFERENT : ne valide jamais définitivement ───
@@ -395,7 +395,7 @@ public class ProjetService {
         auditerStatut(referent, "PROJECT_REFERENT_APPROVED", saved,
                 nomStatut(ancienStatut), nomStatut(saved.getStatut()),
                 "Projet valide par referent.", metadataProjet(saved));
-        return ProjetResponse.fromEntity(saved);
+        return ProjetReviewResponse.fromEntity(saved);
     }
 
     public ProjetResponse refuserProjetReferent(Long id, String commentaire, String emailReferent) {
@@ -423,7 +423,7 @@ public class ProjetService {
         auditerStatut(referent, "PROJECT_REFERENT_REJECTED", saved,
                 nomStatut(ancienStatut), nomStatut(saved.getStatut()),
                 "Projet refuse par referent.", metadataProjet(saved));
-        return ProjetResponse.fromEntity(saved);
+        return ProjetReviewResponse.fromEntity(saved);
     }
 
     public ProjetResponse demanderCorrectionReferent(Long id, String commentaire, String emailReferent) {
@@ -466,7 +466,7 @@ public class ProjetService {
         auditerStatut(admin, approuver ? "PROJECT_APPROVED" : "PROJECT_REJECTED", saved,
                 nomStatut(ancienStatut), nomStatut(saved.getStatut()),
                 approuver ? "Projet approuve." : "Projet rejete.", metadataProjet(saved));
-        return ProjetResponse.fromEntity(saved);
+        return ProjetReviewResponse.fromEntity(saved);
     }
 
     public ProjetResponse demanderCorrectionAdmin(Long id, String commentaire, String emailAdmin) {
@@ -681,7 +681,7 @@ public class ProjetService {
     public List<ProjetResponse> projetsSoumis() {
         return projetRepository.findByStatut(StatutProjet.VALIDE_REFERENT)
                 .stream()
-                .map(ProjetResponse::fromEntity)
+                .map(ProjetReviewResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
@@ -693,7 +693,7 @@ public class ProjetService {
         }
         return projetRepository.findByGroupeReferentEmail(emailReferent)
                 .stream()
-                .map(ProjetResponse::fromEntity)
+                .map(ProjetReviewResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
@@ -935,7 +935,14 @@ public class ProjetService {
         }
         auditerStatut(acteur, action, saved, nomStatut(ancienStatut), nomStatut(cible),
                 "Transition technique du projet.", metadataProjet(saved));
-        return ProjetResponse.fromEntity(saved);
+        return reponsePourActeur(saved, acteur);
+    }
+
+    private ProjetResponse reponsePourActeur(Projet projet, User acteur) {
+        if (acteur != null && (acteur.getRole() == Role.ADMIN || acteur.getRole() == Role.REFERENT)) {
+            return ProjetReviewResponse.fromEntity(projet);
+        }
+        return ProjetResponse.fromEntity(projet);
     }
 
     private void verifierStatutModifiable(Projet projet) {

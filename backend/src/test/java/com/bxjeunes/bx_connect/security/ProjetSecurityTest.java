@@ -3,6 +3,7 @@ package com.bxjeunes.bx_connect.security;
 import com.bxjeunes.bx_connect.dto.CommentaireRequest;
 import com.bxjeunes.bx_connect.dto.ProjetRequest;
 import com.bxjeunes.bx_connect.dto.ProjetResponse;
+import com.bxjeunes.bx_connect.dto.ProjetReviewResponse;
 import com.bxjeunes.bx_connect.entity.Groupe;
 import com.bxjeunes.bx_connect.entity.MembreGroupe;
 import com.bxjeunes.bx_connect.entity.ParticipationProjet;
@@ -54,7 +55,8 @@ class ProjetSecurityTest {
     @DisplayName("Le DTO projet general n'expose aucune donnee interne de workflow")
     void dto_projet_general_masque_donnees_internes() {
         assertThat(Arrays.stream(ProjetResponse.class.getDeclaredFields()).map(java.lang.reflect.Field::getName))
-                .doesNotContain("justificationAdmin", "bilan", "version", "porteurId");
+                .doesNotContain("justificationAdmin", "bilan", "version", "porteurId",
+                        "commentaireAdmin", "commentaireReferent", "referentValidateurId");
     }
 
     @Test
@@ -362,9 +364,10 @@ class ProjetSecurityTest {
         ProjetResponse response = projetService.validerProjetReferent(45L, "ok terrain", referent.getEmail());
 
         assertThat(response.getStatut()).isEqualTo(StatutProjet.VALIDE_REFERENT);
-        assertThat(response.getCommentaireReferent()).isEqualTo("ok terrain");
-        assertThat(response.getReferentValidateurId()).isEqualTo(referent.getId());
-        assertThat(response.getDateValidationReferent()).isNotNull();
+        ProjetReviewResponse review = (ProjetReviewResponse) response;
+        assertThat(review.getCommentaireReferent()).isEqualTo("ok terrain");
+        assertThat(review.getReferentValidateurId()).isEqualTo(referent.getId());
+        assertThat(review.getDateValidationReferent()).isNotNull();
         verify(auditLogService).logStatusChange(
                 org.mockito.ArgumentMatchers.same(referent),
                 org.mockito.ArgumentMatchers.eq("PROJECT_REFERENT_APPROVED"),
@@ -388,8 +391,9 @@ class ProjetSecurityTest {
         ProjetResponse response = projetService.refuserProjetReferent(46L, "budget a revoir", referent.getEmail());
 
         assertThat(response.getStatut()).isEqualTo(StatutProjet.REFUSE_REFERENT);
-        assertThat(response.getCommentaireReferent()).isEqualTo("budget a revoir");
-        assertThat(response.getDateRefusReferent()).isNotNull();
+        ProjetReviewResponse review = (ProjetReviewResponse) response;
+        assertThat(review.getCommentaireReferent()).isEqualTo("budget a revoir");
+        assertThat(review.getDateRefusReferent()).isNotNull();
         verify(auditLogService).logStatusChange(
                 org.mockito.ArgumentMatchers.same(referent),
                 org.mockito.ArgumentMatchers.eq("PROJECT_REFERENT_REJECTED"),
@@ -739,6 +743,61 @@ class ProjetSecurityTest {
         assertThat(response.getStatut()).isEqualTo(StatutProjet.SOUMIS);
         verify(notificationService).creer(org.mockito.ArgumentMatchers.same(referent), any(), any(), any(), any());
         verify(userRepository, never()).findByRoleAndActifTrue(Role.ADMIN);
+    }
+
+    @Test
+    @DisplayName("Une correction est modifiee puis resoumise sur le meme projet sans doublon")
+    void correction_modification_resoumission_conserve_identifiant_et_instance() {
+        Projet projet = projet(75L, StatutProjet.A_CORRIGER_REFERENT, groupe, membre);
+        projet.setCommentaireReferent("Preciser les objectifs");
+        ProjetRequest correction = request();
+        correction.setTitre("Projet corrige");
+        correction.setVisibilite(VisibiliteProjet.GROUPE);
+
+        when(projetRepository.findById(75L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        when(projetRepository.save(projet)).thenReturn(projet);
+
+        ProjetResponse modifie = projetService.modifierProjet(75L, correction, membre.getEmail());
+        ProjetResponse resoumis = projetService.soumettreProjet(75L, membre.getEmail());
+
+        assertThat(modifie.getId()).isEqualTo(75L);
+        assertThat(resoumis.getId()).isEqualTo(75L);
+        assertThat(resoumis.getStatut()).isEqualTo(StatutProjet.SOUMIS);
+        assertThat(projet.getTitre()).isEqualTo("Projet corrige");
+        verify(projetRepository, org.mockito.Mockito.times(2)).save(org.mockito.ArgumentMatchers.same(projet));
+    }
+
+    @Test
+    @DisplayName("Un autre membre ne peut ni modifier ni resoumettre le projet")
+    void autre_membre_ne_modifie_ni_resoumet_projet() {
+        User autreMembre = user(9L, "autre@test.be", Role.MEMBRE);
+        Projet projet = projet(76L, StatutProjet.A_CORRIGER_REFERENT, groupe, membre);
+        when(projetRepository.findById(76L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(autreMembre.getEmail())).thenReturn(Optional.of(autreMembre));
+
+        assertThatThrownBy(() -> projetService.modifierProjet(76L, request(), autreMembre.getEmail()))
+                .isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> projetService.soumettreProjet(76L, autreMembre.getEmail()))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(projetRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Les projets dans un etat final ne peuvent etre modifies ou resoumis")
+    void etats_finaux_bloquent_modification_et_resoumission() {
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        for (StatutProjet statut : List.of(StatutProjet.APPROUVE, StatutProjet.REFUSE_REFERENT,
+                StatutProjet.REJETE, StatutProjet.TERMINE, StatutProjet.ANNULE, StatutProjet.ARCHIVE)) {
+            Projet projet = projet(100L + statut.ordinal(), statut, groupe, membre);
+            when(projetRepository.findById(projet.getId())).thenReturn(Optional.of(projet));
+
+            assertThatThrownBy(() -> projetService.modifierProjet(projet.getId(), request(), membre.getEmail()))
+                    .isInstanceOf(RuntimeException.class);
+            assertThatThrownBy(() -> projetService.soumettreProjet(projet.getId(), membre.getEmail()))
+                    .isInstanceOf(RuntimeException.class);
+        }
+        verify(projetRepository, never()).save(any());
     }
 
     @Test

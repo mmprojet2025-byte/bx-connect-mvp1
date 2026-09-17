@@ -130,7 +130,7 @@ export default function ProjectsScreen() {
   };
 
   const handleProposer = async () => {
-    if (!canProposeProject) {
+    if (!canProposeProject && !editingProject) {
       setError(isMembre ? t('projects.needGroup') : t('projects.creator_group_required'));
       return;
     }
@@ -159,8 +159,11 @@ export default function ProjectsScreen() {
         visibilite: form.visibilite,
       };
 
-      if (editingProject && isReferent) {
-        await api.put(`/projets/referent/${editingProject.id}`, payload);
+      if (editingProject) {
+        const updateUrl = isReferent
+          ? `/projets/referent/${editingProject.id}`
+          : `/projets/${editingProject.id}`;
+        await api.put(updateUrl, payload);
         setMessage(t('projects.project_updated_referent'));
         closeProjectFormAfterSave();
         await chargerProjets();
@@ -373,7 +376,8 @@ export default function ProjectsScreen() {
                 && ['BROUILLON', 'A_CORRIGER_REFERENT', 'A_CORRIGER_ADMIN'].includes(item.statut)
                 && (!isReferent || canEditReferentProject(item, groupesCreateur))}
               onEdit={() => openEditProjectForm(item)}
-              canSubmit={item.statut === 'BROUILLON' && item.estPorteurConnecte}
+              canSubmit={['BROUILLON', 'A_CORRIGER_REFERENT', 'A_CORRIGER_ADMIN'].includes(item.statut)
+                && item.estPorteurConnecte}
               submitting={creating}
               onSubmit={() => submitDraft(item)}
             />
@@ -425,6 +429,10 @@ function ProjectCard({ projet, t, language, isPartenaire, editable, onEdit, canS
 
       {projet.description && (
         <Text style={styles.cardDesc} numberOfLines={3}>{projet.description}</Text>
+      )}
+
+      {projet.motifCorrection && (
+        <Text style={styles.correctionText}>{projet.motifCorrection}</Text>
       )}
 
       <View style={styles.projectBadges}>
@@ -889,6 +897,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 14, fontWeight: '900', color: '#1E3A8A', marginBottom: 1, lineHeight: 18 },
   cardSub: { color: '#64748b', fontSize: 10 },
   cardDesc: { color: '#475569', fontSize: 11, lineHeight: 15, marginBottom: 6 },
+  correctionText: { color: '#92400e', backgroundColor: '#fffbeb', fontSize: 11, lineHeight: 15, padding: 8, borderRadius: 8, marginBottom: 6 },
   statusBadge: { borderRadius: 20, paddingHorizontal: 7, paddingVertical: 3 },
   statusBadgeText: { color: '#fff', fontSize: 9, fontWeight: '900' },
   visibilityBadge: {
