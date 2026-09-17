@@ -977,7 +977,7 @@
     "supportsLoading": "Chargement des soutiens financiers...",
     "supportsLoadError": "Impossible de charger les soutiens financiers.",
     "totalSupports": "Soutiens financiers",
-    "totalAmount": "Montant total",
+    "totalAmount": "Montant déclaré accepté",
     "projectsSupported": "Projets soutenus",
     "activitiesSupported": "Activités soutenues",
     "contactPerson": "Contact",

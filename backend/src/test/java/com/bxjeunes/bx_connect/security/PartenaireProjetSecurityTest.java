@@ -40,6 +40,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -170,8 +171,10 @@ class PartenaireProjetSecurityTest {
             return soutien;
         });
 
-        assertThat(partenaireService.soutenirProjet(request, partenaire.getEmail()).getMontant())
-                .isEqualByComparingTo(BigDecimal.TEN);
+        var response = partenaireService.soutenirProjet(request, partenaire.getEmail());
+        assertThat(response.getMontant()).isEqualByComparingTo(BigDecimal.TEN);
+        assertThat(response.isDeclaratif()).isTrue();
+        assertThat(response.getDatePaiement()).isNull();
         verify(auditLogService).logStatusChange(
                 org.mockito.ArgumentMatchers.same(partenaire),
                 org.mockito.ArgumentMatchers.eq("SUPPORT_CREATED"),
@@ -250,6 +253,7 @@ class PartenaireProjetSecurityTest {
 
         when(userRepository.findByEmail(partenaire.getEmail())).thenReturn(Optional.of(partenaire));
         when(soutienRepository.findById(100L)).thenReturn(Optional.of(soutien));
+        when(soutienRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(soutien));
 
         assertThatThrownBy(() -> partenaireService.modifierSoutien(100L, request, partenaire.getEmail()))
                 .isInstanceOf(AccessDeniedException.class)
@@ -357,11 +361,15 @@ class PartenaireProjetSecurityTest {
         admin.setRole(Role.ADMIN);
 
         SoutienFinancier soutienValide = soutien(100L, partenaire, StatutPaiement.EN_ATTENTE);
-        when(soutienRepository.findById(100L)).thenReturn(Optional.of(soutienValide));
+        when(soutienRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(soutienValide));
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
         when(soutienRepository.save(soutienValide)).thenReturn(soutienValide);
 
-        partenaireService.validerSoutien(100L, "ok", admin.getEmail());
+        var valide = partenaireService.validerSoutien(100L, "ok", admin.getEmail());
+
+        assertThat(valide.getStatutPaiement()).isEqualTo(StatutPaiement.PAYE);
+        assertThat(valide.isDeclaratif()).isTrue();
+        assertThat(valide.getDatePaiement()).isNull();
 
         verify(auditLogService).logStatusChange(
                 org.mockito.ArgumentMatchers.same(admin),
@@ -375,7 +383,7 @@ class PartenaireProjetSecurityTest {
                 org.mockito.ArgumentMatchers.contains("\"montant\":10"));
 
         SoutienFinancier soutienRefuse = soutien(101L, partenaire, StatutPaiement.EN_ATTENTE);
-        when(soutienRepository.findById(101L)).thenReturn(Optional.of(soutienRefuse));
+        when(soutienRepository.findByIdForUpdate(101L)).thenReturn(Optional.of(soutienRefuse));
         when(soutienRepository.save(soutienRefuse)).thenReturn(soutienRefuse);
 
         partenaireService.refuserSoutien(101L, "non", admin.getEmail());
@@ -390,6 +398,46 @@ class PartenaireProjetSecurityTest {
                 org.mockito.ArgumentMatchers.eq("REMBOURSE"),
                 org.mockito.ArgumentMatchers.eq("Soutien partenaire refuse."),
                 org.mockito.ArgumentMatchers.contains("\"projetId\":1"));
+    }
+
+    @Test
+    @DisplayName("Une decision finale de soutien ne peut pas etre rejouee ou inversee")
+    void decision_finale_ne_peut_pas_etre_rejouee() {
+        SoutienFinancier accepte = soutien(102L, partenaire, StatutPaiement.PAYE);
+        SoutienFinancier refuse = soutien(103L, partenaire, StatutPaiement.REMBOURSE);
+        when(soutienRepository.findByIdForUpdate(102L)).thenReturn(Optional.of(accepte));
+        when(soutienRepository.findByIdForUpdate(103L)).thenReturn(Optional.of(refuse));
+
+        assertThatThrownBy(() -> partenaireService.validerSoutien(102L, "encore", null))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("décision définitive");
+        assertThatThrownBy(() -> partenaireService.refuserSoutien(102L, "inverse", null))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("décision définitive");
+        assertThatThrownBy(() -> partenaireService.refuserSoutien(103L, "encore", null))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("décision définitive");
+        verify(soutienRepository, never()).save(any());
+        verify(notificationService, never()).creer(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Un role non partenaire ne peut pas declarer un soutien projet au service")
+    void role_non_partenaire_ne_declare_pas_soutien() {
+        User membre = new User();
+        membre.setId(60L);
+        membre.setEmail("membre@test.be");
+        membre.setRole(Role.MEMBRE);
+        SoutienRequest request = new SoutienRequest();
+        request.setProjetId(1L);
+        request.setMontant(BigDecimal.TEN);
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+
+        assertThatThrownBy(() -> partenaireService.soutenirProjet(request, membre.getEmail()))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Partenaire introuvable");
+        verifyNoInteractions(projetRepository);
+        verify(soutienRepository, never()).save(any());
     }
 
     @Test
@@ -465,6 +513,8 @@ class PartenaireProjetSecurityTest {
         soutien.setProjet(projet);
         soutien.setMontant(BigDecimal.TEN);
         soutien.setMessage("Message initial");
+        soutien.setFournisseur("DECLARATION");
+        soutien.setTypeSource("DECLARATION");
         soutien.setStatutPaiement(statut);
         return soutien;
     }

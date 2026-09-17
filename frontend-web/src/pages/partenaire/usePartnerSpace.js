@@ -366,7 +366,8 @@ function buildPartnerLocalImpact({ impactLocal, mesReferents, mesGroupesLies, me
   const activeReferents = referents.filter(referent => referent.statut === 'ACTIF' || !referent.statut);
   const activeGroups = groupes.filter(groupe => groupe.statut === 'ACTIF' || !groupe.statut);
   const paidSupports = mesSoutiens.filter(soutien => soutien.statutPaiement === 'PAYE');
-  const totalAmount = Number(impactLocal?.totalMontant ?? 0) || mesSoutiens.reduce((sum, soutien) => sum + Number(soutien.montant || 0), 0);
+  const totalAmount = Number(impactLocal?.totalMontant ?? 0)
+    || paidSupports.reduce((sum, soutien) => sum + Number(soutien.montant || 0), 0);
   const lastSupportDate = mesSoutiens
     .map(soutien => soutien.datePaiement || soutien.dateCreation)
     .filter(Boolean)
@@ -380,8 +381,8 @@ function buildPartnerLocalImpact({ impactLocal, mesReferents, mesGroupesLies, me
   return {
     kpis: {
       groupesSoutenus: Number(impactLocal?.groupesSoutenus ?? impactLocal?.groupesLies ?? activeGroups.length),
-      projetsSoutenus: Number(impactLocal?.projetsSoutenus ?? new Set(mesSoutiens.map(soutien => soutien.projetId).filter(Boolean)).size),
-      activitesSoutenues: Number(impactLocal?.activitesSoutenues ?? new Set(mesSoutiens.map(soutien => soutien.activiteId).filter(Boolean)).size),
+      projetsSoutenus: Number(impactLocal?.projetsSoutenus ?? new Set(paidSupports.map(soutien => soutien.projetId).filter(Boolean)).size),
+      activitesSoutenues: Number(impactLocal?.activitesSoutenues ?? new Set(paidSupports.map(soutien => soutien.activiteId).filter(Boolean)).size),
       opportunitesPubliees: Number(impactLocal?.opportunitesPubliees ?? mesOpportunites.filter(opportunite => opportunite.statutModeration === 'PUBLIEE').length),
       montantsSoutenus: totalAmount,
       referentsAssocies: Number(impactLocal?.referentsAssocies ?? activeReferents.length),
@@ -396,7 +397,7 @@ function buildPartnerLocalImpact({ impactLocal, mesReferents, mesGroupesLies, me
       groupe => groupe.typeLien || 'AUTRE',
       type => t(`partnerSpace.localImpact.linkTypes.${type}`, { defaultValue: type })
     ),
-    supportEvolution: buildSupportEvolutionData(paidSupports.length > 0 ? paidSupports : mesSoutiens, t),
+    supportEvolution: buildSupportEvolutionData(paidSupports, t),
     quality: [
       {
         key: 'no-referent',

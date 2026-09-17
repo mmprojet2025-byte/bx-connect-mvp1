@@ -4,6 +4,7 @@ import com.bxjeunes.bx_connect.dto.PartenaireProfilRequest;
 import com.bxjeunes.bx_connect.dto.PartenaireProfilResponse;
 import com.bxjeunes.bx_connect.entity.PartenaireProfil;
 import com.bxjeunes.bx_connect.entity.Role;
+import com.bxjeunes.bx_connect.entity.SoutienFinancier;
 import com.bxjeunes.bx_connect.entity.TypePartenaire;
 import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.repository.*;
@@ -98,9 +99,14 @@ class PartenaireProfilServiceTest {
     @Test
     void statistiques_exposent_l_impact_reel_du_partenaire() {
         when(userRepository.findByEmail(partenaire.getEmail())).thenReturn(Optional.of(partenaire));
-        when(soutienRepository.countByDonateurId(partenaire.getId())).thenReturn(4L);
         when(soutienRepository.totalMontantDonateur(partenaire.getId())).thenReturn(new BigDecimal("1250.00"));
-        when(soutienRepository.findByDonateurIdAndStatutPaiement(any(), any())).thenReturn(java.util.List.of());
+        when(soutienRepository.findByDonateurIdAndStatutPaiement(
+                partenaire.getId(), com.bxjeunes.bx_connect.entity.StatutPaiement.PAYE))
+                .thenReturn(java.util.List.of(new SoutienFinancier(), new SoutienFinancier(),
+                        new SoutienFinancier(), new SoutienFinancier()));
+        when(soutienRepository.findByDonateurIdAndStatutPaiement(
+                partenaire.getId(), com.bxjeunes.bx_connect.entity.StatutPaiement.EN_ATTENTE))
+                .thenReturn(java.util.List.of());
         when(soutienRepository.countProjetsSoutenusParDonateur(partenaire.getId())).thenReturn(2L);
         when(soutienRepository.countActivitesSoutenuesParDonateur(partenaire.getId())).thenReturn(1L);
 

@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -88,8 +89,7 @@ public class PartenaireService {
 
     // ─── P05 : Soumettre un soutien à un projet ───────────────────────────────
     public SoutienResponse soutenirProjet(SoutienRequest request, String emailPartenaire) {
-        User partenaire = userRepository.findByEmail(emailPartenaire)
-                .orElseThrow(() -> new RuntimeException("Partenaire introuvable"));
+        User partenaire = getPartenaire(emailPartenaire);
 
         if (request.getProjetId() == null) {
             throw new RuntimeException("L'identifiant du projet est obligatoire.");
@@ -197,7 +197,8 @@ public class PartenaireService {
         Long id = partenaire.getId();
 
         // ✅ countByDonateurId et totalMontantDonateur (méthodes corrigées)
-        long totalSoutiens      = soutienRepository.countByDonateurId(id);
+        long totalSoutiens      = soutienRepository
+                .findByDonateurIdAndStatutPaiement(id, StatutPaiement.PAYE).size();
         BigDecimal totalMontant = soutienRepository.totalMontantDonateur(id);
 
         // ✅ findByDonateurIdAndStatutPaiement (pas findByPartenaireIdAndStatutPaiement)
@@ -267,17 +268,15 @@ public class PartenaireService {
         return validerSoutien(soutienId, commentaireAdmin, null);
     }
 
+    @Transactional
     public SoutienResponse validerSoutien(Long soutienId, String commentaireAdmin, String emailAdmin) {
-        SoutienFinancier soutien = soutienRepository.findById(soutienId)
+        SoutienFinancier soutien = soutienRepository.findByIdForUpdate(soutienId)
                 .orElseThrow(() -> new RuntimeException("Soutien introuvable : " + soutienId));
-        if (soutien.getActivite() != null) {
-            throw new AccessDeniedException(
-                    "Les soutiens financiers aux activités sont indisponibles dans cette version.");
-        }
+        verifierDecisionSoutienProjet(soutien);
         User admin = chargerUtilisateurOptionnel(emailAdmin);
         StatutPaiement ancienStatut = soutien.getStatutPaiement();
         soutien.setStatutPaiement(StatutPaiement.PAYE);
-        soutien.setDatePaiement(java.time.LocalDateTime.now());
+        soutien.setDatePaiement(null);
         soutien.setReponseAdmin(normaliser(commentaireAdmin));
         soutien.setDateReponseAdmin(java.time.LocalDateTime.now());
         SoutienFinancier saved = soutienRepository.save(soutien);
@@ -293,9 +292,11 @@ public class PartenaireService {
         return refuserSoutien(soutienId, commentaireAdmin, null);
     }
 
+    @Transactional
     public SoutienResponse refuserSoutien(Long soutienId, String commentaireAdmin, String emailAdmin) {
-        SoutienFinancier soutien = soutienRepository.findById(soutienId)
+        SoutienFinancier soutien = soutienRepository.findByIdForUpdate(soutienId)
                 .orElseThrow(() -> new RuntimeException("Soutien introuvable : " + soutienId));
+        verifierDecisionSoutienProjet(soutien);
         User admin = chargerUtilisateurOptionnel(emailAdmin);
         StatutPaiement ancienStatut = soutien.getStatutPaiement();
         soutien.setStatutPaiement(StatutPaiement.REMBOURSE);
@@ -307,6 +308,20 @@ public class PartenaireService {
         auditerStatut(admin, "SUPPORT_REJECTED", saved, nomStatut(ancienStatut), nomStatut(saved.getStatutPaiement()),
                 "Soutien partenaire refuse.", metadataSoutien(saved));
         return SoutienResponse.fromEntity(saved);
+    }
+
+    private void verifierDecisionSoutienProjet(SoutienFinancier soutien) {
+        if (soutien.getActivite() != null) {
+            throw new AccessDeniedException(
+                    "Les soutiens financiers aux activités sont indisponibles dans cette version.");
+        }
+        if (soutien.getProjet() == null || !"DECLARATION".equals(soutien.getTypeSource())) {
+            throw new AccessDeniedException(
+                    "Seules les déclarations de soutien à un projet peuvent être traitées dans cette version.");
+        }
+        if (soutien.getStatutPaiement() != StatutPaiement.EN_ATTENTE) {
+            throw new AccessDeniedException("Ce soutien a déjà reçu une décision définitive.");
+        }
     }
 
     // ─── Admin : Tous les soutiens ────────────────────────────────────────────

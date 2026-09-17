@@ -17,6 +17,7 @@ public class SoutienResponse {
     private LocalDateTime dateCreation;
     private LocalDateTime datePaiement;
     private LocalDateTime dateReponseAdmin;
+    private boolean declaratif;
 
     // Partenaire
     private Long partenaireId;
@@ -42,6 +43,7 @@ public class SoutienResponse {
         r.dateCreation   = s.getDateCreation();
         r.datePaiement   = s.getDatePaiement();
         r.dateReponseAdmin = s.getDateReponseAdmin();
+        r.declaratif = "DECLARATION".equals(s.getTypeSource());
 
         if (s.getDonateur() != null) {
             r.partenaireId     = s.getDonateur().getId();
@@ -70,6 +72,7 @@ public class SoutienResponse {
     public LocalDateTime getDateCreation()     { return dateCreation; }
     public LocalDateTime getDatePaiement()     { return datePaiement; }
     public LocalDateTime getDateReponseAdmin() { return dateReponseAdmin; }
+    public boolean isDeclaratif()              { return declaratif; }
     public Long getPartenaireId()              { return partenaireId; }
     public String getPartenairePrenom()        { return partenairePrenom; }
     public String getPartenaireNom()           { return partenaireNom; }

@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -25,6 +26,10 @@ import java.util.Optional;
  */
 @Repository
 public interface SoutienFinancierRepository extends JpaRepository<SoutienFinancier, Long> {
+
+    @Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM SoutienFinancier s WHERE s.id = :id")
+    Optional<SoutienFinancier> findByIdForUpdate(@Param("id") Long id);
 
     // ─── Par donateur (utilisé par PayPalService, StripeService) ─────────────
     List<SoutienFinancier> findByDonateurId(Long donateurId);

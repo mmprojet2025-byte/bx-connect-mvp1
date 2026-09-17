@@ -713,7 +713,7 @@ function PartnerMvp1Dashboard({
           )}
         >
           {sectionErrors.soutiens && <SectionLoadError message={sectionErrors.soutiens} />}
-          {mesSoutiens.length === 0 ? (
+          {!sectionErrors.soutiens && mesSoutiens.length === 0 ? (
             <EmptyState
               icon="Wallet"
               title={t('partnerSpace.noDeclarations')}
@@ -1270,7 +1270,7 @@ function PartnerBarChart({ data }) {
 
 function PartnerActions({ mesSoutiens, onSupport, t }) {
   const pending = mesSoutiens.filter(soutien => soutien.statutPaiement === 'EN_ATTENTE').length;
-  const paid = mesSoutiens.filter(soutien => soutien.statutPaiement === 'PAYE').length;
+  const accepted = mesSoutiens.filter(soutien => soutien.statutPaiement === 'PAYE').length;
   const rejected = mesSoutiens.filter(soutien => soutien.statutPaiement === 'REMBOURSE').length;
 
   return (
@@ -1297,7 +1297,7 @@ function PartnerActions({ mesSoutiens, onSupport, t }) {
       <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
         <p className="text-sm font-black text-slate-950">
           {mesSoutiens.length > 0
-            ? t('partnerSpace.supportStatusSummary', { pending, paid, rejected, defaultValue: `${pending} en attente · ${paid} payé(s) · ${rejected} refusé(s)` })
+            ? t('partnerSpace.supportStatusSummary', { pending, paid: accepted, rejected, defaultValue: `${pending} en attente · ${accepted} accepté(s) · ${rejected} refusé(s)` })
             : t('partnerSpace.noSupports')}
         </p>
         <p className="mt-1 text-sm text-slate-500">

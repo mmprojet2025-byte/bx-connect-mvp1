@@ -35,6 +35,7 @@ export default function PartnerSupportsScreen({ route }) {
   const [supports, setSupports] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [stats, setStats] = useState(null);
+  const [statsError, setStatsError] = useState('');
   const [loading, setLoading] = useState(true);
   const [opportunitiesLoading, setOpportunitiesLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -69,11 +70,14 @@ export default function PartnerSupportsScreen({ route }) {
     try {
       const [supportsRes, statsRes] = await Promise.all([
         api.get('/partenaire/mes-soutiens'),
-        api.get('/partenaire/statistiques').catch(() => ({ data: null })),
+        api.get('/partenaire/statistiques'),
       ]);
       setSupports(supportsRes.data || []);
       setStats(statsRes.data);
+      setStatsError('');
     } catch (err) {
+      setStats(null);
+      setStatsError(getApiError(err, t, t('partner.supportsLoadError')));
       setError(getApiError(err, t, t('partner.supportsLoadError')));
     } finally {
       setLoading(false);
@@ -246,10 +250,12 @@ export default function PartnerSupportsScreen({ route }) {
             onPress={() => setActiveTab('opportunities')}
           />
         </View>
-        <View style={styles.statsGrid}>
-          <StatCard label={t('partner.totalSupports')} value={stats?.totalSoutiens ?? supports.length} icon="wallet" color={COLORS.impactOrange} />
-          <StatCard label={t('partner.totalAmount')} value={`${stats?.totalMontant || 0} €`} icon="payment" color={COLORS.success} />
-        </View>
+        {statsError ? null : (
+          <View style={styles.statsGrid}>
+            <StatCard label={t('partner.totalSupports')} value={stats?.totalSoutiens ?? 0} icon="wallet" color={COLORS.impactOrange} />
+            <StatCard label={t('partner.totalAmount')} value={`${stats?.totalMontant ?? 0} €`} icon="wallet" color={COLORS.success} />
+          </View>
+        )}
       </View>
 
       {message ? (

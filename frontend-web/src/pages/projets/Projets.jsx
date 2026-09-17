@@ -6,7 +6,6 @@ import { useAuth } from '../../context/AuthContext'
 import api from '../../api/axios'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
-import ImageUpload from '../../components/ImageUpload'
 import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
 import StatusBadge from '../../components/StatusBadge'
@@ -56,7 +55,6 @@ export default function Projets() {
     titre: '',
     description: '',
     budgetDemande: '',
-    imageUrl: '',
     visibilite: 'GROUPE',
   })
 
@@ -175,7 +173,7 @@ export default function Projets() {
       toast.success(feedback)
       setShowForm(false)
       setEditingProject(null)
-      setForm({ titre: '', description: '', budgetDemande: '', imageUrl: '', visibilite: 'GROUPE' })
+      setForm({ titre: '', description: '', budgetDemande: '', visibilite: 'GROUPE' })
       await fetchProjets()
     } catch (err) {
       const feedback = userFriendlyError(err, t('projects.error_submit'))
@@ -190,16 +188,15 @@ export default function Projets() {
       titre: projet.titre || '',
       description: projet.description || '',
       budgetDemande: projet.budgetDemande ?? '',
-      imageUrl: projet.imageUrl || '',
       visibilite: projet.visibilite || 'GROUPE',
-    } : { titre: '', description: '', budgetDemande: '', imageUrl: '', visibilite: 'GROUPE' })
+    } : { titre: '', description: '', budgetDemande: '', visibilite: 'GROUPE' })
     setShowForm(true)
   }
 
   const closeProjectForm = () => {
     setShowForm(false)
     setEditingProject(null)
-    setForm({ titre: '', description: '', budgetDemande: '', imageUrl: '', visibilite: 'GROUPE' })
+    setForm({ titre: '', description: '', budgetDemande: '', visibilite: 'GROUPE' })
   }
 
   const handleFollow = (projet) => {
@@ -384,13 +381,6 @@ export default function Projets() {
               {editingProject ? t('common.edit') : t('ux.projects.new')}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <ImageUpload
-                type="projet"
-                currentUrl={form.imageUrl || null}
-                onUploadSuccess={(url) => setForm({ ...form, imageUrl: url })}
-                shape="rectangle"
-                label={t('projects.form_image')}
-              />
               <Input id="project-title" label={t('projects.form_title')} value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
               <div>
                 <label htmlFor="project-description" className="block text-sm font-medium text-slate-700 mb-1">{t('projects.form_description')}</label>

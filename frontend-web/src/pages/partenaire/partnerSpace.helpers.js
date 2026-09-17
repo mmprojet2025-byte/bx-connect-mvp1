@@ -35,14 +35,15 @@ export function getSupportedProjectStatus(soutien) {
 }
 
 export function buildPartnerImpact({ statistiques, mesSoutiens }) {
+  const acceptedSupports = mesSoutiens.filter(soutien => soutien.statutPaiement === 'PAYE');
   const totalMontant = statistiques?.totalMontant
-    ?? mesSoutiens.reduce((sum, soutien) => sum + Number(soutien.montant || 0), 0);
+    ?? acceptedSupports.reduce((sum, soutien) => sum + Number(soutien.montant || 0), 0);
   const soutiensValides = statistiques?.soutiensValides
     ?? mesSoutiens.filter(soutien => soutien.statutPaiement === 'PAYE').length;
   const projetsSoutenus = statistiques?.projetsSoutenus
-    ?? new Set(mesSoutiens.map(soutien => soutien.projetId).filter(Boolean)).size;
+    ?? new Set(acceptedSupports.map(soutien => soutien.projetId).filter(Boolean)).size;
   const activitesSoutenues = statistiques?.activitesSoutenues
-    ?? new Set(mesSoutiens.map(soutien => soutien.activiteId).filter(Boolean)).size;
+    ?? new Set(acceptedSupports.map(soutien => soutien.activiteId).filter(Boolean)).size;
 
   return {
     totalSoutiens: statistiques?.totalSoutiens ?? mesSoutiens.length,

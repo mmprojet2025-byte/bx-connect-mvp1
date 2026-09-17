@@ -973,7 +973,7 @@
     "supportsLoading": "Loading financial support...",
     "supportsLoadError": "Unable to load financial support.",
     "totalSupports": "Financial support",
-    "totalAmount": "Total amount",
+    "totalAmount": "Accepted declared amount",
     "projectsSupported": "Projects supported",
     "activitiesSupported": "Activities supported",
     "contactPerson": "Contact",
