@@ -4,7 +4,9 @@
   },
   "welcome": {
     "title": "Word lid van de BX-Connect-community",
-    "description": "Ontdek activiteiten en sluit je aan bij de BX-Jeunes Impact-community.",
+    "description": "Ontdek activiteiten, sluit je aan bij een groep en neem deel aan projecten in Brussel.",
+    "settings": "App-instellingen",
+    "communityImage": "De BX-Connect-gemeenschap werkt samen aan een project",
     "discover": "Ontdekken zonder account",
     "back": "Terug naar BX-Connect"
   },

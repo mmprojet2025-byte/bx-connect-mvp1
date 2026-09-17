@@ -4,7 +4,9 @@
   },
   "welcome": {
     "title": "Rejoins la communauté BX-Connect",
-    "description": "Découvre les activités et rejoins la communauté BX-Jeunes Impact.",
+    "description": "Découvre des activités, rejoins un groupe et participe à des projets à Bruxelles.",
+    "settings": "Paramètres de l’application",
+    "communityImage": "La communauté BX-Connect réunie autour d’un projet",
     "discover": "Découvrir sans compte",
     "back": "Retour à BX-Connect"
   },

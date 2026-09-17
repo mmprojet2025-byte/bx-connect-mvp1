@@ -1,17 +1,19 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Animated, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { COLORS } from '../components/MobileUI';
+import AppIcon from '../components/AppIcon';
+import { changeAppLanguage, SUPPORTED_LANGUAGES } from '../i18n';
 
 export default function WelcomeScreen({ navigation }) {
-  const { t } = useTranslation();
-  const animationValues = useRef({
+  const { t, i18n } = useTranslation();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [animationValues] = useState(() => ({
     logoOpacity: new Animated.Value(0),
     logoTranslateY: new Animated.Value(10),
     actionOpacities: [0, 1, 2].map(() => new Animated.Value(0)),
     actionTranslations: [0, 1, 2].map(() => new Animated.Value(8)),
-  }).current;
+  }));
 
   useEffect(() => {
     let mounted = true;
@@ -91,21 +93,52 @@ export default function WelcomeScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        <View style={styles.decoration} pointerEvents="none" accessible={false}>
-          <View style={styles.blueShape} />
-          <View style={styles.orangeShape} />
-          <View style={styles.lightBlueShape} />
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.settingsButton}
+            onPress={() => setSettingsOpen((open) => !open)}
+            accessibilityRole="button"
+            accessibilityLabel={t('welcome.settings')}
+            accessibilityState={{ expanded: settingsOpen }}
+          >
+            <AppIcon name="settings-outline" size={24} color="#64748B" />
+          </TouchableOpacity>
         </View>
+        {settingsOpen && (
+          <View style={styles.settingsPanel}>
+            <Text style={styles.settingsLabel}>{t('profile.language')}</Text>
+            <View style={styles.languages}>
+              {SUPPORTED_LANGUAGES.map((language) => (
+                <TouchableOpacity
+                  key={language}
+                  style={[styles.languageButton, i18n.language?.startsWith(language) && styles.selectedLanguage]}
+                  onPress={() => changeAppLanguage(language).catch(() => {})}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: i18n.language?.startsWith(language) }}
+                >
+                  <Text style={styles.languageText}>{t(`common.language_${language}`)}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
 
         <View style={styles.main}>
-          <Animated.View style={{ opacity: animationValues.logoOpacity, transform: [{ translateY: animationValues.logoTranslateY }] }}>
+          <Animated.View style={[styles.branding, { opacity: animationValues.logoOpacity, transform: [{ translateY: animationValues.logoTranslateY }] }]}>
             <Image
               source={require('../../assets/images/logo-bx-connect.png')}
               style={styles.logo}
               resizeMode="contain"
               accessibilityLabel="BX-Connect"
             />
+            <Text style={styles.description}>{t('welcome.description')}</Text>
           </Animated.View>
+          <Image
+            source={require('../../assets/images/welcome-community.jpg')}
+            style={styles.communityImage}
+            resizeMode="cover"
+            accessibilityLabel={t('welcome.communityImage')}
+          />
         </View>
 
         <View style={styles.actions}>
@@ -154,64 +187,50 @@ export default function WelcomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F8FAFC' },
+  safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
   content: {
     flexGrow: 1,
-    overflow: 'hidden',
-    paddingHorizontal: 22,
-    paddingTop: 18,
-    paddingBottom: 10,
-  },
-  decoration: { ...StyleSheet.absoluteFillObject },
-  blueShape: {
-    position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: '#EFF6FF',
-    top: -80,
-    right: -95,
-  },
-  orangeShape: {
-    position: 'absolute',
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: '#FFF7ED',
-    top: '38%',
-    left: -58,
-  },
-  lightBlueShape: {
-    position: 'absolute',
-    width: 72,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#BAE6FD',
-    top: '25%',
+    width: '100%',
+    maxWidth: 420,
     alignSelf: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 16,
   },
-  main: { flex: 1, minHeight: 260, alignItems: 'center', justifyContent: 'center' },
-  logo: { width: 260, height: 66, maxWidth: '90%' },
-  actions: { width: '100%', maxWidth: 520, alignSelf: 'center', paddingTop: 18 },
+  header: { alignItems: 'flex-end', paddingTop: 4 },
+  settingsButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22 },
+  settingsPanel: { backgroundColor: '#F1F5F9', borderRadius: 14, padding: 12, marginBottom: 12 },
+  settingsLabel: { color: '#192E6B', fontSize: 14, fontWeight: '600', marginBottom: 8 },
+  languages: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  languageButton: { minHeight: 44, paddingHorizontal: 12, paddingVertical: 12, justifyContent: 'center', borderRadius: 10 },
+  selectedLanguage: { backgroundColor: '#DBEAFE' },
+  languageText: { color: '#0062D2', fontSize: 14, fontWeight: '600' },
+  main: { flexGrow: 1, alignItems: 'center', justifyContent: 'space-evenly', paddingBottom: 24 },
+  branding: { width: '100%', alignItems: 'center', paddingTop: 12, paddingBottom: 24 },
+  logo: { width: '100%', maxWidth: 270, height: 90 },
+  description: { maxWidth: 280, color: '#64748B', fontSize: 15, lineHeight: 24, textAlign: 'center', marginTop: 12 },
+  communityImage: { width: '100%', aspectRatio: 1.9, maxHeight: 180, borderRadius: 16, backgroundColor: '#F1F5F9' },
+  actions: { width: '100%', paddingTop: 8 },
   primaryButton: {
-    minHeight: 50,
+    minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 14,
-    backgroundColor: COLORS.impactOrange,
+    backgroundColor: '#F56E10',
     paddingHorizontal: 18,
+    paddingVertical: 14,
   },
-  primaryButtonText: { color: '#fff', fontSize: 15, lineHeight: 20, fontWeight: '900' },
+  primaryButtonText: { color: '#fff', fontSize: 16, lineHeight: 24, fontWeight: '700', textAlign: 'center' },
   secondaryButton: {
-    minHeight: 50,
+    minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 14,
-    backgroundColor: COLORS.bxBlue,
+    backgroundColor: '#192E6B',
     paddingHorizontal: 18,
-    marginTop: 10,
+    paddingVertical: 14,
+    marginTop: 14,
   },
-  secondaryButtonText: { color: '#fff', fontSize: 15, lineHeight: 20, fontWeight: '900' },
-  discoverButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: 4, paddingHorizontal: 12 },
-  discoverText: { color: COLORS.bxBlueLight, fontSize: 14, lineHeight: 20, fontWeight: '800', textAlign: 'center' },
+  secondaryButtonText: { color: '#fff', fontSize: 16, lineHeight: 24, fontWeight: '600', textAlign: 'center' },
+  discoverButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: 20, paddingHorizontal: 12, paddingVertical: 10 },
+  discoverText: { color: '#0062D2', fontSize: 15, lineHeight: 22, fontWeight: '500', textAlign: 'center' },
 });

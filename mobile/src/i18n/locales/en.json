@@ -4,7 +4,9 @@
   },
   "welcome": {
     "title": "Join the BX-Connect community",
-    "description": "Discover activities and join the BX-Jeunes Impact community.",
+    "description": "Discover activities, join a group and take part in projects in Brussels.",
+    "settings": "App settings",
+    "communityImage": "The BX-Connect community working on a project",
     "discover": "Explore without an account",
     "back": "Back to BX-Connect"
   },
