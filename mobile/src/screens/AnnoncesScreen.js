@@ -15,9 +15,9 @@ export default function AnnoncesScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => { fetchAnnonces(); }, []);
+  useEffect(() => { void Promise.resolve().then(() => fetchAnnonces()); }, []);
 
-  const fetchAnnonces = async () => {
+  async function fetchAnnonces() {
     try {
       setError('');
       const endpoint = isAuthenticated ? '/annonces/mes-annonces' : '/annonces/globales';
@@ -28,7 +28,7 @@ export default function AnnoncesScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const typeStyle = (type) => ({
     GLOBALE: { bg: '#E0F2FE', color: '#1d4ed8' },

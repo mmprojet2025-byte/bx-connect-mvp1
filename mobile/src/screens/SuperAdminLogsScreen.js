@@ -25,10 +25,10 @@ export default function SuperAdminLogsScreen() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    loadLogs();
+    void Promise.resolve().then(() => loadLogs());
   }, [filters.action, filters.cibleType, filters.acteurRole]);
 
-  const loadLogs = async (isRefresh = false) => {
+  async function loadLogs(isRefresh = false) {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     setError('');
@@ -52,7 +52,7 @@ export default function SuperAdminLogsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }
 
   const actionOptions = ACTION_FILTERS;
 

@@ -29,15 +29,19 @@ export default function GlobalSearchScreen({ navigation }) {
   useEffect(() => {
     const trimmed = query.trim();
     if (trimmed.length < 2) {
-      setResults([]);
-      setError('');
-      setLoading(false);
+      void Promise.resolve().then(() => {
+        setResults([]);
+        setError('');
+        setLoading(false);
+      });
       return undefined;
     }
 
     let cancelled = false;
-    setLoading(true);
-    setError('');
+    void Promise.resolve().then(() => {
+      setLoading(true);
+      setError('');
+    });
 
     const timeout = setTimeout(async () => {
       try {

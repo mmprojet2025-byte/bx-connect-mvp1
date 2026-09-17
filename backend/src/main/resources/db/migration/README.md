@@ -26,6 +26,9 @@ must be explicit, reviewed, versioned Flyway migrations.
   and audit logs.
 - `V3__add_password_reset_tokens.sql`: version des identifiants JWT et jetons
   de reinitialisation a usage unique, stockes uniquement sous forme de hash.
+- `V4__secure_project_workflow.sql`: ajoute les statuts de correction projet, la
+  justification administrative, le bilan et le verrouillage optimiste.
+- `V5__add_user_birth_date.sql`: ajoute la date de naissance optionnelle des utilisateurs.
 
 ## New database
 
@@ -34,7 +37,8 @@ On an empty database, Flyway applies migrations in order:
 1. `V1__baseline_schema.sql`
 2. `V2__add_core_indexes.sql`
 3. `V3__add_password_reset_tokens.sql`
-4. future `V4__...`, `V5__...`, etc.
+4. `V4__secure_project_workflow.sql`
+5. `V5__add_user_birth_date.sql`
 
 After the migrations run, Hibernate starts with `ddl-auto=validate` and checks
 that the database schema matches the JPA entities.
@@ -66,8 +70,8 @@ spring.flyway.baseline-on-migrate=false
 Every database evolution must be added as a new migration:
 
 ```text
-V3__short_clear_description.sql
-V4__short_clear_description.sql
+V6__short_clear_description.sql
+V7__short_clear_description.sql
 ```
 
 Rules:

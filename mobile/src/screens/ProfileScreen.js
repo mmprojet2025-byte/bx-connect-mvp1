@@ -60,10 +60,10 @@ export default function ProfileScreen({ navigation }) {
   });
 
   useEffect(() => {
-    fetchProfil();
+    void Promise.resolve().then(() => fetchProfil());
   }, []);
 
-  const fetchProfil = async () => {
+  async function fetchProfil() {
     setLoading(true);
     setError('');
     setMessage('');
@@ -90,7 +90,7 @@ export default function ProfileScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const fetchPushPreference = async () => {
     try {

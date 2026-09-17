@@ -63,7 +63,7 @@ export default function MemberHomeScreen({ navigation }) {
   }, []);
 
   useEffect(() => {
-    loadHome();
+    void Promise.resolve().then(() => loadHome());
   }, [loadHome]);
 
   const nextActivity = useMemo(

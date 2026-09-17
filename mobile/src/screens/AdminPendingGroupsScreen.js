@@ -15,10 +15,10 @@ export default function AdminPendingGroupsScreen() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    loadGroups();
+    void Promise.resolve().then(() => loadGroups());
   }, []);
 
-  const loadGroups = async (isRefresh = false) => {
+  async function loadGroups(isRefresh = false) {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     setError('');
@@ -31,7 +31,7 @@ export default function AdminPendingGroupsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }
 
   const confirmAction = (group, action) => {
     const accepted = action === 'valider';

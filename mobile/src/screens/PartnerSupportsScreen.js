@@ -52,17 +52,16 @@ export default function PartnerSupportsScreen({ route }) {
   const [savingOpportunity, setSavingOpportunity] = useState(false);
 
   useEffect(() => {
-    chargerSoutiens();
-    chargerOpportunites();
+    void Promise.resolve().then(() => Promise.all([chargerSoutiens(), chargerOpportunites()]));
   }, []);
 
   useEffect(() => {
     if (route?.params?.tab === 'opportunities') {
-      setActiveTab('opportunities');
+      void Promise.resolve().then(() => setActiveTab('opportunities'));
     }
   }, [route?.params?.tab]);
 
-  const chargerSoutiens = async (isRefresh = false) => {
+  async function chargerSoutiens(isRefresh = false) {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     setError('');
@@ -83,9 +82,9 @@ export default function PartnerSupportsScreen({ route }) {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }
 
-  const chargerOpportunites = async () => {
+  async function chargerOpportunites() {
     setOpportunitiesLoading(true);
     setOpportunityError('');
     try {
@@ -96,7 +95,7 @@ export default function PartnerSupportsScreen({ route }) {
     } finally {
       setOpportunitiesLoading(false);
     }
-  };
+  }
 
   const openEditSupport = (support) => {
     setEditingSupport(support);

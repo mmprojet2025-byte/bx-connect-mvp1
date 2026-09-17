@@ -45,10 +45,10 @@ export default function ProjectsScreen() {
   });
 
   useEffect(() => {
-    chargerProjets();
+    void Promise.resolve().then(() => chargerProjets());
   }, [isAuthenticated, isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire]);
 
-  const chargerProjets = async () => {
+  async function chargerProjets() {
     setLoading(true);
     setError('');
 
@@ -127,7 +127,7 @@ export default function ProjectsScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const handleProposer = async () => {
     if (!canProposeProject && !editingProject) {

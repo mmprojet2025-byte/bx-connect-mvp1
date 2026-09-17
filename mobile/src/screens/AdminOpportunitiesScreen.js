@@ -15,10 +15,10 @@ export default function AdminOpportunitiesScreen() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    loadOpportunities();
+    void Promise.resolve().then(() => loadOpportunities());
   }, []);
 
-  const loadOpportunities = async (isRefresh = false) => {
+  async function loadOpportunities(isRefresh = false) {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     setError('');
@@ -31,7 +31,7 @@ export default function AdminOpportunitiesScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }
 
   const confirmAction = (opportunity, action) => {
     const accepted = action === 'publier';

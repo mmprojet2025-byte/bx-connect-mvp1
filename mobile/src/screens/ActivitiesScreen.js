@@ -55,10 +55,10 @@ export default function ActivitiesScreen() {
   const [recherche, setRecherche] = useState('');
 
   useEffect(() => {
-    chargerActivites();
+    void Promise.resolve().then(() => chargerActivites());
   }, [isAuthenticated, isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire]);
 
-  const chargerActivites = async () => {
+  async function chargerActivites() {
     setLoading(true);
     setError('');
     setCacheNotice('');
@@ -130,7 +130,7 @@ export default function ActivitiesScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const handleInscrire = async (activiteId) => {
     if (!isMembre) return;

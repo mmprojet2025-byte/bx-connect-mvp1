@@ -18,11 +18,14 @@ export default function PaymentHistoryScreen() {
   const [filtre, setFiltre] = useState('TOUS');
 
   useEffect(() => {
-    if (isAuthenticated) fetchHistorique();
-    else setLoading(false);
+    void Promise.resolve().then(() => {
+      if (isAuthenticated) return fetchHistorique();
+      setLoading(false);
+      return undefined;
+    });
   }, []);
 
-  const fetchHistorique = async () => {
+  async function fetchHistorique() {
     try {
       setError('');
       const res = await api.get('/stripe/historique');
@@ -32,7 +35,7 @@ export default function PaymentHistoryScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const FILTRES = ['TOUS', 'PAYE', 'EN_ATTENTE', 'ANNULE'];
 

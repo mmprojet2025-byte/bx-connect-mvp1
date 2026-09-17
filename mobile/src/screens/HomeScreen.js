@@ -46,8 +46,7 @@ export default function HomeScreen({ navigation }) {
   }, [t]);
 
   useEffect(() => {
-    loadActivities();
-    loadGroups();
+    void Promise.resolve().then(() => Promise.all([loadActivities(), loadGroups()]));
   }, [loadActivities, loadGroups]);
 
   return (

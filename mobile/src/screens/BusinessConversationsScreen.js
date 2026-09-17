@@ -92,7 +92,7 @@ export default function BusinessConversationsScreen({ route }) {
   }, [openConversation, t]);
 
   useEffect(() => {
-    loadConversations(initialConversationId);
+    void Promise.resolve().then(() => loadConversations(initialConversationId));
   }, [initialConversationId, loadConversations]);
 
   const handleSend = async () => {

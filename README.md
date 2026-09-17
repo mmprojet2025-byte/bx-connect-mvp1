@@ -41,7 +41,7 @@ scripts/       scripts d'exploitation et de sauvegarde
 - Maven Wrapper ;
 - MySQL et Flyway ;
 - React 19 et Vite ;
-- React Native et Expo ;
+- React Native 0.86.3 et Expo 57 ;
 - JUnit, Spring Security Test et Testcontainers ;
 - ESLint et tests Node ciblés pour le frontend web.
 
@@ -139,7 +139,7 @@ cd backend
 ./mvnw clean verify
 ```
 
-La suite versionnée couvre notamment la sécurité des endpoints et services, les propriétés de sécurité, les paiements optionnels, les notifications, la réinitialisation de mot de passe et un smoke test MySQL/Testcontainers. Ce dernier nécessite Docker.
+La suite versionnée couvre notamment la sécurité des endpoints et services, les propriétés de sécurité, les notifications, les workflows métier et les tests MySQL/Testcontainers. Sur une base jetable, Flyway applique successivement V1 à V5 avant la validation JPA. Docker doit être accessible pour valider ces scénarios ; aucune base habituelle ne doit être utilisée.
 
 ### Frontend web
 
@@ -157,6 +157,7 @@ npm run build
 cd mobile
 npm ci
 npm run lint
+npx expo export --platform web
 ```
 
 Le dépôt ne contient pas actuellement de suite de tests mobile générale déclarée dans `mobile/package.json`.

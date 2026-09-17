@@ -54,7 +54,7 @@ export default function PartnerProfileScreen() {
   }, [t]);
 
   useEffect(() => {
-    loadProfile();
+    void Promise.resolve().then(() => loadProfile());
   }, [loadProfile]);
 
   const updateField = (field, value) => {

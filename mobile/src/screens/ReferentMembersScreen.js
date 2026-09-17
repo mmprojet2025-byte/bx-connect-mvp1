@@ -14,10 +14,10 @@ export default function ReferentMembersScreen() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    loadMembers();
+    void Promise.resolve().then(() => loadMembers());
   }, []);
 
-  const loadMembers = async (isRefresh = false) => {
+  async function loadMembers(isRefresh = false) {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     setError('');
@@ -42,7 +42,7 @@ export default function ReferentMembersScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }
 
   const filteredMembers = useMemo(() => {
     if (!selectedGroupId) return members;

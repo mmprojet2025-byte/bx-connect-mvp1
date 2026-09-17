@@ -28,7 +28,7 @@ export default function MessagerieScreen({ navigation }) {
     initialiserMessagerie();
   }, [isMembre, isReferent, isAdmin, isSuperAdmin]);
 
-  const initialiserMessagerie = async () => {
+  async function initialiserMessagerie() {
     setLoading(true);
     setError('');
     setEmptyMessage('');
@@ -55,7 +55,7 @@ export default function MessagerieScreen({ navigation }) {
 
     setEmptyMessage(t('messaging.groupReserved'));
     setLoading(false);
-  };
+  }
 
   const chargerMessagerieMembre = async () => {
     try {

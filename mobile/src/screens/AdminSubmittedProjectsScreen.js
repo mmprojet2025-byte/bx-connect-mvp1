@@ -32,7 +32,7 @@ export default function AdminSubmittedProjectsScreen() {
   }, [t]);
 
   useEffect(() => {
-    loadProjects();
+    void Promise.resolve().then(() => loadProjects());
   }, [loadProjects]);
 
   const confirmApprove = project => {

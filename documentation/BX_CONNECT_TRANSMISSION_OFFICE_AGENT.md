@@ -10,9 +10,9 @@ Bx-Connect est présenté par Mardoche Malaba comme son projet individuel de tra
 
 Le produit est une plateforme de gestion associative organisée autour de cinq rôles authentifiés : `MEMBRE`, `REFERENT`, `PARTENAIRE`, `ADMIN` et `SUPER_ADMIN`. Le code contient aussi le rôle `VISITEUR`, mais celui-ci n'est pas utilisé comme compte authentifié dans l'inscription publique. L'inscription force le rôle `MEMBRE`. Le périmètre fonctionnel visible comprend l'authentification, le profil, les groupes, les activités et inscriptions, les présences, les projets et leur validation, les annonces/opportunités, les notifications, la messagerie, les conversations métier, l'espace partenaire et plusieurs fonctions d'administration. Certaines fonctions présentes dans le code sont explicitement masquées du MVP web : prestations bénévoles, paiements, impact, rapports référent et certaines affectations partenaires.
 
-L'architecture comporte trois clients/couches principales : un backend Java 21/Spring Boot 3.4.5, un frontend React 19/Vite 8 et une application React Native 0.83.6 avec Expo 55. Le backend expose une API REST, sécurisée par Spring Security et des JWT. Les mots de passe sont encodés avec BCrypt, coût 12. La persistance utilise JPA/Hibernate et MySQL ; Flyway est la source de vérité du schéma avec trois migrations : V1 (schéma initial), V2 (index principaux) et V3 (jetons de réinitialisation de mot de passe). Swagger/OpenAPI est activé en développement et désactivé en production.
+L'architecture comporte trois clients/couches principales : un backend Java 21/Spring Boot 3.4.5, un frontend React 19/Vite 8 et une application React Native 0.86.3 avec Expo 57. Le backend expose une API REST, sécurisée par Spring Security et des JWT. Les mots de passe sont encodés avec BCrypt, coût 12. La persistance utilise JPA/Hibernate et MySQL ; Flyway est la source de vérité du schéma avec cinq migrations : V1 (schéma initial), V2 (index principaux), V3 (sécurité des identifiants), V4 (workflow projet) et V5 (date de naissance). Swagger/OpenAPI est activé en développement et désactivé en production.
 
-La validation backend la plus récente est solide mais ne doit pas être extrapolée à toute l'application. Les 44 rapports Surefire locaux, datés au plus tard du 16 août 2026 à 10:42:57 +0200, comptabilisent **340 tests, 340 réussites, 0 échec, 0 erreur et 0 test ignoré**. Ils proviennent d'un `clean verify` exécuté avec Java 21, Docker et un dépôt Maven temporaire. Le smoke test Testcontainers a démarré MySQL 8.0.46 ARM64, appliqué Flyway V1 à V3, atteint le schéma v3 et initialisé JPA. Le JAR Spring Boot local existe et mesure 80 837 058 octets. Ces artefacts prouvent l'état du commit courant au moment du test, mais pas un fonctionnement sur une infrastructure de production.
+La validation backend la plus récente est solide mais ne doit pas être extrapolée à toute l'application. Le 17 septembre 2026, `./mvnw test` a exécuté **484 tests, 484 réussites, 0 échec, 0 erreur et 0 test ignoré** dans 55 rapports Surefire. Testcontainers a démarré deux bases MySQL 8.0.46 jetables ; Flyway a validé et appliqué V1 à V5, puis Hibernate a validé les mappings. Aucune base habituelle n'a été utilisée.
 
 La qualité frontend et mobile est moins démontrée. Le frontend ne déclare qu'un test Node ciblé sur la politique de mot de passe ; aucun framework E2E n'est configuré dans `package.json`. Un dossier `dist/` local existe, mais son horodatage (5 août 2026) précède le commit documenté : il ne constitue pas une preuve de build du commit courant. Le mobile dispose d'une commande lint, mais d'aucune commande de test. Aucun résultat local actuel ne prouve un build iOS, Android ou EAS distribuable.
 
@@ -136,7 +136,7 @@ flowchart LR
     M[Application mobile\nReact Native + Expo]
     API[API REST\nSpring Boot]
     SEC[Spring Security\nJWT + rôles]
-    DB[(MySQL\nFlyway V1-V3)]
+    DB[(MySQL\nFlyway V1-V5)]
     FS[(Uploads locaux\nà remplacer/industrialiser)]
     EXT[Services externes optionnels\nSMTP / Expo / Sentry]
     PAY[Stripe / PayPal\ndésactivés par défaut]
@@ -230,10 +230,10 @@ Les versions préfixées par `^` ou `~` sont les contraintes déclarées ; le lo
 | i18next | ^26.2.0 web ; ^26.3.0 mobile | FR/NL/EN | deux `package.json`, dossiers `i18n/locales/` |
 | React Hook Form/Zod | ^7.80.0 / ^4.4.3 | Formulaires et validation web | `frontend-web/package.json` |
 | Tailwind CSS | ^4.3.0 | Styles web | `frontend-web/package.json` |
-| React Native | 0.83.6 | Client mobile | `mobile/package.json` |
-| Expo | ~55.0.26 | Outillage et runtime mobile | `mobile/package.json` |
+| React Native | 0.86.3 | Client mobile | `mobile/package.json` |
+| Expo | ~57.0.21 | Outillage et runtime mobile | `mobile/package.json` |
 | React Navigation | ^7.2.4 / ^7.15.1 / ^7.16.1 | Navigation mobile | `mobile/package.json` |
-| Expo SecureStore | ~55.0.14 | Token natif | `mobile/package.json` |
+| Expo SecureStore | ~57.0.3 | Token natif | `mobile/package.json` |
 | Sentry | web ^10.59.0 ; mobile ~7.11.0 | Erreurs et traces assainies | deux `package.json` |
 | Maven Wrapper/npm | version du wrapper/CLI non explicitée ici | Build et dépendances | `backend/mvnw`, `package.json` |
 | Git/GitHub | dépôt Git avec `origin` GitHub | Versionnement | `.git/config`, historique Git |
@@ -314,9 +314,11 @@ erDiagram
 
 - `V1__baseline_schema.sql` : 22 tables initiales et contraintes ;
 - `V2__add_core_indexes.sql` : 16 index sur rôles, statuts, dates, messages, soutiens et audit logs ;
-- `V3__add_password_reset_tokens.sql` : `credentials_version` et table de jetons.
+- `V3__add_password_reset_tokens.sql` : `credentials_version` et table de jetons ;
+- `V4__secure_project_workflow.sql` : corrections, justification, bilan et version des projets ;
+- `V5__add_user_birth_date.sql` : date de naissance optionnelle des utilisateurs.
 
-Le backend configure `spring.jpa.hibernate.ddl-auto=validate`, Flyway actif et `clean-disabled=true`. Le smoke test actuel confirme une base vide migrée jusqu'à v3 et compatible avec les mappings JPA.
+Le backend configure `spring.jpa.hibernate.ddl-auto=validate`, Flyway actif et `clean-disabled=true`. Le smoke test actuel confirme une base vide migrée jusqu'à v5 et compatible avec les mappings JPA.
 
 **Sources :** `backend/src/main/java/com/bxjeunes/bx_connect/entity/`, `backend/src/main/resources/db/migration/`.
 
@@ -404,12 +406,12 @@ Les chiffres ci-dessous ont été recalculés à partir des XML présents locale
 | Élément | Résultat |
 |---|---:|
 | Rapports Surefire | 44 |
-| Tests comptabilisés | 340 |
-| Réussis | 340 |
+| Tests comptabilisés | 484 |
+| Réussis | 484 |
 | Échecs | 0 |
 | Erreurs | 0 |
 | Ignorés | 0 |
-| Rapport le plus récent | 16 août 2026, 10:42:57 +0200 |
+| Rapport le plus récent | 17 septembre 2026 |
 | JAR local | 80 837 058 octets, daté du 16 août 2026 à 10:43:02 +0200 |
 
 Commande utilisée lors de la validation précédente :
@@ -427,11 +429,11 @@ Catégories couvertes : configuration de sécurité, Request ID, Actuator, rate 
 
 ### 11.2 Testcontainers
 
-`MySqlContainerSmokeTest` porte `@Testcontainers(disabledWithoutDocker = true)`. Sans Docker, il est ignoré plutôt que déclaré réussi. Avec Docker lors de la validation du 16 août : MySQL 8.0.46 ARM64 a démarré, Flyway a appliqué V1, V2 et V3, le schéma a atteint v3, JPA s'est initialisé et l'assertion a réussi. Aucune base réelle n'a été utilisée.
+`MySqlContainerSmokeTest` porte `@Testcontainers(disabledWithoutDocker = true)`. Sans Docker, il est ignoré plutôt que déclaré réussi. Avec Docker lors de la validation du 17 septembre 2026 : MySQL 8.0.46 ARM64 a démarré, Flyway a appliqué V1 à V5, le schéma a atteint v5, JPA s'est initialisé et l'assertion a réussi. Aucune base réelle n'a été utilisée.
 
 ### 11.3 Contradiction 231/307/308/320/340
 
-Les nombres 231, 307 et 308 correspondent à des états antérieurs ou à des documents non alignés avec la suite actuelle. Une baseline intermédiaire a compté 320 tests, dont un smoke test ignoré faute de Docker. Le lot de paiements optionnels a ajouté et étendu des tests. La seule valeur actuelle prouvée par les rapports locaux est **340**, tous réussis. Elle devra être recalculée après toute modification du backend.
+Les nombres 231, 307 et 308 correspondent à des états antérieurs ou à des documents non alignés avec la suite actuelle. Une baseline intermédiaire a compté 320 tests, dont un smoke test ignoré faute de Docker. Le lot de paiements optionnels a ajouté et étendu des tests. La valeur actuelle prouvée par les rapports locaux est **484**, tous réussis. Elle devra être recalculée après toute modification du backend.
 
 ### 11.4 Frontend web
 
@@ -551,8 +553,8 @@ Les motivations, arbitrages personnels, apprentissages et difficultés humaines 
 | Élément | Preuve |
 |---|---|
 | Compilation et packaging backend | JAR local et `clean verify` réussi |
-| Suite backend | 340/340 dans 44 rapports Surefire |
-| Base vide MySQL/Flyway/JPA | smoke Testcontainers MySQL 8.0.46, schéma v3 |
+| Suite backend | 484/484 dans 55 rapports Surefire |
+| Base vide MySQL/Flyway/JPA | smoke Testcontainers MySQL 8.0.46, schéma v5 |
 | Authentification backend et BCrypt | code et tests |
 | Garde de configuration production | tests dédiés |
 | Paiements désactivés par défaut | tests de feature flags et commit `c735b91` |
@@ -698,7 +700,7 @@ Les motivations, arbitrages personnels, apprentissages et difficultés humaines 
 ### Tests et preuves locales
 
 - `backend/src/test/java/`
-- `backend/target/surefire-reports/` — résultats locaux du 16 août 2026
+- `backend/target/surefire-reports/` — résultats locaux du 17 septembre 2026
 - `backend/target/bx-connect-0.0.1-SNAPSHOT.jar`
 - `frontend-web/src/utils/passwordPolicy.test.js`
 - `frontend-web/scripts/test-sentry-sanitizer.mjs`

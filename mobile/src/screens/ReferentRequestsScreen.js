@@ -15,10 +15,10 @@ export default function ReferentRequestsScreen() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    loadRequests();
+    void Promise.resolve().then(() => loadRequests());
   }, []);
 
-  const loadRequests = async (isRefresh = false) => {
+  async function loadRequests(isRefresh = false) {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     setError('');
@@ -42,7 +42,7 @@ export default function ReferentRequestsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }
 
   const confirmAction = (request, action) => {
     const accepted = action === 'accepter';

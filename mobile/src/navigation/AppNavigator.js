@@ -494,11 +494,11 @@ function NetworkHome({ navigation }) {
       }
     }
 
-    if (isMembre || isReferent || isAdmin) {
-      loadNetworkPreview();
-    } else {
+    void Promise.resolve().then(() => {
+      if (isMembre || isReferent || isAdmin) return loadNetworkPreview();
       setLoading(false);
-    }
+      return undefined;
+    });
 
     return () => { cancelled = true; };
   }, [isAdmin, isReferent, isMembre]);
@@ -732,7 +732,7 @@ function PrivateTabs() {
 
   useEffect(() => {
     if (isSuperAdmin) {
-      setUnreadNotifications(0);
+      void Promise.resolve().then(() => setUnreadNotifications(0));
       return undefined;
     }
     let cancelled = false;

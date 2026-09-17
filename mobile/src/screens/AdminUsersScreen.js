@@ -16,10 +16,10 @@ export default function AdminUsersScreen() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    chargerUtilisateurs();
+    void Promise.resolve().then(() => chargerUtilisateurs());
   }, []);
 
-  const chargerUtilisateurs = async (isRefresh = false) => {
+  async function chargerUtilisateurs(isRefresh = false) {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     setError('');
@@ -33,7 +33,7 @@ export default function AdminUsersScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }
 
   const filteredUsers = users.filter((user) => {
     const text = `${user.prenom || ''} ${user.nom || ''} ${user.email || ''} ${user.role || ''}`;

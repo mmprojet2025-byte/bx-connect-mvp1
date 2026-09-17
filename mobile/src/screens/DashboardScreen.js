@@ -28,22 +28,18 @@ export default function DashboardScreen({ navigation }) {
       trackDashboardView(role);
     }
 
-    if (isMembre) {
-      chargerDashboard();
-    } else if (isReferent) {
-      chargerReferentDashboard();
-    } else if (isAdmin) {
-      chargerAdminDashboard();
-    } else if (isSuperAdmin) {
-      chargerSuperAdminDashboard();
-    } else if (isPartenaire) {
-      chargerPartenaireDashboard();
-    } else {
+    void Promise.resolve().then(() => {
+      if (isMembre) return chargerDashboard();
+      if (isReferent) return chargerReferentDashboard();
+      if (isAdmin) return chargerAdminDashboard();
+      if (isSuperAdmin) return chargerSuperAdminDashboard();
+      if (isPartenaire) return chargerPartenaireDashboard();
       setLoading(false);
-    }
+      return undefined;
+    });
   }, [isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire, role]);
 
-  const chargerDashboard = async () => {
+  async function chargerDashboard() {
     setLoading(true);
     setError('');
     setNotice('');
@@ -62,9 +58,9 @@ export default function DashboardScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const chargerReferentDashboard = async () => {
+  async function chargerReferentDashboard() {
     setLoading(true);
     setError('');
     setNotice('');
@@ -102,9 +98,9 @@ export default function DashboardScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const chargerAdminDashboard = async () => {
+  async function chargerAdminDashboard() {
     setLoading(true);
     setError('');
     setNotice('');
@@ -148,9 +144,9 @@ export default function DashboardScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const chargerPartenaireDashboard = async () => {
+  async function chargerPartenaireDashboard() {
     setLoading(true);
     setError('');
     setNotice('');
@@ -200,9 +196,9 @@ export default function DashboardScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const chargerSuperAdminDashboard = async () => {
+  async function chargerSuperAdminDashboard() {
     setLoading(true);
     setError('');
     setNotice('');
@@ -224,7 +220,7 @@ export default function DashboardScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   if (!isMembre) {
     if (isReferent) {

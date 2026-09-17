@@ -43,7 +43,7 @@ export default function NotificationsScreen({ navigation }) {
     fetchNotifications();
   }, []);
 
-  const fetchNotifications = async (page = 0, append = false) => {
+  async function fetchNotifications(page = 0, append = false) {
     if (append) setLoadingMore(true);
     else setLoading(true);
     setError('');
@@ -69,7 +69,7 @@ export default function NotificationsScreen({ navigation }) {
       setLoading(false);
       setLoadingMore(false);
     }
-  };
+  }
 
   const handleLoadMore = () => {
     if (!loadingMore && !pagination.last) {

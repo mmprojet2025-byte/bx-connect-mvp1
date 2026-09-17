@@ -30,7 +30,7 @@ export default function AdminPartnerSupportsScreen() {
   }, [t]);
 
   useEffect(() => {
-    loadSupports();
+    void Promise.resolve().then(() => loadSupports());
   }, [loadSupports]);
 
   const confirmAction = (support, action) => {

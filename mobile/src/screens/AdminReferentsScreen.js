@@ -29,7 +29,7 @@ export default function AdminReferentsScreen() {
   }, [t]);
 
   useEffect(() => {
-    loadReferents();
+    void Promise.resolve().then(() => loadReferents());
   }, [loadReferents]);
 
   const filteredReferents = useMemo(() => {

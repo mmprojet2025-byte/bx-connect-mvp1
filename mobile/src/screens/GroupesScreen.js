@@ -36,10 +36,10 @@ export default function GroupesScreen() {
   const [recherche, setRecherche] = useState('');
 
   useEffect(() => {
-    chargerGroupes();
+    void Promise.resolve().then(() => chargerGroupes());
   }, [isAuthenticated, isMembre, isReferent, isAdmin, isSuperAdmin]);
 
-  const chargerGroupes = async () => {
+  async function chargerGroupes() {
     setLoading(true);
     setError('');
     setMessage('');
@@ -113,7 +113,7 @@ export default function GroupesScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const handleRejoindre = async (groupeId) => {
     if (!isMembre || hasActiveOrPendingAdhesion) return;

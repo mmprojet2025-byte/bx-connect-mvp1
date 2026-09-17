@@ -28,15 +28,14 @@ export default function PrestationsMobileScreen() {
   const peutValider = isReferent || isAdmin;
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchPrestations();
-      fetchMesGroupes();
-    } else {
+    void Promise.resolve().then(() => {
+      if (isAuthenticated) return Promise.all([fetchPrestations(), fetchMesGroupes()]);
       setLoading(false);
-    }
+      return undefined;
+    });
   }, [onglet]);
 
-  const fetchPrestations = async () => {
+  async function fetchPrestations() {
     setLoading(true);
     try {
       setError('');
@@ -52,15 +51,15 @@ export default function PrestationsMobileScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const fetchMesGroupes = async () => {
+  async function fetchMesGroupes() {
     try {
       const res = await api.get('/groupes/mes-groupes');
       setMesGroupes(res.data);
       if (res.data.length > 0) setForm(f => ({ ...f, groupeId: res.data[0].id }));
     } catch {}
-  };
+  }
 
   const handleEncoder = async () => {
     if (!form.titre || !form.datePrestation || !form.dureeHeures) {
