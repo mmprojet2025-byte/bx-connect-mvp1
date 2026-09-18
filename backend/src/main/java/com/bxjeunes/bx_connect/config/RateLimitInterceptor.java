@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class RateLimitInterceptor implements HandlerInterceptor {
 
+    private static final Duration MAX_RULE_WINDOW = Duration.ofMinutes(15);
     private final Map<String, Deque<Long>> attempts = new ConcurrentHashMap<>();
 
     @Override
@@ -81,10 +82,6 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     }
 
     private String clientIp(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            return forwardedFor.split(",")[0].trim();
-        }
         return request.getRemoteAddr();
     }
 
@@ -103,7 +100,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
             Map.Entry<String, Deque<Long>> entry = iterator.next();
             Deque<Long> timestamps = entry.getValue();
             synchronized (timestamps) {
-                removeExpired(timestamps, now, Duration.ofMinutes(10).toMillis());
+                removeExpired(timestamps, now, MAX_RULE_WINDOW.toMillis());
                 if (timestamps.isEmpty()) {
                     attempts.remove(entry.getKey(), timestamps);
                 }
