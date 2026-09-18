@@ -33,23 +33,40 @@
     "step1": {
       "title": "Discover BX-Connect",
       "subtitle": "Discover activities, join a group and take part in BX-Jeunes Impact projects.",
+      "progressLabel": "Discovery & Agreements",
+      "agreementsTitle": "Commitment & Respect",
+      "agreementsIntro": "Both agreements are required to continue to the next step.",
+      "termsAcceptance": "I accept the Terms of use",
+      "privacyAcceptance": "I accept the Privacy policy",
       "features": {
         "activities": "Activities",
         "groups": "Groups",
         "projects": "Projects",
         "community": "Community"
+      },
+      "featureDescriptions": {
+        "activities": "Discover activities and register.",
+        "groups": "Discover and join groups.",
+        "projects": "Propose and follow projects.",
+        "community": "Connect with BX-Connect members."
       }
     },
     "step2": {
-      "title": "Let’s get acquainted",
-      "subtitle": "Enter the information needed to create your account."
+      "title": "Your information",
+      "subtitle": "Enter your identity details to finish creating your profile.",
+      "progressLabel": "Your information",
+      "emailHint": "Used to log in and receive notifications.",
+      "ageHint": "You must be at least 16 years old.",
+      "continue": "Continue to step 3"
     },
     "step3": {
-      "title": "Protect your account",
-      "subtitle": "Choose a secure password that you do not use elsewhere."
+      "title": "Account security",
+      "subtitle": "Choose a secure password that you do not use elsewhere.",
+      "progressLabel": "Account security"
     }
   },
   "home": {
+    "discoveryLabel": "Explore",
     "title": "Discover, participate, take action.",
     "subtitle": "Find upcoming BX-Jeunes Impact activities and groups.",
     "toConfirm": "To be confirmed",
@@ -522,9 +539,9 @@
     "back_home": "← Back to home",
     "back_home_short": "Back to home",
     "forgot_password": "Forgot password?",
-    "forgot_password_title": "Forgot password",
-    "forgot_password_subtitle": "Enter your email address to request a password reset.",
-    "forgot_password_submit": "Send request",
+    "forgot_password_title": "Forgot password?",
+    "forgot_password_subtitle": "Enter the email address linked to your account to receive reset instructions.",
+    "forgot_password_submit": "Send instructions",
     "forgot_password_sending": "Sending…",
     "forgot_password_error_api": "The request could not be processed. Please try again.",
     "forgot_password_error_network": "Unable to connect. Check your network and try again.",
