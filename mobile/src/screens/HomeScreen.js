@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import AppIcon from '../components/AppIcon';
@@ -56,6 +56,18 @@ export default function HomeScreen({ navigation }) {
       contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}
     >
+      <View style={styles.discoveryHeader}>
+        <Image
+          source={require('../../assets/images/logo-bx-connect.png')}
+          style={styles.logo}
+          resizeMode="contain"
+          accessibilityLabel="BX-Connect"
+        />
+        <View style={styles.discoveryBadge}>
+          <Text style={styles.discoveryBadgeText}>{t('home.discoveryLabel')}</Text>
+        </View>
+      </View>
+
       <View style={styles.intro}>
         <Text style={styles.title}>{t('home.title')}</Text>
         <Text style={styles.subtitle}>{t('home.subtitle')}</Text>
@@ -68,6 +80,8 @@ export default function HomeScreen({ navigation }) {
       <HomeSection
         title={t('home.activities.title')}
         icon="activity"
+        color={COLORS.impactOrange}
+        iconBackground={COLORS.softOrange}
         actionLabel={t('home.activities.seeAll')}
         onAction={() => navigation.navigate('Activities')}
       >
@@ -79,6 +93,7 @@ export default function HomeScreen({ navigation }) {
               meta={formatDate(activity.dateDebut, i18n.language, t)}
               detail={[activity.commune, activity.theme].filter(Boolean).join(' · ') || t('home.toConfirm')}
               color={COLORS.impactOrange}
+              badge={t('activities.free')}
               label={t('home.activities.open', { title: activity.titre })}
               onPress={() => navigation.navigate('Activities')}
             />
@@ -89,6 +104,8 @@ export default function HomeScreen({ navigation }) {
       <HomeSection
         title={t('home.groups.title')}
         icon="group"
+        color={COLORS.success}
+        iconBackground={COLORS.softGreen}
         actionLabel={t('home.groups.seeAll')}
         onAction={() => navigation.navigate('Groupes')}
       >
@@ -106,6 +123,23 @@ export default function HomeScreen({ navigation }) {
           ))}
         </SectionState>
       </HomeSection>
+
+      <View style={styles.invitationCard}>
+        <View style={styles.invitationIcon}>
+          <AppIcon name="people-outline" size={24} color={COLORS.impactOrange} />
+        </View>
+        <Text style={styles.invitationTitle}>{t('home.joinTitle')}</Text>
+        <Text style={styles.invitationText}>{t('home.joinText')}</Text>
+        <TouchableOpacity
+          style={styles.invitationButton}
+          onPress={() => navigation.navigate('Register')}
+          accessibilityRole="button"
+          accessibilityLabel={t('auth.create_free_account')}
+        >
+          <AppIcon name="person-add-outline" size={20} color="#FFFFFF" />
+          <Text style={styles.invitationButtonText}>{t('auth.create_free_account')}</Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
@@ -123,12 +157,14 @@ function AuthButton({ label, onPress, primary = false }) {
   );
 }
 
-function HomeSection({ title, icon, actionLabel, onAction, children }) {
+function HomeSection({ title, icon, color, iconBackground, actionLabel, onAction, children }) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <View style={styles.sectionTitleRow}>
-          <View style={styles.sectionIcon}><AppIcon name={icon} size={19} color={COLORS.bxBlueLight} /></View>
+          <View style={[styles.sectionIcon, { backgroundColor: iconBackground }]}>
+            <AppIcon name={icon} size={19} color={color} />
+          </View>
           <Text style={styles.sectionTitle}>{title}</Text>
         </View>
         <TouchableOpacity
@@ -183,13 +219,21 @@ function RetryButton({ label, onPress }) {
   );
 }
 
-function PreviewCard({ title, meta, detail, color, label, onPress }) {
+function PreviewCard({ title, meta, detail, color, badge, label, onPress }) {
   return (
     <TouchableOpacity style={styles.previewCard} onPress={onPress} accessibilityRole="button" accessibilityLabel={label}>
       <View style={[styles.previewAccent, { backgroundColor: color }]} />
       <View style={styles.previewBody}>
+        {badge ? (
+          <View style={styles.previewTopLine}>
+            <View style={[styles.previewBadge, { backgroundColor: `${color}18` }]}>
+              <Text style={[styles.previewBadgeText, { color }]}>{badge}</Text>
+            </View>
+            <Text style={styles.previewMeta} numberOfLines={1}>{meta}</Text>
+          </View>
+        ) : null}
         <Text style={styles.previewTitle} numberOfLines={2}>{title}</Text>
-        <Text style={styles.previewMeta} numberOfLines={1}>{meta}</Text>
+        {!badge ? <Text style={styles.previewMeta} numberOfLines={1}>{meta}</Text> : null}
         <Text style={styles.previewDetail} numberOfLines={1}>{detail}</Text>
       </View>
       <AppIcon name="chevron-forward" size={18} color={COLORS.muted} />
@@ -221,27 +265,34 @@ function formatDate(value, language, t) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.page },
-  content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 32 },
-  intro: { marginBottom: 24 },
-  title: { color: COLORS.text, fontSize: 28, lineHeight: 34, fontWeight: '900' },
+  content: { width: '100%', maxWidth: 420, alignSelf: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 32 },
+  discoveryHeader: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 },
+  logo: { width: 150, height: 34 },
+  discoveryBadge: { borderRadius: 999, backgroundColor: COLORS.softBlue, paddingHorizontal: 10, paddingVertical: 6 },
+  discoveryBadgeText: { color: COLORS.bxBlueLight, fontSize: 12, lineHeight: 16, fontWeight: '700' },
+  intro: { marginBottom: 24, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.surface, shadowColor: '#111827', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.035, shadowRadius: 5, elevation: 1 },
+  title: { color: COLORS.text, fontSize: 21, lineHeight: 27, fontWeight: '700' },
   subtitle: { color: COLORS.muted, fontSize: 14, lineHeight: 20, marginTop: 6, maxWidth: 520 },
-  authActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 18 },
-  authButton: { minHeight: 46, flexGrow: 1, minWidth: 138, alignItems: 'center', justifyContent: 'center', borderRadius: 14, paddingHorizontal: 18 },
-  authButtonPrimary: { backgroundColor: COLORS.bxBlue },
-  authButtonSecondary: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.bxBlue },
+  authActions: { gap: 8, marginTop: 16 },
+  authButton: { minHeight: 48, width: '100%', alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingHorizontal: 18 },
+  authButtonPrimary: { backgroundColor: COLORS.bxBlueLight },
+  authButtonSecondary: { backgroundColor: COLORS.surface, borderWidth: 2, borderColor: COLORS.bxBlueLight },
   authButtonPrimaryText: { color: '#fff', fontSize: 14, fontWeight: '800' },
   authButtonSecondaryText: { color: COLORS.bxBlue, fontSize: 14, fontWeight: '800' },
-  section: { marginBottom: 26 },
+  section: { marginBottom: 24 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
   sectionTitleRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9 },
-  sectionIcon: { width: 34, height: 34, borderRadius: 12, backgroundColor: COLORS.softBlue, alignItems: 'center', justifyContent: 'center' },
-  sectionTitle: { flex: 1, color: COLORS.text, fontSize: 18, lineHeight: 23, fontWeight: '800' },
+  sectionIcon: { width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  sectionTitle: { flex: 1, color: COLORS.text, fontSize: 17, lineHeight: 22, fontWeight: '700' },
   seeAllButton: { flexDirection: 'row', alignItems: 'center', minHeight: 44, paddingLeft: 6 },
   seeAllText: { color: COLORS.bxBlueLight, fontSize: 12, fontWeight: '800' },
   previewList: { gap: 9 },
-  previewCard: { minHeight: 84, flexDirection: 'row', alignItems: 'center', overflow: 'hidden', backgroundColor: COLORS.surface, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, paddingRight: 14 },
-  previewAccent: { alignSelf: 'stretch', width: 5, marginRight: 13 },
+  previewCard: { minHeight: 88, flexDirection: 'row', alignItems: 'center', overflow: 'hidden', backgroundColor: COLORS.surface, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, paddingRight: 14, shadowColor: '#111827', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.025, shadowRadius: 4, elevation: 1 },
+  previewAccent: { alignSelf: 'stretch', width: 6, marginRight: 12 },
   previewBody: { flex: 1, paddingVertical: 12, paddingRight: 10 },
+  previewTopLine: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  previewBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  previewBadgeText: { fontSize: 11, lineHeight: 15, fontWeight: '700' },
   previewTitle: { color: COLORS.text, fontSize: 15, lineHeight: 20, fontWeight: '800' },
   previewMeta: { color: COLORS.bxBlue, fontSize: 13, lineHeight: 18, fontWeight: '700', marginTop: 3 },
   previewDetail: { color: COLORS.muted, fontSize: 12, lineHeight: 17, marginTop: 2 },
@@ -249,4 +300,10 @@ const styles = StyleSheet.create({
   feedbackText: { color: COLORS.muted, fontSize: 13, lineHeight: 18, textAlign: 'center' },
   retryButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 14 },
   retryText: { color: COLORS.bxBlueLight, fontSize: 13, fontWeight: '800' },
+  invitationCard: { alignItems: 'center', borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.surface, padding: 16, shadowColor: '#111827', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.035, shadowRadius: 5, elevation: 1 },
+  invitationIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.softOrange, marginBottom: 12 },
+  invitationTitle: { color: COLORS.text, fontSize: 17, lineHeight: 22, fontWeight: '700', textAlign: 'center' },
+  invitationText: { color: COLORS.muted, fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 4 },
+  invitationButton: { width: '100%', minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, backgroundColor: COLORS.impactOrange, marginTop: 16, paddingHorizontal: 16 },
+  invitationButtonText: { flexShrink: 1, color: '#FFFFFF', fontSize: 14, lineHeight: 20, fontWeight: '700', textAlign: 'center' },
 });

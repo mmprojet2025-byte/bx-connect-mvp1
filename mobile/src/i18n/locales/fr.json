@@ -33,23 +33,40 @@
     "step1": {
       "title": "Découvre BX-Connect",
       "subtitle": "Découvre les activités, rejoins un groupe et participe aux projets de BX-Jeunes Impact.",
+      "progressLabel": "Découverte & Accords",
+      "agreementsTitle": "Engagements & Respect",
+      "agreementsIntro": "Les deux accords sont nécessaires pour continuer vers l’étape suivante.",
+      "termsAcceptance": "J’accepte les Conditions d’utilisation",
+      "privacyAcceptance": "J’accepte la Politique de confidentialité",
       "features": {
         "activities": "Activités",
         "groups": "Groupes",
         "projects": "Projets",
         "community": "Communauté"
+      },
+      "featureDescriptions": {
+        "activities": "Découvrir les activités et s’inscrire.",
+        "groups": "Découvrir et rejoindre les groupes.",
+        "projects": "Proposer et suivre des projets.",
+        "community": "Échanger avec les membres de BX-Connect."
       }
     },
     "step2": {
-      "title": "Faisons connaissance",
-      "subtitle": "Indique les informations nécessaires à la création de ton compte."
+      "title": "Vos informations",
+      "subtitle": "Renseigne ton identité pour finaliser la création de ton profil.",
+      "progressLabel": "Vos informations",
+      "emailHint": "Utilisée pour te connecter et recevoir les notifications.",
+      "ageHint": "Tu dois avoir au moins 16 ans.",
+      "continue": "Continuer vers l’étape 3"
     },
     "step3": {
-      "title": "Protège ton compte",
-      "subtitle": "Choisis un mot de passe sûr que tu n’utilises pas ailleurs."
+      "title": "Sécurité du compte",
+      "subtitle": "Choisis un mot de passe sûr que tu n’utilises pas ailleurs.",
+      "progressLabel": "Sécurité du compte"
     }
   },
   "home": {
+    "discoveryLabel": "Découverte",
     "title": "Découvre, participe, agis.",
     "subtitle": "Retrouve les prochaines activités et les groupes de BX-Jeunes Impact.",
     "toConfirm": "À confirmer",
@@ -524,9 +541,9 @@
     "back_home": "← Retour à l'accueil",
     "back_home_short": "Retour à l'accueil",
     "forgot_password": "Mot de passe oublié ?",
-    "forgot_password_title": "Mot de passe oublié",
-    "forgot_password_subtitle": "Indique ton adresse e-mail pour demander une réinitialisation.",
-    "forgot_password_submit": "Envoyer la demande",
+    "forgot_password_title": "Mot de passe oublié ?",
+    "forgot_password_subtitle": "Indique l’adresse e-mail associée à ton compte pour recevoir les instructions de réinitialisation.",
+    "forgot_password_submit": "Envoyer les instructions",
     "forgot_password_sending": "Envoi en cours…",
     "forgot_password_error_api": "La demande n’a pas pu être traitée. Veuillez réessayer.",
     "forgot_password_error_network": "Connexion impossible. Vérifiez votre réseau puis réessayez.",

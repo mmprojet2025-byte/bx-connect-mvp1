@@ -33,23 +33,40 @@
     "step1": {
       "title": "Ontdek BX-Connect",
       "subtitle": "Ontdek activiteiten, sluit je aan bij een groep en werk mee aan de projecten van BX-Jeunes Impact.",
+      "progressLabel": "Ontdekking & Akkoorden",
+      "agreementsTitle": "Engagement & Respect",
+      "agreementsIntro": "Beide akkoorden zijn vereist om naar de volgende stap te gaan.",
+      "termsAcceptance": "Ik aanvaard de Gebruiksvoorwaarden",
+      "privacyAcceptance": "Ik aanvaard het Privacybeleid",
       "features": {
         "activities": "Activiteiten",
         "groups": "Groepen",
         "projects": "Projecten",
         "community": "Community"
+      },
+      "featureDescriptions": {
+        "activities": "Ontdek activiteiten en schrijf je in.",
+        "groups": "Ontdek groepen en word lid.",
+        "projects": "Stel projecten voor en volg ze op.",
+        "community": "Praat met leden van BX-Connect."
       }
     },
     "step2": {
-      "title": "Laten we kennismaken",
-      "subtitle": "Vul de gegevens in die nodig zijn om je account aan te maken."
+      "title": "Jouw gegevens",
+      "subtitle": "Vul je identiteitsgegevens in om je profiel aan te maken.",
+      "progressLabel": "Jouw gegevens",
+      "emailHint": "Wordt gebruikt om aan te melden en meldingen te ontvangen.",
+      "ageHint": "Je moet minstens 16 jaar oud zijn.",
+      "continue": "Doorgaan naar stap 3"
     },
     "step3": {
-      "title": "Beveilig je account",
-      "subtitle": "Kies een veilig wachtwoord dat je nergens anders gebruikt."
+      "title": "Accountbeveiliging",
+      "subtitle": "Kies een veilig wachtwoord dat je nergens anders gebruikt.",
+      "progressLabel": "Accountbeveiliging"
     }
   },
   "home": {
+    "discoveryLabel": "Ontdekken",
     "title": "Ontdek, doe mee, maak impact.",
     "subtitle": "Bekijk de volgende activiteiten en groepen van BX-Jeunes Impact.",
     "toConfirm": "Nog te bevestigen",
@@ -522,9 +539,9 @@
     "back_home": "← Terug naar startpagina",
     "back_home_short": "Terug naar startpagina",
     "forgot_password": "Wachtwoord vergeten?",
-    "forgot_password_title": "Wachtwoord vergeten",
-    "forgot_password_subtitle": "Vul je e-mailadres in om een wachtwoordreset aan te vragen.",
-    "forgot_password_submit": "Aanvraag verzenden",
+    "forgot_password_title": "Wachtwoord vergeten?",
+    "forgot_password_subtitle": "Vul het e-mailadres van je account in om instructies voor het opnieuw instellen te ontvangen.",
+    "forgot_password_submit": "Instructies verzenden",
     "forgot_password_sending": "Bezig met verzenden…",
     "forgot_password_error_api": "De aanvraag kon niet worden verwerkt. Probeer het opnieuw.",
     "forgot_password_error_network": "Kan geen verbinding maken. Controleer je netwerk en probeer opnieuw.",
