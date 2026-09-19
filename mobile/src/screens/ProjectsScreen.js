@@ -616,16 +616,25 @@ function ProjectFormModal({
       >
         <View style={styles.modalCard}>
           <View style={styles.modalHeader}>
-            <View>
+            <View style={styles.modalHeaderText}>
               <Text style={styles.modalTitle}>{title}</Text>
               {groupeNom && <Text style={styles.modalSub}>{t('projects.group_label', { group: groupeNom })}</Text>}
             </View>
-            <TouchableOpacity onPress={onClose}>
-              <Text style={styles.modalClose}>×</Text>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={onClose}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.close')}
+            >
+              <AppIcon name="close" size={22} color="#475569" />
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.modalContent}
+          >
             <Text style={styles.label}>{t('projects.form_title')}</Text>
             <TextInput
               style={styles.input}
@@ -666,6 +675,7 @@ function ProjectFormModal({
               onChangeText={(val) => setForm({ ...form, budgetDemande: val })}
               keyboardType="numeric"
             />
+            <Text style={styles.fieldHint}>{t('projects.budget_declarative_hint')}</Text>
 
             {allowNoGroup && form.groupeId ? (
               <>
@@ -1242,10 +1252,21 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 18,
   },
+  modalHeaderText: { flex: 1, minWidth: 0, paddingRight: 8 },
+  modalContent: { paddingBottom: 12 },
   modalTitle: { color: '#1E3A8A', fontSize: 18, fontWeight: '900' },
   modalSub: { color: '#64748b', fontSize: 12, marginTop: 3 },
-  modalClose: { color: '#64748b', fontSize: 28, lineHeight: 30 },
+  modalCloseButton: {
+    width: 44,
+    height: 44,
+    marginTop: -10,
+    marginRight: -10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
+  },
   label: { fontSize: 13, fontWeight: '800', color: '#374151', marginBottom: 6 },
+  fieldHint: { color: '#64748b', fontSize: 12, lineHeight: 17, marginTop: -6, marginBottom: 12 },
   input: {
     borderWidth: 1,
     borderColor: '#d1d5db',
