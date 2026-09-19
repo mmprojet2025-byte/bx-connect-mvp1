@@ -49,7 +49,7 @@ const headerStyle = {
   headerStyle: { backgroundColor: '#FFFFFF' },
   headerTintColor: '#111827',
   headerShadowVisible: false,
-  headerBackTitleVisible: false,
+  headerBackButtonDisplayMode: 'minimal',
   headerTitleAlign: 'left',
   headerTitleStyle: { fontWeight: '700', fontSize: 17 },
   headerBackgroundContainerStyle: {

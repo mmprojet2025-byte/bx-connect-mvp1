@@ -231,24 +231,38 @@ export default function NotificationsScreen({ navigation }) {
     </TouchableOpacity>
   );
 
+  const headerStatus = loading
+    ? t('common.loading')
+    : error !== '' && notifications.length === 0
+      ? t('notifications.errorLoad')
+      : unreadCount > 0
+        ? t('notifications.unreadCount', { count: unreadCount })
+        : t('notifications.allCaughtUp');
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>{t('notifications.title')}</Text>
-          <Text style={styles.headerSub}>
-            {unreadCount > 0 ? t('notifications.unreadCount', { count: unreadCount }) : t('notifications.allCaughtUp')}
-          </Text>
+          <Text style={styles.headerSub}>{headerStatus}</Text>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.btnLight} onPress={() => fetchNotifications(0, false)}>
-            <Text style={styles.btnLightText}>{t('common.retry')}</Text>
+          <TouchableOpacity
+            style={[styles.refreshButton, loading && styles.btnDisabled]}
+            onPress={() => fetchNotifications(0, false)}
+            disabled={loading}
+            accessibilityRole="button"
+            accessibilityLabel={t('notifications.refresh')}
+          >
+            <AppIcon name="refresh" size={20} color="#2563EB" />
           </TouchableOpacity>
           {unreadCount > 0 && (
             <TouchableOpacity
               style={[styles.btnToutesLues, actionLoading && styles.btnDisabled]}
               onPress={handleMarquerToutesLues}
               disabled={actionLoading}
+              accessibilityRole="button"
+              accessibilityLabel={t('notifications.markAllAsReadShort')}
             >
               {actionLoading
                 ? <ActivityIndicator color="#38BDF8" size="small" />
@@ -286,8 +300,6 @@ export default function NotificationsScreen({ navigation }) {
           illustrationSource={require('../assets/images/placeholders/notifications.png')}
           title={t('notifications.emptyShort')}
           text={t('notifications.emptyDescriptionMobile')}
-          actionLabel={t('common.retry')}
-          onAction={() => fetchNotifications(0, false)}
         />
       ) : (
         <FlatList
@@ -508,13 +520,14 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 16, fontWeight: '900', color: '#1E3A8A' },
   headerSub: { fontSize: 12, color: '#64748b', marginTop: 2 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  btnLight: {
-    backgroundColor: '#f8fafc',
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: 20,
+  refreshButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EFF6FF',
   },
-  btnLightText: { color: '#64748b', fontSize: 12, fontWeight: '800' },
   btnToutesLues: {
     backgroundColor: '#F0F9FF',
     paddingHorizontal: 10,

@@ -478,6 +478,7 @@
   },
   "notifications": {
     "title": "Meldingen",
+    "refresh": "Meldingen vernieuwen",
     "read": "Gelezen",
     "unread": "Ongelezen",
     "markAsRead": "Markeren als gelezen",

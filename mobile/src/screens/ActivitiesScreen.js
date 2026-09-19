@@ -288,21 +288,35 @@ export default function ActivitiesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder={t('activities.search_mobile')}
-          placeholderTextColor="#94a3b8"
-          value={recherche}
-          onChangeText={setRecherche}
-        />
+        <View style={styles.searchField}>
+          <AppIcon name="search" size={20} color="#64748B" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={t('activities.search_mobile')}
+            placeholderTextColor="#94A3B8"
+            value={recherche}
+            onChangeText={setRecherche}
+            accessibilityLabel={t('activities.search_mobile')}
+          />
+        </View>
         {(isReferent || isAdmin) ? (
-          <TouchableOpacity style={styles.newButton} onPress={openCreateForm}>
+          <TouchableOpacity
+            style={styles.newButton}
+            onPress={openCreateForm}
+            accessibilityRole="button"
+            accessibilityLabel={t('activities.new_activity')}
+          >
             <AppIcon name="add-circle-outline" size={18} color="#fff" />
             <Text style={styles.newButtonText}>{t('activities.new_short')}</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity style={styles.retrySmall} onPress={chargerActivites}>
-            <AppIcon name="refresh" size={17} color="#38BDF8" />
+          <TouchableOpacity
+            style={styles.retrySmall}
+            onPress={chargerActivites}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.retry')}
+          >
+            <AppIcon name="refresh" size={20} color="#2563EB" />
           </TouchableOpacity>
         )}
       </View>
@@ -436,40 +450,37 @@ function ActivityCard({
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <View style={[styles.cardIcon, { backgroundColor: `${status.color}18` }]}>
-          <AppIcon name="activity" size={20} color={status.color} />
-        </View>
-        <View style={styles.cardTitleWrap}>
-          <Text style={styles.cardTitle} numberOfLines={2}>{activite.titre}</Text>
-          <Text style={styles.cardSub}>{formatDateRange(activite.dateDebut, activite.dateFin, language, t)}</Text>
+        <View style={styles.categoryWrap}>
+          <View style={[styles.cardIcon, { backgroundColor: `${status.color}18` }]}>
+            <AppIcon name="activity" size={19} color={status.color} />
+          </View>
+          {activite.categorie ? (
+            <Text style={styles.categoryText} numberOfLines={1}>{activite.categorie}</Text>
+          ) : null}
         </View>
         <StatusBadge label={status.label} color={status.color} />
       </View>
 
-      {activite.description ? (
-        <Text style={styles.cardDesc} numberOfLines={2}>{activite.description}</Text>
-      ) : null}
+      <Text style={styles.cardTitle}>{activite.titre}</Text>
 
-      {itineraryUrl ? (
-        <TouchableOpacity
-          style={styles.itineraryButton}
-          onPress={() => openItinerary(itineraryUrl, t)}
-        >
-          <AppIcon name="location-outline" size={14} color="#2563EB" />
-          <Text style={styles.itineraryButtonText}>
-            {t('geo.viewItinerary')}
-          </Text>
-        </TouchableOpacity>
+      <View style={styles.dateRow}>
+        <AppIcon name="calendar-outline" size={18} color="#2563EB" />
+        <Text style={styles.cardSub}>
+          {formatDateRange(activite.dateDebut, activite.dateFin, language, t)}
+        </Text>
+      </View>
+
+      {activite.description ? (
+        <Text style={styles.cardDesc}>{activite.description}</Text>
       ) : null}
 
       <View style={styles.chipList}>
-        <InfoChip icon="location-outline" text={activite.lieu || t('activities.to_confirm')} />
-        {activite.commune ? <InfoChip icon="location-outline" text={activite.commune} /> : null}
-        <InfoChip
-          icon="wallet"
-          text={activite.gratuite ? t('activities.free') : t('activities.price_value', { price: activite.prix ?? 0 })}
-        />
-        <InfoChip icon="group" text={formatCapacite(activite, t)} />
+        {activite.gratuite === true ? (
+          <InfoChip icon="gift-outline" text={t('activities.free')} tone="green" />
+        ) : null}
+        {hasCapacityData(activite) ? (
+          <InfoChip icon="group" text={formatCapacite(activite, t)} />
+        ) : null}
         {activite.theme && <InfoChip icon="pricetag-outline" text={activite.theme} />}
         {(isReferent || isAdmin) && activite.createurPrenom && (
           <InfoChip
@@ -480,6 +491,30 @@ function ActivityCard({
         {isPartenaire && <InfoChip icon="shield" text={t('partner.support')} />}
       </View>
 
+      {(activite.commune || activite.lieu || itineraryUrl) ? (
+        <View style={styles.locationBlock}>
+          <View style={styles.locationTextBlock}>
+            {activite.commune ? (
+              <LocationLine icon="map-outline" text={activite.commune} />
+            ) : null}
+            {activite.lieu ? (
+              <LocationLine icon="location-outline" text={activite.lieu} />
+            ) : null}
+          </View>
+          {itineraryUrl ? (
+            <TouchableOpacity
+              style={styles.itineraryButton}
+              onPress={() => openItinerary(itineraryUrl, t)}
+              accessibilityRole="link"
+              accessibilityLabel={t('geo.viewItinerary')}
+            >
+              <Text style={styles.itineraryButtonText}>{t('geo.viewItinerary')}</Text>
+              <AppIcon name="open-outline" size={15} color="#2563EB" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      ) : null}
+
       {!isAuthenticated && (
         <Text style={styles.visitorHint}>{t('activities.login_to_register_short')}</Text>
       )}
@@ -487,36 +522,64 @@ function ActivityCard({
       {isMembre && (
         <View style={styles.actions}>
           {alreadyRegistered ? (
-            <View style={styles.registeredRow}>
-              <StatusLine
-                text={t('activities.your_registration', { status: translateInscription(inscription.statut, t) })}
-                color={status.color}
-              />
+            <View style={styles.registeredBlock}>
+              <View style={styles.registeredStatus}>
+                <AppIcon name="checkmark-circle" size={20} color="#16A34A" />
+                <StatusLine
+                  text={t('activities.your_registration', { status: translateInscription(inscription.statut, t) })}
+                  color="#15803D"
+                />
+              </View>
               <TouchableOpacity
-                style={styles.cancelRegistrationButton}
+                style={[
+                  styles.cancelRegistrationButton,
+                  (readOnly || actionLoading) && styles.actionDisabled,
+                ]}
                 onPress={onAnnulerInscription}
                 disabled={readOnly || actionLoading}
+                accessibilityRole="button"
               >
-                <Text style={styles.cancelRegistrationText}>{t('activities.cancel_short')}</Text>
+                {actionLoading ? (
+                  <ActivityIndicator color="#EF4444" size="small" />
+                ) : (
+                  <>
+                    <AppIcon name="close-circle-outline" size={18} color="#EF4444" />
+                    <Text style={styles.cancelRegistrationText}>{t('activities.cancel_short')}</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
           ) : readOnly ? (
             <StatusLine text={t('common.cache_read_only')} color="#64748b" />
           ) : activite.gratuite === false ? (
-            <StatusLine text={t('activities.paid_registration_unavailable')} color="#d97706" />
+            <DisabledAction
+              icon="ban-outline"
+              text={t('activities.paid_registration_unavailable')}
+              color="#D97706"
+            />
           ) : complete ? (
-            <StatusLine text={t('activities.full')} color="#EF4444" />
+            <DisabledAction icon="ban-outline" text={t('activities.full')} color="#EF4444" />
           ) : activite.statut !== 'PUBLIEE' ? (
-            <StatusLine text={t('activities.registration_unavailable')} color="#64748b" />
+            <DisabledAction
+              icon="lock-closed-outline"
+              text={t('activities.registration_unavailable')}
+              color="#64748B"
+            />
           ) : (
             <TouchableOpacity
               style={[styles.btnPrimary, (!canRegister || actionLoading) && styles.btnDisabled]}
               onPress={onInscrire}
               disabled={!canRegister || actionLoading}
+              accessibilityRole="button"
             >
               {actionLoading
                 ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={styles.btnPrimaryText}>{t('activities.register_btn')}</Text>
+                : (
+                  <>
+                    <AppIcon name="person-add-outline" size={19} color="#fff" />
+                    <Text style={styles.btnPrimaryText}>{t('activities.register_btn')}</Text>
+                  </>
+                )
               }
             </TouchableOpacity>
           )}
@@ -672,23 +735,6 @@ function ActivityFormModal({
               />
             </View>
 
-            <Text style={styles.formLabel}>{t('activities.pricing')}</Text>
-            <StatusLine
-              text={form.gratuite ? t('activities.free') : t('activities.paid_pricing_locked')}
-              color={form.gratuite ? '#16a34a' : '#d97706'}
-            />
-
-            {!form.gratuite && (
-              <FormInput
-                label={t('activities.form_price')}
-                value={form.prix}
-                onChangeText={(value) => update('prix', value)}
-                placeholder={t('activities.price_placeholder')}
-                keyboardType="decimal-pad"
-                editable={false}
-              />
-            )}
-
             <TouchableOpacity
               style={[styles.saveButton, saving && styles.btnDisabled]}
               onPress={onSubmit}
@@ -749,8 +795,8 @@ function InfoBox({ text }) {
 
 function StatusBadge({ label, color }) {
   return (
-    <View style={[styles.statusBadge, { backgroundColor: color }]}>
-      <Text style={styles.statusBadgeText}>{label}</Text>
+    <View style={[styles.statusBadge, { backgroundColor: `${color}18` }]}>
+      <Text style={[styles.statusBadgeText, { color }]}>{label}</Text>
     </View>
   );
 }
@@ -759,11 +805,30 @@ function StatusLine({ text, color }) {
   return <Text style={[styles.statusLine, { color }]}>{text}</Text>;
 }
 
-function InfoChip({ icon, text }) {
+function DisabledAction({ icon, text, color }) {
   return (
-    <View style={styles.infoChip}>
-      <AppIcon name={icon} size={13} color="#1E3A8A" />
-      <Text style={styles.infoChipText} numberOfLines={1}>{text}</Text>
+    <View style={styles.disabledAction} accessibilityState={{ disabled: true }}>
+      <AppIcon name={icon} size={18} color={color} />
+      <Text style={[styles.disabledActionText, { color }]}>{text}</Text>
+    </View>
+  );
+}
+
+function InfoChip({ icon, text, tone = 'blue' }) {
+  const green = tone === 'green';
+  return (
+    <View style={[styles.infoChip, green && styles.infoChipGreen]}>
+      <AppIcon name={icon} size={15} color={green ? '#16A34A' : '#1E3A8A'} />
+      <Text style={[styles.infoChipText, green && styles.infoChipTextGreen]}>{text}</Text>
+    </View>
+  );
+}
+
+function LocationLine({ icon, text }) {
+  return (
+    <View style={styles.locationLine}>
+      <AppIcon name={icon} size={17} color="#64748B" />
+      <Text style={styles.locationText}>{text}</Text>
     </View>
   );
 }
@@ -855,6 +920,14 @@ function isActiviteComplete(activite) {
   return activite.capaciteMax > 0 && typeof inscrits === 'number' && inscrits >= activite.capaciteMax;
 }
 
+function hasCapacityData(activite) {
+  return typeof activite.capaciteMax === 'number'
+    || typeof activite.placesRestantes === 'number'
+    || typeof activite.nombreInscrits === 'number'
+    || typeof activite.inscrits === 'number'
+    || typeof activite.nombreParticipants === 'number';
+}
+
 function formatCapacite(activite, t) {
   if (!activite.capaciteMax || activite.capaciteMax <= 0) {
     return t('activities.unlimited_capacity');
@@ -893,17 +966,19 @@ function statusColor(statut) {
 function formatDateRange(dateDebut, dateFin, language, t) {
   if (!dateDebut) return t('activities.date_to_confirm');
   const debut = new Date(dateDebut);
-  const date = debut.toLocaleDateString(language || 'fr-BE', {
-    day: '2-digit',
-    month: '2-digit',
+  const locale = language === 'nl' ? 'nl-BE' : language === 'en' ? 'en-GB' : 'fr-BE';
+  const date = debut.toLocaleDateString(locale, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
     year: 'numeric',
   });
-  const heureDebut = debut.toLocaleTimeString(language || 'fr-BE', { hour: '2-digit', minute: '2-digit' });
+  const heureDebut = debut.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 
   if (!dateFin) return `${date} · ${heureDebut}`;
 
   const fin = new Date(dateFin);
-  const heureFin = fin.toLocaleTimeString(language || 'fr-BE', { hour: '2-digit', minute: '2-digit' });
+  const heureFin = fin.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
   return `${date} · ${heureDebut} - ${heureFin}`;
 }
 
@@ -943,57 +1018,72 @@ async function openItinerary(url, t) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: '#F3F4F6' },
 
   searchContainer: {
+    width: '100%',
+    maxWidth: 460,
+    alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eef2f7',
-    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    gap: 8,
+  },
+  searchField: {
+    flex: 1,
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   searchInput: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    fontSize: 13,
-    color: '#1e293b',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    minHeight: 46,
+    paddingVertical: 10,
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#111827',
   },
   retrySmall: {
-    backgroundColor: '#F0F9FF',
-    borderRadius: 18,
-    width: 38,
-    height: 38,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 14,
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
   },
   retrySmallText: { color: '#38BDF8', fontSize: 12, fontWeight: '800' },
   newButton: {
-    minHeight: 40,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     backgroundColor: '#F97316',
-    borderRadius: 15,
-    paddingHorizontal: 11,
+    borderRadius: 14,
+    paddingHorizontal: 13,
   },
-  newButtonText: { color: '#fff', fontSize: 11, fontWeight: '900' },
+  newButtonText: { color: '#fff', fontSize: 12, lineHeight: 16, fontWeight: '700' },
 
   infoBox: {
     backgroundColor: '#F0F9FF',
     borderLeftWidth: 4,
     borderLeftColor: '#38BDF8',
+    width: '92%',
+    maxWidth: 428,
+    alignSelf: 'center',
     marginHorizontal: 16,
-    marginTop: 7,
-    padding: 9,
-    borderRadius: 10,
+    marginBottom: 8,
+    padding: 12,
+    borderRadius: 12,
   },
   infoBoxText: { color: '#1e40af', fontSize: 12, lineHeight: 16 },
   successBox: {
@@ -1001,7 +1091,10 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#22C55E',
     marginHorizontal: 16,
-    marginTop: 8,
+    maxWidth: 428,
+    width: '92%',
+    alignSelf: 'center',
+    marginBottom: 8,
     padding: 12,
     borderRadius: 8,
   },
@@ -1011,52 +1104,64 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#EF4444',
     marginHorizontal: 16,
-    marginTop: 8,
+    maxWidth: 428,
+    width: '92%',
+    alignSelf: 'center',
+    marginBottom: 8,
     padding: 12,
     borderRadius: 8,
   },
   errorText: { color: '#EF4444', fontSize: 13 },
 
-  listContent: { padding: 9, paddingBottom: 20 },
+  listContent: {
+    width: '100%',
+    maxWidth: 460,
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 28,
+  },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 10,
-    marginBottom: 7,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 16,
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOpacity: 0.045,
+    shadowRadius: 8,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: '#eef2f7',
+    borderColor: '#E5E7EB',
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 5,
+    alignItems: 'center',
+    marginBottom: 12,
   },
+  categoryWrap: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', marginRight: 8 },
   cardIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 11,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
   },
-  cardTitleWrap: { flex: 1, marginRight: 8 },
-  cardTitle: { fontSize: 14, fontWeight: '900', color: '#1E3A8A', marginBottom: 1, lineHeight: 18 },
-  cardSub: { color: '#2563EB', fontSize: 10, fontWeight: '800' },
-  cardDesc: { color: '#475569', fontSize: 11, lineHeight: 15, marginBottom: 6 },
-  statusBadge: { borderRadius: 20, paddingHorizontal: 7, paddingVertical: 3 },
-  statusBadgeText: { color: '#fff', fontSize: 9, fontWeight: '900' },
+  categoryText: { flex: 1, color: '#64748B', fontSize: 12, lineHeight: 16, fontWeight: '600' },
+  cardTitle: { color: '#111827', fontSize: 17, lineHeight: 22, fontWeight: '700', marginBottom: 10 },
+  dateRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 7, marginBottom: 12 },
+  cardSub: { flex: 1, color: '#334155', fontSize: 13, lineHeight: 18, fontWeight: '600' },
+  cardDesc: { color: '#64748B', fontSize: 14, lineHeight: 20, marginBottom: 14 },
+  statusBadge: { maxWidth: '45%', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5 },
+  statusBadgeText: { fontSize: 10, lineHeight: 13, fontWeight: '700', textAlign: 'center' },
 
   chipList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 4,
-    marginBottom: 5,
+    gap: 7,
+    marginBottom: 14,
   },
   infoChip: {
     maxWidth: '100%',
@@ -1064,53 +1169,88 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 3,
     borderRadius: 999,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#E0F2FE',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-  },
-  infoChipText: { color: '#334155', fontSize: 10, fontWeight: '700', flexShrink: 1 },
-  itineraryButton: {
-    alignSelf: 'flex-start',
-    minHeight: 30,
-    borderRadius: 11,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    backgroundColor: '#eff6ff',
     paddingHorizontal: 9,
+    paddingVertical: 6,
+  },
+  infoChipGreen: { backgroundColor: '#F0FDF4', borderColor: '#DCFCE7' },
+  infoChipText: { color: '#334155', fontSize: 11, lineHeight: 15, fontWeight: '600', flexShrink: 1 },
+  infoChipTextGreen: { color: '#15803D' },
+  locationBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  locationTextBlock: { flex: 1, minWidth: 0, gap: 5 },
+  locationLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 7 },
+  locationText: { flex: 1, color: '#475569', fontSize: 12, lineHeight: 17 },
+  itineraryButton: {
+    minHeight: 44,
+    borderRadius: 10,
+    paddingHorizontal: 8,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 5,
-    marginBottom: 6,
   },
-  itineraryButtonText: { color: '#2563EB', fontSize: 11, fontWeight: '900' },
+  itineraryButtonText: { color: '#2563EB', fontSize: 12, lineHeight: 16, fontWeight: '700' },
 
-  visitorHint: { color: '#38BDF8', fontSize: 13, fontWeight: '700', marginTop: 2 },
-  actions: { marginTop: 2 },
+  visitorHint: { color: '#2563EB', fontSize: 13, lineHeight: 18, fontWeight: '600', marginTop: 14 },
+  actions: { marginTop: 14 },
   btnPrimary: {
-    backgroundColor: '#1E3A8A',
-    borderRadius: 13,
-    paddingVertical: 9,
+    minHeight: 48,
+    backgroundColor: '#2563EB',
+    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#1E3A8A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 3,
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
   },
-  btnPrimaryText: { color: '#fff', fontSize: 12, fontWeight: '900' },
-  btnDisabled: { backgroundColor: '#cbd5e1' },
-  statusLine: { fontSize: 13, fontWeight: '800', marginTop: 2 },
-  registeredRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  btnPrimaryText: { color: '#fff', fontSize: 14, lineHeight: 19, fontWeight: '700' },
+  btnDisabled: { backgroundColor: '#CBD5E1' },
+  statusLine: { flexShrink: 1, fontSize: 13, lineHeight: 18, fontWeight: '700' },
+  registeredBlock: { gap: 10 },
+  registeredStatus: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 12,
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
   cancelRegistrationButton: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
     borderRadius: 12,
     backgroundColor: '#FEF2F2',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingHorizontal: 14,
   },
-  cancelRegistrationText: { color: '#EF4444', fontSize: 11, fontWeight: '900' },
+  cancelRegistrationText: { color: '#EF4444', fontSize: 13, lineHeight: 18, fontWeight: '700' },
+  actionDisabled: { opacity: 0.55 },
+  disabledAction: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 12,
+  },
+  disabledActionText: { flexShrink: 1, fontSize: 13, lineHeight: 18, fontWeight: '700', textAlign: 'center' },
   managementBlock: {
     marginTop: 6,
     paddingTop: 7,
@@ -1229,20 +1369,6 @@ const styles = StyleSheet.create({
   formInputMultiline: { minHeight: 76 },
   formRow: { flexDirection: 'row', gap: 8 },
   formHalf: { flex: 1, minWidth: 0 },
-  pricingOptions: { flexDirection: 'row', gap: 8, marginBottom: 10 },
-  choiceButton: {
-    flex: 1,
-    minHeight: 42,
-    borderRadius: 13,
-    borderWidth: 1,
-    borderColor: '#dbe3ee',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
-  },
-  choiceButtonActive: { borderColor: '#2563EB', backgroundColor: '#E0F2FE' },
-  choiceButtonText: { color: '#64748b', fontSize: 12, fontWeight: '800' },
-  choiceButtonTextActive: { color: '#1E3A8A' },
   saveButton: {
     minHeight: 48,
     borderRadius: 15,

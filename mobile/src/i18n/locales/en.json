@@ -478,6 +478,7 @@
   },
   "notifications": {
     "title": "Notifications",
+    "refresh": "Refresh notifications",
     "read": "Read",
     "unread": "Unread",
     "markAsRead": "Mark as read",

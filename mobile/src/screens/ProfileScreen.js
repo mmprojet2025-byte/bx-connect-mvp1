@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Image,
   TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Switch
@@ -58,6 +58,14 @@ export default function ProfileScreen({ navigation }) {
     ancienMotDePasse: '',
     nouveauMotDePasse: '',
   });
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: t('navigation.profile'),
+      headerTitle: t('navigation.profile'),
+      headerBackVisible: navigation.canGoBack(),
+    });
+  }, [navigation, t]);
 
   useEffect(() => {
     void Promise.resolve().then(() => fetchProfil());
@@ -228,6 +236,8 @@ export default function ProfileScreen({ navigation }) {
         style={styles.container}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
       >
       {message !== '' && (
         <View style={styles.successBox} accessibilityRole="alert">
@@ -247,6 +257,7 @@ export default function ProfileScreen({ navigation }) {
       )}
 
       <Card style={styles.identityCard}>
+        <View style={styles.identityAccent} />
         <View style={styles.avatarFrame} accessibilityRole="image">
           <Image
             source={require('../../assets/images/avatars/default-avatar.png')}
@@ -258,7 +269,8 @@ export default function ProfileScreen({ navigation }) {
         <Text style={styles.profileName}>{profil?.prenom} {profil?.nom}</Text>
         <Badge
           label={t(`roles.${profil?.role}`)}
-          color={COLORS.info}
+          color={COLORS.interactive}
+          soft
         />
         <TouchableOpacity
           style={styles.primaryProfileButton}
@@ -269,16 +281,21 @@ export default function ProfileScreen({ navigation }) {
           accessibilityRole="button"
           accessibilityLabel={t('profile.edit_btn')}
         >
-          <AppIcon name="edit" size={17} color="#fff" />
+          <AppIcon name="edit" size={18} color={COLORS.interactive} />
           <Text style={styles.primaryProfileButtonText}>{t('profile.edit_btn')}</Text>
         </TouchableOpacity>
       </Card>
 
-      <SectionTitle title={t('profile.title')} />
       <Card style={styles.sectionCard}>
-        <InfoRow icon="mail-outline" text={profil?.email || t('common.notAvailable')} />
+        <SectionTitle title={t('profile.title')} />
+        <InfoRow
+          icon="mail-outline"
+          label={t('profile.email')}
+          text={profil?.email || t('common.notAvailable')}
+        />
         <InfoRow
           icon="globe-outline"
+          label={t('profile.language')}
           text={languageLabel(profil?.languePreference, t)}
         />
         <InfoRow
@@ -289,25 +306,50 @@ export default function ProfileScreen({ navigation }) {
         />
       </Card>
 
-      <SectionTitle title={t('profile.account')} />
+      <Card style={styles.pushCard}>
+        <View style={styles.pushIcon}>
+          <AppIcon name="bell" size={21} color={COLORS.bxBlueLight} />
+        </View>
+        <View style={styles.pushContent}>
+          <Text style={styles.pushLabel}>{t('push.title')}</Text>
+          <Text style={styles.pushHint}>
+            {pushEnabled ? t('push.enabledHint') : t('push.disabledHint')}
+          </Text>
+        </View>
+        {pushLoading ? (
+          <ActivityIndicator color={COLORS.bxBlueLight} size="small" />
+        ) : (
+          <Switch
+            value={pushEnabled}
+            onValueChange={handlePushPreference}
+            trackColor={{ false: COLORS.border, true: COLORS.interactive }}
+            thumbColor={COLORS.surface}
+            accessibilityLabel={t('push.enable')}
+          />
+        )}
+      </Card>
+
       <Card style={styles.sectionCard}>
-      <ProfileAction
-        label={t('profile.edit_btn')}
-        icon="edit"
-        onPress={() => {
-          setShowPasswordForm(false);
-          setEditMode(true);
-        }}
-      />
-      <ProfileAction
-        label={t('profile.change_password')}
-        icon="lock"
-        last
-        onPress={() => {
-          setEditMode(false);
-          setShowPasswordForm(true);
-        }}
-      />
+        <SectionTitle title={t('profile.account')} />
+        <ProfileAction
+          label={t('profile.edit_btn')}
+          description={t('profile.edit_action_description')}
+          icon="edit"
+          onPress={() => {
+            setShowPasswordForm(false);
+            setEditMode(true);
+          }}
+        />
+        <ProfileAction
+          label={t('profile.change_password')}
+          description={t('profile.password_action_description')}
+          icon="lock"
+          last
+          onPress={() => {
+            setEditMode(false);
+            setShowPasswordForm(true);
+          }}
+        />
       </Card>
 
       {editMode && (
@@ -443,32 +485,8 @@ export default function ProfileScreen({ navigation }) {
         </Card>
       )}
 
-      <SectionTitle title={t('push.title')} />
-      <Card style={styles.pushCard}>
-        <View style={styles.pushIcon}>
-          <AppIcon name="bell" size={20} color={COLORS.bxBlueLight} />
-        </View>
-        <View style={styles.pushContent}>
-          <Text style={styles.pushLabel}>{t('push.enable')}</Text>
-          <Text style={styles.pushHint}>
-            {pushEnabled ? t('push.enabledHint') : t('push.disabledHint')}
-          </Text>
-        </View>
-        {pushLoading ? (
-          <ActivityIndicator color={COLORS.bxBlueLight} size="small" />
-        ) : (
-          <Switch
-            value={pushEnabled}
-            onValueChange={handlePushPreference}
-            trackColor={{ false: COLORS.border, true: COLORS.softBlue }}
-            thumbColor={pushEnabled ? COLORS.bxBlueLight : COLORS.muted}
-            accessibilityLabel={t('push.enable')}
-          />
-        )}
-      </Card>
-
-      <SectionTitle title={t('legal.profileTitle')} />
       <Card style={styles.legalCard}>
+        <SectionTitle title={t('legal.profileTitle')} />
         <LegalAction icon="shield" label={t('legal.links.terms')} onPress={() => navigation.navigate('LegalTerms')} />
         <LegalAction icon="lock" label={t('legal.links.privacy')} onPress={() => navigation.navigate('LegalPrivacy')} />
         <LegalAction icon="information-circle-outline" label={t('legal.links.notices')} onPress={() => navigation.navigate('LegalNotices')} />
@@ -484,7 +502,7 @@ export default function ProfileScreen({ navigation }) {
         accessibilityRole="button"
         accessibilityLabel={t('profile.logout')}
       >
-        <AppIcon name="logout" size={17} color={COLORS.muted} />
+        <AppIcon name="logout" size={19} color={COLORS.danger} />
         <Text style={styles.btnLogoutText}>{t('profile.logout')}</Text>
       </TouchableOpacity>
       </ScrollView>
@@ -508,18 +526,21 @@ function SectionTitle({ title }) {
   return <Text style={styles.sectionTitle}>{title}</Text>;
 }
 
-function InfoRow({ icon, text }) {
+function InfoRow({ icon, label, text }) {
   return (
     <View style={styles.infoRow}>
       <View style={styles.rowIcon}>
-        <AppIcon name={icon} size={15} color={COLORS.bxBlueLight} />
+        <AppIcon name={icon} size={20} color={COLORS.muted} />
       </View>
-      <Text style={styles.infoRowText}>{text}</Text>
+      <View style={styles.infoRowContent}>
+        {label ? <Text style={styles.infoRowLabel}>{label}</Text> : null}
+        <Text style={styles.infoRowText}>{text}</Text>
+      </View>
     </View>
   );
 }
 
-function ProfileAction({ icon, label, onPress, last = false }) {
+function ProfileAction({ icon, label, description, onPress, last = false }) {
   return (
     <TouchableOpacity
       style={[styles.profileAction, last && styles.lastRow]}
@@ -528,9 +549,12 @@ function ProfileAction({ icon, label, onPress, last = false }) {
       accessibilityLabel={label}
     >
       <View style={styles.rowIcon}>
-        <AppIcon name={icon} size={17} color={COLORS.bxBlueLight} />
+        <AppIcon name={icon} size={20} color={COLORS.muted} />
       </View>
-      <Text style={styles.profileActionText}>{label}</Text>
+      <View style={styles.profileActionContent}>
+        <Text style={styles.profileActionText}>{label}</Text>
+        {description ? <Text style={styles.profileActionDescription}>{description}</Text> : null}
+      </View>
       <AppIcon name="chevron-forward-outline" size={18} color={COLORS.muted} />
     </TouchableOpacity>
   );
@@ -584,7 +608,14 @@ function formatMonthYear(dateStr, language, t) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.page },
-  content: { padding: SPACING.md, paddingBottom: 96 },
+  content: {
+    width: '100%',
+    maxWidth: 460,
+    alignSelf: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.lg,
+    paddingBottom: 96,
+  },
   noticeBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -634,21 +665,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: SPACING.lg,
     marginBottom: SPACING.lg,
+    overflow: 'hidden',
+  },
+  identityAccent: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 64,
+    backgroundColor: COLORS.softBlue,
+    opacity: 0.8,
   },
   avatarFrame: {
     padding: 3,
     borderRadius: BORDER_RADIUS.pill,
-    backgroundColor: COLORS.softBlue,
-    marginBottom: SPACING.sm,
+    backgroundColor: COLORS.surface,
+    marginBottom: SPACING.md,
+    zIndex: 1,
   },
   avatarImage: {
     width: 76,
     height: 76,
     borderRadius: 38,
   },
-  profileName: { color: COLORS.text, fontSize: 20, lineHeight: 26, fontWeight: '800', marginBottom: SPACING.xs },
+  profileName: { color: COLORS.text, fontSize: 20, lineHeight: 26, fontWeight: '800', marginBottom: SPACING.sm },
   primaryProfileButton: {
-    minHeight: 44,
+    width: '100%',
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -656,18 +699,20 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
     paddingHorizontal: SPACING.lg,
     borderRadius: BORDER_RADIUS.md,
-    backgroundColor: COLORS.bxBlue,
+    backgroundColor: COLORS.softBlue,
   },
-  primaryProfileButtonText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  primaryProfileButtonText: { color: COLORS.interactive, fontSize: 14, lineHeight: 19, fontWeight: '700' },
   sectionTitle: {
     color: COLORS.text,
-    ...TYPOGRAPHY.section,
-    marginBottom: SPACING.sm,
-    marginTop: SPACING.xs,
+    ...TYPOGRAPHY.caption,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: SPACING.md,
   },
-  sectionCard: { paddingVertical: 0, marginBottom: SPACING.lg },
+  sectionCard: { marginBottom: SPACING.lg },
   infoRow: {
-    minHeight: 52,
+    minHeight: 60,
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: SPACING.sm,
@@ -675,24 +720,28 @@ const styles = StyleSheet.create({
     borderColor: COLORS.borderSoft,
   },
   rowIcon: {
-    width: 34,
-    height: 34,
+    width: 40,
+    height: 40,
     borderRadius: BORDER_RADIUS.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.softBlue,
-    marginRight: SPACING.sm,
+    backgroundColor: '#F8FAFC',
+    marginRight: SPACING.md,
   },
-  infoRowText: { flex: 1, color: COLORS.text, ...TYPOGRAPHY.body },
+  infoRowContent: { flex: 1, minWidth: 0 },
+  infoRowLabel: { color: COLORS.muted, ...TYPOGRAPHY.tiny, marginBottom: 1 },
+  infoRowText: { color: COLORS.text, ...TYPOGRAPHY.body, fontWeight: '500' },
   profileAction: {
-    minHeight: 54,
+    minHeight: 64,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: COLORS.borderSoft,
   },
   lastRow: { borderBottomWidth: 0 },
-  profileActionText: { flex: 1, color: COLORS.text, ...TYPOGRAPHY.body, fontWeight: '700' },
+  profileActionContent: { flex: 1, minWidth: 0, paddingRight: SPACING.sm },
+  profileActionText: { color: COLORS.text, ...TYPOGRAPHY.body, fontWeight: '600' },
+  profileActionDescription: { color: COLORS.muted, ...TYPOGRAPHY.tiny, marginTop: 2 },
   formCard: { marginTop: SPACING.xs, marginBottom: SPACING.md },
   formHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.lg },
   formIcon: {
@@ -735,17 +784,18 @@ const styles = StyleSheet.create({
   },
   btnCancelText: { color: COLORS.muted, fontWeight: '700', fontSize: 14 },
   btnLogout: {
-    minHeight: 44,
-    alignSelf: 'center',
-    paddingVertical: 10,
+    width: '100%',
+    minHeight: 48,
+    paddingVertical: 12,
     paddingHorizontal: SPACING.lg,
-    borderRadius: BORDER_RADIUS.pill,
+    borderRadius: BORDER_RADIUS.md,
     alignItems: 'center',
     justifyContent: 'center', flexDirection: 'row', gap: 8,
-    marginTop: SPACING.sm,
+    marginTop: SPACING.xs,
+    backgroundColor: COLORS.softRed,
   },
-  btnLogoutText: { color: COLORS.muted, fontWeight: '700', fontSize: 13 },
-  legalCard: { marginBottom: SPACING.md, paddingVertical: SPACING.xs },
+  btnLogoutText: { color: COLORS.danger, fontWeight: '700', fontSize: 14, lineHeight: 19 },
+  legalCard: { marginBottom: SPACING.lg },
   legalAction: {
     minHeight: 48,
     flexDirection: 'row',
@@ -760,20 +810,27 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.softBlue,
-    marginRight: SPACING.sm,
+    backgroundColor: '#F8FAFC',
+    marginRight: SPACING.md,
   },
-  legalActionText: { flex: 1, color: COLORS.text, ...TYPOGRAPHY.caption, fontWeight: '800' },
-  legalVersion: { color: COLORS.muted, ...TYPOGRAPHY.tiny, marginTop: SPACING.sm },
+  legalActionText: { flex: 1, color: COLORS.text, ...TYPOGRAPHY.body, fontWeight: '500' },
+  legalVersion: {
+    color: COLORS.muted,
+    ...TYPOGRAPHY.tiny,
+    marginTop: SPACING.md,
+    paddingTop: SPACING.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.borderSoft,
+  },
   pushCard: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: SPACING.lg,
-    minHeight: 68,
+    minHeight: 80,
   },
   pushIcon: {
-    width: 42,
-    height: 42,
+    width: 40,
+    height: 40,
     borderRadius: BORDER_RADIUS.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -781,6 +838,6 @@ const styles = StyleSheet.create({
     marginRight: SPACING.md,
   },
   pushContent: { flex: 1, paddingRight: SPACING.sm },
-  pushLabel: { color: COLORS.text, ...TYPOGRAPHY.body, fontWeight: '900' },
-  pushHint: { color: COLORS.muted, ...TYPOGRAPHY.caption, marginTop: 2 },
+  pushLabel: { color: COLORS.text, ...TYPOGRAPHY.body, fontWeight: '700' },
+  pushHint: { color: COLORS.muted, ...TYPOGRAPHY.tiny, marginTop: 2 },
 });

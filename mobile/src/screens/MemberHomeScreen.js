@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import {
-  Image,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -14,13 +13,6 @@ import api from '../api/axios';
 import { getRecentNotifications } from '../api/notifications';
 import AppIcon from '../components/AppIcon';
 import { Badge, COLORS, SHADOWS } from '../components/MobileUI';
-
-const EMPTY_IMAGES = {
-  activity: require('../assets/images/placeholders/activites.png'),
-  group: require('../assets/images/placeholders/groupes.png'),
-  project: require('../assets/images/placeholders/projets.png'),
-  news: require('../assets/images/placeholders/notifications.png'),
-};
 
 export default function MemberHomeScreen({ navigation }) {
   const { t, i18n } = useTranslation();
@@ -38,8 +30,8 @@ export default function MemberHomeScreen({ navigation }) {
     : t('memberHome.welcome');
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: greeting, headerTitle: greeting });
-  }, [greeting, navigation]);
+    navigation.setOptions({ title: t('navigation.home'), headerTitle: t('navigation.home') });
+  }, [navigation, t]);
 
   const loadHome = useCallback(async (showRefresh = false) => {
     if (showRefresh) setRefreshing(true);
@@ -113,6 +105,8 @@ export default function MemberHomeScreen({ navigation }) {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
+      contentInsetAdjustmentBehavior="automatic"
+      showsVerticalScrollIndicator={false}
       refreshControl={(
         <RefreshControl
           refreshing={refreshing}
@@ -122,6 +116,13 @@ export default function MemberHomeScreen({ navigation }) {
         />
       )}
     >
+      <View style={styles.welcomePanel}>
+        <View style={styles.welcomeText}>
+          <Text style={styles.welcomeTitle}>{greeting}</Text>
+          <Text style={styles.welcomeSubtitle}>{t('memberHome.subtitle')}</Text>
+        </View>
+      </View>
+
       <ContentSection
         title={t('memberHome.upcomingTitle')}
         actionLabel={t('memberHome.seeAll')}
@@ -135,14 +136,19 @@ export default function MemberHomeScreen({ navigation }) {
             onPress={() => openTab('TabActivities')}
           />
         ) : (
-          <CompactEmpty
-            image={EMPTY_IMAGES.activity}
+          <EmptyCard
+            icon="activity"
+            color={COLORS.impactOrange}
+            backgroundColor={COLORS.softOrange}
             title={t('memberHome.noUpcomingActivities')}
+            description={t('memberHome.noUpcomingActivitiesText')}
           />
         )}
       </ContentSection>
 
-      <ContentSection title={t('memberHome.myGroupTitle')}>
+      <ContentSection
+        title={t('memberHome.myGroupTitle')}
+      >
         <GroupCard
           group={currentGroup}
           pendingMembership={pendingMembership}
@@ -151,7 +157,9 @@ export default function MemberHomeScreen({ navigation }) {
         />
       </ContentSection>
 
-      <ContentSection title={t('memberHome.newsTitle')}>
+      <ContentSection
+        title={t('memberHome.newsTitle')}
+      >
         {recentNews.length > 0 ? (
           <View style={styles.listCard}>
             {recentNews.map((item, index) => (
@@ -165,7 +173,13 @@ export default function MemberHomeScreen({ navigation }) {
             ))}
           </View>
         ) : (
-          <CompactEmpty image={EMPTY_IMAGES.news} title={t('memberHome.noNews')} />
+          <EmptyCard
+            icon="alert"
+            color="#7C3AED"
+            backgroundColor={COLORS.softPurple}
+            title={t('memberHome.noNews')}
+            description={t('memberHome.noNewsText')}
+          />
         )}
       </ContentSection>
 
@@ -181,7 +195,13 @@ export default function MemberHomeScreen({ navigation }) {
             onPress={() => openTab('TabGroupes', 'ProjectsAccess')}
           />
         ) : (
-          <CompactEmpty image={EMPTY_IMAGES.project} title={t('memberHome.noProjects')} />
+          <EmptyCard
+            icon="project"
+            color={COLORS.impactOrange}
+            backgroundColor={COLORS.softOrange}
+            title={t('memberHome.noProjects')}
+            description={t('memberHome.noProjectsText')}
+          />
         )}
       </ContentSection>
 
@@ -204,7 +224,12 @@ export default function MemberHomeScreen({ navigation }) {
             ))}
           </View>
         ) : (
-          <CompactEmpty image={EMPTY_IMAGES.news} title={t('memberHome.noNotifications')} />
+          <EmptyCard
+            icon="bell"
+            color={COLORS.interactive}
+            backgroundColor={COLORS.softBlue}
+            title={t('memberHome.noNotifications')}
+          />
         )}
       </ContentSection>
     </ScrollView>
@@ -217,8 +242,14 @@ function ContentSection({ title, actionLabel, onAction, children }) {
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{title}</Text>
         {actionLabel && onAction ? (
-          <TouchableOpacity onPress={onAction} accessibilityRole="button">
+          <TouchableOpacity
+            style={styles.sectionActionButton}
+            onPress={onAction}
+            accessibilityRole="button"
+            accessibilityLabel={actionLabel}
+          >
             <Text style={styles.sectionAction}>{actionLabel}</Text>
+            <AppIcon name="chevron-forward" size={15} color={COLORS.interactive} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -230,7 +261,13 @@ function ContentSection({ title, actionLabel, onAction, children }) {
 function ActivityCard({ activity, language, t, onPress }) {
   const registered = activity.nombreInscrits ?? activity.inscrits ?? activity.nombreParticipants ?? 0;
   return (
-    <TouchableOpacity style={styles.featureCard} onPress={onPress} activeOpacity={0.84}>
+    <TouchableOpacity
+      style={styles.featureCard}
+      onPress={onPress}
+      activeOpacity={0.84}
+      accessibilityRole="button"
+      accessibilityLabel={activity.titre}
+    >
       <View style={styles.activityDate}>
         <Text style={styles.dateDay}>{formatDay(activity.dateDebut, language)}</Text>
         <Text style={styles.dateMonth}>{formatMonth(activity.dateDebut, language)}</Text>
@@ -248,8 +285,15 @@ function ActivityCard({ activity, language, t, onPress }) {
 function GroupCard({ group, pendingMembership, t, onPress }) {
   if (!group?.nom) {
     return (
-      <TouchableOpacity style={styles.emptyCard} onPress={onPress} activeOpacity={0.84}>
-        <Image source={EMPTY_IMAGES.group} style={styles.emptyImage} />
+      <TouchableOpacity
+        style={styles.emptyCard}
+        onPress={onPress}
+        activeOpacity={0.84}
+        accessibilityRole="button"
+      >
+        <View style={[styles.emptyIcon, { backgroundColor: COLORS.softGreen }]}>
+          <AppIcon name="group" size={23} color={COLORS.success} />
+        </View>
         <View style={styles.emptyBody}>
           <Text style={styles.featureTitle}>
             {pendingMembership ? t('memberHome.groupPending') : t('memberHome.joinGroup')}
@@ -266,7 +310,13 @@ function GroupCard({ group, pendingMembership, t, onPress }) {
   }
 
   return (
-    <TouchableOpacity style={styles.groupCard} onPress={onPress} activeOpacity={0.84}>
+    <TouchableOpacity
+      style={styles.groupCard}
+      onPress={onPress}
+      activeOpacity={0.84}
+      accessibilityRole="button"
+      accessibilityLabel={group.nom}
+    >
       <View style={styles.roundIcon}>
         <AppIcon name="group" size={22} color={COLORS.success} />
       </View>
@@ -286,7 +336,13 @@ function ProjectCard({ project, t, onPress }) {
     || [project.porteurPrenom, project.porteurNom].filter(Boolean).join(' ')
     || t('memberHome.communityOwner');
   return (
-    <TouchableOpacity style={styles.projectCard} onPress={onPress} activeOpacity={0.84}>
+    <TouchableOpacity
+      style={styles.projectCard}
+      onPress={onPress}
+      activeOpacity={0.84}
+      accessibilityRole="button"
+      accessibilityLabel={project.titre}
+    >
       <View style={styles.projectTop}>
         <View style={styles.projectIcon}>
           <AppIcon name="project" size={22} color={COLORS.impactOrange} />
@@ -331,6 +387,8 @@ function NotificationRow({ notification, language, t, last, onPress }) {
       style={[styles.row, !last && styles.rowBorder]}
       onPress={onPress}
       activeOpacity={0.78}
+      accessibilityRole="button"
+      accessibilityLabel={notification.titre || notification.message || t('notifications.title')}
     >
       <View style={[styles.rowIcon, styles.blueIcon]}>
         <AppIcon name="bell" size={17} color={COLORS.interactive} />
@@ -351,11 +409,16 @@ function NotificationRow({ notification, language, t, last, onPress }) {
   );
 }
 
-function CompactEmpty({ image, title }) {
+function EmptyCard({ icon, color, backgroundColor, title, description }) {
   return (
     <View style={styles.emptyCard}>
-      <Image source={image} style={styles.emptyImage} />
-      <Text style={[styles.featureTitle, styles.emptyTitle]}>{title}</Text>
+      <View style={[styles.emptyIcon, { backgroundColor }]}>
+        <AppIcon name={icon} size={23} color={color} />
+      </View>
+      <View style={styles.emptyBody}>
+        <Text style={styles.featureTitle}>{title}</Text>
+        {description ? <Text style={styles.secondaryText}>{description}</Text> : null}
+      </View>
     </View>
   );
 }
@@ -412,58 +475,65 @@ function formatDate(value, language) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F4F5F7' },
-  content: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 20 },
-  section: { marginBottom: 12 },
+  container: { flex: 1, backgroundColor: COLORS.page },
+  content: { width: '100%', maxWidth: 460, alignSelf: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32 },
+  welcomePanel: { paddingTop: 2, marginBottom: 24 },
+  welcomeText: { flex: 1, minWidth: 0 },
+  welcomeTitle: { color: COLORS.text, fontSize: 21, lineHeight: 27, fontWeight: '700' },
+  welcomeSubtitle: { color: COLORS.muted, fontSize: 14, lineHeight: 19, marginTop: 2 },
+  section: { marginBottom: 24 },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 5,
-    paddingHorizontal: 2,
+    gap: 8,
+    marginBottom: 10,
   },
-  sectionTitle: { color: COLORS.text, fontSize: 15, lineHeight: 19, fontWeight: '800' },
-  sectionAction: { color: COLORS.interactive, fontSize: 12, fontWeight: '700' },
+  sectionTitle: { flex: 1, color: COLORS.text, fontSize: 17, lineHeight: 22, fontWeight: '700' },
+  sectionActionButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingLeft: 8 },
+  sectionAction: { color: COLORS.interactive, fontSize: 12, lineHeight: 16, fontWeight: '700' },
   featureCard: {
+    minHeight: 104,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 10,
+    borderRadius: 14,
+    padding: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
     ...SHADOWS.soft,
   },
   activityDate: {
-    width: 42,
-    height: 46,
-    borderRadius: 14,
+    width: 54,
+    height: 62,
+    borderRadius: 12,
     backgroundColor: COLORS.softBlue,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 13,
+    marginRight: 12,
   },
-  dateDay: { color: COLORS.bxBlue, fontSize: 16, lineHeight: 18, fontWeight: '900' },
-  dateMonth: { color: COLORS.interactive, fontSize: 9, lineHeight: 12, fontWeight: '800' },
-  featureBody: { flex: 1, minWidth: 0, marginRight: 8 },
-  featureTitle: { color: COLORS.text, fontSize: 14, lineHeight: 18, fontWeight: '800' },
-  secondaryText: { color: COLORS.muted, fontSize: 12, lineHeight: 17, marginTop: 3 },
+  dateDay: { color: COLORS.bxBlue, fontSize: 22, lineHeight: 25, fontWeight: '800' },
+  dateMonth: { color: COLORS.interactive, fontSize: 10, lineHeight: 13, fontWeight: '700' },
+  featureBody: { flex: 1, minWidth: 0, marginRight: 10 },
+  featureTitle: { color: COLORS.text, fontSize: 14, lineHeight: 19, fontWeight: '700' },
+  secondaryText: { color: COLORS.muted, fontSize: 13, lineHeight: 18, marginTop: 4 },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 },
-  metaText: { color: COLORS.muted, fontSize: 11, lineHeight: 14, flexShrink: 1 },
+  metaText: { color: COLORS.muted, fontSize: 12, lineHeight: 16, flexShrink: 1 },
   groupCard: {
+    minHeight: 92,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 10,
+    borderRadius: 14,
+    padding: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
     ...SHADOWS.soft,
   },
   roundIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.softGreen,
@@ -471,18 +541,18 @@ const styles = StyleSheet.create({
   },
   listCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    paddingHorizontal: 14,
+    borderRadius: 14,
+    paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
     ...SHADOWS.soft,
   },
-  row: { minHeight: 50, flexDirection: 'row', alignItems: 'center', paddingVertical: 7 },
+  row: { minHeight: 68, flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.border },
   rowIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -490,9 +560,9 @@ const styles = StyleSheet.create({
   blueIcon: { backgroundColor: COLORS.softBlue },
   purpleIcon: { backgroundColor: COLORS.softPurple },
   rowBody: { flex: 1, minWidth: 0, marginRight: 8 },
-  rowTitle: { color: COLORS.text, fontSize: 13, lineHeight: 17, fontWeight: '700' },
-  rowText: { color: COLORS.muted, fontSize: 11, lineHeight: 15, marginTop: 2 },
-  rowDate: { color: COLORS.muted, fontSize: 9 },
+  rowTitle: { color: COLORS.text, fontSize: 14, lineHeight: 19, fontWeight: '700' },
+  rowText: { color: COLORS.muted, fontSize: 12, lineHeight: 16, marginTop: 2 },
+  rowDate: { color: COLORS.muted, fontSize: 10, lineHeight: 14 },
   unreadDot: {
     position: 'absolute',
     top: 7,
@@ -504,8 +574,8 @@ const styles = StyleSheet.create({
   },
   projectCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 10,
+    borderRadius: 14,
+    padding: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
     ...SHADOWS.soft,
@@ -524,20 +594,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: COLORS.softOrange,
   },
-  projectTitle: { color: COLORS.text, fontSize: 16, lineHeight: 21, fontWeight: '800' },
-  projectStats: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 8 },
+  projectTitle: { color: COLORS.text, fontSize: 16, lineHeight: 22, fontWeight: '700' },
+  projectStats: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 16, marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: COLORS.border },
   emptyCard: {
-    minHeight: 68,
+    minHeight: 88,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: 14,
+    padding: 14,
     borderWidth: 1,
     borderColor: COLORS.border,
     ...SHADOWS.soft,
   },
-  emptyImage: { width: 52, height: 52, borderRadius: 13, marginRight: 10 },
+  emptyIcon: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   emptyBody: { flex: 1, minWidth: 0, marginRight: 8 },
-  emptyTitle: { flex: 1 },
 });

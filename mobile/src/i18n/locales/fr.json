@@ -478,6 +478,7 @@
   },
   "notifications": {
     "title": "Notifications",
+    "refresh": "Actualiser les notifications",
     "read": "Lue",
     "unread": "Non lue",
     "markAsRead": "Marquer comme lue",
