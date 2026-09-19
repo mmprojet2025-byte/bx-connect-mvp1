@@ -28,9 +28,12 @@ export default function GroupesScreen() {
 
   const [groupes, setGroupes] = useState([]);
   const [adhesions, setAdhesions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [groupsLoading, setGroupsLoading] = useState(true);
+  const [adhesionsStatus, setAdhesionsStatus] = useState(isMembre ? 'loading' : 'idle');
   const [actionLoadingId, setActionLoadingId] = useState(null);
-  const [error, setError] = useState('');
+  const [groupsError, setGroupsError] = useState('');
+  const [adhesionsError, setAdhesionsError] = useState('');
+  const [actionError, setActionError] = useState('');
   const [message, setMessage] = useState('');
   const [cacheNotice, setCacheNotice] = useState('');
   const [recherche, setRecherche] = useState('');
@@ -40,25 +43,31 @@ export default function GroupesScreen() {
   }, [isAuthenticated, isMembre, isReferent, isAdmin, isSuperAdmin]);
 
   async function chargerGroupes() {
-    setLoading(true);
-    setError('');
+    setGroupsLoading(true);
+    setGroupsError('');
+    setActionError('');
     setMessage('');
     setCacheNotice('');
 
     if (isSuperAdmin) {
-      setLoading(false);
+      setGroupsLoading(false);
+      setAdhesionsStatus('idle');
       return;
     }
+
+    const membershipsRequest = isMembre ? chargerAdhesions() : Promise.resolve();
 
     try {
       if (isAdmin) {
         const res = await api.get('/admin/groupes');
-        setGroupes(res.data);
+        setGroupes(res.data || []);
         setAdhesions([]);
+        setAdhesionsStatus('idle');
       } else if (isReferent) {
         const res = await api.get('/referent/groupes');
-        setGroupes(res.data);
+        setGroupes(res.data || []);
         setAdhesions([]);
+        setAdhesionsStatus('idle');
       } else {
         let groupesData = [];
         try {
@@ -76,16 +85,9 @@ export default function GroupesScreen() {
           }
         }
         setGroupes(groupesData);
-
-        if (isMembre) {
-          try {
-            const adhesionsRes = await api.get('/groupes/mes-adhesions');
-            setAdhesions(adhesionsRes.data || []);
-          } catch {
-            setAdhesions([]);
-          }
-        } else {
+        if (!isMembre) {
           setAdhesions([]);
+          setAdhesionsStatus('idle');
         }
       }
     } catch (err) {
@@ -97,43 +99,64 @@ export default function GroupesScreen() {
 
       if (cachedGroups?.length) {
         setGroupes(cachedGroups);
-        setAdhesions([]);
         setCacheNotice(t('common.cache_notice'));
-        setError('');
+        setGroupsError('');
         return;
       }
 
       if (isMembre && err.response?.status === 403) {
         setGroupes([]);
-        setAdhesions([]);
-        setError('');
+        setGroupsError('');
       } else {
-        setError(getApiError(err, t, t('groups.error_load')));
+        setGroupes([]);
+        setGroupsError(getApiError(err, t, t('groups.error_load')));
       }
     } finally {
-      setLoading(false);
+      setGroupsLoading(false);
+      await membershipsRequest;
+    }
+  }
+
+  async function chargerAdhesions() {
+    if (!isMembre) {
+      setAdhesions([]);
+      setAdhesionsStatus('idle');
+      setAdhesionsError('');
+      return;
+    }
+
+    setAdhesionsStatus('loading');
+    setAdhesionsError('');
+    try {
+      const response = await api.get('/groupes/mes-adhesions');
+      setAdhesions(response.data || []);
+      setAdhesionsStatus('success');
+    } catch (err) {
+      setAdhesions([]);
+      setAdhesionsStatus('error');
+      setAdhesionsError(getApiError(err, t, t('groups.membership_error')));
     }
   }
 
   const handleRejoindre = async (groupeId) => {
-    if (!isMembre || hasActiveOrPendingAdhesion) return;
+    if (!isMembre || adhesionsStatus !== 'success' || hasActiveOrPendingAdhesion || cacheNotice !== '') return;
 
     setActionLoadingId(groupeId);
-    setError('');
+    setActionError('');
     setMessage('');
     try {
       await api.post(`/groupes/${groupeId}/rejoindre`);
-      setMessage(t('groups.request_sent_pending'));
       await chargerGroupes();
+      setMessage(t('groups.request_sent_pending'));
     } catch (err) {
-      setError(getApiError(err, t, t('groups.error_join_request')));
+      setActionError(getApiError(err, t, t('groups.error_join_request')));
     } finally {
       setActionLoadingId(null);
     }
   };
 
   const handleQuitter = async (groupeId) => {
-    if (!isMembre) return;
+    if (!isMembre || adhesionsStatus !== 'success' || cacheNotice !== '') return;
 
     Alert.alert(
       t('groups.leave_btn'),
@@ -151,14 +174,14 @@ export default function GroupesScreen() {
 
   const quitterGroupe = async (groupeId) => {
     setActionLoadingId(groupeId);
-    setError('');
+    setActionError('');
     setMessage('');
     try {
       await api.delete(`/groupes/${groupeId}/quitter`);
-      setMessage(t('groups.success_leave'));
       await chargerGroupes();
+      setMessage(t('groups.success_leave'));
     } catch (err) {
-      setError(getApiError(err, t, t('groups.error_leave')));
+      setActionError(getApiError(err, t, t('groups.error_leave')));
     } finally {
       setActionLoadingId(null);
     }
@@ -169,7 +192,7 @@ export default function GroupesScreen() {
   const hasActiveOrPendingAdhesion = !!adhesionAcceptee || !!adhesionEnAttente;
 
   const groupesFiltres = groupes.filter((groupe) => {
-    const texte = `${groupe.nom || ''} ${groupe.description || ''} ${groupe.theme || ''}`;
+    const texte = `${groupe.nom || ''} ${groupe.description || ''} ${groupe.theme || ''} ${groupe.categorie || ''} ${groupe.commune || ''}`;
     return texte.toLowerCase().includes(recherche.toLowerCase());
   });
 
@@ -185,25 +208,55 @@ export default function GroupesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder={t('groups.search')}
-          placeholderTextColor="#94a3b8"
-          value={recherche}
-          onChangeText={setRecherche}
-        />
-        <TouchableOpacity style={styles.retrySmall} onPress={chargerGroupes}>
-          <Text style={styles.retrySmallText}>{t('common.retry')}</Text>
+        <View style={styles.searchField}>
+          <AppIcon name="search" size={19} color="#64748B" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={t('groups.search')}
+            placeholderTextColor="#94A3B8"
+            value={recherche}
+            onChangeText={setRecherche}
+            accessibilityLabel={t('groups.search')}
+            returnKeyType="search"
+          />
+        </View>
+        <TouchableOpacity
+          style={styles.refreshButton}
+          onPress={() => void chargerGroupes()}
+          disabled={groupsLoading}
+          accessibilityRole="button"
+          accessibilityLabel={t('groups.refresh')}
+        >
+          {groupsLoading
+            ? <ActivityIndicator size="small" color="#2563EB" />
+            : <AppIcon name="refresh" size={20} color="#2563EB" />}
         </TouchableOpacity>
       </View>
 
-      {isMembre && (
+      {isMembre && adhesionsStatus === 'success' && (
         <MemberStatus
           adhesionAcceptee={adhesionAcceptee}
           adhesionEnAttente={adhesionEnAttente}
           t={t}
         />
       )}
+
+      {isMembre && adhesionsStatus === 'loading' && !groupsLoading ? (
+        <MembershipState
+          loading
+          title={t('groups.membership_loading')}
+          text={t('groups.membership_loading_text')}
+        />
+      ) : null}
+
+      {isMembre && adhesionsStatus === 'error' && !groupsLoading ? (
+        <MembershipState
+          title={t('groups.membership_error_title')}
+          text={adhesionsError}
+          actionLabel={t('common.retry')}
+          onAction={() => void chargerAdhesions()}
+        />
+      ) : null}
 
       {!isAuthenticated && (
         <InfoBox text={t('groups.login_to_join')} />
@@ -227,20 +280,20 @@ export default function GroupesScreen() {
         </View>
       )}
 
-      {error !== '' && groupes.length > 0 && (
+      {actionError !== '' && (
         <View style={styles.errorBox}>
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorText}>{actionError}</Text>
         </View>
       )}
 
-      {loading ? (
-        <LoadingState label={t('common.loading')} />
-      ) : error !== '' && groupes.length === 0 ? (
+      {groupsLoading ? (
+        <LoadingState label={t('groups.loading')} />
+      ) : groupsError !== '' ? (
         <SharedErrorState
           title={t('common.loadErrorTitle')}
-          text={error || t('common.loadErrorDescription')}
+          text={groupsError}
           retryLabel={t('common.retry')}
-          onRetry={chargerGroupes}
+          onRetry={() => void chargerGroupes()}
         />
       ) : groupesFiltres.length === 0 ? (
         <SharedEmptyState
@@ -250,8 +303,8 @@ export default function GroupesScreen() {
           text={isReferent
             ? t('groups.no_referent_groups')
             : t('groups.available_will_appear')}
-          actionLabel={t('common.retry')}
-          onAction={chargerGroupes}
+          actionLabel={recherche ? undefined : t('common.retry')}
+          onAction={recherche ? undefined : () => void chargerGroupes()}
         />
       ) : (
         <FlatList
@@ -269,13 +322,16 @@ export default function GroupesScreen() {
               onRejoindre={() => handleRejoindre(item.id)}
               onQuitter={() => handleQuitter(item.id)}
               t={t}
-              readOnly={cacheNotice !== ''}
+              readOnly={cacheNotice !== '' || adhesionsStatus !== 'success'}
+              readOnlyText={cacheNotice !== ''
+                ? t('common.cache_read_only')
+                : t('groups.membership_unknown_read_only')}
             />
           )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          onRefresh={chargerGroupes}
-          refreshing={false}
+          onRefresh={() => void chargerGroupes()}
+          refreshing={groupsLoading}
         />
       )}
     </View>
@@ -296,7 +352,7 @@ function MemberStatus({ adhesionAcceptee, adhesionEnAttente, t }) {
   }
 
   if (adhesionAcceptee) {
-    title = t('statuses.ACCEPTE');
+    title = t('groups.member_status');
     text = t('groups.member_of', { group: adhesionAcceptee.groupeNom });
     color = '#22C55E';
     bg = '#dcfce7';
@@ -306,6 +362,30 @@ function MemberStatus({ adhesionAcceptee, adhesionEnAttente, t }) {
     <View style={[styles.statusCard, { backgroundColor: bg, borderLeftColor: color }]}>
       <Text style={[styles.statusTitle, { color }]}>{title}</Text>
       <Text style={styles.statusText}>{text}</Text>
+    </View>
+  );
+}
+
+function MembershipState({ loading = false, title, text, actionLabel, onAction }) {
+  return (
+    <View style={[styles.membershipState, !loading && styles.membershipStateError]} accessibilityRole={loading ? 'progressbar' : 'alert'}>
+      <View style={styles.membershipStateHeader}>
+        {loading
+          ? <ActivityIndicator size="small" color="#2563EB" />
+          : <AppIcon name="warning" size={20} color="#EF4444" />}
+        <Text style={styles.membershipStateTitle}>{title}</Text>
+      </View>
+      <Text style={styles.membershipStateText}>{text}</Text>
+      {actionLabel && onAction ? (
+        <TouchableOpacity
+          style={styles.membershipRetry}
+          onPress={onAction}
+          accessibilityRole="button"
+        >
+          <AppIcon name="refresh" size={17} color="#2563EB" />
+          <Text style={styles.membershipRetryText}>{actionLabel}</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
@@ -322,6 +402,7 @@ function GroupeCard({
   onQuitter,
   t,
   readOnly,
+  readOnlyText,
 }) {
   const acceptedHere = adhesion?.statut === 'ACCEPTE';
   const pendingHere = adhesion?.statut === 'EN_ATTENTE';
@@ -345,7 +426,12 @@ function GroupeCard({
             {t('groups.members_count', { count: groupe.nombreMembres ?? 0 })}
           </Text>
         </View>
-        <StatusBadge label={translateGroupeStatut(groupe.statut, t)} color={groupe.statut === 'VALIDE' ? '#22C55E' : '#d97706'} />
+        {groupe.statut ? (
+          <StatusBadge
+            label={translateGroupeStatut(groupe.statut, t)}
+            color={groupe.statut === 'VALIDE' ? '#22C55E' : '#F59E0B'}
+          />
+        ) : null}
       </View>
 
       {groupe.description && (
@@ -373,6 +459,7 @@ function GroupeCard({
         <TouchableOpacity
           style={styles.itineraryButton}
           onPress={() => openItinerary(itineraryUrl, t)}
+          accessibilityRole="link"
         >
           <AppIcon name="location-outline" size={16} color="#2563EB" />
           <Text style={styles.itineraryButtonText}>
@@ -395,29 +482,34 @@ function GroupeCard({
 
       {isMembre && (
         <View style={styles.actions}>
+          {acceptedHere ? (
+            <StatusLine text={t('groups.member_status')} color="#15803D" icon="check" />
+          ) : null}
+
           {acceptedHere && (
             <TouchableOpacity
               style={[styles.btnDanger, actionLoading && styles.btnDisabled]}
               onPress={onQuitter}
               disabled={readOnly || actionLoading}
+              accessibilityRole="button"
             >
               {actionLoading
-                ? <ActivityIndicator color="#fff" size="small" />
+                ? <ActivityIndicator color="#DC2626" size="small" />
                 : <Text style={styles.btnDangerText}>{t('groups.leave_btn')}</Text>
               }
             </TouchableOpacity>
           )}
 
           {pendingHere && (
-            <StatusLine text={t('groups.pending_for_group')} color="#d97706" />
+            <StatusLine text={t('groups.pending_for_group')} color="#B45309" icon="time-outline" />
           )}
 
-          {refusedHere && !hasActiveOrPendingAdhesion && (
-            <StatusLine text={t('groups.previous_refused')} color="#EF4444" />
+          {refusedHere && (
+            <StatusLine text={t('groups.previous_refused')} color="#DC2626" icon="close" />
           )}
 
           {readOnly && (
-            <StatusLine text={t('common.cache_read_only')} color="#64748b" />
+            <StatusLine text={readOnlyText} color="#64748B" icon="lock" />
           )}
 
           {!readOnly && !acceptedHere && !pendingHere && (
@@ -425,9 +517,10 @@ function GroupeCard({
               style={[styles.btnPrimary, (!canRequest || actionLoading) && styles.btnDisabled]}
               onPress={onRejoindre}
               disabled={!canRequest || actionLoading}
+              accessibilityRole="button"
             >
               {actionLoading
-                ? <ActivityIndicator color="#fff" size="small" />
+                ? <ActivityIndicator color="#FFFFFF" size="small" />
                 : <Text style={styles.btnPrimaryText}>
                     {canRequest ? t('groups.request_to_join') : t('groups.already_in_group')}
                   </Text>
@@ -468,15 +561,20 @@ function StatusBadge({ label, color }) {
   );
 }
 
-function StatusLine({ text, color }) {
-  return <Text style={[styles.statusLine, { color }]}>{text}</Text>;
+function StatusLine({ text, color, icon }) {
+  return (
+    <View style={[styles.statusLine, { backgroundColor: `${color}12` }]}>
+      {icon ? <AppIcon name={icon} size={17} color={color} /> : null}
+      <Text style={[styles.statusLineText, { color }]}>{text}</Text>
+    </View>
+  );
 }
 
 function MetaRow({ label, value }) {
   return (
     <View style={styles.metaRow}>
       <Text style={styles.metaLabel}>{label}</Text>
-      <Text style={styles.metaValue} numberOfLines={1}>{value}</Text>
+      <Text style={styles.metaValue}>{value}</Text>
     </View>
   );
 }
@@ -521,42 +619,59 @@ async function openItinerary(url, t) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: '#F3F4F6' },
 
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: '#fff',
+    paddingVertical: 12,
+    backgroundColor: '#F3F4F6',
     borderBottomWidth: 1,
-    borderBottomColor: '#eef2f7',
-    gap: 10,
+    borderBottomColor: '#E5E7EB',
+    gap: 8,
+  },
+  searchField: {
+    flex: 1,
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 9,
   },
   searchInput: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 11,
     fontSize: 14,
-    color: '#1e293b',
+    lineHeight: 20,
+    color: '#111827',
+  },
+  refreshButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#DBEAFE',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  retrySmall: {
-    backgroundColor: '#F0F9FF',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  retrySmallText: { color: '#38BDF8', fontSize: 12, fontWeight: '800' },
 
   statusCard: {
+    width: 'auto',
+    maxWidth: 448,
+    alignSelf: 'center',
     marginHorizontal: 16,
-    marginTop: 12,
-    padding: 16,
-    borderRadius: 20,
+    marginTop: 10,
+    padding: 14,
+    borderRadius: 14,
     borderLeftWidth: 4,
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 3 },
@@ -564,17 +679,47 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 2,
   },
-  statusTitle: { fontSize: 14, fontWeight: '900', marginBottom: 4 },
+  statusTitle: { fontSize: 14, lineHeight: 19, fontWeight: '800', marginBottom: 3 },
   statusText: { color: '#334155', fontSize: 13, lineHeight: 18 },
 
+  membershipState: {
+    width: 'auto',
+    maxWidth: 448,
+    alignSelf: 'center',
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: 14,
+    marginHorizontal: 16,
+    marginTop: 10,
+    padding: 14,
+  },
+  membershipStateError: { backgroundColor: '#FEF2F2', borderColor: '#FECACA' },
+  membershipStateHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  membershipStateTitle: { flex: 1, color: '#111827', fontSize: 14, lineHeight: 19, fontWeight: '800' },
+  membershipStateText: { color: '#64748B', fontSize: 13, lineHeight: 18, marginTop: 6 },
+  membershipRetry: {
+    minHeight: 44,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingRight: 12,
+    marginTop: 4,
+  },
+  membershipRetryText: { color: '#2563EB', fontSize: 13, lineHeight: 18, fontWeight: '800' },
+
   infoBox: {
-    backgroundColor: '#F0F9FF',
+    width: 'auto',
+    maxWidth: 448,
+    alignSelf: 'center',
+    backgroundColor: '#EFF6FF',
     borderLeftWidth: 4,
     borderLeftColor: '#38BDF8',
     marginHorizontal: 16,
     marginTop: 10,
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 14,
   },
   infoBoxText: { color: '#1e40af', fontSize: 13, lineHeight: 18 },
 
@@ -582,105 +727,116 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0fdf4',
     borderLeftWidth: 4,
     borderLeftColor: '#22C55E',
+    width: 'auto',
+    maxWidth: 448,
+    alignSelf: 'center',
     marginHorizontal: 16,
     marginTop: 8,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   successText: { color: '#15803d', fontSize: 13 },
   errorBox: {
     backgroundColor: '#fef2f2',
     borderLeftWidth: 4,
     borderLeftColor: '#EF4444',
+    width: 'auto',
+    maxWidth: 448,
+    alignSelf: 'center',
     marginHorizontal: 16,
     marginTop: 8,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   errorText: { color: '#EF4444', fontSize: 13 },
 
-  listContent: { padding: 9, paddingBottom: 22 },
+  listContent: { width: '100%', maxWidth: 480, alignSelf: 'center', padding: 16, paddingTop: 12, paddingBottom: 28 },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 10,
-    marginBottom: 7,
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
-    elevation: 3,
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    shadowColor: '#111827',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
     borderWidth: 1,
-    borderColor: '#eef2f7',
+    borderColor: '#E5E7EB',
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 5,
+    marginBottom: 10,
   },
   cardIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 11,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
   },
-  cardTitleWrap: { flex: 1, marginRight: 8 },
-  cardTitle: { fontSize: 14, fontWeight: '900', color: '#1E3A8A', marginBottom: 1, lineHeight: 18 },
-  cardSub: { color: '#64748b', fontSize: 10 },
-  cardDesc: { color: '#475569', fontSize: 11, lineHeight: 15, marginBottom: 6 },
-  statusBadge: { borderRadius: 20, paddingHorizontal: 7, paddingVertical: 3 },
-  statusBadgeText: { color: '#fff', fontSize: 9, fontWeight: '900' },
+  cardTitleWrap: { flex: 1, minWidth: 0, marginRight: 6 },
+  cardTitle: { fontSize: 15, fontWeight: '800', color: '#111827', marginBottom: 2, lineHeight: 20 },
+  cardSub: { color: '#64748B', fontSize: 12, lineHeight: 16 },
+  cardDesc: { color: '#475569', fontSize: 14, lineHeight: 20, marginBottom: 10 },
+  statusBadge: { maxWidth: 92, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4 },
+  statusBadgeText: { color: '#FFFFFF', fontSize: 10, lineHeight: 13, fontWeight: '800' },
 
   metaBox: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginBottom: 6,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    marginBottom: 10,
   },
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: '#eef2f7',
   },
-  metaLabel: { color: '#64748b', fontSize: 11 },
+  metaLabel: { flexShrink: 0, color: '#64748B', fontSize: 12, lineHeight: 17, marginRight: 8 },
   metaValue: {
     color: '#1E3A8A',
-    fontSize: 11,
+    fontSize: 12,
+    lineHeight: 17,
     fontWeight: '700',
-    maxWidth: '58%',
+    flexShrink: 1,
+    maxWidth: '62%',
     textAlign: 'right',
   },
   itineraryButton: {
     alignSelf: 'flex-start',
-    minHeight: 32,
-    borderRadius: 11,
+    minHeight: 44,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#bfdbfe',
     backgroundColor: '#eff6ff',
-    paddingHorizontal: 9,
+    paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 5,
-    marginBottom: 6,
+    marginBottom: 8,
   },
-  itineraryButtonText: { color: '#2563EB', fontSize: 11, fontWeight: '900' },
+  itineraryButtonText: { color: '#2563EB', fontSize: 13, lineHeight: 18, fontWeight: '800' },
 
   notice: { backgroundColor: '#f8fafc', borderRadius: 12, padding: 12, marginTop: 2 },
   noticeText: { color: '#64748b', fontSize: 12, lineHeight: 18 },
   visitorHint: { color: '#38BDF8', fontSize: 13, fontWeight: '700', marginTop: 4 },
 
-  actions: { marginTop: 4 },
+  actions: { marginTop: 2, gap: 8 },
   btnPrimary: {
-    backgroundColor: '#1E3A8A',
-    borderRadius: 13,
-    paddingVertical: 9,
+    minHeight: 48,
+    backgroundColor: '#2563EB',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     alignItems: 'center',
     shadowColor: '#1E3A8A',
     shadowOffset: { width: 0, height: 4 },
@@ -688,16 +844,30 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 3,
   },
-  btnPrimaryText: { color: '#fff', fontSize: 12, fontWeight: '900' },
+  btnPrimaryText: { color: '#FFFFFF', fontSize: 14, lineHeight: 19, fontWeight: '800', textAlign: 'center' },
   btnDanger: {
-    backgroundColor: '#EF4444',
+    minHeight: 48,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    paddingHorizontal: 14,
     paddingVertical: 12,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  btnDangerText: { color: '#fff', fontSize: 13, fontWeight: '900' },
-  btnDisabled: { backgroundColor: '#cbd5e1' },
-  statusLine: { fontSize: 13, fontWeight: '800', marginTop: 2 },
+  btnDangerText: { color: '#DC2626', fontSize: 14, lineHeight: 19, fontWeight: '800' },
+  btnDisabled: { backgroundColor: '#E5E7EB', borderColor: '#E5E7EB', shadowOpacity: 0 },
+  statusLine: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  statusLineText: { flex: 1, fontSize: 13, lineHeight: 18, fontWeight: '800' },
 
   centered: {
     flex: 1,
