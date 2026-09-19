@@ -465,16 +465,54 @@ function makeManagementStack(title, unreadNotifications) {
 function NetworkHome({ navigation }) {
   const { t } = useTranslation();
   const { isAdmin, isReferent, isMembre } = useAuth();
-  const [groupes, setGroupes] = useState([]);
-  const [projets, setProjets] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [groupState, setGroupState] = useState({ status: 'loading', data: [] });
+  const [projectState, setProjectState] = useState({ status: 'loading', data: [] });
+
+  const loadGroups = async () => {
+    setGroupState((current) => ({ ...current, status: 'loading' }));
+    try {
+      const response = await (isAdmin
+        ? api.get('/admin/groupes')
+        : isReferent
+          ? api.get('/referent/groupes')
+          : api.get('/groupes'));
+      setGroupState({ status: 'success', data: response.data || [] });
+    } catch {
+      setGroupState({ status: 'error', data: [] });
+    }
+  };
+
+  const loadProjects = async () => {
+    setProjectState((current) => ({ ...current, status: 'loading' }));
+    try {
+      const response = await (isAdmin
+        ? api.get('/projets/admin/tous')
+        : isReferent
+          ? api.get('/projets/referent/mes-groupes')
+          : api.get('/projets'));
+      setProjectState({ status: 'success', data: response.data || [] });
+    } catch {
+      setProjectState({ status: 'error', data: [] });
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
+    const loadInitialData = async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      setGroupState({ status: 'loading', data: [] });
+      setProjectState({ status: 'loading', data: [] });
 
-    async function loadNetworkPreview() {
-      setLoading(true);
-      const [groupesRes, projetsRes] = await Promise.allSettled([
+      if (!(isMembre || isReferent || isAdmin)) {
+        if (!cancelled) {
+          setGroupState({ status: 'success', data: [] });
+          setProjectState({ status: 'success', data: [] });
+        }
+        return;
+      }
+
+      const [groupResult, projectResult] = await Promise.allSettled([
         isAdmin
           ? api.get('/admin/groupes')
           : isReferent
@@ -487,69 +525,126 @@ function NetworkHome({ navigation }) {
             : api.get('/projets'),
       ]);
 
-      if (!cancelled) {
-        setGroupes(groupesRes.status === 'fulfilled' ? (groupesRes.value.data || []) : []);
-        setProjets(projetsRes.status === 'fulfilled' ? (projetsRes.value.data || []) : []);
-        setLoading(false);
-      }
-    }
+      if (cancelled) return;
+      setGroupState(groupResult.status === 'fulfilled'
+        ? { status: 'success', data: groupResult.value.data || [] }
+        : { status: 'error', data: [] });
+      setProjectState(projectResult.status === 'fulfilled'
+        ? { status: 'success', data: projectResult.value.data || [] }
+        : { status: 'error', data: [] });
+    };
 
-    void Promise.resolve().then(() => {
-      if (isMembre || isReferent || isAdmin) return loadNetworkPreview();
-      setLoading(false);
-      return undefined;
-    });
+    void loadInitialData();
 
     return () => { cancelled = true; };
   }, [isAdmin, isReferent, isMembre]);
 
+  const groupes = groupState.data;
+  const projets = projectState.data;
   const groupesActifs = groupes.filter((groupe) => ['VALIDE', 'ACTIF', undefined, null].includes(groupe.statut)).length;
   const projetsActifs = projets.filter((projet) => !['REJETE', 'ARCHIVE'].includes(projet.statut)).length;
+  const membres = groupes.reduce((total, groupe) => total + Number(groupe.nombreMembres || 0), 0);
+  const bothFailed = groupState.status === 'error' && projectState.status === 'error';
+  const retryAll = () => {
+    void loadGroups();
+    void loadProjects();
+  };
 
   return (
     <ScrollView style={navigatorStyles.hubPage} contentContainerStyle={navigatorStyles.hubContent}>
-      <Text style={navigatorStyles.hubTitle}>
-        {t('navigation.groups')}
-      </Text>
-      <Text style={navigatorStyles.hubSubtitle}>
-        {t('memberDashboard.mobileOverview')}
-      </Text>
+      <View style={navigatorStyles.networkIntro}>
+        <View style={navigatorStyles.networkEyebrow}>
+          <AppIcon name="globe" size={17} color="#F97316" />
+          <Text style={navigatorStyles.networkEyebrowText}>{t('network.eyebrow')}</Text>
+        </View>
+        <Text style={navigatorStyles.networkTitle}>{t('network.title')}</Text>
+        <Text style={navigatorStyles.networkSubtitle}>{t('network.introduction')}</Text>
+      </View>
 
-      <View style={navigatorStyles.networkStats}>
-        <NetworkStat value={groupesActifs} label={t('navigation.groups')} />
-        <NetworkStat value={projetsActifs} label={t('navigation.projects')} />
+      <View style={navigatorStyles.networkStats} accessibilityLabel={t('network.statsLabel')}>
         <NetworkStat
-          value={groupes.reduce((total, groupe) => total + Number(groupe.nombreMembres || 0), 0)}
-          label={t('groups.members')}
+          value={networkStatValue(groupState.status, groupesActifs)}
+          label={t('network.activeGroups')}
+          icon="group"
+          color="#2563EB"
+          status={groupState.status}
+          t={t}
+        />
+        <NetworkStat
+          value={networkStatValue(projectState.status, projetsActifs)}
+          label={t('network.activeProjects')}
+          icon="project"
+          color="#F97316"
+          status={projectState.status}
+          t={t}
+        />
+        <NetworkStat
+          value={networkStatValue(groupState.status, membres)}
+          label={t('network.members')}
+          icon="globe"
+          color="#22C55E"
+          status={groupState.status}
+          t={t}
         />
       </View>
 
-      <HubLink
+      <NetworkAccessCard
         icon="group"
-        title={t('navigation.groups')}
-        description={t('groups.available_will_appear')}
+        title={t('network.groupsAccessTitle')}
+        description={t('network.groupsAccessDescription')}
+        color="#2563EB"
         onPress={() => navigation.navigate('GroupesAccess')}
       />
-      <HubLink
+      <NetworkAccessCard
         icon="project"
-        title={t('navigation.projects')}
-        description={t('projects.public_will_appear')}
+        title={t('network.projectsAccessTitle')}
+        description={t('network.projectsAccessDescription')}
+        color="#F97316"
         onPress={() => navigation.navigate('ProjectsAccess')}
       />
 
+      {bothFailed ? (
+        <NetworkFeedback
+          kind="error"
+          title={t('network.globalErrorTitle')}
+          text={t('network.globalErrorText')}
+          actionLabel={t('common.retry')}
+          onAction={retryAll}
+        />
+      ) : null}
+
       <View style={navigatorStyles.previewSection}>
         <View style={navigatorStyles.previewHeader}>
-          <Text style={navigatorStyles.previewTitle}>
-            {t('groups.business_groups')}
-          </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('GroupesAccess')}>
+          <View style={navigatorStyles.previewHeading}>
+            <View style={[navigatorStyles.previewDot, { backgroundColor: '#2563EB' }]} />
+            <Text style={navigatorStyles.previewTitle}>{t('network.groupsPreview')}</Text>
+          </View>
+          <TouchableOpacity
+            style={navigatorStyles.previewActionButton}
+            onPress={() => navigation.navigate('GroupesAccess')}
+            accessibilityRole="button"
+            accessibilityLabel={t('network.seeAllGroups')}
+          >
             <Text style={navigatorStyles.previewAction}>{t('memberHome.seeAll')}</Text>
+            <AppIcon name="chevron-forward" size={16} color="#2563EB" />
           </TouchableOpacity>
         </View>
-        {loading ? (
+        {groupState.status === 'loading' ? (
           <ActivityIndicator color="#2563EB" style={navigatorStyles.previewLoader} />
-        ) : groupes.length === 0 ? (
-          <Text style={navigatorStyles.previewEmpty}>{t('groups.available_will_appear')}</Text>
+        ) : groupState.status === 'error' && !bothFailed ? (
+          <NetworkFeedback
+            kind="error"
+            title={t('network.groupsErrorTitle')}
+            text={t('network.groupsErrorText')}
+            actionLabel={t('common.retry')}
+            onAction={() => void loadGroups()}
+          />
+        ) : groupState.status === 'success' && groupes.length === 0 ? (
+          <NetworkFeedback
+            icon="group"
+            title={t('network.groupsEmptyTitle')}
+            text={t('groups.available_will_appear')}
+          />
         ) : (
           groupes.slice(0, 3).map((groupe) => (
             <NetworkPreviewCard
@@ -560,6 +655,7 @@ function NetworkHome({ navigation }) {
               badge={t('groups.members_count', { count: groupe.nombreMembres ?? 0 })}
               color="#0f766e"
               onPress={() => navigation.navigate('GroupesAccess')}
+              accessibilityLabel={t('network.openGroupsListFor', { name: groupe.nom })}
             />
           ))
         )}
@@ -567,17 +663,36 @@ function NetworkHome({ navigation }) {
 
       <View style={navigatorStyles.previewSection}>
         <View style={navigatorStyles.previewHeader}>
-          <Text style={navigatorStyles.previewTitle}>
-            {t('projects.business_projects')}
-          </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('ProjectsAccess')}>
+          <View style={navigatorStyles.previewHeading}>
+            <View style={[navigatorStyles.previewDot, { backgroundColor: '#F97316' }]} />
+            <Text style={navigatorStyles.previewTitle}>{t('network.projectsPreview')}</Text>
+          </View>
+          <TouchableOpacity
+            style={navigatorStyles.previewActionButton}
+            onPress={() => navigation.navigate('ProjectsAccess')}
+            accessibilityRole="button"
+            accessibilityLabel={t('network.seeAllProjects')}
+          >
             <Text style={navigatorStyles.previewAction}>{t('memberHome.discover')}</Text>
+            <AppIcon name="chevron-forward" size={16} color="#2563EB" />
           </TouchableOpacity>
         </View>
-        {loading ? (
+        {projectState.status === 'loading' ? (
           <ActivityIndicator color="#2563EB" style={navigatorStyles.previewLoader} />
-        ) : projets.length === 0 ? (
-          <Text style={navigatorStyles.previewEmpty}>{t('projects.public_will_appear')}</Text>
+        ) : projectState.status === 'error' && !bothFailed ? (
+          <NetworkFeedback
+            kind="error"
+            title={t('network.projectsErrorTitle')}
+            text={t('network.projectsErrorText')}
+            actionLabel={t('common.retry')}
+            onAction={() => void loadProjects()}
+          />
+        ) : projectState.status === 'success' && projets.length === 0 ? (
+          <NetworkFeedback
+            icon="project"
+            title={t('network.projectsEmptyTitle')}
+            text={t('projects.public_will_appear')}
+          />
         ) : (
           projets.slice(0, 3).map((projet) => (
             <NetworkPreviewCard
@@ -585,9 +700,10 @@ function NetworkHome({ navigation }) {
               icon="project"
               title={projet.titre}
               subtitle={projet.groupeNom || projet.description || t('navigation.projects')}
-              badge={projet.statut || 'PROJET'}
+              badge={projet.statut ? t(`statuses.${projet.statut}`) : null}
               color="#F97316"
               onPress={() => navigation.navigate('ProjectsAccess')}
+              accessibilityLabel={t('network.openProjectsListFor', { name: projet.titre })}
             />
           ))
         )}
@@ -596,18 +712,87 @@ function NetworkHome({ navigation }) {
   );
 }
 
-function NetworkStat({ value, label }) {
+function networkStatValue(status, value) {
+  if (status === 'loading') return '…';
+  if (status === 'error') return '—';
+  return value;
+}
+
+function NetworkStat({ value, label, icon, color, status, t }) {
+  const spokenValue = status === 'error'
+    ? t('network.unavailable')
+    : status === 'loading' ? t('common.loading') : value;
   return (
-    <View style={navigatorStyles.networkStat}>
-      <Text style={navigatorStyles.networkStatValue}>{value}</Text>
-      <Text style={navigatorStyles.networkStatLabel} numberOfLines={1}>{label}</Text>
+    <View
+      style={navigatorStyles.networkStat}
+      accessible
+      accessibilityLabel={`${label}: ${spokenValue}`}
+    >
+      <View style={[navigatorStyles.networkStatIcon, { backgroundColor: `${color}18` }]}>
+        <AppIcon name={icon} size={16} color={color} />
+      </View>
+      <Text style={[navigatorStyles.networkStatValue, { color }]}>{value}</Text>
+      <Text style={navigatorStyles.networkStatLabel}>{label}</Text>
     </View>
   );
 }
 
-function NetworkPreviewCard({ icon, title, subtitle, badge, color, onPress }) {
+function NetworkAccessCard({ icon, title, description, color, onPress }) {
   return (
-    <TouchableOpacity style={navigatorStyles.previewCard} onPress={onPress} activeOpacity={0.82}>
+    <TouchableOpacity
+      style={navigatorStyles.networkAccessCard}
+      onPress={onPress}
+      activeOpacity={0.82}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+    >
+      <View style={[navigatorStyles.networkAccessIcon, { backgroundColor: `${color}18` }]}>
+        <AppIcon name={icon} size={24} color={color} />
+      </View>
+      <View style={navigatorStyles.networkAccessText}>
+        <Text style={navigatorStyles.networkAccessTitle}>{title}</Text>
+        <Text style={navigatorStyles.networkAccessDescription}>{description}</Text>
+      </View>
+      <AppIcon name="chevron-forward" size={20} color={color} />
+    </TouchableOpacity>
+  );
+}
+
+function NetworkFeedback({ kind = 'empty', icon, title, text, actionLabel, onAction }) {
+  const isError = kind === 'error';
+  return (
+    <View
+      style={[navigatorStyles.networkFeedback, isError && navigatorStyles.networkFeedbackError]}
+      accessibilityRole={isError ? 'alert' : 'text'}
+    >
+      <View style={navigatorStyles.networkFeedbackHeader}>
+        <AppIcon name={isError ? 'warning' : icon} size={19} color={isError ? '#EF4444' : '#2563EB'} />
+        <Text style={navigatorStyles.networkFeedbackTitle}>{title}</Text>
+      </View>
+      <Text style={navigatorStyles.networkFeedbackText}>{text}</Text>
+      {actionLabel && onAction ? (
+        <TouchableOpacity
+          style={navigatorStyles.networkFeedbackAction}
+          onPress={onAction}
+          accessibilityRole="button"
+        >
+          <AppIcon name="refresh" size={17} color="#2563EB" />
+          <Text style={navigatorStyles.networkFeedbackActionText}>{actionLabel}</Text>
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  );
+}
+
+function NetworkPreviewCard({ icon, title, subtitle, badge, color, onPress, accessibilityLabel }) {
+  return (
+    <TouchableOpacity
+      style={navigatorStyles.previewCard}
+      onPress={onPress}
+      activeOpacity={0.82}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+    >
       <View style={[navigatorStyles.previewIcon, { backgroundColor: `${color}18` }]}>
         <AppIcon name={icon} size={19} color={color} />
       </View>
@@ -615,9 +800,12 @@ function NetworkPreviewCard({ icon, title, subtitle, badge, color, onPress }) {
         <Text style={navigatorStyles.previewCardTitle} numberOfLines={1}>{title}</Text>
         <Text style={navigatorStyles.previewCardSubtitle} numberOfLines={1}>{subtitle}</Text>
       </View>
-      <Text style={[navigatorStyles.previewBadge, { color, backgroundColor: `${color}14` }]} numberOfLines={1}>
-        {badge}
-      </Text>
+      {badge ? (
+        <Text style={[navigatorStyles.previewBadge, { color, backgroundColor: `${color}14` }]} numberOfLines={1}>
+          {badge}
+        </Text>
+      ) : null}
+      <AppIcon name="chevron-forward" size={16} color="#94A3B8" />
     </TouchableOpacity>
   );
 }
@@ -946,8 +1134,11 @@ const navigatorStyles = {
     backgroundColor: '#F3F4F6',
   },
   hubContent: {
-    padding: 12,
-    paddingBottom: 22,
+    width: '100%',
+    maxWidth: 460,
+    alignSelf: 'center',
+    padding: 16,
+    paddingBottom: 28,
   },
   hubTitle: {
     color: '#111827',
@@ -1007,82 +1198,232 @@ const navigatorStyles = {
   },
   networkStats: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 8,
+    gap: 6,
+    marginBottom: 16,
   },
   networkStat: {
     flex: 1,
-    minHeight: 52,
-    borderRadius: 12,
+    minHeight: 116,
+    borderRadius: 14,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    padding: 10,
+    shadowColor: '#111827',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.035,
+    shadowRadius: 5,
+    elevation: 1,
+  },
+  networkStatIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 8,
   },
   networkStatValue: {
-    color: '#2563EB',
-    fontSize: 17,
-    lineHeight: 21,
-    fontWeight: '900',
+    fontSize: 21,
+    lineHeight: 25,
+    fontWeight: '800',
+    marginTop: 7,
   },
   networkStatLabel: {
     color: '#64748B',
-    fontSize: 11,
-    lineHeight: 14,
+    fontSize: 12,
+    lineHeight: 15,
     fontWeight: '700',
-    marginTop: 2,
+    marginTop: 3,
+  },
+  networkIntro: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#111827',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.035,
+    shadowRadius: 5,
+    elevation: 1,
+  },
+  networkEyebrow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 5,
+  },
+  networkEyebrowText: {
+    flexShrink: 1,
+    color: '#2563EB',
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  networkTitle: {
+    color: '#1E3A8A',
+    fontSize: 17,
+    lineHeight: 22,
+    fontWeight: '700',
+  },
+  networkSubtitle: {
+    color: '#64748B',
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 4,
+  },
+  networkAccessCard: {
+    minHeight: 88,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    shadowColor: '#111827',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.035,
+    shadowRadius: 5,
+    elevation: 1,
+  },
+  networkAccessIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  networkAccessText: {
+    flex: 1,
+    minWidth: 0,
+    marginRight: 8,
+  },
+  networkAccessTitle: {
+    color: '#1E3A8A',
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '800',
+  },
+  networkAccessDescription: {
+    color: '#64748B',
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 3,
   },
   previewSection: {
-    marginTop: 5,
-    marginBottom: 7,
+    marginTop: 10,
+    marginBottom: 10,
   },
   previewHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 6,
-    paddingHorizontal: 2,
+    marginBottom: 8,
+  },
+  previewHeading: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 6,
+  },
+  previewDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 7,
   },
   previewTitle: {
     color: '#111827',
-    fontSize: 14,
-    lineHeight: 18,
-    fontWeight: '800',
+    flexShrink: 1,
+    fontSize: 17,
+    lineHeight: 22,
+    fontWeight: '700',
+  },
+  previewActionButton: {
+    minHeight: 44,
+    minWidth: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingLeft: 8,
   },
   previewAction: {
     color: '#2563EB',
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: '800',
   },
-  previewLoader: { marginVertical: 8 },
-  previewEmpty: {
+  previewLoader: { marginVertical: 22 },
+  networkFeedback: {
     color: '#64748B',
-    fontSize: 12,
-    lineHeight: 16,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    padding: 9,
+    padding: 14,
+    marginBottom: 8,
+  },
+  networkFeedbackError: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+  },
+  networkFeedbackHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  networkFeedbackTitle: {
+    flex: 1,
+    color: '#111827',
+    fontSize: 14,
+    lineHeight: 19,
+    fontWeight: '800',
+  },
+  networkFeedbackText: {
+    color: '#64748B',
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 6,
+  },
+  networkFeedbackAction: {
+    minHeight: 44,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6,
+    paddingRight: 12,
+  },
+  networkFeedbackActionText: {
+    color: '#2563EB',
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '800',
   },
   previewCard: {
-    minHeight: 50,
+    minHeight: 64,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 11,
-    padding: 8,
-    marginBottom: 6,
+    borderRadius: 14,
+    padding: 11,
+    marginBottom: 8,
   },
   previewIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -1090,29 +1431,30 @@ const navigatorStyles = {
   previewText: {
     flex: 1,
     minWidth: 0,
-    marginRight: 8,
+    marginRight: 6,
   },
   previewCardTitle: {
     color: '#111827',
-    fontSize: 13,
-    lineHeight: 16,
+    fontSize: 14,
+    lineHeight: 19,
     fontWeight: '800',
   },
   previewCardSubtitle: {
     color: '#64748B',
-    fontSize: 11,
-    lineHeight: 14,
-    marginTop: 1,
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
   },
   previewBadge: {
-    maxWidth: 96,
+    maxWidth: 88,
     borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
     fontSize: 10,
     lineHeight: 12,
     fontWeight: '900',
     overflow: 'hidden',
+    marginRight: 5,
   },
 };
 
