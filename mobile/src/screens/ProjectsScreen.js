@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
+  View, Text, StyleSheet, SectionList, TouchableOpacity, Image,
   TextInput, ActivityIndicator, KeyboardAvoidingView, Modal, Platform, ScrollView
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -27,8 +27,11 @@ export default function ProjectsScreen() {
   const [projets, setProjets] = useState([]);
   const [groupesCreateur, setGroupesCreateur] = useState([]);
   const [membreDashboard, setMembreDashboard] = useState(null);
+  const [memberGroupStatus, setMemberGroupStatus] = useState(isMembre ? 'loading' : 'idle');
+  const [memberGroupError, setMemberGroupError] = useState('');
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [submittingProjectId, setSubmittingProjectId] = useState(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [recherche, setRecherche] = useState('');
@@ -54,8 +57,11 @@ export default function ProjectsScreen() {
 
     if (isSuperAdmin) {
       setLoading(false);
+      setMemberGroupStatus('idle');
       return;
     }
+
+    const memberGroupRequest = isMembre ? chargerGroupeMembre() : Promise.resolve();
 
     try {
       if (isAdmin) {
@@ -67,6 +73,7 @@ export default function ProjectsScreen() {
         setProjets(markOwnedProjects(projetsRes.data, propresRes.data));
         setGroupesCreateur(groupesRes.data || []);
         setMembreDashboard(null);
+        setMemberGroupStatus('idle');
         return;
       }
 
@@ -75,6 +82,7 @@ export default function ProjectsScreen() {
         setProjets(res.data || []);
         setGroupesCreateur([]);
         setMembreDashboard(null);
+        setMemberGroupStatus('idle');
         return;
       }
 
@@ -87,6 +95,7 @@ export default function ProjectsScreen() {
         setProjets(markOwnedProjects(projetsRes.data, propresRes.data));
         setGroupesCreateur(groupesRes.data || []);
         setMembreDashboard(null);
+        setMemberGroupStatus('idle');
         return;
       }
 
@@ -102,30 +111,49 @@ export default function ProjectsScreen() {
       }
       setGroupesCreateur([]);
 
-      if (isMembre) {
-        try {
-          const dashboardRes = await api.get('/membre/dashboard');
-          setMembreDashboard(dashboardRes.data);
-        } catch {
-          try {
-            const groupeRes = await api.get('/messagerie/mon-groupe');
-            setMembreDashboard({
-              groupe: {
-                ...groupeRes.data,
-                statutAdhesion: 'ACCEPTE',
-              },
-            });
-          } catch {
-            setMembreDashboard(null);
-          }
-        }
-      } else {
+      if (!isMembre) {
         setMembreDashboard(null);
+        setMemberGroupStatus('idle');
       }
     } catch (err) {
       setError(getApiError(err, t, t('projects.error_load')));
     } finally {
       setLoading(false);
+      await memberGroupRequest;
+    }
+  }
+
+  async function chargerGroupeMembre() {
+    if (!isMembre) {
+      setMembreDashboard(null);
+      setMemberGroupStatus('idle');
+      setMemberGroupError('');
+      return;
+    }
+
+    setMemberGroupStatus('loading');
+    setMemberGroupError('');
+    try {
+      const dashboardRes = await api.get('/membre/dashboard');
+      setMembreDashboard(dashboardRes.data || {});
+      setMemberGroupStatus('success');
+      return;
+    } catch {
+      try {
+        const groupeRes = await api.get('/messagerie/mon-groupe');
+        setMembreDashboard({
+          groupe: {
+            ...groupeRes.data,
+            statutAdhesion: 'ACCEPTE',
+          },
+        });
+        setMemberGroupStatus('success');
+        return;
+      } catch (err) {
+        setMembreDashboard(null);
+        setMemberGroupStatus('error');
+        setMemberGroupError(getApiError(err, t, t('projects.member_group_error')));
+      }
     }
   }
 
@@ -190,7 +218,7 @@ export default function ProjectsScreen() {
   const groupeActif = membreDashboard?.groupe?.statutAdhesion === 'ACCEPTE'
     ? membreDashboard.groupe
     : null;
-  const canProposeProject = (isMembre && !!groupeActif)
+  const canProposeProject = (isMembre && memberGroupStatus === 'success' && !!groupeActif)
     || (isReferent && groupesCreateur.length > 0)
     || isAdmin;
   const visibilityOptions = isAdmin
@@ -251,12 +279,25 @@ export default function ProjectsScreen() {
   };
 
   const projetsFiltres = projets.filter((projet) => {
-    const texte = `${projet.titre || ''} ${projet.description || ''} ${projet.groupeNom || ''}`;
+    const texte = `${projet.titre || ''} ${projet.description || ''} ${projet.groupeNom || ''} ${projet.porteurPrenom || ''} ${projet.porteurNom || ''}`;
     return texte.toLowerCase().includes(recherche.toLowerCase());
   });
 
+  const projectSections = [
+    {
+      key: 'owned',
+      title: t('projects.my_projects_section'),
+      data: projetsFiltres.filter((projet) => projet.estPorteurConnecte),
+    },
+    {
+      key: 'community',
+      title: t('projects.community_projects_section'),
+      data: projetsFiltres.filter((projet) => !projet.estPorteurConnecte),
+    },
+  ].filter((section) => section.data.length > 0);
+
   const submitDraft = async projet => {
-    setCreating(true);
+    setSubmittingProjectId(projet.id);
     setError('');
     setMessage('');
     try {
@@ -266,7 +307,7 @@ export default function ProjectsScreen() {
     } catch (err) {
       setError(getApiError(err, t, t('projects.error_submit')));
     } finally {
-      setCreating(false);
+      setSubmittingProjectId(null);
     }
   };
 
@@ -282,39 +323,72 @@ export default function ProjectsScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder={t('projects.search_mobile')}
-          placeholderTextColor="#94a3b8"
-          value={recherche}
-          onChangeText={setRecherche}
-        />
-        {(isMembre || isReferent || isAdmin) && (
-          <TouchableOpacity
-            style={[styles.btnNew, !canProposeProject && styles.btnNewDisabled]}
-            onPress={() => canProposeProject
-              ? openProjectForm()
-              : setError(isMembre ? t('projects.needGroup') : t('projects.creator_group_required'))}
-          >
-            <AppIcon name="project" size={16} color="#fff" />
-            <Text style={styles.btnNewText}>
-              {isAdmin ? t('projects.create') : t('projects.propose')}
-            </Text>
-          </TouchableOpacity>
-        )}
+        <View style={styles.searchField}>
+          <AppIcon name="search" size={19} color="#64748B" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={t('projects.search_mobile')}
+            placeholderTextColor="#94A3B8"
+            value={recherche}
+            onChangeText={setRecherche}
+            accessibilityLabel={t('projects.search_mobile')}
+            returnKeyType="search"
+          />
+        </View>
+        <TouchableOpacity
+          style={styles.refreshButton}
+          onPress={() => void chargerProjets()}
+          disabled={loading}
+          accessibilityRole="button"
+          accessibilityLabel={t('projects.refresh')}
+        >
+          {loading
+            ? <ActivityIndicator size="small" color="#2563EB" />
+            : <AppIcon name="refresh" size={20} color="#2563EB" />}
+        </TouchableOpacity>
       </View>
+
+      {canProposeProject && (isMembre || isReferent || isAdmin) ? (
+        <TouchableOpacity
+          style={styles.btnNew}
+          onPress={openProjectForm}
+          accessibilityRole="button"
+        >
+          <AppIcon name="project" size={19} color="#FFFFFF" />
+          <Text style={styles.btnNewText}>
+            {isAdmin ? t('projects.create_project') : t('projects.propose')}
+          </Text>
+        </TouchableOpacity>
+      ) : null}
 
       {!isAuthenticated && (
         <InfoBox text={t('projects.login_to_propose')} />
       )}
 
-      {isMembre && !canProposeProject && (
+      {isMembre && memberGroupStatus === 'success' && !groupeActif && (
         <InfoBox text={t('projects.needGroup')} />
       )}
 
-      {isMembre && canProposeProject && (
+      {isMembre && memberGroupStatus === 'success' && groupeActif && (
         <InfoBox text={t('projects.can_propose_for_group', { group: groupeActif.nom })} />
       )}
+
+      {isMembre && memberGroupStatus === 'loading' ? (
+        <GroupDetectionState
+          loading
+          title={t('projects.member_group_loading')}
+          text={t('projects.member_group_loading_text')}
+        />
+      ) : null}
+
+      {isMembre && memberGroupStatus === 'error' ? (
+        <GroupDetectionState
+          title={t('projects.member_group_error_title')}
+          text={memberGroupError}
+          actionLabel={t('common.retry')}
+          onAction={() => void chargerGroupeMembre()}
+        />
+      ) : null}
 
       {isReferent && (
         <InfoBox text={groupesCreateur.length > 0
@@ -359,33 +433,40 @@ export default function ProjectsScreen() {
           text={isReferent
             ? t('projects.no_referent_projects')
             : t('projects.public_will_appear')}
-          actionLabel={t('common.retry')}
-          onAction={chargerProjets}
+          actionLabel={recherche ? undefined : t('common.retry')}
+          onAction={recherche ? undefined : () => void chargerProjets()}
         />
       ) : (
-        <FlatList
-          data={projetsFiltres}
+        <SectionList
+          sections={projectSections}
           keyExtractor={(item) => item.id.toString()}
+          renderSectionHeader={({ section }) => (
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionDot, { backgroundColor: section.key === 'owned' ? '#F97316' : '#2563EB' }]} />
+              <Text style={styles.sectionTitle}>{section.title}</Text>
+              <Text style={styles.sectionCount}>{section.data.length}</Text>
+            </View>
+          )}
           renderItem={({ item }) => (
             <ProjectCard
               projet={item}
               t={t}
               language={i18n.language}
-              isPartenaire={isPartenaire}
               editable={item.estPorteurConnecte
                 && ['BROUILLON', 'A_CORRIGER_REFERENT', 'A_CORRIGER_ADMIN'].includes(item.statut)
                 && (!isReferent || canEditReferentProject(item, groupesCreateur))}
               onEdit={() => openEditProjectForm(item)}
               canSubmit={['BROUILLON', 'A_CORRIGER_REFERENT', 'A_CORRIGER_ADMIN'].includes(item.statut)
                 && item.estPorteurConnecte}
-              submitting={creating}
+              submitting={submittingProjectId === item.id}
               onSubmit={() => submitDraft(item)}
             />
           )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          onRefresh={chargerProjets}
-          refreshing={false}
+          onRefresh={() => void chargerProjets()}
+          refreshing={loading}
+          stickySectionHeadersEnabled={false}
         />
       )}
 
@@ -402,10 +483,14 @@ export default function ProjectsScreen() {
         allowNoGroup={isAdmin}
         visibilityOptions={visibilityOptions}
         submitLabel={editingProject
-          ? t('common.save')
+          ? isCorrectionProject(editingProject)
+            ? t('projects.save_corrections')
+            : t('common.save')
           : isAdmin ? t('projects.create_project') : t('projects.submit_project')}
         title={editingProject
-          ? t('projects.edit_project')
+          ? isCorrectionProject(editingProject)
+            ? t('projects.correct_project')
+            : t('projects.edit_project')
           : isAdmin ? t('projects.create_project') : t('projects.propose')}
         t={t}
       />
@@ -413,88 +498,98 @@ export default function ProjectsScreen() {
   );
 }
 
-function ProjectCard({ projet, t, language, isPartenaire, editable, onEdit, canSubmit, submitting, onSubmit }) {
+function ProjectCard({ projet, t, language, editable, onEdit, canSubmit, submitting, onSubmit }) {
+  const needsCorrection = isCorrectionProject(projet);
+  const owner = projectOwner(projet);
   return (
-    <View style={[styles.card, { borderTopColor: statusColor(projet.statut) }]}>
+    <View style={[styles.card, needsCorrection && styles.correctionCard]}>
       <View style={styles.cardHeader}>
         <View style={[styles.cardIcon, { backgroundColor: `${statusColor(projet.statut)}18` }]}>
           <AppIcon name="project" size={20} color={statusColor(projet.statut)} />
         </View>
         <View style={styles.cardTitleWrap}>
           <Text style={styles.cardTitle} numberOfLines={2}>{projet.titre}</Text>
-          <Text style={styles.cardSub}>{formatDate(projet.dateCreation, language, t)}</Text>
+          {projet.dateCreation ? <Text style={styles.cardSub}>{formatDate(projet.dateCreation, language, t)}</Text> : null}
         </View>
         <StatusBadge label={translateProjetStatut(projet.statut, t)} color={statusColor(projet.statut)} />
       </View>
+
+      <Image
+        source={require('../assets/images/placeholders/projets.png')}
+        style={styles.projectImage}
+        resizeMode="cover"
+        accessibilityLabel={t('projects.placeholder_image')}
+      />
 
       {projet.description && (
         <Text style={styles.cardDesc} numberOfLines={3}>{projet.description}</Text>
       )}
 
-      {projet.motifCorrection && (
-        <Text style={styles.correctionText}>{projet.motifCorrection}</Text>
-      )}
+      {needsCorrection && projet.motifCorrection ? (
+        <View style={styles.correctionBox} accessibilityRole="alert">
+          <View style={styles.correctionHeader}>
+            <AppIcon name="warning" size={18} color="#B45309" />
+            <Text style={styles.correctionTitle}>{t('projects.correction_requested')}</Text>
+          </View>
+          <Text style={styles.correctionText}>{projet.motifCorrection}</Text>
+        </View>
+      ) : null}
 
       <View style={styles.projectBadges}>
-        <ProjectTypeBadge hasGroup={Boolean(projet.groupeNom)} t={t} />
-        <VisibilityBadge visibility={projet.visibilite} t={t} />
+        {projet.visibilite ? <VisibilityBadge visibility={projet.visibilite} t={t} /> : null}
+        {projet.estPorteurConnecte ? (
+          <View style={styles.ownerBadge}>
+            <AppIcon name="profile" size={13} color="#F97316" />
+            <Text style={styles.ownerBadgeText}>{t('projects.owned_by_me')}</Text>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.metaBox}>
-        <MetaRow
-          label={t('projects.owner')}
-          value={projectOwner(projet, t)}
-        />
-        <MetaRow label={t('projects.created_at')} value={formatDate(projet.dateCreation, language, t)} />
-        <MetaRow label={t('projects.budget')} value={projet.budgetDemande ? `${projet.budgetDemande} €` : t('projects.not_provided')} />
+        {owner ? <MetaRow label={t('projects.owner')} value={owner} /> : null}
+        {projet.groupeNom ? <MetaRow label={t('projects.group')} value={projet.groupeNom} /> : null}
+        {projet.dateCreation ? <MetaRow label={t('projects.created_at')} value={formatDate(projet.dateCreation, language, t)} /> : null}
+        {projet.budgetDemande != null ? <MetaRow label={t('projects.estimated_budget')} value={`${projet.budgetDemande} €`} /> : null}
         <MetaRow label={t('projects.participants')} value={`${projet.nombreParticipants ?? 0}`} />
         <MetaRow label={t('projects.comments')} value={`${projet.nombreCommentaires ?? 0}`} />
-        {isPartenaire && (
-          <MetaRow
-            label={t('partner.support')}
-            value={t('partner.secureFinalization')}
-          />
-        )}
       </View>
-      {editable ? (
-        <TouchableOpacity style={styles.editButton} onPress={onEdit}>
-          <AppIcon name="edit" size={16} color="#2563EB" />
-          <Text style={styles.editButtonText}>{t('common.edit')}</Text>
-        </TouchableOpacity>
-      ) : null}
-      {canSubmit ? (
-        <TouchableOpacity
-          style={[styles.submitButton, submitting && styles.btnNewDisabled]}
-          disabled={submitting}
-          onPress={onSubmit}
-          accessibilityRole="button"
-          accessibilityLabel={t('projects.submit_draft')}
-        >
-          <AppIcon name="check" size={16} color="#fff" />
-          <Text style={styles.submitButtonText}>{t('projects.submit_draft')}</Text>
-        </TouchableOpacity>
+      {editable || canSubmit ? (
+        <View style={styles.cardActions}>
+          {editable ? (
+            <TouchableOpacity style={styles.editButton} onPress={onEdit} accessibilityRole="button">
+              <AppIcon name="edit" size={17} color="#2563EB" />
+              <Text style={styles.editButtonText}>{needsCorrection ? t('projects.correct') : t('common.edit')}</Text>
+            </TouchableOpacity>
+          ) : null}
+          {canSubmit ? (
+            <TouchableOpacity
+              style={[styles.submitButton, submitting && styles.btnNewDisabled]}
+              disabled={submitting}
+              onPress={onSubmit}
+              accessibilityRole="button"
+              accessibilityLabel={needsCorrection ? t('projects.resubmit_project') : t('projects.submit_draft')}
+            >
+              {submitting
+                ? <ActivityIndicator size="small" color="#FFFFFF" />
+                : <AppIcon name="send" size={17} color="#FFFFFF" />}
+              <Text style={styles.submitButtonText}>
+                {submitting
+                  ? t('projects.submission_in_progress')
+                  : needsCorrection ? t('projects.resubmit_project') : t('projects.submit_draft')}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       ) : null}
     </View>
   );
 }
 
-function ProjectTypeBadge({ hasGroup, t }) {
-  return (
-    <View style={styles.typeBadge}>
-      <AppIcon name={hasGroup ? 'group' : 'shield'} size={13} color="#475569" />
-      <Text style={styles.typeBadgeText}>
-        {t(hasGroup ? 'projects.type_group' : 'projects.type_institutional')}
-      </Text>
-    </View>
-  );
-}
-
-function projectOwner(projet, t) {
-  if (projet.groupeNom) return projet.groupeNom;
+function projectOwner(projet) {
   if (projet.porteurPrenom || projet.porteurNom) {
     return `${projet.porteurPrenom || ''} ${projet.porteurNom || ''}`.trim();
   }
-  return t('projects.type_institutional');
+  return null;
 }
 
 function ProjectFormModal({
@@ -679,6 +774,26 @@ function InfoBox({ text }) {
   );
 }
 
+function GroupDetectionState({ loading = false, title, text, actionLabel, onAction }) {
+  return (
+    <View style={[styles.groupDetection, !loading && styles.groupDetectionError]} accessibilityRole={loading ? 'progressbar' : 'alert'}>
+      <View style={styles.groupDetectionHeader}>
+        {loading
+          ? <ActivityIndicator size="small" color="#2563EB" />
+          : <AppIcon name="warning" size={20} color="#EF4444" />}
+        <Text style={styles.groupDetectionTitle}>{title}</Text>
+      </View>
+      <Text style={styles.groupDetectionText}>{text}</Text>
+      {actionLabel && onAction ? (
+        <TouchableOpacity style={styles.groupDetectionAction} onPress={onAction} accessibilityRole="button">
+          <AppIcon name="refresh" size={17} color="#2563EB" />
+          <Text style={styles.groupDetectionActionText}>{actionLabel}</Text>
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  );
+}
+
 function StatusBadge({ label, color }) {
   return (
     <View style={[styles.statusBadge, { backgroundColor: color }]}>
@@ -710,6 +825,10 @@ function MetaRow({ label, value }) {
 
 function translateProjetStatut(statut, t) {
   return t(`statuses.${statut}`);
+}
+
+function isCorrectionProject(projet) {
+  return ['A_CORRIGER_REFERENT', 'A_CORRIGER_ADMIN'].includes(projet?.statut);
 }
 
 function statusColor(statut) {
@@ -796,110 +915,197 @@ function getApiError(err, t, fallback) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: '#F3F4F6' },
 
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: '#fff',
+    paddingVertical: 12,
+    backgroundColor: '#F3F4F6',
     borderBottomWidth: 1,
-    borderBottomColor: '#eef2f7',
-    gap: 10,
+    borderBottomColor: '#E5E7EB',
+    gap: 8,
+  },
+  searchField: {
+    flex: 1,
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 14,
+    gap: 9,
   },
   searchInput: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 11,
     fontSize: 14,
-    color: '#1e293b',
+    lineHeight: 20,
+    color: '#111827',
+  },
+  refreshButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#DBEAFE',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   btnNew: {
+    width: 'auto',
+    maxWidth: 448,
+    alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    minHeight: 40,
-    height: 40,
+    gap: 8,
+    minHeight: 48,
     backgroundColor: '#F97316',
-    borderRadius: 16,
+    borderRadius: 14,
     justifyContent: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 18,
+    marginHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 2,
   },
-  btnNewDisabled: { backgroundColor: '#cbd5e1' },
-  btnNewText: { color: '#fff', fontSize: 12, fontWeight: '900' },
+  btnNewDisabled: { backgroundColor: '#CBD5E1' },
+  btnNewText: { color: '#FFFFFF', fontSize: 14, lineHeight: 19, fontWeight: '800' },
 
   infoBox: {
-    backgroundColor: '#fff7ed',
+    width: 'auto',
+    maxWidth: 448,
+    alignSelf: 'center',
+    backgroundColor: '#FFF7ED',
     borderLeftWidth: 4,
     borderLeftColor: '#F97316',
     marginHorizontal: 16,
     marginTop: 10,
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 14,
   },
-  infoBoxText: { color: '#9a3412', fontSize: 13, lineHeight: 18 },
+  infoBoxText: { color: '#9A3412', fontSize: 13, lineHeight: 18 },
+  groupDetection: {
+    width: 'auto',
+    maxWidth: 448,
+    alignSelf: 'center',
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: 14,
+    marginHorizontal: 16,
+    marginTop: 10,
+    padding: 14,
+  },
+  groupDetectionError: { backgroundColor: '#FEF2F2', borderColor: '#FECACA' },
+  groupDetectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  groupDetectionTitle: { flex: 1, color: '#111827', fontSize: 14, lineHeight: 19, fontWeight: '800' },
+  groupDetectionText: { color: '#64748B', fontSize: 13, lineHeight: 18, marginTop: 6 },
+  groupDetectionAction: {
+    minHeight: 44,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingRight: 12,
+    marginTop: 4,
+  },
+  groupDetectionActionText: { color: '#2563EB', fontSize: 13, lineHeight: 18, fontWeight: '800' },
   successBox: {
     backgroundColor: '#f0fdf4',
     borderLeftWidth: 4,
     borderLeftColor: '#22C55E',
+    width: 'auto',
+    maxWidth: 448,
+    alignSelf: 'center',
     marginHorizontal: 16,
     marginTop: 8,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   successText: { color: '#15803d', fontSize: 13 },
   errorBox: {
     backgroundColor: '#fef2f2',
     borderLeftWidth: 4,
     borderLeftColor: '#EF4444',
+    width: 'auto',
+    maxWidth: 448,
+    alignSelf: 'center',
     marginHorizontal: 16,
     marginTop: 8,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   errorText: { color: '#EF4444', fontSize: 13 },
 
-  listContent: { padding: 9, paddingBottom: 22 },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 10,
-    marginBottom: 7,
-    borderTopWidth: 3,
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#eef2f7',
+  listContent: { width: '100%', maxWidth: 480, alignSelf: 'center', padding: 16, paddingTop: 10, paddingBottom: 28 },
+  sectionHeader: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 6,
+    paddingBottom: 8,
   },
+  sectionDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
+  sectionTitle: { flex: 1, color: '#111827', fontSize: 17, lineHeight: 22, fontWeight: '700' },
+  sectionCount: {
+    minWidth: 26,
+    borderRadius: 999,
+    backgroundColor: '#E5E7EB',
+    color: '#475569',
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  card: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    shadowColor: '#111827',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  correctionCard: { borderColor: '#F59E0B', backgroundColor: '#FFFEF8' },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 5,
+    marginBottom: 10,
   },
   cardIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 11,
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
   },
-  cardTitleWrap: { flex: 1, marginRight: 8 },
-  cardTitle: { fontSize: 14, fontWeight: '900', color: '#1E3A8A', marginBottom: 1, lineHeight: 18 },
-  cardSub: { color: '#64748b', fontSize: 10 },
-  cardDesc: { color: '#475569', fontSize: 11, lineHeight: 15, marginBottom: 6 },
-  correctionText: { color: '#92400e', backgroundColor: '#fffbeb', fontSize: 11, lineHeight: 15, padding: 8, borderRadius: 8, marginBottom: 6 },
-  statusBadge: { borderRadius: 20, paddingHorizontal: 7, paddingVertical: 3 },
-  statusBadgeText: { color: '#fff', fontSize: 9, fontWeight: '900' },
+  cardTitleWrap: { flex: 1, minWidth: 0, marginRight: 6 },
+  cardTitle: { fontSize: 16, fontWeight: '800', color: '#111827', marginBottom: 2, lineHeight: 21 },
+  cardSub: { color: '#64748B', fontSize: 12, lineHeight: 16 },
+  projectImage: { width: '100%', aspectRatio: 16 / 7, borderRadius: 12, marginBottom: 10, backgroundColor: '#EFF6FF' },
+  cardDesc: { color: '#475569', fontSize: 14, lineHeight: 20, marginBottom: 10 },
+  correctionBox: { backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A', borderRadius: 12, padding: 11, marginBottom: 10 },
+  correctionHeader: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 5 },
+  correctionTitle: { flex: 1, color: '#92400E', fontSize: 13, lineHeight: 18, fontWeight: '800' },
+  correctionText: { color: '#78350F', fontSize: 13, lineHeight: 18 },
+  statusBadge: { maxWidth: 106, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4 },
+  statusBadgeText: { color: '#FFFFFF', fontSize: 10, lineHeight: 13, fontWeight: '800' },
   visibilityBadge: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
@@ -907,16 +1113,16 @@ const styles = StyleSheet.create({
     gap: 5,
     borderRadius: 999,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
-  visibilityBadgeText: { fontSize: 10, fontWeight: '900' },
+  visibilityBadgeText: { fontSize: 10, lineHeight: 13, fontWeight: '800' },
   projectBadges: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 5,
-    marginBottom: 6,
+    marginBottom: 10,
   },
-  typeBadge: {
+  ownerBadge: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
@@ -924,15 +1130,15 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#FFF7ED',
   },
-  typeBadgeText: { color: '#475569', fontSize: 10, fontWeight: '900' },
+  ownerBadgeText: { color: '#C2410C', fontSize: 10, lineHeight: 13, fontWeight: '800' },
 
   metaBox: {
     backgroundColor: '#f8fafc',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
   metaRow: {
     flexDirection: 'row',
@@ -941,18 +1147,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eef2f7',
   },
-  metaLabel: { color: '#64748b', fontSize: 11 },
+  metaLabel: { flexShrink: 0, color: '#64748B', fontSize: 12, lineHeight: 17, marginRight: 8 },
   metaValue: {
     color: '#1E3A8A',
-    fontSize: 11,
+    fontSize: 12,
+    lineHeight: 17,
     fontWeight: '700',
-    maxWidth: '58%',
+    flexShrink: 1,
+    maxWidth: '62%',
     textAlign: 'right',
   },
   editButton: {
-    marginTop: 8,
-    minHeight: 34,
-    borderRadius: 11,
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#bfdbfe',
     backgroundColor: '#eff6ff',
@@ -961,18 +1169,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 7,
   },
-  editButtonText: { color: '#2563EB', fontSize: 12, fontWeight: '900' },
+  editButtonText: { color: '#2563EB', fontSize: 13, lineHeight: 18, fontWeight: '800' },
   submitButton: {
-    marginTop: 8,
-    minHeight: 44,
-    borderRadius: 11,
-    backgroundColor: '#1d4ed8',
+    flex: 1.25,
+    minHeight: 46,
+    borderRadius: 12,
+    backgroundColor: '#2563EB',
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 7,
   },
-  submitButtonText: { color: '#fff', fontSize: 12, fontWeight: '900' },
+  submitButtonText: { color: '#FFFFFF', fontSize: 12, lineHeight: 16, fontWeight: '800', textAlign: 'center' },
+  cardActions: { flexDirection: 'row', gap: 8, marginTop: 10 },
 
   centered: {
     flex: 1,
