@@ -527,7 +527,13 @@
     "messagesCount": "{{count}} bericht(en)",
     "noAssignedGroups": "Er is momenteel geen groep aan jou toegewezen.",
     "noGroupPendingHint": "Je hebt nog geen actieve groep. Als je aanvraag in behandeling is, worden berichten beschikbaar na aanvaarding.",
-    "errorActiveGroup": "Kan je actieve groep niet laden."
+    "errorActiveGroup": "Kan je actieve groep niet laden.",
+    "errorThread": "Kan het groepsgesprek niet laden.",
+    "messagesErrorTitle": "Berichten niet beschikbaar",
+    "refresh": "Vernieuwen",
+    "refreshHint": "Laadt de berichten opnieuw zonder je concept te wissen.",
+    "messageInputLabel": "Je bericht aan de groep",
+    "characterCount": "{{count}} / {{max}}"
   },
   "notifications": {
     "title": "Meldingen",

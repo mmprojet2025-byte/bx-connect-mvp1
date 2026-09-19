@@ -527,7 +527,13 @@
     "messagesCount": "{{count}} message(s)",
     "noAssignedGroups": "Aucun groupe ne vous est assigné pour le moment.",
     "noGroupPendingHint": "Vous n'avez pas encore de groupe actif. Si une demande est en attente, la messagerie sera disponible après acceptation.",
-    "errorActiveGroup": "Impossible de charger votre groupe actif."
+    "errorActiveGroup": "Impossible de charger votre groupe actif.",
+    "errorThread": "Impossible de charger la discussion du groupe.",
+    "messagesErrorTitle": "Messages indisponibles",
+    "refresh": "Actualiser",
+    "refreshHint": "Recharge les messages sans effacer votre saisie.",
+    "messageInputLabel": "Votre message au groupe",
+    "characterCount": "{{count}} / {{max}}"
   },
   "notifications": {
     "title": "Notifications",

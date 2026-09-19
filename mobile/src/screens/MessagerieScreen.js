@@ -1,13 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, ActivityIndicator, Image, Platform, KeyboardAvoidingView
+  TextInput, ActivityIndicator, Image, Platform, KeyboardAvoidingView,
+  AccessibilityInfo,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import AppIcon from '../components/AppIcon';
-import { EmptyState as SharedEmptyState, LoadingState } from '../components/MobileUI';
+import {
+  EmptyState as SharedEmptyState,
+  ErrorState as SharedErrorState,
+  LoadingState,
+} from '../components/MobileUI';
 
 export default function MessagerieScreen({ navigation }) {
   const { t, i18n } = useTranslation();
@@ -21,22 +26,50 @@ export default function MessagerieScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState('');
+  const [initialError, setInitialError] = useState('');
+  const [messagesError, setMessagesError] = useState('');
+  const [sendError, setSendError] = useState('');
   const [emptyMessage, setEmptyMessage] = useState('');
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const messagesListRef = useRef(null);
 
   useEffect(() => {
     initialiserMessagerie();
   }, [isMembre, isReferent, isAdmin, isSuperAdmin]);
 
-  async function initialiserMessagerie() {
+  useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then((enabled) => {
+        if (mounted) setReduceMotion(enabled);
+      })
+      .catch(() => {});
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => {
+      mounted = false;
+      subscription.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (messages.length > 0 && !loadingMessages && !messagesError) {
+      requestAnimationFrame(() => {
+        messagesListRef.current?.scrollToEnd({ animated: !reduceMotion });
+      });
+    }
+  }, [messages.length, loadingMessages, messagesError, reduceMotion]);
+
+  async function initialiserMessagerie(preserveDraft = false) {
     setLoading(true);
-    setError('');
+    setInitialError('');
+    setMessagesError('');
+    setSendError('');
     setEmptyMessage('');
     setGroupes([]);
     setGroupeActif(null);
     setFilActif(null);
     setMessages([]);
-    setNouveauMessage('');
+    if (!preserveDraft) setNouveauMessage('');
 
     if (isAdmin || isSuperAdmin) {
       setLoading(false);
@@ -58,12 +91,21 @@ export default function MessagerieScreen({ navigation }) {
   }
 
   const chargerMessagerieMembre = async () => {
+    let groupe;
     try {
       const groupeRes = await api.get('/messagerie/mon-groupe');
-      setGroupeActif(groupeRes.data);
-      await chargerFilEtMessages(groupeRes.data);
+      groupe = groupeRes.data;
+      setGroupeActif(groupe);
     } catch (err) {
-      setEmptyMessage(getMemberEmptyMessage(err, t));
+      applyConversationLoadError(err, true);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      await chargerFilEtMessages(groupe);
+    } catch (err) {
+      applyConversationLoadError(err, false);
     } finally {
       setLoading(false);
     }
@@ -81,7 +123,7 @@ export default function MessagerieScreen({ navigation }) {
 
       await selectionnerGroupe(res.data[0], false);
     } catch (err) {
-      setError(getAccessError(err, t, t('messaging.errorGroups')));
+      setInitialError(getAccessError(err, t, t('messaging.errorGroups')));
     } finally {
       setLoading(false);
     }
@@ -95,13 +137,15 @@ export default function MessagerieScreen({ navigation }) {
     setFilActif(null);
     setMessages([]);
     setNouveauMessage('');
-    setError('');
+    setInitialError('');
+    setMessagesError('');
+    setSendError('');
     setEmptyMessage('');
 
     try {
       await chargerFilEtMessages(groupe);
     } catch (err) {
-      setEmptyMessage(getFilEmptyMessage(err, t));
+      applyConversationLoadError(err, false);
     } finally {
       if (showLoader) {
         setLoadingMessages(false);
@@ -117,13 +161,15 @@ export default function MessagerieScreen({ navigation }) {
 
   const chargerMessages = async (filId) => {
     setLoadingMessages(true);
-    setError('');
+    setMessagesError('');
     try {
       const res = await api.get(`/messagerie/fils/${filId}/messages`);
       setMessages(res.data);
+      return true;
     } catch (err) {
       setMessages([]);
-      setError(getAccessError(err, t, t('messaging.errorLoad')));
+      setMessagesError(getAccessError(err, t, t('messaging.errorLoad')));
+      return false;
     } finally {
       setLoadingMessages(false);
     }
@@ -133,19 +179,41 @@ export default function MessagerieScreen({ navigation }) {
     if (!nouveauMessage.trim() || !groupeActif || !filActif || sending) return;
 
     setSending(true);
-    setError('');
+    setSendError('');
     try {
       await api.post(`/messagerie/groupes/${groupeActif.id}/messages`, {
         contenu: nouveauMessage.trim(),
         filId: filActif.id,
       });
       setNouveauMessage('');
-      await chargerMessages(filActif.id);
+      const refreshed = await chargerMessages(filActif.id);
+      if (refreshed) requestAnimationFrame(() => scrollToLatest());
     } catch (err) {
-      setError(getAccessError(err, t, t('messaging.errorSend')));
+      setSendError(getAccessError(err, t, t('messaging.errorSend')));
     } finally {
       setSending(false);
     }
+  };
+
+  const applyConversationLoadError = (err, loadingMemberGroup) => {
+    const status = err.response?.status;
+    if (loadingMemberGroup && status === 403) {
+      setEmptyMessage(t('messaging.noGroupPendingHint'));
+      return;
+    }
+    if (!loadingMemberGroup && status === 404) {
+      setEmptyMessage(t('messaging.threadNotCreated'));
+      return;
+    }
+    setInitialError(getAccessError(
+      err,
+      t,
+      loadingMemberGroup ? t('messaging.errorActiveGroup') : t('messaging.errorThread')
+    ));
+  };
+
+  const scrollToLatest = () => {
+    messagesListRef.current?.scrollToEnd({ animated: !reduceMotion });
   };
 
   if (isAdmin || isSuperAdmin) {
@@ -164,7 +232,7 @@ export default function MessagerieScreen({ navigation }) {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={90}
     >
       {isReferent ? (
@@ -190,14 +258,21 @@ export default function MessagerieScreen({ navigation }) {
       ) : null}
 
       <View style={styles.header}>
-        <View>
+        <View style={styles.headerText}>
           <Text style={styles.headerTitle}>{t('messaging.groupMessaging')}</Text>
           <Text style={styles.headerSub}>
             {groupeActif?.nom || t('messaging.groupDiscussionReserved')}
           </Text>
         </View>
-        <TouchableOpacity style={styles.retrySmall} onPress={initialiserMessagerie}>
-          <Text style={styles.retrySmallText}>{t('common.retry')}</Text>
+        <TouchableOpacity
+          style={styles.refreshButton}
+          onPress={() => initialiserMessagerie(true)}
+          accessibilityRole="button"
+          accessibilityLabel={t('messaging.refresh')}
+          accessibilityHint={t('messaging.refreshHint')}
+        >
+          <AppIcon name="refresh" size={18} color="#2563EB" />
+          <Text style={styles.refreshButtonText}>{t('messaging.refresh')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -210,13 +285,14 @@ export default function MessagerieScreen({ navigation }) {
         />
       )}
 
-      {error !== '' && (
-        <View style={styles.errorBox}>
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      )}
-
-      {emptyMessage ? (
+      {initialError ? (
+        <SharedErrorState
+          title={t('common.loadErrorTitle')}
+          text={initialError}
+          retryLabel={t('common.retry')}
+          onRetry={() => initialiserMessagerie(true)}
+        />
+      ) : emptyMessage ? (
         <SharedEmptyState
           icon="message"
           illustrationSource={require('../assets/images/placeholders/messages.png')}
@@ -243,12 +319,23 @@ export default function MessagerieScreen({ navigation }) {
               <ActivityIndicator color="#1E3A8A" />
               <Text style={styles.loadingText}>{t('messaging.loadingMessages')}</Text>
             </View>
+          ) : messagesError ? (
+            <SharedErrorState
+              title={t('messaging.messagesErrorTitle')}
+              text={messagesError}
+              retryLabel={t('common.retry')}
+              onRetry={() => chargerMessages(filActif.id)}
+            />
           ) : (
             <FlatList
+              ref={messagesListRef}
               data={messages}
               keyExtractor={(item) => item.id.toString()}
               contentContainerStyle={styles.messagesContent}
               showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+              onContentSizeChange={scrollToLatest}
               ListEmptyComponent={
                 <View style={styles.emptyMessages}>
                   <Image
@@ -265,32 +352,57 @@ export default function MessagerieScreen({ navigation }) {
             />
           )}
 
-          <View style={styles.inputRow}>
-            <TextInput
-              style={styles.messageInput}
-              placeholder={t('messaging.type_message')}
-              placeholderTextColor="#94a3b8"
-              value={nouveauMessage}
-              onChangeText={setNouveauMessage}
-              multiline
-              maxLength={500}
-            />
-            <TouchableOpacity
-              style={[
-                styles.sendBtn,
-                (!nouveauMessage.trim() || sending) && styles.sendBtnDisabled,
-              ]}
-              onPress={handleEnvoyer}
-              disabled={!nouveauMessage.trim() || sending}
-              activeOpacity={0.8}
-            >
-              {sending ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <AppIcon name="send" size={18} color="#fff" />
-              )}
-            </TouchableOpacity>
-          </View>
+          {!loadingMessages && !messagesError ? (
+            <View style={styles.composerCard}>
+              {sendError ? (
+                <View
+                  style={styles.sendErrorBox}
+                  accessibilityRole="alert"
+                  accessibilityLiveRegion="assertive"
+                >
+                  <AppIcon name="alert" size={18} color="#EF4444" />
+                  <Text style={styles.sendErrorText}>{sendError}</Text>
+                </View>
+              ) : null}
+              <TextInput
+                style={styles.messageInput}
+                placeholder={t('messaging.type_message')}
+                placeholderTextColor="#94a3b8"
+                value={nouveauMessage}
+                onChangeText={(value) => {
+                  setNouveauMessage(value);
+                  if (sendError) setSendError('');
+                }}
+                multiline
+                maxLength={500}
+                textAlignVertical="top"
+                accessibilityLabel={t('messaging.messageInputLabel')}
+              />
+              <View style={styles.composerFooter}>
+                <Text style={styles.characterCount} accessibilityLiveRegion="polite">
+                  {t('messaging.characterCount', { count: nouveauMessage.length, max: 500 })}
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.sendBtn,
+                    (!nouveauMessage.trim() || sending) && styles.sendBtnDisabled,
+                  ]}
+                  onPress={handleEnvoyer}
+                  disabled={!nouveauMessage.trim() || sending}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('messaging.sendMessage')}
+                  accessibilityState={{ disabled: !nouveauMessage.trim() || sending, busy: sending }}
+                >
+                  {sending ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <AppIcon name="send" size={20} color="#fff" />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : null}
         </>
       )}
     </KeyboardAvoidingView>
@@ -313,6 +425,9 @@ function GroupSelector({ groupes, groupeActif, onSelect, t }) {
               style={[styles.groupChip, actif && styles.groupChipActive]}
               onPress={() => onSelect(item)}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityState={{ selected: actif }}
+              accessibilityLabel={item.nom}
             >
               <Text style={[styles.groupChipTitle, actif && styles.groupChipTitleActive]}>
                 {item.nom}
@@ -381,7 +496,7 @@ function MessageBubble({ message, currentUser, language }) {
 
       {estMoi && (
         <View style={[styles.msgAvatar, styles.msgAvatarMoi]}>
-          <Text style={styles.msgAvatarText}>
+          <Text style={[styles.msgAvatarText, styles.msgAvatarTextMoi]}>
             {getInitiales(currentUser?.prenom, currentUser?.nom)}
           </Text>
         </View>
@@ -400,20 +515,6 @@ function ForbiddenState({ title, text }) {
       <Text style={styles.emptyText}>{text}</Text>
     </View>
   );
-}
-
-function getMemberEmptyMessage(err, t) {
-  if (err.response?.status === 403) {
-    return t('messaging.noGroupPendingHint');
-  }
-  return getAccessError(err, t, t('messaging.errorActiveGroup'));
-}
-
-function getFilEmptyMessage(err, t) {
-  if (err.response?.status === 403) {
-    return t('messaging.accessDenied');
-  }
-  return t('messaging.threadNotCreated');
 }
 
 function getAccessError(err, t, fallback) {
@@ -472,21 +573,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#eef2f7',
   },
-  headerTitle: { fontSize: 15, fontWeight: '900', color: '#1E3A8A' },
-  headerSub: { fontSize: 11, color: '#64748b', marginTop: 1 },
-  retrySmall: {
-    backgroundColor: '#F0F9FF',
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+  headerText: { flex: 1, minWidth: 0, paddingRight: 8 },
+  headerTitle: { fontSize: 16, lineHeight: 21, fontWeight: '800', color: '#111827' },
+  headerSub: { fontSize: 12, lineHeight: 16, color: '#64748b', marginTop: 2 },
+  refreshButton: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 12,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
   },
-  retrySmallText: { color: '#38BDF8', fontSize: 12, fontWeight: '700' },
+  refreshButtonText: { color: '#2563EB', fontSize: 12, fontWeight: '700' },
 
   groupSelector: {
     backgroundColor: '#fff',
@@ -514,35 +620,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#eef2f7',
   },
   filAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#E0F2FE',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
-  filAvatarText: { color: '#1E3A8A', fontSize: 14, fontWeight: '900' },
+  filAvatarText: { color: '#1E3A8A', fontSize: 17, fontWeight: '800' },
   conversationInfo: { flex: 1 },
-  conversationTitle: { color: '#1E3A8A', fontSize: 14, fontWeight: '900' },
-  conversationSub: { color: '#64748b', fontSize: 11, marginTop: 1 },
-
-  errorBox: {
-    backgroundColor: '#fef2f2',
-    borderLeftWidth: 4,
-    borderLeftColor: '#EF4444',
-    marginHorizontal: 16,
-    marginTop: 8,
-    padding: 12,
-    borderRadius: 8,
-  },
-  errorText: { color: '#EF4444', fontSize: 13 },
+  conversationTitle: { color: '#111827', fontSize: 16, lineHeight: 21, fontWeight: '800' },
+  conversationSub: { color: '#64748b', fontSize: 12, lineHeight: 16, marginTop: 2 },
 
   centered: {
     flex: 1,
@@ -592,8 +687,8 @@ const styles = StyleSheet.create({
   },
   retryButtonText: { color: '#fff', fontWeight: '800', fontSize: 13 },
 
-  messagesContent: { flexGrow: 1, paddingHorizontal: 8, paddingTop: 7, paddingBottom: 6 },
-  messageRow: { flexDirection: 'row', marginBottom: 5, alignItems: 'flex-end' },
+  messagesContent: { flexGrow: 1, paddingHorizontal: 12, paddingTop: 16, paddingBottom: 12 },
+  messageRow: { flexDirection: 'row', marginBottom: 14, alignItems: 'flex-end' },
   messageRowLeft: { justifyContent: 'flex-start' },
   messageRowRight: { justifyContent: 'flex-end' },
   msgAvatar: {
@@ -607,11 +702,12 @@ const styles = StyleSheet.create({
   },
   msgAvatarMoi: { backgroundColor: '#1E3A8A' },
   msgAvatarText: { color: '#1E3A8A', fontSize: 11, fontWeight: '900' },
-  msgBubbleContainer: { maxWidth: '84%' },
-  msgSender: { fontSize: 10, color: '#64748b', marginBottom: 2, marginLeft: 4 },
+  msgAvatarTextMoi: { color: '#FFFFFF' },
+  msgBubbleContainer: { maxWidth: '82%', minWidth: 0 },
+  msgSender: { fontSize: 12, lineHeight: 16, color: '#374151', fontWeight: '700', marginBottom: 4, marginLeft: 8 },
   msgBubble: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -620,41 +716,58 @@ const styles = StyleSheet.create({
   },
   msgBubbleMoi: { backgroundColor: '#1E3A8A', borderRadius: 18, borderBottomRightRadius: 5 },
   msgBubbleAutre: { backgroundColor: '#fff', borderRadius: 18, borderBottomLeftRadius: 5, borderWidth: 1, borderColor: '#eef2f7' },
-  msgText: { fontSize: 13, lineHeight: 18 },
+  msgText: { fontSize: 14, lineHeight: 20, flexShrink: 1 },
   msgTextMoi: { color: '#fff' },
   msgTextAutre: { color: '#1e293b' },
-  msgTime: { fontSize: 9, color: '#94a3b8', marginTop: 2 },
+  msgTime: { fontSize: 11, lineHeight: 15, color: '#64748b', marginTop: 4 },
   msgTimeRight: { textAlign: 'right', marginRight: 4 },
   msgTimeLeft: { marginLeft: 4 },
 
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+  composerCard: {
     backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: '#eef2f7',
-    paddingHorizontal: 9,
-    paddingVertical: 7,
+    borderTopColor: '#E5E7EB',
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 8,
   },
+  sendErrorBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    padding: 10,
+    marginBottom: 8,
+    borderRadius: 12,
+    backgroundColor: '#FEF2F2',
+  },
+  sendErrorText: { flex: 1, color: '#B91C1C', fontSize: 12, lineHeight: 17, fontWeight: '600' },
   messageInput: {
-    flex: 1,
-    minHeight: 38,
+    minHeight: 48,
     maxHeight: 110,
     backgroundColor: '#F8FAFC',
-    borderRadius: 22,
+    borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 11,
     fontSize: 14,
+    lineHeight: 20,
     color: '#1e293b',
-    marginRight: 8,
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
+  composerFooter: {
+    minHeight: 48,
+    marginTop: 6,
+    paddingLeft: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  characterCount: { color: '#64748B', fontSize: 12, lineHeight: 16 },
   sendBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#1E3A8A',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#2563EB',
     alignItems: 'center',
     justifyContent: 'center',
   },

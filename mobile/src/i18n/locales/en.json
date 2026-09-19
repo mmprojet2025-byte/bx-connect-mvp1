@@ -527,7 +527,13 @@
     "messagesCount": "{{count}} message(s)",
     "noAssignedGroups": "No group is assigned to you at the moment.",
     "noGroupPendingHint": "You do not have an active group yet. If a request is pending, messaging will be available after acceptance.",
-    "errorActiveGroup": "Unable to load your active group."
+    "errorActiveGroup": "Unable to load your active group.",
+    "errorThread": "Unable to load the group conversation.",
+    "messagesErrorTitle": "Messages unavailable",
+    "refresh": "Refresh",
+    "refreshHint": "Reloads the messages without clearing your draft.",
+    "messageInputLabel": "Your message to the group",
+    "characterCount": "{{count}} / {{max}}"
   },
   "notifications": {
     "title": "Notifications",
