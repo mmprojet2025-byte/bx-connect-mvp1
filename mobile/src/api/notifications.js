@@ -9,6 +9,18 @@ const DEFAULT_PAGE = {
   last: true,
 };
 
+const unreadCountListeners = new Set();
+
+export function subscribeToUnreadCount(listener) {
+  unreadCountListeners.add(listener);
+  return () => unreadCountListeners.delete(listener);
+}
+
+export function publishUnreadCount(count) {
+  const normalizedCount = Math.max(Number(count) || 0, 0);
+  unreadCountListeners.forEach((listener) => listener(normalizedCount));
+}
+
 export async function getNotificationsPage(page = 0, size = 20) {
   const res = await api.get('/notifications/page', { params: { page, size } });
   return normalizePagedResponse(res.data, page, size);

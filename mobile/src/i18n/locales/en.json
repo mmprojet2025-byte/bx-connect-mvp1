@@ -157,7 +157,10 @@
     "newsEvent": "Event",
     "newsGroup": "Group",
     "newsInfo": "Information",
-    "registeredCount": "{{count}} registered"
+    "registeredCount": "{{count}} registered",
+    "sectionErrorText": "This section cannot be loaded right now.",
+    "globalErrorTitle": "Unable to load your home screen",
+    "globalErrorText": "Check your connection, then try again."
   },
   "common": {
     "loading": "Loading...",
@@ -335,6 +338,13 @@
     "empty_description": "Published activities will appear here.",
     "no_referent_activities": "Your activities will appear here once they are created.",
     "error_load": "Unable to load activities.",
+    "refresh_accessibility": "Refresh activities",
+    "registrations_loading": "Checking your registrations…",
+    "registrations_error": "Unable to check your registrations.",
+    "registrations_unknown_title": "Registration status unavailable",
+    "registrations_unknown_text": "Your registrations cannot be checked right now. Actions are temporarily disabled.",
+    "registrations_unknown_action": "Actions are unavailable until your registrations have been checked.",
+    "retry_registrations": "Try loading registrations again",
     "error_register_this": "Unable to register for this activity.",
     "success_register": "Registration successful.",
     "cancel_registration": "Cancel registration",

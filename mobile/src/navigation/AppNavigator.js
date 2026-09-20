@@ -1,13 +1,13 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { ActivityIndicator, View, TouchableOpacity, Text, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import AppIcon from '../components/AppIcon';
 import api from '../api/axios';
-import { getUnreadCount } from '../api/notifications';
+import { getUnreadCount, subscribeToUnreadCount } from '../api/notifications';
 
 // ─── Écrans publics ───────────────────────────────────────────────────────────
 import HomeScreen          from '../screens/HomeScreen';
@@ -917,24 +917,41 @@ function PrivateTabs() {
   const { isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire } = useAuth();
   const { t, i18n } = useTranslation();
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const unreadRequestRef = useRef(null);
+  const unreadVersionRef = useRef(0);
 
-  useEffect(() => {
+  const refreshUnreadNotifications = useCallback(() => {
     if (isSuperAdmin) {
-      void Promise.resolve().then(() => setUnreadNotifications(0));
-      return undefined;
+      setUnreadNotifications(0);
+      return Promise.resolve(0);
     }
-    let cancelled = false;
-    getUnreadCount()
+    if (unreadRequestRef.current) return unreadRequestRef.current;
+
+    const requestVersion = unreadVersionRef.current;
+    const request = getUnreadCount()
       .then((count) => {
-        if (!cancelled) {
+        if (unreadVersionRef.current === requestVersion) {
           setUnreadNotifications(count);
         }
+        return count;
       })
-      .catch(() => {
-        if (!cancelled) setUnreadNotifications(0);
+      .catch(() => null)
+      .finally(() => {
+        if (unreadRequestRef.current === request) unreadRequestRef.current = null;
       });
-    return () => { cancelled = true; };
-  }, [isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire]);
+    unreadRequestRef.current = request;
+    return request;
+  }, [isSuperAdmin]);
+
+  useEffect(() => {
+    unreadVersionRef.current += 1;
+    const unsubscribe = subscribeToUnreadCount((count) => {
+      unreadVersionRef.current += 1;
+      setUnreadNotifications(count);
+    });
+    void Promise.resolve().then(() => refreshUnreadNotifications());
+    return unsubscribe;
+  }, [isMembre, isReferent, isAdmin, isSuperAdmin, isPartenaire, refreshUnreadNotifications]);
 
   const communityLabels = getCommunityLabels(i18n.language);
   const DashboardStack = makeDashboardStack(t, unreadNotifications, {
@@ -997,6 +1014,11 @@ function PrivateTabs() {
 
   return (
     <Tab.Navigator
+      screenListeners={{
+        focus: () => {
+          void refreshUnreadNotifications();
+        },
+      }}
       screenOptions={{
         headerShown: false,
         tabBarStyle: {

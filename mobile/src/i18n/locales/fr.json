@@ -157,7 +157,10 @@
     "newsEvent": "Événement",
     "newsGroup": "Groupe",
     "newsInfo": "Information",
-    "registeredCount": "{{count}} inscrit(s)"
+    "registeredCount": "{{count}} inscrit(s)",
+    "sectionErrorText": "Cette section ne peut pas être chargée pour le moment.",
+    "globalErrorTitle": "Impossible de charger votre accueil",
+    "globalErrorText": "Vérifiez votre connexion, puis réessayez."
   },
   "common": {
     "loading": "Chargement en cours...",
@@ -335,6 +338,13 @@
     "empty_description": "Les activités publiées apparaîtront ici.",
     "no_referent_activities": "Vos activités apparaîtront ici lorsqu'elles seront créées.",
     "error_load": "Impossible de charger les activités.",
+    "refresh_accessibility": "Actualiser les activités",
+    "registrations_loading": "Vérification de vos inscriptions…",
+    "registrations_error": "Impossible de vérifier vos inscriptions.",
+    "registrations_unknown_title": "Statut d’inscription indisponible",
+    "registrations_unknown_text": "Vos inscriptions ne peuvent pas être vérifiées pour le moment. Les actions sont temporairement désactivées.",
+    "registrations_unknown_action": "Actions indisponibles tant que vos inscriptions ne sont pas vérifiées.",
+    "retry_registrations": "Réessayer de charger les inscriptions",
     "error_register_this": "Impossible de s'inscrire à cette activité.",
     "success_register": "Inscription réussie.",
     "cancel_registration": "Annuler l’inscription",

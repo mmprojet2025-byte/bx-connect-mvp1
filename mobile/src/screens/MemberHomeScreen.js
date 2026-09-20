@@ -14,16 +14,29 @@ import { getRecentNotifications } from '../api/notifications';
 import AppIcon from '../components/AppIcon';
 import { Badge, COLORS, SHADOWS } from '../components/MobileUI';
 
+const HOME_DOMAINS = ['activities', 'projects', 'announcements', 'memberships', 'messageGroup', 'notifications'];
+
+const INITIAL_HOME_STATE = {
+  activities: { status: 'loading', data: [] },
+  projects: { status: 'loading', data: [] },
+  announcements: { status: 'loading', data: [] },
+  memberships: { status: 'loading', data: [] },
+  messageGroup: { status: 'loading', data: null },
+  notifications: { status: 'loading', data: [] },
+};
+
 export default function MemberHomeScreen({ navigation }) {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const [activities, setActivities] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [announcements, setAnnouncements] = useState([]);
-  const [memberships, setMemberships] = useState([]);
-  const [messageGroup, setMessageGroup] = useState(null);
-  const [notifications, setNotifications] = useState([]);
+  const [domains, setDomains] = useState(INITIAL_HOME_STATE);
   const [refreshing, setRefreshing] = useState(false);
+
+  const activities = domains.activities.data;
+  const projects = domains.projects.data;
+  const announcements = domains.announcements.data;
+  const memberships = domains.memberships.data;
+  const messageGroup = domains.messageGroup.data;
+  const notifications = domains.notifications.data;
 
   const greeting = user?.prenom
     ? t('memberHome.welcomeNamed', { name: user.prenom })
@@ -33,25 +46,29 @@ export default function MemberHomeScreen({ navigation }) {
     navigation.setOptions({ title: t('navigation.home'), headerTitle: t('navigation.home') });
   }, [navigation, t]);
 
-  const loadHome = useCallback(async (showRefresh = false) => {
+  const loadHome = useCallback(async (showRefresh = false, requestedDomains = HOME_DOMAINS) => {
     if (showRefresh) setRefreshing(true);
 
-    const results = await Promise.allSettled([
-      api.get('/activites', { skipAuth: true }),
-      api.get('/projets'),
-      api.get('/annonces/mes-annonces'),
-      api.get('/groupes/mes-adhesions'),
-      api.get('/messagerie/mon-groupe'),
-      getRecentNotifications(3),
-    ]);
+    setDomains((current) => {
+      const next = { ...current };
+      requestedDomains.forEach((domain) => {
+        next[domain] = { ...current[domain], status: 'loading' };
+      });
+      return next;
+    });
 
-    setActivities(settledList(results[0]));
-    setProjects(settledList(results[1]));
-    setAnnouncements(settledList(results[2]));
-    setMemberships(settledList(results[3]));
-    setMessageGroup(results[4].status === 'fulfilled' ? results[4].value.data : null);
-    setNotifications(results[5].status === 'fulfilled' && Array.isArray(results[5].value) ? results[5].value : []);
-    setRefreshing(false);
+    const results = await Promise.allSettled(requestedDomains.map(loadHomeDomain));
+    setDomains((current) => {
+      const next = { ...current };
+      requestedDomains.forEach((domain, index) => {
+        const result = results[index];
+        next[domain] = result.status === 'fulfilled'
+          ? { status: 'success', data: result.value }
+          : { ...current[domain], status: 'error' };
+      });
+      return next;
+    });
+    if (showRefresh) setRefreshing(false);
   }, []);
 
   useEffect(() => {
@@ -81,6 +98,13 @@ export default function MemberHomeScreen({ navigation }) {
         description: currentMembership.groupeDescription,
       }
     : messageGroup;
+
+  const groupStatus = getGroupSectionStatus(domains, currentGroup);
+  const allMainSectionsFailed = domains.activities.status === 'error'
+    && domains.projects.status === 'error'
+    && domains.announcements.status === 'error'
+    && groupStatus === 'error'
+    && domains.notifications.status === 'error';
 
   const recentNews = useMemo(
     () => [...announcements]
@@ -123,12 +147,30 @@ export default function MemberHomeScreen({ navigation }) {
         </View>
       </View>
 
+      {allMainSectionsFailed ? (
+        <SectionError
+          title={t('memberHome.globalErrorTitle')}
+          text={t('memberHome.globalErrorText')}
+          onRetry={() => loadHome(false)}
+          retryLabel={t('common.retry')}
+        />
+      ) : (
+        <>
+
       <ContentSection
         title={t('memberHome.upcomingTitle')}
         actionLabel={t('memberHome.seeAll')}
         onAction={() => openTab('TabActivities')}
       >
-        {nextActivity ? (
+        {domains.activities.status === 'loading' ? (
+          <SectionLoading label={t('common.loading')} />
+        ) : domains.activities.status === 'error' ? (
+          <SectionError
+            text={t('memberHome.sectionErrorText')}
+            onRetry={() => loadHome(false, ['activities'])}
+            retryLabel={t('common.retry')}
+          />
+        ) : nextActivity ? (
           <ActivityCard
             activity={nextActivity}
             language={i18n.language}
@@ -149,18 +191,36 @@ export default function MemberHomeScreen({ navigation }) {
       <ContentSection
         title={t('memberHome.myGroupTitle')}
       >
-        <GroupCard
-          group={currentGroup}
-          pendingMembership={pendingMembership}
-          t={t}
-          onPress={() => openTab('TabGroupes', 'GroupesAccess')}
-        />
+        {groupStatus === 'loading' ? (
+          <SectionLoading label={t('common.loading')} />
+        ) : groupStatus === 'error' ? (
+          <SectionError
+            text={t('memberHome.sectionErrorText')}
+            onRetry={() => loadHome(false, ['memberships', 'messageGroup'])}
+            retryLabel={t('common.retry')}
+          />
+        ) : (
+          <GroupCard
+            group={currentGroup}
+            pendingMembership={pendingMembership}
+            t={t}
+            onPress={() => openTab('TabGroupes', 'GroupesAccess')}
+          />
+        )}
       </ContentSection>
 
       <ContentSection
         title={t('memberHome.newsTitle')}
       >
-        {recentNews.length > 0 ? (
+        {domains.announcements.status === 'loading' ? (
+          <SectionLoading label={t('common.loading')} />
+        ) : domains.announcements.status === 'error' ? (
+          <SectionError
+            text={t('memberHome.sectionErrorText')}
+            onRetry={() => loadHome(false, ['announcements'])}
+            retryLabel={t('common.retry')}
+          />
+        ) : recentNews.length > 0 ? (
           <View style={styles.listCard}>
             {recentNews.map((item, index) => (
               <NewsRow
@@ -188,7 +248,15 @@ export default function MemberHomeScreen({ navigation }) {
         actionLabel={t('memberHome.discover')}
         onAction={() => openTab('TabGroupes', 'ProjectsAccess')}
       >
-        {popularProject ? (
+        {domains.projects.status === 'loading' ? (
+          <SectionLoading label={t('common.loading')} />
+        ) : domains.projects.status === 'error' ? (
+          <SectionError
+            text={t('memberHome.sectionErrorText')}
+            onRetry={() => loadHome(false, ['projects'])}
+            retryLabel={t('common.retry')}
+          />
+        ) : popularProject ? (
           <ProjectCard
             project={popularProject}
             t={t}
@@ -208,9 +276,17 @@ export default function MemberHomeScreen({ navigation }) {
       <ContentSection
         title={t('memberHome.notificationsTitle')}
         actionLabel={t('memberHome.seeAll')}
-        onAction={() => openTab('TabNotifications')}
+        onAction={() => navigation.navigate('NotificationsAccess')}
       >
-        {recentNotifications.length > 0 ? (
+        {domains.notifications.status === 'loading' ? (
+          <SectionLoading label={t('common.loading')} />
+        ) : domains.notifications.status === 'error' ? (
+          <SectionError
+            text={t('memberHome.sectionErrorText')}
+            onRetry={() => loadHome(false, ['notifications'])}
+            retryLabel={t('common.retry')}
+          />
+        ) : recentNotifications.length > 0 ? (
           <View style={styles.listCard}>
             {recentNotifications.map((notification, index) => (
               <NotificationRow
@@ -219,7 +295,7 @@ export default function MemberHomeScreen({ navigation }) {
                 language={i18n.language}
                 t={t}
                 last={index === recentNotifications.length - 1}
-                onPress={() => openTab('TabNotifications')}
+                onPress={() => navigation.navigate('NotificationsAccess')}
               />
             ))}
           </View>
@@ -232,6 +308,8 @@ export default function MemberHomeScreen({ navigation }) {
           />
         )}
       </ContentSection>
+        </>
+      )}
     </ScrollView>
   );
 }
@@ -432,8 +510,78 @@ function Meta({ icon, text }) {
   );
 }
 
-function settledList(result) {
-  return result.status === 'fulfilled' && Array.isArray(result.value.data) ? result.value.data : [];
+function SectionLoading({ label }) {
+  return (
+    <View style={styles.sectionState} accessibilityRole="progressbar">
+      <AppIcon name="refresh" size={19} color={COLORS.interactive} />
+      <Text style={styles.sectionStateText}>{label}</Text>
+    </View>
+  );
+}
+
+function SectionError({ title, text, onRetry, retryLabel }) {
+  return (
+    <View style={styles.sectionError} accessibilityRole="alert">
+      <View style={styles.sectionStateBody}>
+        {title ? <Text style={styles.sectionErrorTitle}>{title}</Text> : null}
+        <Text style={styles.sectionErrorText}>{text}</Text>
+      </View>
+      <TouchableOpacity
+        style={styles.sectionRetry}
+        onPress={onRetry}
+        accessibilityRole="button"
+        accessibilityLabel={retryLabel}
+      >
+        <AppIcon name="refresh" size={16} color={COLORS.interactive} />
+        <Text style={styles.sectionRetryText}>{retryLabel}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+async function loadHomeDomain(domain) {
+  switch (domain) {
+    case 'activities': {
+      const response = await api.get('/activites', { skipAuth: true });
+      return Array.isArray(response.data) ? response.data : [];
+    }
+    case 'projects': {
+      const response = await api.get('/projets');
+      return Array.isArray(response.data) ? response.data : [];
+    }
+    case 'announcements': {
+      const response = await api.get('/annonces/mes-annonces');
+      return Array.isArray(response.data) ? response.data : [];
+    }
+    case 'memberships': {
+      const response = await api.get('/groupes/mes-adhesions');
+      return Array.isArray(response.data) ? response.data : [];
+    }
+    case 'messageGroup': {
+      try {
+        const response = await api.get('/messagerie/mon-groupe');
+        return response.data || null;
+      } catch (error) {
+        if (error.response?.status === 403 || error.response?.status === 404) return null;
+        throw error;
+      }
+    }
+    case 'notifications': {
+      const response = await getRecentNotifications(3);
+      return Array.isArray(response) ? response : [];
+    }
+    default:
+      throw new Error(`Unknown home domain: ${domain}`);
+  }
+}
+
+function getGroupSectionStatus(domains, currentGroup) {
+  if (domains.memberships.status === 'success') return 'success';
+  if (domains.messageGroup.status === 'success' && currentGroup?.nom) return 'success';
+  if (domains.memberships.status === 'loading' || domains.messageGroup.status === 'loading') {
+    return 'loading';
+  }
+  return 'error';
 }
 
 function dateValue(value) {
@@ -492,6 +640,43 @@ const styles = StyleSheet.create({
   sectionTitle: { flex: 1, color: COLORS.text, fontSize: 17, lineHeight: 22, fontWeight: '700' },
   sectionActionButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingLeft: 8 },
   sectionAction: { color: COLORS.interactive, fontSize: 12, lineHeight: 16, fontWeight: '700' },
+  sectionState: {
+    minHeight: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+  },
+  sectionStateText: { color: COLORS.muted, fontSize: 13, lineHeight: 18 },
+  sectionError: {
+    minHeight: 80,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    backgroundColor: '#FEF2F2',
+  },
+  sectionStateBody: { flex: 1, minWidth: 0 },
+  sectionErrorTitle: { color: '#991B1B', fontSize: 14, lineHeight: 19, fontWeight: '700' },
+  sectionErrorText: { color: '#7F1D1D', fontSize: 13, lineHeight: 18 },
+  sectionRetry: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: COLORS.softBlue,
+  },
+  sectionRetryText: { color: COLORS.interactive, fontSize: 12, fontWeight: '700' },
   featureCard: {
     minHeight: 104,
     flexDirection: 'row',

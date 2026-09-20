@@ -43,6 +43,8 @@ export default function ActivitiesScreen() {
 
   const [activites, setActivites] = useState([]);
   const [inscriptions, setInscriptions] = useState([]);
+  const [inscriptionsStatus, setInscriptionsStatus] = useState('idle');
+  const [inscriptionsError, setInscriptionsError] = useState('');
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -64,6 +66,7 @@ export default function ActivitiesScreen() {
     setCacheNotice('');
 
     if (isSuperAdmin) {
+      setInscriptionsStatus('idle');
       setLoading(false);
       return;
     }
@@ -73,6 +76,7 @@ export default function ActivitiesScreen() {
         const res = await api.get('/activites/admin/toutes');
         setActivites(res.data);
         setInscriptions([]);
+        setInscriptionsStatus('idle');
         return;
       }
 
@@ -80,6 +84,7 @@ export default function ActivitiesScreen() {
         const res = await api.get('/partenaire/activites-ouvertes');
         setActivites(res.data);
         setInscriptions([]);
+        setInscriptionsStatus('idle');
         return;
       }
 
@@ -87,6 +92,7 @@ export default function ActivitiesScreen() {
         const res = await api.get('/activites/mes-activites');
         setActivites(res.data);
         setInscriptions([]);
+        setInscriptionsStatus('idle');
         return;
       }
 
@@ -96,14 +102,11 @@ export default function ActivitiesScreen() {
       await saveReadOnlyCache(PUBLIC_ACTIVITIES_CACHE_KEY, publicActivities);
 
       if (isMembre) {
-        try {
-          const inscriptionsRes = await api.get('/inscriptions/mes-inscriptions');
-          setInscriptions(inscriptionsRes.data || []);
-        } catch {
-          setInscriptions([]);
-        }
+        await chargerInscriptions();
       } else {
         setInscriptions([]);
+        setInscriptionsStatus('idle');
+        setInscriptionsError('');
       }
     } catch (err) {
       const canUsePublicCache = !isAdmin && !isReferent && !isPartenaire && !isSuperAdmin
@@ -114,7 +117,13 @@ export default function ActivitiesScreen() {
 
       if (cachedActivities?.length) {
         setActivites(cachedActivities);
-        setInscriptions([]);
+        if (isMembre) {
+          setInscriptionsStatus('error');
+          setInscriptionsError(t('activities.registrations_unknown_text'));
+        } else {
+          setInscriptions([]);
+          setInscriptionsStatus('idle');
+        }
         setCacheNotice(t('common.cache_notice'));
         setError('');
         return;
@@ -122,13 +131,27 @@ export default function ActivitiesScreen() {
 
       if (isMembre && err.response?.status === 403) {
         setActivites([]);
-        setInscriptions([]);
         setError('');
       } else {
         setError(getApiError(err, t, t('activities.error_load')));
       }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function chargerInscriptions() {
+    if (!isMembre) return;
+
+    setInscriptionsStatus('loading');
+    setInscriptionsError('');
+    try {
+      const inscriptionsRes = await api.get('/inscriptions/mes-inscriptions');
+      setInscriptions(inscriptionsRes.data || []);
+      setInscriptionsStatus('success');
+    } catch (err) {
+      setInscriptionsError(getApiError(err, t, t('activities.registrations_error')));
+      setInscriptionsStatus('error');
     }
   }
 
@@ -314,7 +337,7 @@ export default function ActivitiesScreen() {
             style={styles.retrySmall}
             onPress={chargerActivites}
             accessibilityRole="button"
-            accessibilityLabel={t('common.retry')}
+            accessibilityLabel={t('activities.refresh_accessibility')}
           >
             <AppIcon name="refresh" size={20} color="#2563EB" />
           </TouchableOpacity>
@@ -339,6 +362,32 @@ export default function ActivitiesScreen() {
 
       {cacheNotice !== '' && (
         <InfoBox text={cacheNotice} />
+      )}
+
+      {isMembre && !loading && inscriptionsStatus === 'loading' && (
+        <InfoBox text={t('activities.registrations_loading')} />
+      )}
+
+      {isMembre && !loading && inscriptionsStatus === 'error' && (
+        <View style={styles.registrationErrorBox} accessibilityRole="alert">
+          <View style={styles.registrationErrorTextBlock}>
+            <Text style={styles.registrationErrorTitle}>
+              {t('activities.registrations_unknown_title')}
+            </Text>
+            <Text style={styles.registrationErrorText}>
+              {inscriptionsError || t('activities.registrations_unknown_text')}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.registrationRetryButton}
+            onPress={chargerInscriptions}
+            accessibilityRole="button"
+            accessibilityLabel={t('activities.retry_registrations')}
+          >
+            <AppIcon name="refresh" size={17} color="#1D4ED8" />
+            <Text style={styles.registrationRetryText}>{t('common.retry')}</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       {message !== '' && (
@@ -385,17 +434,24 @@ export default function ActivitiesScreen() {
               isReferent={isReferent}
               isAdmin={isAdmin}
               isPartenaire={isPartenaire}
-              inscription={inscriptions.find((ins) => ins.activiteId === item.id)}
+              inscription={inscriptionsStatus === 'success'
+                ? inscriptions.find((ins) => ins.activiteId === item.id)
+                : undefined}
               actionLoading={actionLoadingId === item.id}
               onInscrire={() => handleInscrire(item.id)}
               onAnnulerInscription={() => confirmAnnulerInscription(
-                inscriptions.find((ins) => ins.activiteId === item.id),
+                inscriptionsStatus === 'success'
+                  ? inscriptions.find((ins) => ins.activiteId === item.id)
+                  : undefined,
               )}
               onEdit={() => openEditForm(item)}
               onStatusChange={(statut) => confirmStatusChange(item, statut)}
               t={t}
               language={i18n.language}
-              readOnly={cacheNotice !== ''}
+              readOnly={cacheNotice !== '' || (isMembre && inscriptionsStatus !== 'success')}
+              readOnlyText={cacheNotice !== ''
+                ? t('common.cache_read_only')
+                : t('activities.registrations_unknown_action')}
             />
           )}
           contentContainerStyle={styles.listContent}
@@ -435,6 +491,7 @@ function ActivityCard({
   t,
   language,
   readOnly,
+  readOnlyText,
 }) {
   const complete = isActiviteComplete(activite);
   const alreadyRegistered = !!inscription && inscription.statut !== 'ANNULEE';
@@ -550,7 +607,7 @@ function ActivityCard({
               </TouchableOpacity>
             </View>
           ) : readOnly ? (
-            <StatusLine text={t('common.cache_read_only')} color="#64748b" />
+            <StatusLine text={readOnlyText} color="#64748b" />
           ) : activite.gratuite === false ? (
             <DisabledAction
               icon="ban-outline"
@@ -1086,6 +1143,34 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   infoBoxText: { color: '#1e40af', fontSize: 12, lineHeight: 16 },
+  registrationErrorBox: {
+    width: '92%',
+    maxWidth: 428,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    backgroundColor: '#FEF2F2',
+  },
+  registrationErrorTextBlock: { flex: 1, minWidth: 0 },
+  registrationErrorTitle: { color: '#991B1B', fontSize: 13, lineHeight: 18, fontWeight: '700' },
+  registrationErrorText: { color: '#7F1D1D', fontSize: 12, lineHeight: 17, marginTop: 2 },
+  registrationRetryButton: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: '#DBEAFE',
+  },
+  registrationRetryText: { color: '#1D4ED8', fontSize: 12, fontWeight: '700' },
   successBox: {
     backgroundColor: '#f0fdf4',
     borderLeftWidth: 4,

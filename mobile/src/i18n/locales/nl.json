@@ -157,7 +157,10 @@
     "newsEvent": "Evenement",
     "newsGroup": "Groep",
     "newsInfo": "Informatie",
-    "registeredCount": "{{count}} ingeschreven"
+    "registeredCount": "{{count}} ingeschreven",
+    "sectionErrorText": "Deze sectie kan momenteel niet worden geladen.",
+    "globalErrorTitle": "Je startscherm kan niet worden geladen",
+    "globalErrorText": "Controleer je verbinding en probeer opnieuw."
   },
   "common": {
     "loading": "Bezig met laden...",
@@ -335,6 +338,13 @@
     "empty_description": "Gepubliceerde activiteiten verschijnen hier.",
     "no_referent_activities": "Je activiteiten verschijnen hier zodra ze zijn aangemaakt.",
     "error_load": "Kan activiteiten niet laden.",
+    "refresh_accessibility": "Activiteiten vernieuwen",
+    "registrations_loading": "Je inschrijvingen worden gecontroleerd…",
+    "registrations_error": "Je inschrijvingen kunnen niet worden gecontroleerd.",
+    "registrations_unknown_title": "Inschrijvingsstatus niet beschikbaar",
+    "registrations_unknown_text": "Je inschrijvingen kunnen momenteel niet worden gecontroleerd. Acties zijn tijdelijk uitgeschakeld.",
+    "registrations_unknown_action": "Acties zijn niet beschikbaar zolang je inschrijvingen niet zijn gecontroleerd.",
+    "retry_registrations": "Inschrijvingen opnieuw laden",
     "error_register_this": "Kan niet inschrijven voor deze activiteit.",
     "success_register": "Inschrijving geslaagd.",
     "cancel_registration": "Inschrijving annuleren",

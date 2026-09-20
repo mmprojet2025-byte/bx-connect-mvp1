@@ -11,6 +11,7 @@ import {
   getUnreadCount,
   markAllNotificationsRead,
   markNotificationRead,
+  publishUnreadCount,
 } from '../api/notifications';
 import AppIcon from '../components/AppIcon';
 import {
@@ -55,6 +56,7 @@ export default function NotificationsScreen({ navigation }) {
       ]);
       setNotifications(prev => append ? mergeNotifications(prev, pageData.content) : pageData.content);
       setUnreadCount(count);
+      publishUnreadCount(count);
       setPagination({
         page: pageData.page,
         size: pageData.size,
@@ -86,7 +88,11 @@ export default function NotificationsScreen({ navigation }) {
         prev.map(n => n.id === id ? { ...n, lue: true } : n)
       );
       if (wasUnread) {
-        setUnreadCount(prev => Math.max(prev - 1, 0));
+        setUnreadCount((prev) => {
+          const next = Math.max(prev - 1, 0);
+          publishUnreadCount(next);
+          return next;
+        });
       }
     } catch (err) {
       setError(getApiError(err, t, t('notifications.errorMarkAsRead')));
@@ -101,6 +107,7 @@ export default function NotificationsScreen({ navigation }) {
       await markAllNotificationsRead();
       setNotifications(prev => prev.map(n => ({ ...n, lue: true })));
       setUnreadCount(0);
+      publishUnreadCount(0);
       setMessage(t('notifications.allMarkedAsRead'));
       fetchNotifications(0, false);
     } catch (err) {
@@ -132,7 +139,11 @@ export default function NotificationsScreen({ navigation }) {
       await deleteNotification(id);
       setNotifications(prev => prev.filter(n => n.id !== id));
       if (wasUnread) {
-        setUnreadCount(prev => Math.max(prev - 1, 0));
+        setUnreadCount((prev) => {
+          const next = Math.max(prev - 1, 0);
+          publishUnreadCount(next);
+          return next;
+        });
       } else {
         refreshUnreadCount();
       }
@@ -143,7 +154,9 @@ export default function NotificationsScreen({ navigation }) {
 
   const refreshUnreadCount = async () => {
     try {
-      setUnreadCount(await getUnreadCount());
+      const count = await getUnreadCount();
+      setUnreadCount(count);
+      publishUnreadCount(count);
     } catch {
       // Le compteur n'est pas bloquant pour l'affichage de la liste.
     }
