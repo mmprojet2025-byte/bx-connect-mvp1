@@ -1,0 +1,122 @@
+name: CI BX-Connect
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend - Java 21 et Maven
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: bxconnect_mvp1
+          MYSQL_ROOT_PASSWORD: ci-only-database-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pci-only-database-password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DB_URL: jdbc:mysql://127.0.0.1:3306/bxconnect_mvp1?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      DB_USERNAME: root
+      DB_PASSWORD: ci-only-database-password
+      JWT_SECRET: ci-only-jwt-secret-key-at-least-thirty-two-bytes-long
+      BX_PRODUCTION: "false"
+      FEATURES_PAYMENTS_STRIPE_ENABLED: "false"
+      FEATURES_PAYMENTS_PAYPAL_ENABLED: "false"
+
+    steps:
+      - name: Recuperer le depot
+        uses: actions/checkout@v4
+
+      - name: Installer Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Verifier le backend
+        working-directory: backend
+        run: ./mvnw --batch-mode --no-transfer-progress clean verify
+
+  frontend-web:
+    name: Frontend web - lint, tests et build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Recuperer le depot
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend-web/package-lock.json
+
+      - name: Installer les dependances web
+        working-directory: frontend-web
+        run: npm ci
+
+      - name: Verifier le frontend web
+        working-directory: frontend-web
+        run: |
+          npm run lint
+          npm test
+          npm run build
+
+  mobile:
+    name: Mobile - lint, contrats et export Expo
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      EXPO_NO_TELEMETRY: "1"
+
+    steps:
+      - name: Recuperer le depot
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Installer les dependances mobiles
+        working-directory: mobile
+        run: npm ci
+
+      - name: Verifier le mobile
+        working-directory: mobile
+        run: |
+          npm run lint
+          node scripts/test-auth-contract.mjs
+          node scripts/test-project-correction-workflow.mjs
+          node scripts/test-sentry-sanitizer.mjs
+          node scripts/test-partner-support-contract.mjs
+          npx expo export --platform web
