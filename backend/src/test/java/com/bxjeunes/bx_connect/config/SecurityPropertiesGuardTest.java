@@ -133,6 +133,32 @@ class SecurityPropertiesGuardTest {
                 .hasMessageContaining("app.cors.allowed-origins");
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"", "   ", "${UPLOAD_DIR}", "CHANGE_ME"})
+    void prodProfileRejectsInvalidUploadDirectory(String directory) {
+        MockEnvironment environment = validProdEnvironment();
+        environment.setProperty("upload.dir", directory);
+
+        assertThatThrownBy(() -> guard(environment).validate())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("upload.dir");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "http://api.example.org/uploads",
+            "https://localhost/uploads",
+            "https://127.0.0.1/uploads"
+    })
+    void prodProfileRejectsUnsafeUploadUrl(String url) {
+        MockEnvironment environment = validProdEnvironment();
+        environment.setProperty("upload.base-url", url);
+
+        assertThatThrownBy(() -> guard(environment).validate())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("upload.base-url");
+    }
+
     @Test
     void prodProfileAcceptsExplicitSafeConfiguration() {
         MockEnvironment environment = validProdEnvironment();
@@ -259,6 +285,8 @@ class SecurityPropertiesGuardTest {
         environment.setProperty("spring.datasource.password", "strong-db-password");
         environment.setProperty("app.cors.allowed-origins", "https://app.example.org,https://admin.example.org");
         environment.setProperty("frontend.url", "https://app.example.org");
+        environment.setProperty("upload.dir", "/data/uploads");
+        environment.setProperty("upload.base-url", "https://api.example.org/uploads");
         environment.setProperty("app.password-reset.email-enabled", "true");
         environment.setProperty("app.password-reset.frontend-url", "https://app.example.org/reinitialiser-mot-de-passe");
         environment.setProperty("app.password-reset.from-address", "no-reply@example.org");

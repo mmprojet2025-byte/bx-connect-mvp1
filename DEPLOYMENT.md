@@ -122,6 +122,8 @@ DB_PASSWORD=<db-password>
 JWT_SECRET=<strong-secret>
 APP_CORS_ALLOWED_ORIGINS=https://app.example.org
 FRONTEND_URL=https://app.example.org
+UPLOAD_DIR=/data/uploads
+UPLOAD_BASE_URL=https://api.example.org/uploads
 PASSWORD_RESET_EMAIL_ENABLED=true
 PASSWORD_RESET_TOKEN_TTL=PT15M
 PASSWORD_RESET_FRONTEND_URL=https://app.example.org/reinitialiser-mot-de-passe
@@ -133,6 +135,11 @@ MAIL_PASSWORD=<smtp-password>
 ```
 
 Ajouter les variables Stripe/PayPal si les paiements sont actifs.
+
+`UPLOAD_DIR` doit pointer vers un repertoire persistant accessible en ecriture.
+Un chemin absolu est conserve ; un chemin relatif est resolu depuis `user.dir`.
+`UPLOAD_BASE_URL` est l'URL publique HTTPS non locale servant `/uploads`.
+Les chemins et domaines ci-dessus sont des exemples a adapter.
 
 ## Variables frontend/mobile
 
@@ -203,7 +210,10 @@ preproduction valide et sans validation humaine de la stacktrace.
 Modele generique a adapter a l'hebergeur :
 
 ```bash
-SPRING_PROFILES_ACTIVE=prod BX_PRODUCTION=true java -jar bx-connect.jar
+SPRING_PROFILES_ACTIVE=prod BX_PRODUCTION=true \
+UPLOAD_DIR=/data/uploads \
+UPLOAD_BASE_URL=https://api.example.org/uploads \
+java -jar bx-connect.jar
 ```
 
 Au demarrage :

@@ -46,6 +46,7 @@ public class SecurityPropertiesGuard implements BeanFactoryPostProcessor, Enviro
         requireProductionCors();
         requireProductionUrl("frontend.url");
         requireProductionPasswordReset();
+        requireProductionUploads();
         validateStripeConfiguration();
         validatePayPalConfiguration();
     }
@@ -173,6 +174,11 @@ public class SecurityPropertiesGuard implements BeanFactoryPostProcessor, Enviro
         requireRealSecret("spring.mail.host");
         requireRealSecret("spring.mail.username");
         requireRealSecret("spring.mail.password");
+    }
+
+    private void requireProductionUploads() {
+        requireRealSecret("upload.dir");
+        requireProductionUrl("upload.base-url");
     }
 
     private void validateStripeConfiguration() {

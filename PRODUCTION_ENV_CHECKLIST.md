@@ -16,6 +16,8 @@ captures contenant ces valeurs.
 | `JWT_SECRET` | Oui | `<random-strong-secret-32-bytes-min>` | Secret fort, 32 octets minimum. |
 | `APP_CORS_ALLOWED_ORIGINS` | Oui | `https://app.example.org,https://admin.example.org` | HTTPS uniquement, pas de wildcard, pas de localhost. |
 | `FRONTEND_URL` | Oui | `https://app.example.org` | HTTPS, non local. |
+| `UPLOAD_DIR` | Oui | `/data/uploads` | Repertoire persistant accessible en ecriture ; chemin absolu recommande, sinon relatif a `user.dir`. Valeur non vide et non factice. |
+| `UPLOAD_BASE_URL` | Oui | `https://api.example.org/uploads` | URL publique HTTPS non locale servant les fichiers via `/uploads`. |
 | `PASSWORD_RESET_EMAIL_ENABLED` | Oui | `true` | Doit rester active en production. |
 | `PASSWORD_RESET_TOKEN_TTL` | Oui | `PT15M` | Duree ISO-8601 courte ; 15 minutes recommandees. |
 | `PASSWORD_RESET_FRONTEND_URL` | Oui | `https://app.example.org/reinitialiser-mot-de-passe` | HTTPS, non local. |
