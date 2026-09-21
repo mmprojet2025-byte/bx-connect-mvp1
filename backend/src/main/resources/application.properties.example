@@ -1,7 +1,8 @@
 # BX-CONNECT — exemple non fonctionnel de configuration.
 # Ne placez aucune valeur réelle dans ce fichier. Fournissez-les par l'environnement.
 
-server.port=${SERVER_PORT:8080}
+# Port : SERVER_PORT prioritaire, sinon PORT fourni par l'hebergeur, sinon 8080.
+server.port=${SERVER_PORT:${PORT:8080}}
 spring.profiles.active=${SPRING_PROFILES_ACTIVE}
 
 # Base de données
@@ -31,6 +32,12 @@ bx.super-admin.nom=${BX_SUPER_ADMIN_NOM}
 frontend.url=${FRONTEND_URL}
 app.cors.allowed-origins=${APP_CORS_ALLOWED_ORIGINS}
 bx.production=${BX_PRODUCTION:false}
+
+# Uploads — variables obligatoires en preproduction/production.
+# UPLOAD_DIR : repertoire persistant accessible en ecriture (exemple : /data/uploads).
+upload.dir=${UPLOAD_DIR}
+# UPLOAD_BASE_URL : URL publique HTTPS non locale (exemple : https://api.example.org/uploads).
+upload.base-url=${UPLOAD_BASE_URL}
 
 # Les paiements sont désactivés par défaut.
 features.payments.stripe.enabled=${FEATURES_PAYMENTS_STRIPE_ENABLED:false}
