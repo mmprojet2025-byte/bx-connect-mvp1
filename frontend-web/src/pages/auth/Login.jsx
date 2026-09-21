@@ -18,6 +18,7 @@ export default function Login() {
 
   const [erreur, setErreur] = useState(null)
   const [googleNotice, setGoogleNotice] = useState(null)
+  const [showPassword, setShowPassword] = useState(false)
   const loginSchema = z.object({
     email: z
       .string()
@@ -128,16 +129,27 @@ export default function Login() {
                     {t('auth.forgot_password')}
                   </Link>
                 </div>
-                <input
-                  id="login-password"
-                  type="password"
-                  autoComplete="current-password"
-                  aria-invalid={Boolean(errors.motDePasse)}
-                  aria-describedby={errors.motDePasse ? 'login-password-error' : undefined}
-                  {...register('motDePasse')}
-                  className="h-13 w-full rounded-xl border border-slate-300 px-4 text-base text-slate-900 transition placeholder:text-slate-400 focus:border-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
-                  placeholder={t('auth.password_placeholder')}
-                />
+                <div className="relative">
+                  <input
+                    id="login-password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    aria-invalid={Boolean(errors.motDePasse)}
+                    aria-describedby={errors.motDePasse ? 'login-password-error' : undefined}
+                    {...register('motDePasse')}
+                    className="h-13 w-full rounded-xl border border-slate-300 py-2 pl-4 pr-14 text-base text-slate-900 transition placeholder:text-slate-400 focus:border-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
+                    placeholder={t('auth.password_placeholder')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    aria-label={showPassword ? t('auth.hide_password') : t('auth.show_password')}
+                    aria-pressed={showPassword}
+                    className="absolute inset-y-0 right-1 flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-1"
+                  >
+                    <AppIcon name={showPassword ? 'EyeOff' : 'Eye'} className="h-5 w-5" />
+                  </button>
+                </div>
                 {errors.motDePasse && (
                   <p id="login-password-error" className="mt-2 text-sm font-medium text-red-600">
                     {errors.motDePasse.message}
