@@ -62,9 +62,9 @@ jobs:
         run: ./mvnw --batch-mode --no-transfer-progress clean verify
 
   frontend-web:
-    name: Frontend web - lint, tests et build
+    name: Frontend web - lint, tests, Playwright et build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Recuperer le depot
@@ -81,12 +81,20 @@ jobs:
         working-directory: frontend-web
         run: npm ci
 
+      - name: Installer Chromium pour Playwright
+        working-directory: frontend-web
+        run: npx playwright install --with-deps chromium
+
       - name: Verifier le frontend web
         working-directory: frontend-web
         run: |
           npm run lint
           npm test
           npm run build
+
+      - name: Tester les parcours web avec Playwright
+        working-directory: frontend-web
+        run: npm run test:e2e
 
   mobile:
     name: Mobile - lint, contrats et export Expo
