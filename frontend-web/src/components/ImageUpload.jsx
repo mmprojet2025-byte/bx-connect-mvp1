@@ -4,6 +4,21 @@ import { userFriendlyError } from '../utils/userFriendlyError';
 import AppIcon from './ui/AppIcons';
 import { useTranslation } from 'react-i18next';
 
+const SAFE_IMAGE_PROTOCOLS = new Set(['http:', 'https:', 'blob:']);
+
+function getSafeImageUrl(value) {
+  if (typeof value !== 'string' || !value.trim()) {
+    return null;
+  }
+
+  try {
+    const parsedUrl = new URL(value, window.location.origin);
+    return SAFE_IMAGE_PROTOCOLS.has(parsedUrl.protocol) ? parsedUrl.href : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Composant réutilisable pour l'upload d'images
  * Props :
@@ -22,7 +37,7 @@ export default function ImageUpload({
   size = 100,
 }) {
   const { t } = useTranslation();
-  const [preview, setPreview] = useState(currentUrl);
+  const [preview, setPreview] = useState(() => getSafeImageUrl(currentUrl));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
@@ -31,12 +46,14 @@ export default function ImageUpload({
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validation côté client
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    // Les formats doivent correspondre à ceux autorisés par le backend.
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
     if (!allowedTypes.includes(file.type)) {
       setError(t('upload.invalidType'));
       return;
     }
+
     if (file.size > 5 * 1024 * 1024) {
       setError(t('upload.fileTooLarge'));
       return;
@@ -45,11 +62,10 @@ export default function ImageUpload({
     setError('');
     setLoading(true);
 
-    // Prévisualisation locale immédiate
+    // URL locale générée par le navigateur pour l'aperçu immédiat.
     const localUrl = URL.createObjectURL(file);
     setPreview(localUrl);
 
-    // Upload vers le backend
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', type);
@@ -58,13 +74,23 @@ export default function ImageUpload({
       const response = await api.post('/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      const { url } = response.data;
-      setPreview(url);
-      if (onUploadSuccess) onUploadSuccess(url);
+
+      const safeUploadedUrl = getSafeImageUrl(response.data?.url);
+
+      if (!safeUploadedUrl) {
+        throw new Error('Unsafe image URL returned by the server');
+      }
+
+      setPreview(safeUploadedUrl);
+
+      if (onUploadSuccess) {
+        onUploadSuccess(safeUploadedUrl);
+      }
     } catch (err) {
       setError(userFriendlyError(err, t('common.error')));
-      setPreview(currentUrl); // Revenir à l'image précédente
+      setPreview(getSafeImageUrl(currentUrl));
     } finally {
+      URL.revokeObjectURL(localUrl);
       setLoading(false);
     }
   };
@@ -99,7 +125,14 @@ export default function ImageUpload({
         };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '8px',
+      }}
+    >
       {/* Zone de prévisualisation cliquable */}
       <button
         type="button"
@@ -111,10 +144,25 @@ export default function ImageUpload({
           <img
             src={preview}
             alt="Aperçu"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
           />
         ) : (
-          <span style={{ color: '#4A6A8A', fontSize: '0.85rem', textAlign: 'center', padding: '8px', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+          <span
+            style={{
+              color: '#4A6A8A',
+              fontSize: '0.85rem',
+              textAlign: 'center',
+              padding: '8px',
+              display: 'inline-flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
             <AppIcon name="Camera" className="h-5 w-5" />
             Cliquer pour ajouter une image
           </span>
@@ -134,7 +182,13 @@ export default function ImageUpload({
               fontSize: '0.85rem',
             }}
           >
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
               <AppIcon name="Clock" className="h-4 w-4" />
               Upload...
             </span>
@@ -146,7 +200,7 @@ export default function ImageUpload({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
+        accept="image/jpeg,image/png,image/webp"
         style={{ display: 'none' }}
         onChange={handleFileChange}
       />
@@ -171,7 +225,15 @@ export default function ImageUpload({
 
       {/* Message d'erreur */}
       {error && (
-        <p style={{ color: '#e74c3c', fontSize: '0.8rem', margin: 0 }}>{error}</p>
+        <p
+          style={{
+            color: '#e74c3c',
+            fontSize: '0.8rem',
+            margin: 0,
+          }}
+        >
+          {error}
+        </p>
       )}
     </div>
   );
