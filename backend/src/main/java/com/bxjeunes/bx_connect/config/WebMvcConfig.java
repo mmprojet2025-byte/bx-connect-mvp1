@@ -1,5 +1,7 @@
 package com.bxjeunes.bx_connect.config;
 
+import java.nio.file.Path;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -38,9 +40,16 @@ public class WebMvcConfig implements WebMvcConfigurer {
      */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        String absolutePath = System.getProperty("user.dir") + "/" + uploadDir + "/";
+        Path uploadPath = Path.of(uploadDir);
+        if (!uploadPath.isAbsolute()) {
+            uploadPath = Path.of(System.getProperty("user.dir")).resolve(uploadPath);
+        }
+        String resourceLocation = uploadPath.normalize().toUri().toASCIIString();
+        if (!resourceLocation.endsWith("/")) {
+            resourceLocation += "/";
+        }
 
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:" + absolutePath);
+                .addResourceLocations(resourceLocation);
     }
 }

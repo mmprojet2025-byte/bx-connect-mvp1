@@ -19,6 +19,7 @@ d'hebergement avant l'ouverture aux utilisateurs.
 - Domaine HTTPS pour l'API backend.
 - MySQL gere ou serveur MySQL durci.
 - Stockage de secrets hors Git.
+- Repertoire d'uploads persistant accessible en ecriture, configure via `UPLOAD_DIR`.
 - Sauvegardes MySQL automatisees et chiffrees.
 - Monitoring et alertes actifs.
 - Procedure de restauration testee.
@@ -57,6 +58,8 @@ Variables backend minimales :
 - `JWT_SECRET`
 - `APP_CORS_ALLOWED_ORIGINS`
 - `FRONTEND_URL`
+- `UPLOAD_DIR`
+- `UPLOAD_BASE_URL`
 - `PASSWORD_RESET_EMAIL_ENABLED`
 - `PASSWORD_RESET_TOKEN_TTL`
 - `PASSWORD_RESET_FRONTEND_URL`
@@ -81,6 +84,21 @@ Variables frontend/mobile :
 5. Verifier le healthcheck backend.
 6. Servir le frontend web build avec `VITE_API_BASE_URL` production.
 7. Verifier les flows critiques.
+
+Exemple de lancement apres chargement des autres variables obligatoires
+(chemin et domaine fictifs a adapter) :
+
+```bash
+SPRING_PROFILES_ACTIVE=prod BX_PRODUCTION=true \
+UPLOAD_DIR=/data/uploads \
+UPLOAD_BASE_URL=https://api.example.org/uploads \
+java -jar bx-connect.jar
+```
+
+`UPLOAD_DIR` conserve les chemins absolus ; les chemins relatifs sont resolus
+depuis `user.dir`. Verifier la persistance du volume et ses droits d'ecriture.
+`UPLOAD_BASE_URL` doit etre une URL publique HTTPS non locale pointant vers
+`/uploads` sur l'API.
 
 ## Flyway
 
