@@ -1,28 +1,13 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import api from '../api/axios';
-import { userFriendlyError } from '../utils/userFriendlyError';
 import AppIcon from './ui/AppIcons';
 import { useTranslation } from 'react-i18next';
-
-const SAFE_IMAGE_PROTOCOLS = new Set(['http:', 'https:', 'blob:']);
-
-function getSafeImageUrl(value) {
-  if (typeof value !== 'string' || !value.trim()) {
-    return null;
-  }
-
-  try {
-    const parsedUrl = new URL(value, window.location.origin);
-    return SAFE_IMAGE_PROTOCOLS.has(parsedUrl.protocol) ? parsedUrl.href : null;
-  } catch {
-    return null;
-  }
-}
+import { createImageUploader, getSafeImageUrl, validateImageFile } from './imageUploadUtils.js';
 
 /**
  * Composant réutilisable pour l'upload d'images
  * Props :
- *   - type : "avatar" | "activite" | "projet"
+ *   - type : "photo-profil" | "activite" | "projet"
  *   - currentUrl : URL de l'image actuelle (optionnel)
  *   - onUploadSuccess : callback(url) appelé après upload réussi
  *   - shape : "circle" | "rectangle" (défaut: "rectangle")
@@ -35,51 +20,45 @@ export default function ImageUpload({
   shape = 'rectangle',
   label = 'Changer l\'image',
   size = 100,
+  disabled = false,
+  onUploadingChange,
 }) {
   const { t } = useTranslation();
-  const [preview, setPreview] = useState(() => getSafeImageUrl(currentUrl));
+  const allowedOrigins = [
+    window.location.origin,
+    new URL(api.defaults.baseURL, window.location.origin).origin,
+  ];
+  const safeCurrentUrl = getSafeImageUrl(currentUrl, { allowedOrigins });
+  const [preview, setPreview] = useState(safeCurrentUrl);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
+  const [uploadImage] = useState(() => createImageUploader({ apiClient: api, allowedOrigins }));
+
+  useEffect(() => {
+    setPreview(safeCurrentUrl);
+  }, [safeCurrentUrl]);
 
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Les formats doivent correspondre à ceux autorisés par le backend.
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-
-    if (!allowedTypes.includes(file.type)) {
-      setError(t('upload.invalidType'));
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setError(t('upload.fileTooLarge'));
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setError(t(`upload.${validationError}`));
       return;
     }
 
     setError('');
     setLoading(true);
+    onUploadingChange?.(true);
 
     // URL locale générée par le navigateur pour l'aperçu immédiat.
     const localUrl = URL.createObjectURL(file);
     setPreview(localUrl);
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('type', type);
-
     try {
-      const response = await api.post('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      const safeUploadedUrl = getSafeImageUrl(response.data?.url);
-
-      if (!safeUploadedUrl) {
-        throw new Error('Unsafe image URL returned by the server');
-      }
+      const safeUploadedUrl = await uploadImage(file, type);
 
       setPreview(safeUploadedUrl);
 
@@ -87,11 +66,13 @@ export default function ImageUpload({
         onUploadSuccess(safeUploadedUrl);
       }
     } catch (err) {
-      setError(userFriendlyError(err, t('common.error')));
-      setPreview(getSafeImageUrl(currentUrl));
+      setError(t(`upload.${err.code || 'error'}`));
+      setPreview(safeCurrentUrl);
     } finally {
       URL.revokeObjectURL(localUrl);
       setLoading(false);
+      onUploadingChange?.(false);
+      e.target.value = '';
     }
   };
 
@@ -137,13 +118,14 @@ export default function ImageUpload({
       <button
         type="button"
         style={{ ...containerStyle, padding: 0 }}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => !disabled && !loading && fileInputRef.current?.click()}
+        disabled={disabled || loading}
         aria-label={label}
       >
         {preview ? (
           <img
             src={preview}
-            alt="Aperçu"
+            alt={t('upload.photoPreview')}
             style={{
               width: '100%',
               height: '100%',
@@ -164,7 +146,7 @@ export default function ImageUpload({
             }}
           >
             <AppIcon name="Camera" className="h-5 w-5" />
-            Cliquer pour ajouter une image
+            {t('upload.clickToAdd')}
           </span>
         )}
 
@@ -190,7 +172,7 @@ export default function ImageUpload({
               }}
             >
               <AppIcon name="Clock" className="h-4 w-4" />
-              Upload...
+              {t('upload.uploading')}
             </span>
           </div>
         )}
@@ -203,24 +185,25 @@ export default function ImageUpload({
         accept="image/jpeg,image/png,image/webp"
         style={{ display: 'none' }}
         onChange={handleFileChange}
+        disabled={disabled || loading}
       />
 
       {/* Bouton texte */}
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        disabled={loading}
+        disabled={disabled || loading}
         style={{
           background: 'none',
           border: 'none',
           color: '#2E86AB',
-          cursor: loading ? 'not-allowed' : 'pointer',
+          cursor: disabled || loading ? 'not-allowed' : 'pointer',
           fontSize: '0.85rem',
           textDecoration: 'underline',
           padding: 0,
         }}
       >
-        {loading ? 'Upload en cours...' : label}
+        {loading ? t('upload.uploading') : label}
       </button>
 
       {/* Message d'erreur */}

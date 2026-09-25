@@ -642,6 +642,7 @@
     "title": "My profile",
     "edit_btn": "Edit profile",
     "save_btn": "Save",
+    "saving": "Saving…",
     "cancel_btn": "Cancel",
     "firstname": "First name",
     "lastname": "Last name",
@@ -2216,8 +2217,13 @@
     "unavailable": "Search unavailable."
   },
   "upload": {
-    "invalidType": "File type not allowed. Use JPEG, PNG, WEBP or GIF.",
-    "fileTooLarge": "File too large (max 5 MB)."
+    "invalidType": "File type not allowed. Use JPEG, PNG or WEBP.",
+    "fileTooLarge": "File too large (max 5 MB).",
+    "clickToAdd": "Choose a photo",
+    "uploading": "Uploading…",
+    "photoPreview": "Profile photo preview",
+    "unsafeUrl": "The returned photo address is not allowed.",
+    "error": "Unable to upload the photo. Please try again."
   },
   "sidebar": {
     "open": "Open sidebar",

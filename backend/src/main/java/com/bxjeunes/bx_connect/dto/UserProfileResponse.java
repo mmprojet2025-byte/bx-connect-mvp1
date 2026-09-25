@@ -15,6 +15,7 @@ public class UserProfileResponse {
     private String email;
     private Role role;
     private Langue languePreference;
+    private String photoProfilUrl;
     private LocalDateTime dateInscription;
     private boolean actif;
     private boolean termsAccepted;
@@ -34,6 +35,7 @@ public class UserProfileResponse {
         response.email = user.getEmail();
         response.role = user.getRole();
         response.languePreference = user.getLanguePreference();
+        response.photoProfilUrl = user.getPhotoProfilUrl();
         response.dateInscription = user.getDateInscription();
         response.actif = user.isActif();
         response.termsAccepted = user.isTermsAccepted();
@@ -53,6 +55,7 @@ public class UserProfileResponse {
     public String getEmail() { return email; }
     public Role getRole() { return role; }
     public Langue getLanguePreference() { return languePreference; }
+    public String getPhotoProfilUrl() { return photoProfilUrl; }
     public LocalDateTime getDateInscription() { return dateInscription; }
     public boolean isActif() { return actif; }
     public boolean isTermsAccepted() { return termsAccepted; }

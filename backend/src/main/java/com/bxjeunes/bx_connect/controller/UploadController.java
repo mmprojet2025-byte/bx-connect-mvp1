@@ -29,8 +29,8 @@ public class UploadController {
     private static final long MAX_SIZE = 5 * 1024 * 1024;
 
     /**
-     * Upload d'une image (avatar, couverture activité, couverture projet)
-     * Paramètre : type = "avatar" | "activite" | "projet"
+     * Upload d'une image (photo de profil, couverture activité, couverture projet)
+     * Paramètre : type = "photo-profil" | "activite" | "projet"
      */
     @PostMapping
     @PreAuthorize("isAuthenticated()")
@@ -62,7 +62,7 @@ public class UploadController {
 
             // Créer le sous-dossier selon le type
             String subFolder = switch (type) {
-                case "avatar"   -> "avatars";
+                case "photo-profil", "avatar" -> "avatars";
                 case "activite" -> "activites";
                 case "projet"   -> "projets";
                 default         -> "general";

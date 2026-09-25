@@ -7,20 +7,18 @@ import Footer from '../../components/Footer';
 import ImageUpload from '../../components/ImageUpload';
 import AppIcon from '../../components/ui/AppIcons';
 import StatusBadge from '../../components/StatusBadge';
-import defaultAvatar from '../../assets/images/avatars/default-avatar.png';
+import defaultProfilePhoto from '../../assets/images/avatars/default-avatar.png';
 import ErrorState from '../../components/ui/ErrorState';
 import LoadingState from '../../components/ui/LoadingState';
+import { buildProfileUpdatePayload, createProfileSaver, readProfileResponse } from './profilePhoto.js';
 
-async function fetchProfil({ t, setProfil, setForm, setAvatarUrl, setError, setLoading }) {
+async function fetchProfil({ t, setProfil, setForm, setPhotoProfilUrl, setError, setLoading }) {
   try {
     const res = await api.get('/users/me');
-    setProfil(res.data);
-    setForm({
-      prenom: res.data.prenom,
-      nom: res.data.nom,
-      languePreference: res.data.languePreference || 'FR',
-    });
-    setAvatarUrl(res.data.avatarUrl || null);
+    const profileState = readProfileResponse(res.data);
+    setProfil(profileState.profile);
+    setForm(profileState.form);
+    setPhotoProfilUrl(profileState.photoProfilUrl);
   } catch (err) {
     setError(getApiError(err, t('profile.error_load'), t));
   } finally {
@@ -34,24 +32,30 @@ export default function Profil() {
   const [profil, setProfil] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState({ prenom: '', nom: '', languePreference: 'FR' });
-  const [avatarUrl, setAvatarUrl] = useState(null);
+  const [photoProfilUrl, setPhotoProfilUrl] = useState(null);
   const [passwordForm, setPasswordForm] = useState({ ancienMotDePasse: '', nouveauMotDePasse: '' });
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [saveProfile] = useState(() => createProfileSaver(api));
 
   useEffect(() => {
-    fetchProfil({ t, setProfil, setForm, setAvatarUrl, setError, setLoading });
+    fetchProfil({ t, setProfil, setForm, setPhotoProfilUrl, setError, setLoading });
   }, [t]);
 
   const handleSaveProfil = async (e) => {
     e.preventDefault();
+    if (savingProfile || uploadingPhoto) return;
+    setSavingProfile(true);
     setMessage('');
     setError('');
     try {
-      const res = await api.put('/users/me', { ...form, avatarUrl });
+      const res = await saveProfile(buildProfileUpdatePayload(form, photoProfilUrl));
       setProfil(res.data);
+      setPhotoProfilUrl(res.data.photoProfilUrl || null);
       setEditMode(false);
       setMessage(t('profile.success_update'));
 
@@ -61,6 +65,8 @@ export default function Profil() {
       localStorage.setItem('bxconnect_lang', langCode);
     } catch (err) {
       setError(getApiError(err, t('profile.error_update'), t));
+    } finally {
+      setSavingProfile(false);
     }
   };
 
@@ -96,7 +102,7 @@ export default function Profil() {
           title={t('common.loadErrorTitle')}
           description={error}
           actionLabel={t('common.retry')}
-          action={() => fetchProfil({ t, setProfil, setForm, setAvatarUrl, setError, setLoading })}
+          action={() => fetchProfil({ t, setProfil, setForm, setPhotoProfilUrl, setError, setLoading })}
         />
       </main>
       <Footer />
@@ -138,13 +144,15 @@ export default function Profil() {
           <div id="infos" className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
             <div className="flex gap-5 items-start flex-wrap">
 
-              {/* Avatar */}
+              {/* Photo de profil */}
               <div className="flex flex-col items-center gap-2">
                 <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 p-2 ring-1 ring-blue-100">
                   <ImageUpload
-                    type="avatar"
-                    currentUrl={avatarUrl || defaultAvatar}
-                    onUploadSuccess={(url) => setAvatarUrl(url)}
+                    type="photo-profil"
+                    currentUrl={photoProfilUrl || defaultProfilePhoto}
+                    onUploadSuccess={setPhotoProfilUrl}
+                    onUploadingChange={setUploadingPhoto}
+                    disabled={!editMode || savingProfile}
                     shape="circle"
                     size={84}
                     label={t('profile.photo')}
@@ -214,11 +222,11 @@ export default function Profil() {
                     </select>
                   </div>
                   <div className="flex gap-3">
-                    <button type="submit" className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm text-white transition hover:bg-blue-500">
+                    <button type="submit" disabled={savingProfile || uploadingPhoto} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60">
                       <AppIcon name="Save" className="h-4 w-4" />
-                      {t('profile.save_btn')}
+                      {savingProfile ? t('profile.saving') : t('profile.save_btn')}
                     </button>
-                    <button type="button" onClick={() => setEditMode(false)} className="inline-flex items-center gap-2 rounded-lg bg-gray-200 px-3 py-2 text-sm text-slate-700 transition hover:bg-gray-300">
+                    <button type="button" disabled={savingProfile || uploadingPhoto} onClick={() => { setPhotoProfilUrl(profil?.photoProfilUrl || null); setEditMode(false); }} className="inline-flex items-center gap-2 rounded-lg bg-gray-200 px-3 py-2 text-sm text-slate-700 transition hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60">
                       <AppIcon name="XCircle" className="h-4 w-4" />
                       {t('profile.cancel_btn')}
                     </button>

@@ -642,6 +642,7 @@
     "title": "Mon profil",
     "edit_btn": "Modifier le profil",
     "save_btn": "Enregistrer",
+    "saving": "Enregistrement…",
     "cancel_btn": "Annuler",
     "firstname": "Prénom",
     "lastname": "Nom",
@@ -2216,8 +2217,13 @@
     "unavailable": "Recherche indisponible."
   },
   "upload": {
-    "invalidType": "Type non autorisé. Utilisez JPEG, PNG, WEBP ou GIF.",
-    "fileTooLarge": "Fichier trop volumineux (max 5 Mo)."
+    "invalidType": "Type non autorisé. Utilisez JPEG, PNG ou WEBP.",
+    "fileTooLarge": "Fichier trop volumineux (max 5 Mo).",
+    "clickToAdd": "Choisir une photo",
+    "uploading": "Téléversement en cours…",
+    "photoPreview": "Aperçu de la photo de profil",
+    "unsafeUrl": "L’adresse retournée pour la photo n’est pas autorisée.",
+    "error": "Impossible de téléverser la photo. Réessayez."
   },
   "sidebar": {
     "open": "Ouvrir la sidebar",

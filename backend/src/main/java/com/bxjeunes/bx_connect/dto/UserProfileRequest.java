@@ -16,6 +16,9 @@ public class UserProfileRequest {
 
     private Langue languePreference;
 
+    @Size(max = 500, message = "L'URL de la photo de profil ne peut pas dépasser 500 caractères")
+    private String photoProfilUrl;
+
     // ─── Getters & Setters ───────────────────────────────────────────────────
 
     public String getPrenom() { return prenom; }
@@ -26,4 +29,7 @@ public class UserProfileRequest {
 
     public Langue getLanguePreference() { return languePreference; }
     public void setLanguePreference(Langue languePreference) { this.languePreference = languePreference; }
+
+    public String getPhotoProfilUrl() { return photoProfilUrl; }
+    public void setPhotoProfilUrl(String photoProfilUrl) { this.photoProfilUrl = photoProfilUrl; }
 }

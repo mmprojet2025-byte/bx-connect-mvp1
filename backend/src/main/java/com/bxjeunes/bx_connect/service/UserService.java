@@ -15,10 +15,13 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ProfilePhotoUrlValidator profilePhotoUrlValidator;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                       ProfilePhotoUrlValidator profilePhotoUrlValidator) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.profilePhotoUrlValidator = profilePhotoUrlValidator;
     }
 
     // ─── GET /api/users/me — Voir son profil (M01 CDC) ──────────────────────
@@ -36,6 +39,9 @@ public class UserService {
 
         if (request.getLanguePreference() != null) {
             user.setLanguePreference(request.getLanguePreference());
+        }
+        if (request.getPhotoProfilUrl() != null) {
+            user.setPhotoProfilUrl(profilePhotoUrlValidator.validateAndNormalize(request.getPhotoProfilUrl()));
         }
 
         userRepository.save(user);

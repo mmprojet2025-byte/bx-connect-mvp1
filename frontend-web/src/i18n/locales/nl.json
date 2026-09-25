@@ -642,6 +642,7 @@
     "title": "Mijn profiel",
     "edit_btn": "Profiel bewerken",
     "save_btn": "Opslaan",
+    "saving": "Opslaan…",
     "cancel_btn": "Annuleren",
     "firstname": "Voornaam",
     "lastname": "Achternaam",
@@ -2216,8 +2217,13 @@
     "unavailable": "Zoeken is niet beschikbaar."
   },
   "upload": {
-    "invalidType": "Niet toegestaan bestandstype. Gebruik JPEG, PNG, WEBP of GIF.",
-    "fileTooLarge": "Bestand te groot (max. 5 MB)."
+    "invalidType": "Niet toegestaan bestandstype. Gebruik JPEG, PNG of WEBP.",
+    "fileTooLarge": "Bestand te groot (max. 5 MB).",
+    "clickToAdd": "Een foto kiezen",
+    "uploading": "Bezig met uploaden…",
+    "photoPreview": "Voorbeeld van de profielfoto",
+    "unsafeUrl": "Het teruggestuurde adres voor de foto is niet toegestaan.",
+    "error": "De foto kan niet worden geüpload. Probeer het opnieuw."
   },
   "sidebar": {
     "open": "Sidebar openen",

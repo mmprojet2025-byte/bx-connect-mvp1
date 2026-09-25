@@ -53,6 +53,9 @@ public class User implements UserDetails {
     @Builder.Default
     private Langue languePreference = Langue.FR;
 
+    @Column(name = "photo_profil_url", length = 500)
+    private String photoProfilUrl;
+
     @Column(name = "date_inscription", nullable = false, updatable = false)
     private LocalDateTime dateInscription;
 
