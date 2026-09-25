@@ -1,10 +1,13 @@
 import axios from 'axios'
 import { captureApiError } from '../monitoring/captureApiError.js'
 import { shouldCloseSession } from './sessionPolicy.js'
+import { resolveApiBaseUrl } from './apiBaseUrl.js'
 
-// URL API depuis variable d'environnement Vite
-// Creer .env.local avec : VITE_API_BASE_URL=http://localhost:8080/api
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
+const developmentFallback = import.meta.env.DEV ? 'http://localhost:8080/api' : undefined
+const BASE_URL = resolveApiBaseUrl(import.meta.env.VITE_API_BASE_URL, {
+  deployment: import.meta.env.PROD,
+  fallback: developmentFallback,
+})
 
 const api = axios.create({
   baseURL: BASE_URL,

@@ -15,7 +15,7 @@ git status --short
 
 ```bash
 cd backend && ./mvnw test
-cd ../frontend-web && npm run build
+cd ../frontend-web && VITE_API_BASE_URL=https://api.example.org/api npm run build
 cd ../mobile && npm run lint
 ```
 
@@ -66,6 +66,9 @@ npm run build
 `https://api.example.org/api` est un placeholder. Remplacer par le domaine API
 definitif. La valeur `VITE_SENTRY_RELEASE` doit venir du tag Git ou de la
 version CI validee pour la release.
+
+Le build echoue si `VITE_API_BASE_URL` manque, utilise HTTP ou pointe vers une
+adresse locale. Le fallback localhost est reserve au serveur de developpement.
 
 ### Sourcemaps Sentry web
 

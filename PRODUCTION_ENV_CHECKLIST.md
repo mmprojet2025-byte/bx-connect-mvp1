@@ -41,7 +41,7 @@ captures contenant ces valeurs.
 
 | Variable | Obligatoire | Exemple de placeholder | Contraintes |
 | --- | --- | --- | --- |
-| `VITE_API_BASE_URL` | Oui | `https://api.example.org/api` | HTTPS, non local. Sans cette variable, le code retombe sur localhost. |
+| `VITE_API_BASE_URL` | Oui | `https://api.example.org/api` | HTTPS, non local. Le build est refuse si la variable manque ou pointe vers une adresse locale. |
 | `VITE_SENTRY_DSN` | Recommande | `<sentry-web-dsn>` | Runtime navigateur. Activer seulement apres validation PII. |
 | `VITE_SENTRY_ENVIRONMENT` | Recommande si Sentry actif | `preprod` ou `production` | Environnement visible dans Sentry. |
 | `VITE_SENTRY_RELEASE` | Recommande si Sentry actif | `<git-tag-or-ci-release>` | Source de verite release web, identique a la release utilisee pour l'upload sourcemaps. |

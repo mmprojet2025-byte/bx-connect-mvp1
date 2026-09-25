@@ -3,9 +3,13 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
 import process from 'node:process'
+import { resolveApiBaseUrl } from './src/api/apiBaseUrl.js'
 
 export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  if (command === 'build') {
+    resolveApiBaseUrl(env.VITE_API_BASE_URL, { deployment: true })
+  }
   const sentryRelease = env.VITE_SENTRY_RELEASE
   const sentryDist = env.SENTRY_DIST || env.VITE_SENTRY_DIST
   const enableSentrySourcemaps = command === 'build'

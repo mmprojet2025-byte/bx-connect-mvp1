@@ -87,6 +87,8 @@ jobs:
 
       - name: Verifier le frontend web
         working-directory: frontend-web
+        env:
+          VITE_API_BASE_URL: https://api.example.org/api
         run: |
           npm run lint
           npm test

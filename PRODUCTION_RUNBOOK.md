@@ -82,7 +82,9 @@ Variables frontend/mobile :
    `BX_PRODUCTION=true`.
 4. Laisser Flyway valider/appliquer les migrations.
 5. Verifier le healthcheck backend.
-6. Servir le frontend web build avec `VITE_API_BASE_URL` production.
+6. Construire puis servir le frontend web avec une valeur HTTPS non locale de
+   `VITE_API_BASE_URL`. Le build est refuse si cette variable manque ou pointe
+   vers localhost.
 7. Verifier les flows critiques.
 
 Exemple de lancement apres chargement des autres variables obligatoires
