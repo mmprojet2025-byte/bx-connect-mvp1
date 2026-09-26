@@ -1,3 +1,6 @@
+import i18n from '../i18n/index.js'
+import { networkErrorTranslationKey } from '../api/networkPolicy.js'
+
 const DEFAULT_MESSAGES = {
   forbidden: 'Accès refusé.',
   sessionExpired: 'Session expirée. Reconnectez-vous.',
@@ -9,6 +12,9 @@ const DEFAULT_MESSAGES = {
 }
 
 export function userFriendlyError(error, fallback = DEFAULT_MESSAGES.impossible) {
+  const networkMessageKey = networkErrorTranslationKey(error)
+  if (networkMessageKey) return i18n.t(networkMessageKey)
+
   const status = error?.response?.status
   const rawMessage = String(error?.response?.data?.message || error?.response?.data?.error || '')
   const message = rawMessage.toLowerCase()

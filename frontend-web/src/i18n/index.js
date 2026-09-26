@@ -6,6 +6,7 @@ import fr from './locales/fr.json';
 import nl from './locales/nl.json';
 import en from './locales/en.json';
 import { trackLanguageChange } from '../monitoring/analytics';
+import { syncDocumentLanguage } from './documentLanguage.js';
 
 i18n
   .use(LanguageDetector)
@@ -30,7 +31,10 @@ i18n
   });
 
 i18n.on('languageChanged', (language) => {
+  syncDocumentLanguage(document.documentElement, language);
   trackLanguageChange(language);
 });
+
+syncDocumentLanguage(document.documentElement, i18n.resolvedLanguage || i18n.language);
 
 export default i18n;

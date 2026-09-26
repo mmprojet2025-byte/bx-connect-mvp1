@@ -1921,6 +1921,8 @@
     "retry": "Retry",
     "loadErrorTitle": "Unable to load the data",
     "loadErrorDescription": "Check your connection, then try again.",
+    "networkError": "Unable to connect to the server. Check your network.",
+    "requestTimeout": "The server is taking too long to respond. Try again.",
     "send": "Send",
     "open": "Open",
     "error": "An error occurred.",

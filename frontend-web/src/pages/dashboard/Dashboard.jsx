@@ -16,6 +16,7 @@ import {
   CollaborativeDashboardLayout,
   WorkspaceEmpty,
 } from '../../components/dashboard/CollaborativeDashboard'
+import { buildMemberActivityItems } from './memberActivityItems.js'
 
 export default function Dashboard() {
   const { t, i18n } = useTranslation()
@@ -115,7 +116,6 @@ export default function Dashboard() {
               </section>
               )}
 
-            {memberActivityItems.length > 0 && (
             <ActivityFeed
               title={t('activityFeed.title')}
               subtitle={t('activityFeed.memberSubtitle')}
@@ -125,9 +125,8 @@ export default function Dashboard() {
                 accent="blue"
                 limit={10}
                 actionTo="/notifications"
-                actionLabel={t('activityFeed.viewAll')}
-              />
-            )}
+              actionLabel={t('activityFeed.viewAll')}
+            />
           </>
         ) : (
           <EmptyState
@@ -138,48 +137,6 @@ export default function Dashboard() {
         )}
     </CollaborativeDashboardLayout>
   )
-}
-
-function buildMemberActivityItems({ dashboard, groupe, t, language }) {
-  const notifications = (dashboard.notifications || []).map(notification => ({
-    key: `notification-${notification.id}`,
-    icon: notification.lue ? 'Bell' : 'TriangleAlert',
-    title: notification.titre || t('nav.notifications'),
-    description: notification.message,
-    date: notification.dateCreation,
-    to: '/notifications',
-  }))
-
-  const inscriptions = (dashboard.inscriptions || []).map(inscription => ({
-    key: `inscription-${inscription.id || inscription.activiteId || inscription.titre}`,
-    icon: 'Calendar',
-    title: inscription.titre || inscription.activiteTitre || t('memberDashboard.activities.title'),
-    description: (inscription.activiteDateDebut || inscription.dateDebut)
-      ? t('activityFeed.activityDate', { date: new Date(inscription.activiteDateDebut || inscription.dateDebut).toLocaleDateString(language || 'fr-BE') })
-      : t('memberDashboard.activities.dateToConfirm'),
-    date: inscription.dateInscription || inscription.dateCreation || inscription.activiteDateDebut || inscription.dateDebut,
-    to: '/activites',
-  }))
-
-  const projets = (dashboard.projets || []).map(projet => ({
-    key: `projet-${projet.id || projet.titre}`,
-    icon: 'Rocket',
-    title: projet.titre || t('nav.projects'),
-    description: projet.statut ? t(`statuses.${projet.statut}`, { defaultValue: projet.statut }) : t('activityFeed.projectTracked'),
-    date: projet.dateModification || projet.dateCreation,
-    to: projet.id ? `/projets/${projet.id}` : '/projets',
-  }))
-
-  const groupItem = groupe && {
-    key: `groupe-${groupe.id || groupe.nom}`,
-    icon: 'Users',
-    title: t('activityFeed.currentGroup'),
-    description: groupe.nom,
-    date: groupe.dateAdhesion || groupe.dateCreation,
-    to: groupe.id ? `/groupes/${groupe.id}` : '/groupes',
-  }
-
-  return [groupItem, ...notifications, ...inscriptions, ...projets]
 }
 
 function MemberPrioritySection({ groupe, inscriptions, notifications, projets, t }) {
@@ -245,7 +202,7 @@ function MemberPrioritySection({ groupe, inscriptions, notifications, projets, t
           <p className="text-sm font-black text-slate-700">{t('memberDashboard.noPriorityToday')}</p>
         </div>
       ) : (
-        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-3">
           {priorities.map(priority => <TodayCard key={`${priority.to}-${priority.title}`} {...priority} />)}
         </div>
       )}
@@ -273,11 +230,11 @@ function TodayCard({ title, description, to, tone = 'blue', icon = 'Folder' }) {
   }
 
   return (
-    <Link to={to} className="flex items-start gap-3 rounded-lg border border-slate-100 bg-slate-50 p-3 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md">
+    <Link to={to} className="flex min-w-0 items-start gap-3 rounded-lg border border-slate-100 bg-slate-50 p-3 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md">
       <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${tones[tone] || tones.blue}`}>
         <AppIcon name={icon} className="h-5 w-5" />
       </span>
-      <span className="min-w-0">
+      <span className="min-w-0 flex-1">
         <span className="block font-black text-slate-950">{title}</span>
         <span className="mt-0.5 block truncate text-sm text-slate-500">{description}</span>
       </span>

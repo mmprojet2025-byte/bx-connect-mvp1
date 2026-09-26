@@ -2,6 +2,7 @@ import axios from 'axios'
 import { captureApiError } from '../monitoring/captureApiError.js'
 import { shouldCloseSession } from './sessionPolicy.js'
 import { resolveApiBaseUrl } from './apiBaseUrl.js'
+import { API_TIMEOUT_MS } from './networkPolicy.js'
 
 const developmentFallback = import.meta.env.DEV ? 'http://localhost:8080/api' : undefined
 const BASE_URL = resolveApiBaseUrl(import.meta.env.VITE_API_BASE_URL, {
@@ -11,6 +12,7 @@ const BASE_URL = resolveApiBaseUrl(import.meta.env.VITE_API_BASE_URL, {
 
 const api = axios.create({
   baseURL: BASE_URL,
+  timeout: API_TIMEOUT_MS,
   headers: { 'Content-Type': 'application/json' },
 })
 

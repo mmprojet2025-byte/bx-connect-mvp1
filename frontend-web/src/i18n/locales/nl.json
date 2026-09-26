@@ -1921,6 +1921,8 @@
     "retry": "Opnieuw proberen",
     "loadErrorTitle": "Kan de gegevens niet laden",
     "loadErrorDescription": "Controleer je verbinding en probeer opnieuw.",
+    "networkError": "Kan geen verbinding maken met de server. Controleer je netwerk.",
+    "requestTimeout": "De server reageert te traag. Probeer het opnieuw.",
     "send": "Verzenden",
     "open": "Openen",
     "error": "Er is een fout opgetreden.",

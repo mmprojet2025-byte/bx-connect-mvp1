@@ -71,6 +71,11 @@
 .collab-dashboard-space {
   display: grid;
   gap: 0.75rem;
+  min-width: 0;
+}
+
+.collab-dashboard-space > * {
+  min-width: 0;
 }
 
 .collab-reveal {

@@ -1921,6 +1921,8 @@
     "retry": "Réessayer",
     "loadErrorTitle": "Impossible de charger les données",
     "loadErrorDescription": "Vérifiez votre connexion, puis réessayez.",
+    "networkError": "Connexion au serveur impossible. Vérifiez votre réseau.",
+    "requestTimeout": "Le serveur met trop de temps à répondre. Réessayez.",
     "send": "Envoyer",
     "open": "Ouvrir",
     "error": "Une erreur est survenue.",

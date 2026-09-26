@@ -390,21 +390,21 @@ export default function AdminProjets() {
               </button>
             ))}
           </div>
-          <div className="grid gap-3 md:grid-cols-[1fr_220px_220px]">
-            <label className="relative block">
+          <div className="grid min-w-0 gap-3 md:grid-cols-[minmax(0,1fr)_220px_220px]">
+            <label className="relative block min-w-0">
               <AppIcon name="Search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder={t('admin.searchProjectPlaceholder')}
                 value={recherche}
                 onChange={e => { setRecherche(e.target.value); setMessage(''); setError(''); }}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="min-w-0 w-full rounded-2xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
             </label>
             <select
               value={filtreGroupe}
               onChange={e => setFiltreGroupe(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="min-w-0 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
               <option value="">{t('nav.groups')}</option>
               {nomsGroupes.map(groupe => <option key={groupe} value={groupe}>{groupe}</option>)}
@@ -412,7 +412,7 @@ export default function AdminProjets() {
             <select
               value={statutTechnique}
               onChange={e => setStatutTechnique(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="min-w-0 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
               <option value="">{t('admin.moreStatuses')}</option>
               {STATUTS.map(statut => (
