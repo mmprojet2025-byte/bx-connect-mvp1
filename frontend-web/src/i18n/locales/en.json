@@ -686,6 +686,12 @@
     ,"passwordInvalid": "The new password does not meet all security requirements."
     ,"passwordChanging": "Updating…"
     ,"passwordChangedLoginAgain": "Your password has been changed. Sign in again to continue."
+    ,"deleteAccountTitle": "Delete my account"
+    ,"deleteAccountDescription": "Your account will be disabled immediately and you will be signed out. Your personal data will be anonymized after 30 days."
+    ,"deleteAccountConfirm": "I understand that my account will become unusable immediately and that my personal data will be anonymized within 30 days."
+    ,"deleteAccountAction": "Request deletion"
+    ,"deleteAccountLoading": "Deleting…"
+    ,"deleteAccountError": "The deletion request could not be sent. Please try again."
   },
   "errors": {
     "session_expired": "Session expired. Please log in again.",

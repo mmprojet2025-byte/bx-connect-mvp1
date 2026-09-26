@@ -9,6 +9,10 @@ import com.bxjeunes.bx_connect.repository.UserRepository;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.LocalDateTime;
 
 @Service
 public class UserService {
@@ -16,12 +20,14 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final ProfilePhotoUrlValidator profilePhotoUrlValidator;
+    private final Clock clock;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                       ProfilePhotoUrlValidator profilePhotoUrlValidator) {
+                       ProfilePhotoUrlValidator profilePhotoUrlValidator, Clock clock) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.profilePhotoUrlValidator = profilePhotoUrlValidator;
+        this.clock = clock;
     }
 
     // ─── GET /api/users/me — Voir son profil (M01 CDC) ──────────────────────
@@ -64,12 +70,16 @@ public class UserService {
     }
 
     // ─── DELETE /api/users/me — Demander suppression du compte (M05 CDC) ────
+    @Transactional
     public void demanderSuppression(String email) {
         User user = requireGeneralUser(email);
+        if (user.getDeletionRequestedAt() != null) {
+            return;
+        }
 
-        // On désactive le compte (soft delete)
-        // L'admin pourra confirmer la suppression définitive
         user.setActif(false);
+        user.setCredentialsVersion(user.getCredentialsVersion() + 1);
+        user.setDeletionRequestedAt(LocalDateTime.now(clock));
         userRepository.save(user);
     }
 

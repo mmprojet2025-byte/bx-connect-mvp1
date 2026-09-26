@@ -63,7 +63,15 @@ class UserControllerSecurityTest {
     @DisplayName("Visiteur anonyme reste refuse")
     void visiteur_anonyme_reste_refuse() throws Exception {
         mockMvc.perform(get("/api/users/me")).andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/users/me")).andExpect(status().isForbidden());
         verifyNoInteractions(userService);
+    }
+
+    @Test
+    @WithMockUser(username = "member@test.be", roles = "MEMBRE")
+    void membre_authentifie_peut_demander_la_suppression_de_son_compte() throws Exception {
+        mockMvc.perform(delete("/api/users/me")).andExpect(status().isNoContent());
+        verify(userService).demanderSuppression("member@test.be");
     }
 
     @Test

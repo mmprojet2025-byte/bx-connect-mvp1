@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../../api/axios';
 import Navbar from '../../components/Navbar';
@@ -11,6 +11,8 @@ import defaultProfilePhoto from '../../assets/images/avatars/default-avatar.png'
 import ErrorState from '../../components/ui/ErrorState';
 import LoadingState from '../../components/ui/LoadingState';
 import { buildProfileUpdatePayload, createProfileSaver, readProfileResponse } from './profilePhoto.js';
+import { canSubmitAccountDeletion, requestAccountDeletion } from './accountDeletion.js';
+import { useAuth } from '../../context/AuthContext';
 
 async function fetchProfil({ t, setProfil, setForm, setPhotoProfilUrl, setError, setLoading }) {
   try {
@@ -28,6 +30,8 @@ async function fetchProfil({ t, setProfil, setForm, setPhotoProfilUrl, setError,
 
 export default function Profil() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const [profil, setProfil] = useState(null);
   const [editMode, setEditMode] = useState(false);
@@ -41,6 +45,8 @@ export default function Profil() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [saveProfile] = useState(() => createProfileSaver(api));
+  const [deleteConfirmed, setDeleteConfirmed] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   useEffect(() => {
     fetchProfil({ t, setProfil, setForm, setPhotoProfilUrl, setError, setLoading });
@@ -81,6 +87,19 @@ export default function Profil() {
       setPasswordForm({ ancienMotDePasse: '', nouveauMotDePasse: '' });
     } catch (err) {
       setError(getApiError(err, t('profile.error_password'), t));
+    }
+  };
+
+  const handleAccountDeletion = async (e) => {
+    e.preventDefault();
+    if (!canSubmitAccountDeletion({ confirmed: deleteConfirmed, isSubmitting: deletingAccount })) return;
+    setDeletingAccount(true);
+    setError('');
+    try {
+      await requestAccountDeletion({ apiClient: api, logout, navigate });
+    } catch (err) {
+      setError(getApiError(err, t('profile.deleteAccountError'), t));
+      setDeletingAccount(false);
     }
   };
 
@@ -326,6 +345,38 @@ export default function Profil() {
               {t('legal.acceptedVersion', { version: profil.legalVersion })}
             </p>
           )}
+        </section>
+
+        <section className="mt-5 rounded-xl border border-red-200 bg-red-50 p-5" aria-labelledby="delete-account-title">
+          <div className="flex items-start gap-3">
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700">
+              <AppIcon name="Trash2" className="h-5 w-5" />
+            </span>
+            <div>
+              <h2 id="delete-account-title" className="text-lg font-black text-red-950">{t('profile.deleteAccountTitle')}</h2>
+              <p className="mt-1 text-sm text-red-900">{t('profile.deleteAccountDescription')}</p>
+            </div>
+          </div>
+          <form className="mt-4" onSubmit={handleAccountDeletion}>
+            <label className="flex cursor-pointer items-start gap-3 text-sm text-red-950">
+              <input
+                type="checkbox"
+                checked={deleteConfirmed}
+                onChange={(event) => setDeleteConfirmed(event.target.checked)}
+                disabled={deletingAccount}
+                className="mt-1 h-4 w-4 rounded border-red-400 text-red-700 focus:ring-red-600"
+              />
+              <span>{t('profile.deleteAccountConfirm')}</span>
+            </label>
+            <button
+              type="submit"
+              disabled={!canSubmitAccountDeletion({ confirmed: deleteConfirmed, isSubmitting: deletingAccount })}
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <AppIcon name="Trash2" className="h-4 w-4" />
+              {deletingAccount ? t('profile.deleteAccountLoading') : t('profile.deleteAccountAction')}
+            </button>
+          </form>
         </section>
       </main>
 

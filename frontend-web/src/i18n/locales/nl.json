@@ -686,6 +686,12 @@
     ,"passwordInvalid": "Het nieuwe wachtwoord voldoet niet aan alle beveiligingsregels."
     ,"passwordChanging": "Wijziging wordt uitgevoerd…"
     ,"passwordChangedLoginAgain": "Je wachtwoord is gewijzigd. Meld je opnieuw aan om verder te gaan."
+    ,"deleteAccountTitle": "Mijn account verwijderen"
+    ,"deleteAccountDescription": "Je account wordt onmiddellijk gedeactiveerd en je wordt afgemeld. Je persoonsgegevens worden na 30 dagen geanonimiseerd."
+    ,"deleteAccountConfirm": "Ik begrijp dat mijn account onmiddellijk onbruikbaar wordt en dat mijn persoonsgegevens binnen 30 dagen worden geanonimiseerd."
+    ,"deleteAccountAction": "Verwijdering aanvragen"
+    ,"deleteAccountLoading": "Verwijdering bezig…"
+    ,"deleteAccountError": "De verwijderingsaanvraag kon niet worden verstuurd. Probeer opnieuw."
   },
   "errors": {
     "session_expired": "Je sessie is verlopen. Meld je opnieuw aan.",

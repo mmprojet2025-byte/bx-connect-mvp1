@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
+import java.time.Clock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -30,7 +31,7 @@ class UserProfilePhotoTest {
     @BeforeEach
     void setUp() {
         userService = new UserService(userRepository, passwordEncoder,
-                new ProfilePhotoUrlValidator("https://api.example.org/uploads"));
+                new ProfilePhotoUrlValidator("https://api.example.org/uploads"), Clock.systemUTC());
         user = User.builder()
                 .id(1L)
                 .prenom("Amina")

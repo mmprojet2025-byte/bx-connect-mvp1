@@ -17,6 +17,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
+import java.time.Clock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -37,7 +38,7 @@ class UserServiceSecurityTest {
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, passwordEncoder, profilePhotoUrlValidator);
+        userService = new UserService(userRepository, passwordEncoder, profilePhotoUrlValidator, Clock.systemUTC());
     }
 
     @Test

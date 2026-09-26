@@ -37,4 +37,19 @@ class JwtCredentialsVersionTest {
         user.setCredentialsVersion(3);
         assertThat(jwtService.isTokenValid(token, user)).isFalse();
     }
+
+    @Test
+    void accountDeletionInvalidatesPreviouslyIssuedToken() {
+        User user = new User();
+        user.setEmail("member@example.org");
+        user.setRole(Role.MEMBRE);
+        user.setActif(true);
+        user.setCredentialsVersion(2);
+
+        String token = jwtService.generateToken(user);
+        user.setActif(false);
+        user.setCredentialsVersion(3);
+
+        assertThat(jwtService.isTokenValid(token, user)).isFalse();
+    }
 }

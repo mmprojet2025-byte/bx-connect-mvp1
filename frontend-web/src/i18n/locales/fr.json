@@ -686,6 +686,12 @@
     ,"passwordInvalid": "Le nouveau mot de passe ne respecte pas toutes les règles de sécurité."
     ,"passwordChanging": "Modification en cours…"
     ,"passwordChangedLoginAgain": "Votre mot de passe a été modifié. Reconnectez-vous pour continuer."
+    ,"deleteAccountTitle": "Supprimer mon compte"
+    ,"deleteAccountDescription": "Votre compte sera désactivé immédiatement et vous serez déconnecté(e). Vos données personnelles seront anonymisées après 30 jours."
+    ,"deleteAccountConfirm": "Je comprends que mon compte deviendra immédiatement inutilisable et que mes données personnelles seront anonymisées sous 30 jours."
+    ,"deleteAccountAction": "Demander la suppression"
+    ,"deleteAccountLoading": "Suppression en cours…"
+    ,"deleteAccountError": "La demande de suppression n’a pas pu être envoyée. Réessayez."
   },
   "errors": {
     "session_expired": "Session expirée. Reconnectez-vous.",

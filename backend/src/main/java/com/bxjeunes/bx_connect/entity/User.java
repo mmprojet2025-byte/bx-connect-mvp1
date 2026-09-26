@@ -63,6 +63,12 @@ public class User implements UserDetails {
     @Builder.Default
     private boolean actif = true;
 
+    @Column(name = "deletion_requested_at")
+    private LocalDateTime deletionRequestedAt;
+
+    @Column(name = "anonymized_at")
+    private LocalDateTime anonymizedAt;
+
     @Column(name = "terms_accepted", nullable = false, columnDefinition = "boolean default false")
     @Builder.Default
     private boolean termsAccepted = false;
