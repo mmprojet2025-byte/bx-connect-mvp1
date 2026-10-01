@@ -67,6 +67,12 @@ export default function Navbar() {
     ? { to: '/notifications', label: t('nav.notifications'), icon: 'Bell' }
     : null
   const homeRoute = isAuthenticated ? getDefaultRouteForRole(user?.role) : '/'
+  const publicNavigationItems = [
+    { to: '/', label: t('nav.home'), icon: 'Home' },
+    { to: '/activites', label: t('nav.activities'), icon: 'Calendar' },
+    { to: '/groupes', label: t('nav.groups'), icon: 'Users' },
+    { to: '/projets', label: t('nav.projects'), icon: 'Rocket' },
+  ]
 
   const changeLanguage = code => {
     i18n.changeLanguage(code)
@@ -107,6 +113,13 @@ export default function Navbar() {
             </span>
           </Link>
         )}
+        {!isAuthenticated && (
+          <div className="hidden items-center lg:flex">
+            {publicNavigationItems.map(item => (
+              <NavItem key={item.to} item={item} active={isLinkActive(item.to, location)} />
+            ))}
+          </div>
+        )}
         <div className="flex items-center justify-end gap-1">
           <div className="flex items-center gap-1">
             {notificationItem && (
@@ -125,28 +138,73 @@ export default function Navbar() {
               t={t}
             />
             {!isAuthenticated && (
-              <Link
-                to="/register"
-                className="hidden h-9 items-center rounded-lg bg-blue-700 px-3 text-sm font-semibold text-white transition hover:bg-blue-800 sm:inline-flex"
-              >
-                {t('nav.register')}
-              </Link>
+              <>
+                <PublicNavigationDropdown
+                  open={openDropdown === 'public-navigation'}
+                  onToggle={toggleDropdown}
+                  items={publicNavigationItems}
+                  t={t}
+                />
+                <Link
+                  to="/login"
+                  className="hidden h-9 items-center rounded-lg px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-950 lg:inline-flex"
+                >
+                  {t('nav.login')}
+                </Link>
+                <Link
+                  to="/register"
+                  className="hidden h-9 items-center rounded-lg bg-blue-700 px-3 text-sm font-semibold text-white transition hover:bg-blue-800 lg:inline-flex"
+                >
+                  {t('nav.register')}
+                </Link>
+              </>
             )}
-            <AccountDropdown
-              open={openDropdown === 'account'}
-              active={location.pathname === '/profil'}
-              notificationsActive={location.pathname === '/notifications'}
-              onToggle={toggleDropdown}
-              isAuthenticated={isAuthenticated}
-              user={user}
-              onLogout={handleLogout}
-              t={t}
-            />
+            {isAuthenticated && (
+              <AccountDropdown
+                open={openDropdown === 'account'}
+                active={location.pathname === '/profil'}
+                notificationsActive={location.pathname === '/notifications'}
+                onToggle={toggleDropdown}
+                isAuthenticated={isAuthenticated}
+                user={user}
+                onLogout={handleLogout}
+                t={t}
+              />
+            )}
           </div>
 
         </div>
       </div>
     </nav>
+  )
+}
+
+function PublicNavigationDropdown({ open, onToggle, items, t }) {
+  return (
+    <div className="relative lg:hidden">
+      <button
+        type="button"
+        onClick={() => onToggle('public-navigation')}
+        className={`flex h-9 items-center gap-1 rounded-lg px-2 text-sm font-semibold transition ${
+          open ? 'bg-slate-100 text-blue-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'
+        }`}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label={t('nav.openMenu')}
+      >
+        <AppIcon name="Menu" className="h-4 w-4" />
+        <span className="hidden sm:inline">{t('nav.menu')}</span>
+      </button>
+
+      {open && (
+        <div role="menu" className="absolute right-0 top-full mt-2 w-56 rounded-lg border border-slate-200 bg-white p-1.5 shadow-lg shadow-slate-900/8">
+          {items.map(item => <NavItem key={item.to} item={item} dropdown />)}
+          <div className="my-1 border-t border-slate-100" />
+          <NavItem item={{ to: '/login', label: t('nav.login'), icon: 'User' }} dropdown />
+          <NavItem item={{ to: '/register', label: t('nav.register'), icon: 'PlusCircle' }} dropdown />
+        </div>
+      )}
+    </div>
   )
 }
 

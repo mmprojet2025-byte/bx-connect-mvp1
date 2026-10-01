@@ -20,6 +20,14 @@ test.beforeEach(async ({ page }) => {
       body: '[]',
     });
   });
+
+  await page.route('**/api/groupes', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([{ id: 1, nom: 'Groupe public', description: 'Une communauté ouverte.' }]),
+    });
+  });
 });
 
 test('affiche correctement les éléments principaux de l’accueil public', async ({ page }) => {
@@ -32,12 +40,10 @@ test('affiche correctement les éléments principaux de l’accueil public', asy
     }),
   ).toBeVisible();
 
-await expect(
-  page.getByRole('main').getByRole('img', {
+  await expect(page.getByRole('navigation').getByRole('img', {
     name: 'BX-CONNECT',
     exact: true,
-  }),
-).toBeVisible();
+  })).toHaveCount(1);
 
   const createAccountLink = page
     .getByRole('link', { name: 'Créer un compte', exact: true })
@@ -52,4 +58,8 @@ await expect(
 
   await expect(activitiesLink).toBeVisible();
   await expect(activitiesLink).toHaveAttribute('href', '/activites');
+
+  const groupLink = page.locator('a[href="/groupes/1"]');
+  await expect(page.getByText('Groupe public', { exact: true })).toBeVisible();
+  await expect(groupLink).toHaveAttribute('href', '/groupes/1');
 });

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -8,6 +8,7 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
 import { userFriendlyError } from '../../utils/userFriendlyError';
+import { getCurrentReturnTo } from '../../routes/postAuthReturn';
 import StatusBadge from '../../components/StatusBadge';
 import ActivityCover from '../../components/ActivityCover';
 import AppIcon from '../../components/ui/AppIcons';
@@ -28,6 +29,7 @@ async function fetchActivite({ id, t, setActivite, setError, setLoading }) {
 export default function ActiviteDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, isMembre } = useAuth();
   const { t, i18n } = useTranslation();
   const mapContainerRef = useRef(null);
@@ -80,7 +82,7 @@ export default function ActiviteDetail() {
 
   const handleInscrire = async () => {
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate('/login', { state: { returnTo: getCurrentReturnTo(location) } });
       return;
     }
     if (!isMembre || !activite?.peutSInscrire) return;

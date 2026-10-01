@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import api from '../api/axios'
 import AppIcon from '../components/ui/AppIcons'
-import logoBxConnect from '../assets/images/logo-bx-connect.png'
+import GroupAvatar from '../components/GroupAvatar'
 import communityGroupPhoto from '../assets/images/home/community-group.jpg'
 import communityMealPhoto from '../assets/images/home/community-meal.jpg'
 import solidarityProjectPhoto from '../assets/images/home/solidarity-project.jpg'
@@ -13,41 +13,64 @@ import solidarityProjectPhoto from '../assets/images/home/solidarity-project.jpg
 export default function Accueil() {
   const [activites, setActivites] = useState([])
   const [projets, setProjets] = useState([])
+  const [groupes, setGroupes] = useState([])
   const [loadingActivites, setLoadingActivites] = useState(true)
   const [loadingProjets, setLoadingProjets] = useState(true)
+  const [loadingGroupes, setLoadingGroupes] = useState(true)
+  const [activitesError, setActivitesError] = useState(false)
+  const [groupesError, setGroupesError] = useState(false)
+  const [projetsError, setProjetsError] = useState(false)
   const { t, i18n } = useTranslation()
 
   useRevealOnScroll(i18n.language)
 
-  useEffect(() => {
+  const fetchActivites = useCallback(() => {
+    setLoadingActivites(true)
+    setActivitesError(false)
     api.get('/activites')
       .then(res => setActivites(Array.isArray(res.data) ? res.data.slice(0, 3) : []))
-      .catch(() => setActivites([]))
+      .catch(() => { setActivites([]); setActivitesError(true) })
       .finally(() => setLoadingActivites(false))
   }, [])
+
+  useEffect(() => { fetchActivites() }, [fetchActivites])
+
+  const fetchGroupes = () => {
+    setLoadingGroupes(true)
+    setGroupesError(false)
+    api.get('/groupes')
+      .then(res => setGroupes(Array.isArray(res.data) ? res.data.slice(0, 3) : []))
+      .catch(() => { setGroupes([]); setGroupesError(true) })
+      .finally(() => setLoadingGroupes(false))
+  }
+
+  useEffect(() => { fetchGroupes() }, [])
 
   useEffect(() => {
     api.get('/projets')
       .then(res => setProjets(Array.isArray(res.data) ? res.data.slice(0, 3) : []))
-      .catch(() => setProjets([]))
+      .catch(() => { setProjets([]); setProjetsError(true) })
       .finally(() => setLoadingProjets(false))
   }, [])
 
   const actions = [
     {
       id: 'activities',
+      to: '/activites',
       icon: 'Calendar',
       title: t('home.actionActivitiesTitle'),
       description: t('home.actionActivitiesDescription'),
     },
     {
       id: 'groups',
+      to: '/groupes',
       icon: 'Users',
       title: t('home.actionGroupsTitle'),
       description: t('home.actionGroupsDescription'),
     },
     {
       id: 'projects',
+      to: '/projets',
       icon: 'Rocket',
       title: t('home.actionProjectsTitle'),
       description: t('home.actionProjectsDescription'),
@@ -110,11 +133,6 @@ export default function Accueil() {
 
           <div className="mx-auto grid max-w-7xl gap-10 px-5 py-12 lg:grid-cols-[minmax(0,1fr)_minmax(330px,0.85fr)] lg:items-center lg:px-8 lg:py-18">
             <div>
-              <img
-                src={logoBxConnect}
-                alt="BX-CONNECT"
-                className="landing-fade-up mb-5 w-[170px] max-w-full object-contain sm:w-[220px]"
-              />
               <p className="landing-fade-up landing-delay-1 mb-4 inline-flex rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-blue-700">
                 {t('home.heroBadge')}
               </p>
@@ -192,6 +210,8 @@ export default function Accueil() {
 
             {loadingActivites ? (
               <LoadingBlock label={t('common.loading')} />
+            ) : activitesError ? (
+              <RetryLandingState text={t('home.activitiesLoadError')} onRetry={fetchActivites} retryLabel={t('common.retry')} />
             ) : activites.length === 0 ? (
               <EmptyLandingState text={t('home.noRecentActivities')} />
             ) : (
@@ -212,6 +232,27 @@ export default function Accueil() {
         <section className="scroll-mt-20 py-12">
           <div className="mx-auto max-w-7xl px-5 lg:px-8">
             <SectionTitle
+              eyebrow={t('home.publicGroupsEyebrow')}
+              title={t('home.publicGroupsTitle')}
+              action={{ to: '/groupes', label: t('home.viewAllGroups') }}
+            />
+            {loadingGroupes ? (
+              <LoadingBlock label={t('common.loading')} />
+            ) : groupesError ? (
+              <RetryLandingState text={t('home.groupsLoadError')} onRetry={fetchGroupes} retryLabel={t('common.retry')} />
+            ) : groupes.length === 0 ? (
+              <EmptyLandingState text={t('home.noPublicGroups')} />
+            ) : (
+              <div className="grid gap-4 md:grid-cols-3">
+                {groupes.map(group => <GroupCard key={group.id} group={group} t={t} />)}
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="scroll-mt-20 py-12">
+          <div className="mx-auto max-w-7xl px-5 lg:px-8">
+            <SectionTitle
               eyebrow={t('home.featuredProjectsEyebrow')}
               title={t('home.featuredProjectsTitle')}
               action={{ to: '/projets', label: t('home.viewProjects') }}
@@ -219,6 +260,8 @@ export default function Accueil() {
 
             {loadingProjets ? (
               <LoadingBlock label={t('common.loading')} />
+            ) : projetsError ? (
+              <RetryLandingState text={t('home.projectsLoadError')} onRetry={() => window.location.reload()} retryLabel={t('common.retry')} />
             ) : projets.length === 0 ? (
               <EmptyLandingState text={t('home.noFeaturedProjects')} />
             ) : (
@@ -331,8 +374,19 @@ function InfoCard({ item, index }) {
       <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
         <AppIcon name={item.icon} className="h-5 w-5" />
       </div>
-      <h3 className="text-base font-black text-slate-950">{item.title}</h3>
+      {item.to ? <Link to={item.to} className="text-base font-black text-slate-950 hover:text-blue-700">{item.title}</Link> : <h3 className="text-base font-black text-slate-950">{item.title}</h3>}
       <p className="mt-2 text-sm leading-6 text-slate-600">{item.description}</p>
+    </article>
+  )
+}
+
+function GroupCard({ group, t }) {
+  return (
+    <article className="flex min-h-[220px] flex-col rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5">
+      <div className="flex items-center gap-3"><GroupAvatar name={group.nom} /><span className="text-xs font-bold text-blue-700">{t('groups.title')}</span></div>
+      <h3 className="mt-4 line-clamp-2 text-lg font-black leading-snug text-slate-950">{group.nom}</h3>
+      <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">{group.description || t('home.groupFallbackDescription')}</p>
+      <Link to={`/groupes/${group.id}`} className="landing-button mt-auto inline-flex h-9 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-4 text-sm font-bold text-blue-800 transition hover:border-blue-700 hover:bg-blue-700 hover:text-white">{t('common.open')}</Link>
     </article>
   )
 }
@@ -412,6 +466,10 @@ function EmptyLandingState({ text }) {
       {text}
     </div>
   )
+}
+
+function RetryLandingState({ text, onRetry, retryLabel }) {
+  return <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm font-semibold text-slate-700"><p>{text}</p><button type="button" onClick={onRetry} className="mt-2 font-black text-blue-700 underline">{retryLabel}</button></div>
 }
 
 function StatusPill({ status, t }) {

@@ -108,14 +108,6 @@ export default function Groupes() {
   const groupesFiltres = groupes.filter((groupe) =>
     groupe.nom?.toLowerCase().includes(recherche.toLowerCase())
   )
-  const groupLife = useMemo(() => {
-    const totalMembers = groupes.reduce((sum, groupe) => sum + Number(groupe.nombreMembres || 0), 0)
-    const totalProjects = groupes.reduce((sum, groupe) => sum + Number(groupe.nombreProjets || groupe.projetsCount || 0), 0)
-    const totalActivities = groupes.reduce((sum, groupe) => sum + Number(groupe.nombreActivites || groupe.activitesCount || 0), 0)
-    const groupsWithReferent = groupes.filter(groupe => groupe.referentPrenom || groupe.referentNom).length
-    return { totalMembers, totalProjects, totalActivities, groupsWithReferent }
-  }, [groupes])
-
   const intro = isAuthenticated && isMembre
     ? t('ux.groups.memberIntro')
     : t('ux.groups.visitorIntro')
@@ -140,8 +132,6 @@ export default function Groupes() {
         {isAuthenticated && isMembre && (
           <MemberGroupSummary adhesionActive={adhesionActive} adhesionEnAttente={adhesionEnAttente} />
         )}
-
-        <GroupLifeSummary groupLife={groupLife} isAuthenticated={isAuthenticated} />
 
         {message && <Alert type="success">{message}</Alert>}
         {error && groupes.length > 0 && <Alert type="error">{error}</Alert>}
@@ -229,43 +219,10 @@ function MemberGroupSummary({ adhesionActive, adhesionEnAttente }) {
   )
 }
 
-function GroupLifeSummary({ groupLife, isAuthenticated }) {
-  const { t } = useTranslation()
-  return (
-    <section className="mb-5 grid gap-3 md:grid-cols-4">
-      <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
-        <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">{t('groups.lifeMembers', { defaultValue: 'Membres visibles' })}</p>
-        <p className="mt-1 text-xl font-black text-slate-950">{groupLife.totalMembers}</p>
-      </div>
-      <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
-        <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">{t('nav.projects', { defaultValue: 'Projets' })}</p>
-        <p className="mt-1 text-xl font-black text-slate-950">{groupLife.totalProjects}</p>
-      </div>
-      <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
-        <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">{t('nav.activities', { defaultValue: 'Activités' })}</p>
-        <p className="mt-1 text-xl font-black text-slate-950">{groupLife.totalActivities}</p>
-      </div>
-      <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
-        <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">{t('groups.lifeReferents', { defaultValue: 'Groupes encadrés' })}</p>
-        <p className="mt-1 text-xl font-black text-slate-950">{groupLife.groupsWithReferent}</p>
-      </div>
-      <Link to={isAuthenticated ? '/messagerie' : '/login'} className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 shadow-sm transition hover:border-blue-300 md:col-span-4">
-        <p className="text-[11px] font-black uppercase tracking-wide text-blue-500">{t('nav.messaging')}</p>
-        <p className="mt-1 text-sm font-black text-blue-900">{t('groups.lifeMessaging', { defaultValue: 'Échanger avec son groupe après adhésion' })}</p>
-      </Link>
-    </section>
-  )
-}
-
 function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelleDemande, actionLoading, onJoin, onLeave }) {
   const { t } = useTranslation()
   const isAccepted = adhesion?.statut === 'ACCEPTE'
   const isPending = adhesion?.statut === 'EN_ATTENTE'
-  const referent = [groupe.referentPrenom, groupe.referentNom].filter(Boolean).join(' ')
-  const placesLabel = groupe.capaciteMax > 0
-    ? t('groups.members_capacity', { count: groupe.nombreMembres ?? 0, capacity: groupe.capaciteMax })
-    : t('groups.members_count', { count: groupe.nombreMembres ?? 0 })
-
   return (
     <article className={`bg-white rounded-[1.25rem] border border-slate-100 shadow-sm p-4 flex flex-col gap-3 border hover:-translate-y-0.5 hover:shadow-lg transition ${isAccepted ? 'border-green-300' : 'border-transparent'}`}>
       <div className="flex items-start justify-between gap-3">
@@ -273,7 +230,6 @@ function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelle
           <GroupAvatar name={groupe.nom} />
           <div className="min-w-0">
             <h2 className="font-semibold text-slate-950 text-lg leading-tight">{groupe.nom}</h2>
-          {referent && <p className="text-xs text-slate-500 mt-1">{t('groups.referent_label', { referent })}</p>}
           </div>
         </div>
         {adhesion?.statut && <GroupStatusBadge statut={adhesion.statut} />}
@@ -284,26 +240,21 @@ function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelle
       </p>
 
       <div className="grid grid-cols-1 gap-2 text-xs">
-        <InfoPill value={placesLabel} />
         <div className="flex flex-wrap gap-2">
           {groupe.theme && <span className="bg-teal-50 text-teal-800 px-2.5 py-1 rounded-full font-semibold">{groupe.theme}</span>}
           {groupe.categorie && <span className="bg-gray-100 text-slate-700 px-2.5 py-1 rounded-full font-semibold">{groupe.categorie}</span>}
         </div>
       </div>
 
-      <WorkspacePreview
-        groupeId={groupe.id}
-        isAccepted={isAccepted}
-        isAuthenticated={isAuthenticated}
-      />
+      {isAuthenticated && <WorkspacePreview groupeId={groupe.id} isAccepted={isAccepted} isAuthenticated={isAuthenticated} />}
 
       <div className="mt-auto">
         {!isAuthenticated ? (
           <Link
-            to="/login"
+            to={`/groupes/${groupe.id}`}
             className="block w-full text-center bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-xl transition"
           >
-            {t('ux.groups.joinLogin')}
+            {t('common.open')}
           </Link>
         ) : !isMembre ? null : isAccepted ? (
           <div className="grid grid-cols-2 gap-2">
@@ -358,7 +309,7 @@ function WorkspacePreview({ groupeId, isAccepted, isAuthenticated }) {
     {
       icon: 'Users',
       label: t('groups.members'),
-      to: `/groupes/${groupeId}?tab=membres`,
+      to: isAccepted || isAuthenticated ? `/groupes/${groupeId}?tab=membres` : '/login',
       available: isAccepted,
       note: isAccepted ? t('common.open') : t('groups.joinRequired', { defaultValue: 'Après adhésion' }),
     },
@@ -420,13 +371,5 @@ function GroupStatusBadge({ statut }) {
     <StatusBadge status={statut}>
       {t(`statuses.${statut}`, { defaultValue: statut })}
     </StatusBadge>
-  )
-}
-
-function InfoPill({ value }) {
-  return (
-    <div className="rounded-xl bg-blue-50 px-3 py-2 font-semibold text-blue-800">
-      {value}
-    </div>
   )
 }

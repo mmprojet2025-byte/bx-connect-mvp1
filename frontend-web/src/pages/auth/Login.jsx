@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import api from '../../api/axios'
-import { getDefaultRouteForRole } from '../../routes/roleRoutes'
+import { getPostAuthDestination } from '../../routes/postAuthReturn'
 import AppIcon from '../../components/ui/AppIcons'
 import logoBxConnect from '../../assets/images/logo-bx-connect.png'
 
@@ -44,7 +44,7 @@ export default function Login() {
       const res = await api.post('/auth/login', formData)
       const { token, prenom, nom, email, role } = res.data
       login(token, { prenom, nom, email, role })
-      navigate(getDefaultRouteForRole(role))
+      navigate(getPostAuthDestination(location.state?.returnTo, role))
     } catch (err) {
       setErreur(formatAuthError(err, t('auth.error_login'), t))
     }
@@ -57,6 +57,7 @@ export default function Login() {
           <span>{t('auth.no_account')}</span>
           <Link
             to="/register"
+            state={location.state?.returnTo ? { returnTo: location.state.returnTo } : undefined}
             className="ml-2 font-semibold text-blue-700 hover:text-blue-800 hover:underline"
           >
             {t('auth.register_link')}
@@ -191,7 +192,7 @@ export default function Login() {
 
             <p className="mt-7 text-center text-sm text-slate-600">
               {t('auth.no_account')}{' '}
-              <Link to="/register" className="font-semibold text-blue-700 hover:text-blue-800 hover:underline">
+              <Link to="/register" state={location.state?.returnTo ? { returnTo: location.state.returnTo } : undefined} className="font-semibold text-blue-700 hover:text-blue-800 hover:underline">
                 {t('auth.register_link')}
               </Link>
             </p>

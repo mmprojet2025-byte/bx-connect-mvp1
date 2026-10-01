@@ -1,6 +1,7 @@
 package com.bxjeunes.bx_connect.service;
 
 import com.bxjeunes.bx_connect.dto.GroupeRequest;
+import com.bxjeunes.bx_connect.dto.GroupePublicResponse;
 import com.bxjeunes.bx_connect.dto.GroupeResponse;
 import com.bxjeunes.bx_connect.dto.MembreGroupeResponse;
 import com.bxjeunes.bx_connect.dto.PagedResponse;
@@ -52,9 +53,19 @@ public class GroupeService {
                 .stream().map(GroupeResponse::fromEntity).collect(Collectors.toList());
     }
 
+    public List<GroupePublicResponse> listerGroupesPublics() {
+        return groupeRepository.findByStatut(StatutGroupe.VALIDE)
+                .stream().map(GroupePublicResponse::fromEntity).collect(Collectors.toList());
+    }
+
     public List<GroupeResponse> rechercherParNom(String nom) {
         return groupeRepository.findByStatutAndNomContainingIgnoreCase(StatutGroupe.VALIDE, nom)
                 .stream().map(GroupeResponse::fromEntity).collect(Collectors.toList());
+    }
+
+    public List<GroupePublicResponse> rechercherPublicsParNom(String nom) {
+        return groupeRepository.findByStatutAndNomContainingIgnoreCase(StatutGroupe.VALIDE, nom)
+                .stream().map(GroupePublicResponse::fromEntity).collect(Collectors.toList());
     }
 
     public PagedResponse<GroupeResponse> listerGroupesPage(String nom, int page, int size) {
@@ -69,6 +80,18 @@ public class GroupeService {
                 .map(GroupeResponse::fromEntity));
     }
 
+    public PagedResponse<GroupePublicResponse> listerGroupesPublicsPage(String nom, int page, int size) {
+        var pageable = PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation"));
+        if (nom != null && !nom.isBlank()) {
+            return PagedResponse.fromPage(groupeRepository
+                    .findByStatutAndNomContainingIgnoreCase(StatutGroupe.VALIDE, nom, pageable)
+                    .map(GroupePublicResponse::fromEntity));
+        }
+        return PagedResponse.fromPage(groupeRepository
+                .findByStatut(StatutGroupe.VALIDE, pageable)
+                .map(GroupePublicResponse::fromEntity));
+    }
+
     public GroupeResponse getGroupe(Long id) {
         Groupe groupe = groupeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + id));
@@ -76,6 +99,15 @@ public class GroupeService {
             throw new RuntimeException("Groupe introuvable : " + id);
         }
         return GroupeResponse.fromEntity(groupe);
+    }
+
+    public GroupePublicResponse getGroupePublic(Long id) {
+        Groupe groupe = groupeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + id));
+        if (groupe.getStatut() != StatutGroupe.VALIDE) {
+            throw new RuntimeException("Groupe introuvable : " + id);
+        }
+        return GroupePublicResponse.fromEntity(groupe);
     }
 
     public GroupeResponse proposerGroupe(GroupeRequest request, String emailReferent) {

@@ -147,9 +147,9 @@ export default function Projets() {
   }, [focusedProjectId])
 
   useEffect(() => {
-    if (!expandedProjectId || commentsByProject[expandedProjectId]) return
+    if (!isAuthenticated || !expandedProjectId || commentsByProject[expandedProjectId]) return
     fetchProjectComments(expandedProjectId)
-  }, [commentsByProject, expandedProjectId])
+  }, [commentsByProject, expandedProjectId, isAuthenticated])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -337,14 +337,9 @@ export default function Projets() {
           </div>
         )}
 
-        <WorkflowStepper
-          projets={projets}
-          activeStatus={filtreStatut}
-          onSelectStatus={setFiltreStatut}
-          t={t}
-        />
+        {isAuthenticated && <WorkflowStepper projets={projets} activeStatus={filtreStatut} onSelectStatus={setFiltreStatut} t={t} />}
 
-        {afficherFiltres && <section className="mb-5 rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+        {isAuthenticated && afficherFiltres && <section className="mb-5 rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
           <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-sm font-black text-slate-950">{t('common.filters', { defaultValue: 'Filtres' })}</h2>
@@ -439,6 +434,14 @@ export default function Projets() {
             title={t('projects.emptyNoGroupTitle')}
             description={t('projects.emptyNoGroupDescription')}
             actionLabel={t('groups.view_groups')}
+            actionTo="/groupes"
+          />
+        ) : projets.length === 0 && !isAuthenticated ? (
+          <EmptyState
+            icon="Rocket"
+            title={t('projects.publicEmptyTitle')}
+            description={t('projects.publicEmptyDescription')}
+            actionLabel={t('home.viewAllGroups')}
             actionTo="/groupes"
           />
         ) : projets.length === 0 ? (
@@ -576,11 +579,13 @@ function ProjectCard({
     <article className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition flex flex-col">
       <div className="relative">
         <ProjectCover imageUrl={projet.imageUrl} title={projet.titre} className="h-28" />
-        <div className="absolute left-4 top-4">
-          <StatusBadge status={projet.statut}>
-            {t(`statuses.${projet.statut}`, { defaultValue: projet.statut })}
-          </StatusBadge>
-        </div>
+        {isAuthenticated && (
+          <div className="absolute left-4 top-4">
+            <StatusBadge status={projet.statut}>
+              {t(`statuses.${projet.statut}`, { defaultValue: projet.statut })}
+            </StatusBadge>
+          </div>
+        )}
       </div>
       <div className="p-3.5 flex flex-col flex-1">
         <div className="mb-2">
@@ -599,42 +604,32 @@ function ProjectCard({
         <p className="text-sm text-slate-500 leading-relaxed line-clamp-2">
           {projet.description || t('projects.description_soon')}
         </p>
-        {projet.motifCorrection && (
+        {isAuthenticated && projet.motifCorrection && (
           <Alert type="warning" className="mt-3">
             {projet.motifCorrection}
           </Alert>
         )}
-        <dl className="mt-3 grid gap-2 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs sm:grid-cols-2">
-          <div>
-            <dt className="font-black text-slate-700">{t('projects.whoActs')}</dt>
-            <dd className="mt-1 text-slate-600">{actor}</dd>
-          </div>
-          <div>
-            <dt className="font-black text-slate-700">{t('projects.nextStep')}</dt>
-            <dd className="mt-1 text-slate-600">{nextStep}</dd>
-          </div>
-        </dl>
-        <div className="grid grid-cols-2 gap-2 text-xs mt-3">
-          <InfoPill
-            label={t('projects.owner')}
-            value={formatProjectOwner(projet, t)}
-          />
-          <InfoPill
-            label={t('projects.form_budget')}
-            value={projet.budgetDemande ? `${projet.budgetDemande} €` : '—'}
-            highlight={besoinSoutien}
-          />
-          <InfoPill
-            label={t('groups.members')}
-            value={t('projects.participants_count', { count: projet.nombreParticipants ?? 0 })}
-            highlight={isParticipant}
-          />
-          <InfoPill
-            label={t('projects.comments', { defaultValue: 'Commentaires' })}
-            value={projet.nombreCommentaires ?? comments.length}
-          />
-        </div>
-        {expanded && (
+        {isAuthenticated && (
+          <>
+            <dl className="mt-3 grid gap-2 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs sm:grid-cols-2">
+              <div>
+                <dt className="font-black text-slate-700">{t('projects.whoActs')}</dt>
+                <dd className="mt-1 text-slate-600">{actor}</dd>
+              </div>
+              <div>
+                <dt className="font-black text-slate-700">{t('projects.nextStep')}</dt>
+                <dd className="mt-1 text-slate-600">{nextStep}</dd>
+              </div>
+            </dl>
+            <div className="grid grid-cols-2 gap-2 text-xs mt-3">
+              <InfoPill label={t('projects.owner')} value={formatProjectOwner(projet, t)} />
+              <InfoPill label={t('projects.form_budget')} value={projet.budgetDemande ? `${projet.budgetDemande} €` : '—'} highlight={besoinSoutien} />
+              <InfoPill label={t('groups.members')} value={t('projects.participants_count', { count: projet.nombreParticipants ?? 0 })} highlight={isParticipant} />
+              <InfoPill label={t('projects.comments', { defaultValue: 'Commentaires' })} value={projet.nombreCommentaires ?? comments.length} />
+            </div>
+          </>
+        )}
+        {expanded && isAuthenticated && (
           <ProjectAlivePanel
             projet={projet}
             nextStep={nextStep}

@@ -1,16 +1,17 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTranslation } from 'react-i18next'
 import api from '../../api/axios'
 import { LEGAL_VERSION } from '../../constants/legal'
-import { getDefaultRouteForRole } from '../../routes/roleRoutes'
+import { getPostAuthDestination } from '../../routes/postAuthReturn'
 import logoBxConnect from '../../assets/images/logo-bx-connect.png'
 import AppIcon from '../../components/ui/AppIcons'
 
 export default function Register() {
   const { login } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const { t } = useTranslation()
   const [form, setForm] = useState({ prenom:'', nom:'', dateNaissance:'', email:'', motDePasse:'', confirmation:'' })
   const [legalAccepted, setLegalAccepted] = useState(false)
@@ -48,7 +49,7 @@ export default function Register() {
       })
       const { token, prenom, nom, email, role } = res.data
       login(token, { prenom, nom, email, role })
-      navigate(getDefaultRouteForRole(role))
+      navigate(getPostAuthDestination(location.state?.returnTo, role))
     } catch (err) {
       setErreur(formatAuthError(err, t('auth.error_register'), t))
     } finally { setLoading(false) }
@@ -178,7 +179,7 @@ export default function Register() {
         </form>
         <p className="text-center text-sm text-gray-500 mt-6">
           {t('auth.already_account')}{' '}
-          <Link to="/login" className="text-blue-700 font-medium hover:underline">{t('auth.login_link')}</Link>
+          <Link to="/login" state={location.state?.returnTo ? { returnTo: location.state.returnTo } : undefined} className="text-blue-700 font-medium hover:underline">{t('auth.login_link')}</Link>
         </p>
         <LegalLinks t={t} />
       </div>

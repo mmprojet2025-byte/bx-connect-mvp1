@@ -1,6 +1,7 @@
 package com.bxjeunes.bx_connect.controller;
 
 import com.bxjeunes.bx_connect.dto.GroupeRequest;
+import com.bxjeunes.bx_connect.dto.GroupePublicResponse;
 import com.bxjeunes.bx_connect.dto.GroupeResponse;
 import com.bxjeunes.bx_connect.dto.MembreGroupeResponse;
 import com.bxjeunes.bx_connect.dto.PagedResponse;
@@ -27,22 +28,22 @@ public class GroupeController {
 
     // PUBLIC
     @GetMapping
-    public ResponseEntity<List<GroupeResponse>> listerGroupes(@RequestParam(required = false) String q) {
-        if (q != null && !q.isBlank()) return ResponseEntity.ok(groupeService.rechercherParNom(q));
-        return ResponseEntity.ok(groupeService.listerGroupes());
+    public ResponseEntity<List<GroupePublicResponse>> listerGroupes(@RequestParam(required = false) String q) {
+        if (q != null && !q.isBlank()) return ResponseEntity.ok(groupeService.rechercherPublicsParNom(q));
+        return ResponseEntity.ok(groupeService.listerGroupesPublics());
     }
 
     @GetMapping("/page")
-    public ResponseEntity<PagedResponse<GroupeResponse>> listerGroupesPage(
+    public ResponseEntity<PagedResponse<GroupePublicResponse>> listerGroupesPage(
             @RequestParam(required = false) String q,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(groupeService.listerGroupesPage(q, page, size));
+        return ResponseEntity.ok(groupeService.listerGroupesPublicsPage(q, page, size));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<GroupeResponse> getGroupe(@PathVariable Long id) {
-        return ResponseEntity.ok(groupeService.getGroupe(id));
+    public ResponseEntity<GroupePublicResponse> getGroupe(@PathVariable Long id) {
+        return ResponseEntity.ok(groupeService.getGroupePublic(id));
     }
 
     @GetMapping("/{id}/membres")

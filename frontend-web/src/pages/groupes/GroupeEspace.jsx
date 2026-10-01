@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -13,6 +13,7 @@ import LoadingState from '../../components/ui/LoadingState'
 import ErrorState from '../../components/ui/ErrorState'
 import EmptyState from '../../components/ui/EmptyState'
 import StatusBadge from '../../components/StatusBadge'
+import { getCurrentReturnTo } from '../../routes/postAuthReturn'
 
 const TABS = [
   { id: 'discussion', label: 'Discussion', icon: 'MessageCircle' },
@@ -24,6 +25,7 @@ const TABS = [
 
 export default function GroupeEspace() {
   const { id } = useParams()
+  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const { isAuthenticated, isMembre } = useAuth()
   const { t, i18n } = useTranslation()
@@ -35,7 +37,6 @@ export default function GroupeEspace() {
   const [error, setError] = useState('')
   const mapContainerRef = useRef(null)
   const mapRef = useRef(null)
-  const activeTab = TABS.some(tab => tab.id === searchParams.get('tab')) ? searchParams.get('tab') : 'discussion'
 
   const fetchWorkspace = useCallback(async () => {
     setLoading(true)
@@ -75,6 +76,11 @@ export default function GroupeEspace() {
   const isMember = adhesion?.statut === 'ACCEPTE'
   const referent = [groupe?.referentPrenom, groupe?.referentNom].filter(Boolean).join(' ')
   const locationDetails = useMemo(() => buildGroupLocationDetails(groupe), [groupe])
+  const visibleTabs = isMember ? TABS : TABS.filter(tab => !['discussion', 'membres'].includes(tab.id))
+  const requestedTab = searchParams.get('tab')
+  const activeTab = visibleTabs.some(tab => tab.id === requestedTab)
+    ? requestedTab
+    : isMember ? 'discussion' : 'activites'
 
   useEffect(() => {
     if (activeTab !== 'infos' || !locationDetails?.hasCoordinates || !mapContainerRef.current) return undefined
@@ -127,14 +133,14 @@ export default function GroupeEspace() {
                     <p className="text-xs font-black uppercase tracking-wide text-blue-700">{t('groups.workspace', { defaultValue: 'Espace collaboratif' })}</p>
                     <h1 className="mt-1 text-2xl font-black text-slate-950">{groupe.nom}</h1>
                     <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
-                      <InfoChip icon="Users" label={t('groups.members_count', { count: groupe.nombreMembres ?? 0 })} />
-                      {referent && <InfoChip icon="User" label={t('groups.referent_label', { referent })} />}
+                      {isMember && <InfoChip icon="Users" label={t('groups.members_count', { count: groupe.nombreMembres ?? 0 })} />}
+                      {isMember && referent && <InfoChip icon="User" label={t('groups.referent_label', { referent })} />}
                       {adhesion?.statut && <StatusBadge status={adhesion.statut}>{t(`statuses.${adhesion.statut}`, { defaultValue: adhesion.statut })}</StatusBadge>}
                     </div>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Link to={isMember ? '/messagerie' : '/groupes'} className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-black text-white transition hover:bg-blue-600">
+                  <Link to={isMember ? '/messagerie' : isAuthenticated ? '/groupes' : '/login'} state={!isAuthenticated ? { returnTo: getCurrentReturnTo(location) } : undefined} className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-black text-white transition hover:bg-blue-600">
                     <AppIcon name="MessageCircle" className="h-4 w-4" />
                     {isMember ? t('messaging.openMessaging', { defaultValue: 'Ouvrir la messagerie' }) : t('ux.groups.joinGroup')}
                   </Link>
@@ -153,7 +159,7 @@ export default function GroupeEspace() {
             )}
 
             <nav className="mb-5 flex gap-2 overflow-x-auto rounded-xl border border-slate-100 bg-white p-2 shadow-sm" aria-label="Navigation groupe">
-              {TABS.map(tab => (
+              {visibleTabs.map(tab => (
                 <button
                   key={tab.id}
                   type="button"
@@ -173,7 +179,7 @@ export default function GroupeEspace() {
               {activeTab === 'membres' && <MembersPanel groupe={groupe} referent={referent} t={t} />}
               {activeTab === 'activites' && <LinkedItemsPanel type="activites" items={activites} language={i18n.language} t={t} />}
               {activeTab === 'projets' && <LinkedItemsPanel type="projets" items={projets} language={i18n.language} t={t} />}
-              {activeTab === 'infos' && <InfoPanel groupe={groupe} referent={referent} locationDetails={locationDetails} mapContainerRef={mapContainerRef} t={t} />}
+              {activeTab === 'infos' && <InfoPanel groupe={groupe} referent={referent} isMember={isMember} locationDetails={locationDetails} mapContainerRef={mapContainerRef} t={t} />}
             </section>
           </>
         )}
@@ -245,11 +251,11 @@ function LinkedItemsPanel({ type, items, language, t }) {
   )
 }
 
-function InfoPanel({ groupe, referent, locationDetails, mapContainerRef, t }) {
+function InfoPanel({ groupe, referent, isMember, locationDetails, mapContainerRef, t }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <InfoTile icon="User" title={t('groups.referent')} value={referent || t('common.unassigned')} />
-      <InfoTile icon="Users" title={t('groups.members')} value={t('groups.members_count', { count: groupe.nombreMembres ?? 0 })} />
+      {isMember && <InfoTile icon="User" title={t('groups.referent')} value={referent || t('common.unassigned')} />}
+      {isMember && <InfoTile icon="Users" title={t('groups.members')} value={t('groups.members_count', { count: groupe.nombreMembres ?? 0 })} />}
       <InfoTile icon="Folder" title={t('activities.form_category')} value={groupe.categorie || groupe.theme || t('common.notProvided')} />
       {locationDetails && (
         <div className="rounded-lg border border-blue-100 bg-slate-50 p-4 md:col-span-2">
