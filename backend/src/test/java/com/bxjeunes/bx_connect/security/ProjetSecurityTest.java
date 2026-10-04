@@ -26,6 +26,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -864,6 +866,35 @@ class ProjetSecurityTest {
                 .isEqualTo(StatutProjet.A_CORRIGER_REFERENT);
         assertThat(projetService.demanderCorrectionAdmin(81L, "Preciser le budget", admin.getEmail()).getStatut())
                 .isEqualTo(StatutProjet.A_CORRIGER_ADMIN);
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "NULL, Préciser les objectifs",
+            "Ancien commentaire, Préciser les objectifs",
+            "Ancien commentaire, '  Préciser les objectifs  '"
+    }, nullValues = "NULL")
+    @DisplayName("BX-02 : la correction referent sauvegarde le nouveau motif et le renvoie au porteur")
+    void correction_referent_sauvegarde_et_expose_motif(String ancienCommentaire, String commentaire) {
+        Projet soumis = projet(80L, StatutProjet.SOUMIS, groupe, membre);
+        soumis.setCommentaireReferent(ancienCommentaire);
+        when(projetRepository.findById(80L)).thenReturn(Optional.of(soumis));
+        when(userRepository.findByEmail(referent.getEmail())).thenReturn(Optional.of(referent));
+        when(projetRepository.save(soumis)).thenAnswer(invocation -> {
+            Projet sauvegarde = invocation.getArgument(0);
+            assertThat(sauvegarde.getStatut()).isEqualTo(StatutProjet.A_CORRIGER_REFERENT);
+            assertThat(sauvegarde.getCommentaireReferent()).isEqualTo("Préciser les objectifs");
+            return sauvegarde;
+        });
+
+        ProjetResponse response = projetService.demanderCorrectionReferent(
+                80L, commentaire, referent.getEmail());
+
+        verify(projetRepository).save(soumis);
+        assertThat(soumis.getCommentaireReferent()).isEqualTo("Préciser les objectifs");
+        assertThat(response.getStatut()).isEqualTo(StatutProjet.A_CORRIGER_REFERENT);
+        assertThat(response.getMotifCorrection()).isEqualTo("Préciser les objectifs");
+        assertThat(ProjetResponse.fromEntity(soumis).getMotifCorrection()).isEqualTo("Préciser les objectifs");
     }
 
     @Test

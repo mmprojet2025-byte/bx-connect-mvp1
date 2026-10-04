@@ -432,6 +432,7 @@ public class ProjetService {
         User referent = chargerUtilisateur(emailReferent);
         verifierDecisionReferentAutorisee(projet, referent);
         exigerTexte(commentaire, "Le commentaire de correction est obligatoire.");
+        projet.setCommentaireReferent(commentaire.trim());
         return appliquerTransition(projet, referent, StatutProjet.A_CORRIGER_REFERENT,
                 "PROJECT_REFERENT_CORRECTION_REQUESTED", commentaire, true);
     }
