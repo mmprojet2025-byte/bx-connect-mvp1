@@ -36,11 +36,12 @@ async function create(page) {
  return page.getByRole('form')
 }
 async function fill(form) {
+  await form.locator('input[type="date"]').first().fill('2099-01-15')
  await form.getByRole('textbox',{name:'Titre *',exact:true}).fill('Atelier référent')
- await form.getByRole('textbox',{name:'Description',exact:true}).fill('Description')
- await form.getByRole('textbox',{name:'Lieu',exact:true}).fill('Bruxelles')
- await form.locator('input[type="datetime-local"]').nth(0).fill('2099-01-15T10:00')
- await form.locator('input[type="datetime-local"]').nth(1).fill('2099-01-15T12:00')
+ await form.getByRole('textbox',{name:'Description *',exact:true}).fill('Description')
+ await form.getByRole('textbox',{name:'Lieu *',exact:true}).fill('Bruxelles')
+ await form.locator('input[type="time"]').nth(0).fill('10:00')
+ await form.locator('input[type="time"]').nth(1).fill('12:00')
 }
 for (const width of [1440,390]) for(const visibility of ['PUBLIC','PRIVE_GROUPE']) {
  test(`creation and publication ${visibility} at ${width}px`,async({page})=>{
@@ -51,10 +52,10 @@ for (const width of [1440,390]) for(const visibility of ['PUBLIC','PRIVE_GROUPE'
   await expect(form.getByRole('combobox',{name:'Groupe',exact:true})).toBeDisabled()
   await expect(form.getByRole('combobox')).toHaveCount(2)
   await expect(form.getByText('Activité générale',{exact:true})).toHaveCount(0)
-  await expect(form.getByLabel(/référent|prix|payant/i)).toHaveCount(0)
-  await expect(form.getByRole('combobox',{name:'Audience'}).locator('option')).toHaveText(['Publique','Réservée aux membres du groupe'])
+  await expect(form.getByLabel(/référent|prix/i)).toHaveCount(0)
+  await expect(form.getByRole('combobox',{name:'Qui peut participer ?'}).locator('option')).toHaveText(['Tout le monde','Membres du groupe'])
   await fill(form)
-  await form.getByRole('combobox',{name:'Audience'}).selectOption(visibility)
+  await form.getByRole('combobox',{name:'Qui peut participer ?'}).selectOption(visibility)
   await page.evaluate(()=>window.scrollTo(0,0))
   await page.screenshot({path:test.info().outputPath('form.png'),fullPage:true})
   await form.getByRole('button',{name:'Enregistrer le brouillon'}).click()
@@ -99,8 +100,8 @@ for(const statut of ['BROUILLON','PUBLIEE']) test(`assigned ADMIN activity edita
  await page.getByRole('button',{name:'Modifier',exact:true}).click()
  const form=page.getByRole('form')
  await expect(form.getByRole('combobox',{name:'Groupe',exact:true})).toBeDisabled()
- if(statut==='PUBLIEE') await expect(form.getByRole('combobox',{name:'Audience'})).toHaveCount(0)
- else await form.getByRole('combobox',{name:'Audience'}).selectOption('PRIVE_GROUPE')
+ if(statut==='PUBLIEE') await expect(form.getByRole('combobox',{name:'Qui peut participer ?'})).toBeDisabled()
+ else await form.getByRole('combobox',{name:'Qui peut participer ?'}).selectOption('PRIVE_GROUPE')
  await form.getByRole('button',{name:'Enregistrer les modifications'}).click()
  await expect(form).toHaveCount(0)
  for(const key of ['groupeId','referentAssigneId','nature']) expect(writes[0].body).not.toHaveProperty(key)

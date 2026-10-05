@@ -81,6 +81,7 @@ for (const [label, status] of [['Terminer', 'TERMINEE'], ['Annuler l’activité
     page.on('dialog', dialog => dialog.accept())
     await page.goto('/referent/activites')
     await page.getByRole('button', { name: label, exact: true }).click()
+    if (status === 'ANNULEE') await page.getByRole('dialog').getByRole('button', { name: label, exact: true }).click()
     await expect(page.getByRole('button', { name: label, exact: true })).toHaveCount(0)
     expect(patches).toEqual([{ statut: status }])
     await expect(page.getByText('Visibilité: Utilisateurs connectés', { exact: true })).toBeVisible()

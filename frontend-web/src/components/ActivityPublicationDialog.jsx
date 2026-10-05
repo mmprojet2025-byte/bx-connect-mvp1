@@ -1,7 +1,8 @@
+import { activityError as userFriendlyError } from '../utils/activityError'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import api from '../api/axios'
-import { userFriendlyError } from '../utils/userFriendlyError'
+
 
 export default function ActivityPublicationDialog({ activity, onClose, onPublished, fixedAudience = false, audienceSummary, forbiddenMessage }) {
   const { t } = useTranslation()
@@ -18,7 +19,7 @@ export default function ActivityPublicationDialog({ activity, onClose, onPublish
 
   const publish = async event => {
     event.preventDefault()
-    if (!(fixedAudience ? ['PUBLIC', 'PRIVE_GROUPE', 'MEMBRES'] : ['PUBLIC', 'MEMBRES']).includes(visibility) || saving || (fixedAudience && activity.gratuite === false)) return
+    if (!(fixedAudience ? ['PUBLIC', 'PRIVE_GROUPE', 'MEMBRES'] : ['PUBLIC', 'MEMBRES']).includes(visibility) || saving) return
     setSaving(true)
     setError('')
     try {
@@ -53,11 +54,10 @@ export default function ActivityPublicationDialog({ activity, onClose, onPublish
             </label>
           ))}
         </fieldset>}
-        {fixedAudience && activity.gratuite === false && <p role="alert" className="my-4 text-red-700">{t('adminActivity.paidPublication')}</p>}
         {error && <p role="alert" className="mb-4 text-red-700">{error}</p>}
         <div className="flex justify-end gap-3">
           <button type="button" disabled={saving} onClick={onClose} className="rounded-xl border px-4 py-2">{t('common.cancel')}</button>
-          <button type="submit" disabled={!visibility || saving || (fixedAudience && activity.gratuite === false)} className="rounded-xl bg-teal-700 px-4 py-2 font-semibold text-white disabled:bg-gray-300">
+          <button type="submit" disabled={!visibility || saving} className="rounded-xl bg-teal-700 px-4 py-2 font-semibold text-white disabled:bg-gray-300">
             {saving ? t('common.saving') : t('activities.publication.publish')}
           </button>
         </div>

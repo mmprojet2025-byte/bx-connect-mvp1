@@ -72,7 +72,7 @@ public class PaiementController {
     // PayPal redirige ici si l'utilisateur annule
     @GetMapping("/annuler")
     @Operation(summary = "Annuler un paiement PayPal", description = "Appelé automatiquement par PayPal si l'utilisateur annule")
-    public ResponseEntity<?> annulerPaiement(@RequestParam("paymentId") String paymentId) {
+    public ResponseEntity<?> annulerPaiement(@RequestParam("paymentId") String paymentId) throws PayPalRESTException {
         PaiementResponse response = payPalService.annulerPaiement(paymentId);
         return ResponseEntity.ok(response);
     }

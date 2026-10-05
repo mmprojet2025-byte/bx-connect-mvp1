@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.*;
 @DataJpaTest(showSql = false)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-@Import({InscriptionService.class, PresenceService.class, ActiviteService.class,
+@Import({com.bxjeunes.bx_connect.service.ActivityImageService.class, InscriptionService.class, PresenceService.class, ActiviteService.class,
         ReferentService.class, MembreDashboardService.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @Testcontainers

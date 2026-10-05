@@ -161,7 +161,7 @@ function MemberPrioritySection({ groupe, inscriptions, notifications, projets, t
       icon: 'Bell',
     },
     paymentPending && {
-      title: t('activities.unavailableReasons.PAYANTE_INDISPONIBLE'),
+      title: t('activityEditor.paymentPending'),
       description: paymentPending.titre || paymentPending.activiteTitre || t('memberDashboard.activities.title'),
       to: '/activites',
       tone: 'amber',

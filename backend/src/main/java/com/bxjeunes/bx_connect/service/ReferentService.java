@@ -17,6 +17,9 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ReferentService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private ActivityImageService activityImages;
+
     private final UserRepository userRepository;
     private final ActiviteRepository activiteRepository;
     private final ProjetRepository projetRepository;
@@ -35,6 +38,17 @@ public class ReferentService {
         this.soutienRepository   = soutienRepository;
     }
 
+    private ActiviteResponse activityResponse(Activite a) {
+        var response = ActiviteResponse.fromEntity(a, (int) participantsActifs(a.getId()));
+        if (activityImages != null) response.setImageUrl(activityImages.url(a.getImageStorageKey()));
+        boolean draftWithoutHistory = a.getStatut() == StatutActivite.BROUILLON
+                && inscriptionRepository.findByActiviteId(a.getId()).isEmpty()
+                && soutienRepository.findByActiviteId(a.getId()).isEmpty();
+        response.setTarifModifiable(draftWithoutHistory); response.setSupprimable(draftWithoutHistory);
+        response.compterReservations((int) inscriptionRepository.countByActiviteIdAndStatutIn(a.getId(), List.of(StatutInscription.EN_ATTENTE_PAIEMENT)));
+        return response;
+    }
+
     private long participantsActifs(Long activiteId) {
         return inscriptionRepository.countByActiviteIdAndStatutIn(
                 activiteId, List.of(StatutInscription.CONFIRMEE, StatutInscription.PAYEE));
@@ -48,7 +62,7 @@ public class ReferentService {
         List<ActiviteResponse> mesActivites = activiteRepository
                 .findByCreateurIdOrReferentAssigneId(referent.getId(), referent.getId())
                 .stream().filter(a -> ActiviteLecture.gestion(a, referent))
-                .map(a -> ActiviteResponse.fromEntity(a, (int) participantsActifs(a.getId())))
+                .map(this::activityResponse)
                 .collect(Collectors.toList());
 
         long totalInscriptions = mesActivites.stream()
@@ -79,7 +93,7 @@ public class ReferentService {
                 .orElseThrow(() -> new RuntimeException("Référent introuvable"));
         return activiteRepository.findByCreateurIdOrReferentAssigneId(referent.getId(), referent.getId())
                 .stream().filter(a -> ActiviteLecture.gestion(a, referent))
-                .map(a -> ActiviteResponse.fromEntity(a, (int) participantsActifs(a.getId())))
+                .map(this::activityResponse)
                 .collect(Collectors.toList());
     }
 

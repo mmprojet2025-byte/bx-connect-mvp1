@@ -30,6 +30,8 @@ import java.util.List;
         matchIfMissing = false
 )
 public class PayPalService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private ActivityPaymentService activityPayments;
 
     private final APIContext apiContext;
     private final SoutienFinancierRepository soutienRepo;
@@ -57,6 +59,7 @@ public class PayPalService {
 
     // ─── Créer un paiement PayPal ─────────────────────────────────────────────
 
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public PaiementResponse creerPaiement(PaiementRequest request) throws PayPalRESTException {
 
         // Récupérer l'utilisateur connecté
@@ -65,10 +68,11 @@ public class PayPalService {
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
         Activite activite = null;
+        Inscription registration = null;
         Projet projet = null;
         verifierCibleUnique(request);
         if (request.getActiviteId() != null) {
-            throw new AccessDeniedException("Les paiements d'activité sont indisponibles dans cette version.");
+            return creerPaiementActivite(request, donateur);
         } else {
             projet = projetRepository.findById(request.getProjetId())
                     .orElseThrow(() -> new RuntimeException("Projet non trouvé"));
@@ -119,6 +123,7 @@ public class PayPalService {
         // ── Sauvegarder en base ────────────────────────────────────────────────
         SoutienFinancier soutien = new SoutienFinancier();
         soutien.setMontant(request.getMontant());
+        soutien.setInscription(registration);
         soutien.setStatutPaiement(StatutPaiement.EN_ATTENTE);
         soutien.setPaypalPaymentId(createdPayment.getId());
         soutien.setApprovalUrl(approvalUrl);
@@ -135,9 +140,61 @@ public class PayPalService {
         return PaiementResponse.fromEntity(saved);
     }
 
+    private PaiementResponse creerPaiementActivite(PaiementRequest request, User user) throws PayPalRESTException {
+        var attempt = activityPayments.prepare(request.getActiviteId(), user, request.getMontant(), "PAYPAL");
+        if (attempt.getApprovalUrl() != null) return PaiementResponse.fromEntity(attempt);
+        Transaction transaction = new Transaction();
+        transaction.setDescription("BX-Connect — Activité " + request.getActiviteId());
+        transaction.setAmount(new Amount().setCurrency("EUR").setTotal(attempt.getMontant().setScale(2).toPlainString()));
+        var payment = new Payment().setIntent("sale").setPayer(new Payer().setPaymentMethod("paypal"))
+                .setTransactions(List.of(transaction))
+                .setRedirectUrls(new RedirectUrls().setReturnUrl(activityReturnUrl).setCancelUrl(activityCancelUrl));
+        var created = creerPaiementActiviteExterne(payment, attempt.getActivityRequestKey());
+        String url = created.getLinks().stream().filter(link -> "approval_url".equals(link.getRel()))
+                .map(Links::getHref).findFirst().orElseThrow();
+        return PaiementResponse.fromEntity(activityPayments.attach(request.getActiviteId(), attempt.getId(), created.getId(), url, "PAYPAL"));
+    }
+
+    @Value("${paypal.activity-return-url:http://localhost:5173/paiement/succes}")
+    private String activityReturnUrl;
+    @Value("${paypal.activity-cancel-url:http://localhost:5173/paiement/annule}")
+    private String activityCancelUrl;
+
+    private APIContext activityContext(String key) {
+        var context = new APIContext(apiContext.getClientID(), apiContext.getClientSecret(), apiContext.getConfiguration("mode"));
+        context.setRequestId(key);
+        return context;
+    }
+    Payment creerPaiementActiviteExterne(Payment payment, String key) throws PayPalRESTException {
+        return payment.create(activityContext(key));
+    }
+    Payment lirePaiementExterne(String id) throws PayPalRESTException { return Payment.get(apiContext, id); }
+    Payment executerPaiementExterne(Payment payment, PaymentExecution execution, String key) throws PayPalRESTException {
+        return payment.execute(activityContext(key), execution);
+    }
+
     // ─── Confirmer un paiement PayPal ─────────────────────────────────────────
 
+    @Transactional(rollbackFor = Exception.class)
     public PaiementResponse confirmerPaiement(String paymentId, String payerId) throws PayPalRESTException {
+
+        SoutienFinancier soutien = soutienRepo.findByPaypalPaymentId(paymentId)
+                .orElseThrow(() -> new IllegalArgumentException("Paiement introuvable."));
+        if (soutien.getActivite() != null) {
+            soutien = activityPayments.lockedPayment(soutien);
+            activityPayments.owner(soutien);
+            if (soutien.getStatutPaiement() == StatutPaiement.PAYE) return PaiementResponse.fromEntity(soutien);
+            if (soutien.getStatutPaiement() != StatutPaiement.EN_ATTENTE)
+                throw new IllegalArgumentException("Ce paiement n'est plus disponible.");
+            var remote = lirePaiementExterne(paymentId);
+            if (paiementTermine(remote)) {
+                verifierMontant(soutien, remote);
+                activityPayments.complete(soutien, true);
+                return PaiementResponse.fromEntity(soutien);
+            }
+            if ("approved".equals(remote.getState())) return PaiementResponse.fromEntity(soutien);
+            activityPayments.check(soutien.getActivite(), soutien.getDonateur());
+        }
 
         // Exécuter le paiement PayPal
         Payment payment = new Payment();
@@ -146,12 +203,22 @@ public class PayPalService {
         PaymentExecution execution = new PaymentExecution();
         execution.setPayerId(payerId);
 
-        Payment executedPayment = payment.execute(apiContext, execution);
+        Payment executedPayment = soutien.getActivite() == null ? payment.execute(apiContext, execution)
+                : executerPaiementExterne(payment, execution, soutien.getActivityRequestKey().substring(0, 32) + "-pay");
 
         // Mettre à jour en base
-        SoutienFinancier soutien = soutienRepo.findByPaypalPaymentId(paymentId)
-                .orElseThrow(() -> new RuntimeException("Soutien financier non trouvé pour ce paiement"));
 
+
+        if (soutien.getActivite() != null) {
+            boolean paid = paiementTermine(executedPayment);
+            if (paid && (executedPayment.getTransactions().size() != 1
+                    || !"EUR".equals(executedPayment.getTransactions().get(0).getAmount().getCurrency())
+                    || soutien.getMontant().compareTo(new BigDecimal(executedPayment.getTransactions().get(0).getAmount().getTotal())) != 0))
+                throw new IllegalArgumentException("Montant du paiement invalide.");
+            // Pending provider settlement is not a confirmed registration.
+            if (paid) activityPayments.complete(soutien, true);
+            return PaiementResponse.fromEntity(soutien);
+        }
         if ("approved".equals(executedPayment.getState())) {
             soutien.setStatutPaiement(StatutPaiement.PAYE);
             soutien.setPaypalPayerId(payerId);
@@ -168,10 +235,23 @@ public class PayPalService {
 
     // ─── Annuler un paiement ──────────────────────────────────────────────────
 
-    public PaiementResponse annulerPaiement(String paymentId) {
+    @Transactional
+    public PaiementResponse annulerPaiement(String paymentId) throws PayPalRESTException {
         SoutienFinancier soutien = soutienRepo.findByPaypalPaymentId(paymentId)
                 .orElseThrow(() -> new RuntimeException("Soutien financier non trouvé"));
 
+        if (soutien.getActivite() != null) {
+            soutien = activityPayments.lockedPayment(soutien);
+            activityPayments.owner(soutien);
+            var remote = lirePaiementExterne(paymentId);
+            if (paiementTermine(remote)) {
+                verifierMontant(soutien, remote);
+                activityPayments.complete(soutien, true);
+            } else if ("created".equals(remote.getState()) || "failed".equals(remote.getState()) || "canceled".equals(remote.getState())) {
+                activityPayments.complete(soutien, false);
+            } else throw new IllegalArgumentException("Le paiement est encore en cours de vérification.");
+            return PaiementResponse.fromEntity(soutien);
+        }
         soutien.setStatutPaiement(StatutPaiement.ANNULE);
         SoutienFinancier saved = soutienRepo.save(soutien);
         return PaiementResponse.fromEntity(saved);
@@ -214,13 +294,24 @@ public class PayPalService {
     private void verifierCibleUnique(PaiementRequest request) {
         boolean cibleActivite = request.getActiviteId() != null;
         boolean cibleProjet = request.getProjetId() != null;
+        if (cibleProjet && (request.getMontant() == null || request.getMontant().compareTo(BigDecimal.ONE) < 0))
+            throw new IllegalArgumentException("Le montant minimum est de 1€.");
         if (cibleActivite == cibleProjet) {
             throw new AccessDeniedException("Le paiement doit cibler une seule activité ou un seul projet ouvert au soutien.");
         }
     }
 
-    private void verifierActivitePayable(Activite activite) {
-        throw new AccessDeniedException("Les paiements d'activité sont indisponibles dans cette version.");
+    private boolean paiementTermine(Payment payment) {
+        return "approved".equals(payment.getState()) && payment.getTransactions() != null
+                && payment.getTransactions().size() == 1
+                && payment.getTransactions().get(0).getRelatedResources() != null
+                && payment.getTransactions().get(0).getRelatedResources().stream()
+                    .anyMatch(r -> r.getSale() != null && "completed".equals(r.getSale().getState()));
+    }
+    private void verifierMontant(SoutienFinancier payment, Payment remote) {
+        var amount = remote.getTransactions().get(0).getAmount();
+        if (!"EUR".equals(amount.getCurrency()) || payment.getMontant().compareTo(new BigDecimal(amount.getTotal())) != 0)
+            throw new IllegalArgumentException("Montant du paiement invalide.");
     }
 
     private void verifierProjetPayable(Projet projet) {

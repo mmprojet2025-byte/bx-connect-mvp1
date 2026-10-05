@@ -1,3 +1,4 @@
+import { activityError as userFriendlyError } from '../../utils/activityError'
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import api from '../../api/axios';
-import { userFriendlyError } from '../../utils/userFriendlyError';
+
 import { getCurrentReturnTo } from '../../routes/postAuthReturn';
 import StatusBadge from '../../components/StatusBadge';
 import ActivityCover from '../../components/ActivityCover';
@@ -42,6 +43,8 @@ export default function ActiviteDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [paymentOptions, setPaymentOptions] = useState(null);
+  useEffect(() => { api.get('/activites/paiement-options').then(response => setPaymentOptions(response.data)).catch(() => setPaymentOptions({})); }, []);
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
@@ -101,6 +104,17 @@ export default function ActiviteDetail() {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handlePayment = async provider => {
+    setActionLoading(true); setError('');
+    try {
+      const response = await api.post(provider === 'STRIPE' ? '/stripe/checkout' : '/paiements/creer', { activiteId: Number(id), montant: activite.prix });
+      const url = response.data.checkoutUrl || response.data.approvalUrl;
+      if (!url || !url.startsWith('https://')) throw new Error('Invalid payment redirect');
+      window.location.assign(url);
+    } catch { setError(t('activityEditor.paymentError')); }
+    finally { setActionLoading(false); }
   };
 
   const handleAnnulerInscription = async () => {
@@ -259,6 +273,7 @@ export default function ActiviteDetail() {
                   </p>
                 </InfoBlock>
               )}
+              {activite.dateLimiteInscription && <InfoBlock><p className="text-sm font-semibold">{t('activityEditor.deadline')}</p><p>{new Date(activite.dateLimiteInscription).toLocaleString(i18n.language)}</p></InfoBlock>}
               {activite.capaciteMax > 0 && (
                 <InfoBlock>
                   <p className="text-xs text-gray-400 font-semibold uppercase mb-1">{t('activities.capacity')}</p>
@@ -299,7 +314,16 @@ export default function ActiviteDetail() {
               )}
 
               <div className="flex flex-col gap-3 mt-5">
-              <DetailActivityAction
+              {!activite.gratuite && isMembre && (activite.peutSInscrire || activite.statutInscription === 'EN_ATTENTE_PAIEMENT') ? <>
+                {activite.statutInscription === 'EN_ATTENTE_PAIEMENT' && <p>{t('activityEditor.paymentPending')}</p>}
+                {paymentOptions && !paymentOptions.STRIPE && !paymentOptions.PAYPAL && <p>{t('activityEditor.paymentError')}</p>}
+                {['STRIPE', 'PAYPAL'].filter(provider => paymentOptions?.[provider]).map(provider => <button key={provider} type="button" disabled={actionLoading} onClick={() => handlePayment(provider)} className="rounded-xl bg-blue-700 px-4 py-3 font-semibold text-white disabled:opacity-50">{t(`activityEditor.${provider.toLowerCase()}`)}</button>)}
+                {activite.statutInscription === 'EN_ATTENTE_PAIEMENT' && <button type="button" disabled={actionLoading} onClick={async () => {
+                  setActionLoading(true);
+                  try { await api.post(`/activites/${id}/paiement/annuler`); await fetchActivite({ id, t, setActivite, setError, setLoading }); }
+                  catch { setError(t('activityEditor.paymentPending')); } finally { setActionLoading(false); }
+                }} className="rounded-xl border px-4 py-3">{t('activities.cancel_registration')}</button>}
+              </> : <DetailActivityAction
                 activite={activite}
                 isAuthenticated={isAuthenticated}
                 isMembre={isMembre}
@@ -307,7 +331,7 @@ export default function ActiviteDetail() {
                 onRegister={handleInscrire}
                 onCancelRegistration={handleAnnulerInscription}
                 t={t}
-              />
+              />}
 
               {/* Retour */}
               <button
@@ -425,7 +449,7 @@ function buildLocationDetails(activite) {
 function getActivitySituation(activity, t) {
   if (activity?.inscrit || activity?.inscriptionId || activity?.statutInscription) {
     const label = activity.statutInscription === 'EN_ATTENTE_PAIEMENT'
-      ? t('activities.unavailableReasons.PAYANTE_INDISPONIBLE')
+      ? t('activityEditor.paymentPending')
       : t('activities.already_registered');
     return { key: 'registered', label };
   }

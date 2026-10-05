@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
@@ -10,7 +10,7 @@ import Alert from '../../components/ui/Alert';
 import EmptyState from '../../components/ui/EmptyState';
 import StatusBadge from '../../components/StatusBadge';
 import ActivityCover from '../../components/ActivityCover';
-import { userFriendlyError } from '../../utils/userFriendlyError';
+import { activityError as userFriendlyError } from '../../utils/activityError';
 import PageHeader from '../../components/ui/PageHeader';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
@@ -29,6 +29,7 @@ async function fetchActivites({ t, setActivites, setError, setLoading }) {
 }
 
 export default function Activites() {
+  const navigate = useNavigate();
   const { isAuthenticated, isAdmin, isReferent, isMembre } = useAuth();
   const { t, i18n } = useTranslation();
 
@@ -162,6 +163,7 @@ export default function Activites() {
   };
 
   const handleInscrire = async (activiteId) => {
+    if (activites.find(item => item.id === activiteId)?.gratuite === false) { navigate(`/activites/${activiteId}`); return; }
     setActionLoading(activiteId);
     try {
       const response = await api.post('/inscriptions', { activiteId });
@@ -195,6 +197,7 @@ export default function Activites() {
   };
 
   const handleAnnulerInscription = async (activity) => {
+    if (activity.statutInscription === 'EN_ATTENTE_PAIEMENT') { navigate(`/activites/${activity.id}`); return; }
     if (!activity.inscriptionId) return;
     setActionLoading(activity.id);
     try {
@@ -587,7 +590,7 @@ function renderActivityAction({ isAuthenticated, isMembre, situation, actionLoad
 function getActivitySituation(activity, t) {
   if (activity.inscrit || activity.dejaInscrit || activity.inscriptionId || activity.statutInscription) {
     const label = activity.statutInscription === 'EN_ATTENTE_PAIEMENT'
-      ? t('activities.unavailableReasons.PAYANTE_INDISPONIBLE')
+      ? t('activityEditor.paymentPending')
       : t('activities.already_registered')
     return { key: 'registered', label, dot: '🟡', className: 'bg-amber-50 text-amber-800' }
   }

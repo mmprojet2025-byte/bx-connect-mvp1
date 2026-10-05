@@ -1,3 +1,4 @@
+import ActivityPaymentReturn from './pages/paiement/ActivityPaymentReturn'
 import { useEffect, useState } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
@@ -218,6 +219,8 @@ export default function App() {
 
           {/* MVP1.5 / masqué volontairement */}
           <Route path="/prestations" element={<MvpHiddenRoute />} />
+          <Route path="/paiement/succes" element={<PrivateRoute><ActivityPaymentReturn /></PrivateRoute>} />
+          <Route path="/paiement/annule" element={<PrivateRoute><ActivityPaymentReturn /></PrivateRoute>} />
           <Route path="/paiement/*" element={<MvpHiddenRoute />} />
 
           {/* ── Pages Partenaire ── */}

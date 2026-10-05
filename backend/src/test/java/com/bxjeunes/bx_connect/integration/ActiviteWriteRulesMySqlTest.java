@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.*;
 @DataJpaTest(showSql = false)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-@Import(ActiviteService.class)
+@Import({ActiviteService.class, com.bxjeunes.bx_connect.service.ActivityImageService.class, com.bxjeunes.bx_connect.service.ActivityPaymentService.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @Testcontainers
 class ActiviteWriteRulesMySqlTest {
@@ -50,6 +50,9 @@ class ActiviteWriteRulesMySqlTest {
     }
 
     @Autowired ActiviteService service;
+    @Autowired com.bxjeunes.bx_connect.service.ActivityPaymentService paymentService;
+    @Autowired com.bxjeunes.bx_connect.repository.SoutienFinancierRepository payments;
+    @Autowired com.bxjeunes.bx_connect.repository.InscriptionRepository registrations;
     @Autowired ActiviteRepository activities;
     @Autowired GroupeRepository groups;
     @Autowired UserRepository users;
@@ -128,7 +131,7 @@ class ActiviteWriteRulesMySqlTest {
         legacy.setTitre("Historique"); legacy.setCreateur(referent); legacy.setGratuite(false);
         legacy.setPrix(new BigDecimal("15.50")); legacy.setVisibilite(VisibiliteActivite.MEMBRES);
         legacy.setDateDebut(LocalDateTime.now().plusDays(1)); legacy.setDateFin(legacy.getDateDebut().plusHours(1));
-        legacy.setCapaciteMax(10);
+        legacy.setCapaciteMax(10); legacy.setStatut(StatutActivite.PUBLIEE);
         Long id = activities.saveAndFlush(legacy).getId();
         ActiviteRequest edit = request(false);
         edit.setGratuite(false); edit.setPrix(new BigDecimal("15.50"));
@@ -144,6 +147,37 @@ class ActiviteWriteRulesMySqlTest {
             assertThat(saved.getGroupe()).isNull();
             assertThat(saved.getReferentAssigne()).isNull();
         });
+    }
+
+    @Test
+    void paidReservationCommitsAndConcurrentLastPlaceCannotBeSoldTwice() throws Exception {
+        User first = user(Role.MEMBRE), second = user(Role.MEMBRE);
+        var request = request(false); request.setGratuite(false); request.setPrix(BigDecimal.TEN);
+        request.setCapaciteMax(1); request.setDateLimiteInscription(request.getDateDebut().minusHours(1));
+        Long id = service.creer(request, admin.getEmail()).getId();
+        service.changerStatut(id, StatutActivite.PUBLIEE, VisibiliteActivite.PUBLIC, admin.getEmail());
+        assertThat(activities.findById(id).orElseThrow().getDateLimiteInscription()).isNotNull();
+        var start = new java.util.concurrent.CountDownLatch(1);
+        var pool = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try {
+            java.util.List<java.util.concurrent.Future<Boolean>> attempts = new java.util.ArrayList<>();
+            for (User member : java.util.List.of(first, second)) attempts.add(pool.submit(() -> {
+                start.await();
+                try { paymentService.prepare(id, member, BigDecimal.TEN, "STRIPE"); return true; }
+                catch (IllegalArgumentException expected) { return false; }
+            }));
+            start.countDown();
+            int success = 0; for (var result : attempts) if (result.get(20, java.util.concurrent.TimeUnit.SECONDS)) success++;
+            assertThat(success).isEqualTo(1);
+            assertThat(registrations.countByActiviteIdAndStatutIn(id, java.util.List.of(StatutInscription.EN_ATTENTE_PAIEMENT))).isEqualTo(1);
+            inTransaction(() -> {
+                var pending = payments.findByActiviteId(id).get(0);
+                assertThat(pending.getInscription()).isNotNull();
+                assertThat(pending.getActivityRequestKey()).isNotBlank();
+                paymentService.complete(paymentService.lockedPayment(pending), true);
+            });
+            assertThat(registrations.countByActiviteIdAndStatutIn(id, java.util.List.of(StatutInscription.PAYEE))).isEqualTo(1);
+        } finally { pool.shutdownNow(); }
     }
 
     private void inTransaction(Runnable checks) {

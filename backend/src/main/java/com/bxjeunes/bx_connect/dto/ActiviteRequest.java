@@ -8,6 +8,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class ActiviteRequest {
+    private String imageStorageKey;
+    public String getImageStorageKey() { return imageStorageKey; }
+    public void setImageStorageKey(String value) { imageStorageKey = value; }
+
 
     @NotBlank(message = "Le titre est obligatoire")
     private String titre;
@@ -19,6 +23,8 @@ public class ActiviteRequest {
 
     @NotNull(message = "La date de fin est obligatoire")
     private LocalDateTime dateFin;
+    private LocalDateTime dateLimiteInscription;
+    private boolean dateLimiteFournie;
 
     private String lieu;
 
@@ -72,6 +78,11 @@ public class ActiviteRequest {
 
     public LocalDateTime getDateDebut() { return dateDebut; }
     public void setDateDebut(LocalDateTime dateDebut) { this.dateDebut = dateDebut; }
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public boolean isDateLimiteFournie() { return dateLimiteFournie; }
+    public LocalDateTime getDateLimiteInscription() { return dateLimiteInscription; }
+    public void setDateLimiteInscription(LocalDateTime value) { dateLimiteInscription = value; dateLimiteFournie = true; }
 
     public LocalDateTime getDateFin() { return dateFin; }
     public void setDateFin(LocalDateTime dateFin) { this.dateFin = dateFin; }

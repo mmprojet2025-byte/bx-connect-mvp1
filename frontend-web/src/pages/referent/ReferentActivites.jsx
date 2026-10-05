@@ -1,3 +1,5 @@
+import { activityError as userFriendlyError } from '../../utils/activityError'
+import ActivityCancellationDialog from '../../components/ActivityCancellationDialog'
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
@@ -9,13 +11,13 @@ import ActivityCover from '../../components/ActivityCover'
 import AppIcon from '../../components/ui/AppIcons'
 import PageHeader from '../../components/ui/PageHeader'
 import SectionCard from '../../components/ui/SectionCard'
-import LocationPicker from '../../components/location/LocationPicker'
+import ActivityFormFields from '../../components/ActivityFormFields'
 import ErrorState from '../../components/ui/ErrorState'
 import LoadingState from '../../components/ui/LoadingState'
 
 import ActivityPublicationDialog from '../../components/ActivityPublicationDialog'
 import ActivityVisibility from '../../components/ActivityVisibility'
-import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFriendlyError'
+import { confirmSensitiveAction } from '../../utils/userFriendlyError'
 
 import { activityToForm, audienceKey } from '../admin/activityForm'
 import { ownActivityGroups, newReferentActivity, canManageAssignedActivity, validateReferentActivity, referentActivityPayload } from './referentActivityForm'
@@ -24,6 +26,7 @@ const emptyForm = newReferentActivity([])
 
 export default function ReferentActivites() {
   const { t, i18n } = useTranslation()
+  const [cancellingActivity, setCancellingActivity] = useState(null)
   const [publishingActivity, setPublishingActivity] = useState(null)
   const [changingStatus, setChangingStatus] = useState(null)
   const [activites, setActivites] = useState([])
@@ -39,11 +42,11 @@ export default function ReferentActivites() {
   const [groups, setGroups] = useState([])
   const [profile, setProfile] = useState(null)
   const [groupsReady, setGroupsReady] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [formErrors, setFormErrors] = useState([])
   const ownGroups = ownActivityGroups(groups, profile)
   const canManage = activity => groupsReady && canManageAssignedActivity(activity, groups, profile)
   const assignmentError = editingActivity && groupsReady && !canManage(editingActivity)
-  const audienceLocked = editingActivity && (editingActivity.statut !== 'BROUILLON' || editingActivity.groupeId == null || editingActivity.visibilite === 'MEMBRES')
 
   const fetchActivites = useCallback(async () => {
     setLoading(true)
@@ -80,9 +83,6 @@ export default function ReferentActivites() {
     gratuites: activites.filter(activite => activite.gratuite).length,
   }
 
-  const updateForm = (field, value) => {
-    setForm(prev => ({ ...prev, [field]: value }))
-  }
 
   const resetForm = () => {
     setForm(newReferentActivity(ownGroups))
@@ -102,7 +102,7 @@ export default function ReferentActivites() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (saving || !groupsReady) return
+    if (saving || uploading || !groupsReady) return
     const errors = validateReferentActivity(form, groups, profile, editingActivity)
     setFormErrors(errors)
     if (errors.length) return
@@ -129,8 +129,9 @@ export default function ReferentActivites() {
     }
   }
 
-  const changeStatus = async (activity, statut) => {
-    if (!confirmSensitiveAction(t('admin.confirmActivityStatusChange', { status: t(`statuses.${statut}`) }))) return
+  const changeStatus = async (activity, statut, confirmed = false) => {
+    if (statut === 'ANNULEE' && !confirmed) { setCancellingActivity(activity); return }
+    if (!confirmed && !confirmSensitiveAction(t('admin.confirmActivityStatusChange', { status: t(`statuses.${statut}`) }))) return
     setChangingStatus(activity.id)
     setError('')
     setMessage('')
@@ -196,69 +197,7 @@ export default function ReferentActivites() {
             {!groupsReady && <p role="status" className="md:col-span-2">{t('referentActivity.groupsUnavailable')}</p>}
             {groupsReady && !editingActivity && ownGroups.length === 0 && <p role="alert" className="md:col-span-2">{t('referentActivity.noGroups')}</p>}
             {assignmentError && <p role="alert" className="md:col-span-2 text-red-700">{t('referentActivity.assignmentError')}</p>}
-            {editingActivity?.groupeId == null && editingActivity ? <p>{t('referentActivity.legacyGroup')}</p> :
-              <label className="block text-sm font-semibold text-gray-700">
-                {t('adminActivity.groupLabel')}
-                <select aria-label={t('adminActivity.groupLabel')} className="mt-1 w-full rounded-xl border p-2"
-                  value={form.groupeId} disabled={Boolean(editingActivity) || ownGroups.length === 1 || !groupsReady}
-                  onChange={event => updateForm('groupeId', event.target.value)}>
-                  <option value="">{t('adminActivity.chooseGroup')}</option>
-                  {editingActivity?.groupeId && !ownGroups.some(group => group.id === editingActivity.groupeId) &&
-                    <option value={editingActivity.groupeId}>{editingActivity.groupeNom || t('adminActivity.unavailableGroup')}</option>}
-                  {ownGroups.map(group => <option key={group.id} value={group.id}>{group.nom}</option>)}
-                </select>
-              </label>}
-            {audienceLocked ? <p className="self-center text-sm text-slate-600">{t(`adminActivity.${audienceKey(editingActivity)}`, { group: editingActivity.groupeNom })}</p> :
-              <label className="block text-sm font-semibold text-gray-700">
-                {t('adminActivity.visibility')}
-                <select aria-label={t('adminActivity.visibility')} className="mt-1 w-full rounded-xl border p-2" value={form.visibilite}
-                  onChange={event => updateForm('visibilite', event.target.value)}>
-                  <option value="PUBLIC">{t('adminActivity.public')}</option>
-                  <option value="PRIVE_GROUPE">{t('adminActivity.private')}</option>
-                </select>
-              </label>}
-            <p className="md:col-span-2 text-sm text-slate-600">{t(editingActivity?.gratuite === false ? 'adminActivity.legacyPrice' : 'adminActivity.free', { price: editingActivity?.prix })}</p>
-            <Input label={t('activities.form_title')} value={form.titre} onChange={value => updateForm('titre', value)} required />
-            <Input label={t('activities.form_place')} value={form.lieu} onChange={value => updateForm('lieu', value)} required />
-            <Input label={t('activities.start_date')} type="datetime-local" value={form.dateDebut} onChange={value => updateForm('dateDebut', value)} required />
-            <Input label={t('activities.end_date')} type="datetime-local" value={form.dateFin} onChange={value => updateForm('dateFin', value)} required />
-            <Input label={t('admin.maxCapacity')} type="number" min="1" value={form.capaciteMax} onChange={value => updateForm('capaciteMax', value)} required />
-            <div className="md:col-span-2">
-              <label htmlFor="referent-activity-description" className="block text-sm font-semibold text-gray-700 mb-1">{t('activities.form_description')}</label>
-              <textarea id="referent-activity-description" required
-                value={form.description}
-                onChange={e => updateForm('description', e.target.value)}
-                rows={3}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
-              />
-            </div>
-            <details className="md:col-span-2 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-              <summary className="cursor-pointer text-sm font-bold text-blue-900">
-                {t('admin.advancedLocation')}
-              </summary>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <Input label={t('admin.address')} value={form.adresse} onChange={value => updateForm('adresse', value)} />
-                <Input label={t('admin.commune')} value={form.commune} onChange={value => updateForm('commune', value)} />
-                <Input label={t('admin.latitude')} type="number" step="any" value={form.latitude} onChange={value => updateForm('latitude', value)} />
-                <Input label={t('admin.longitude')} type="number" step="any" value={form.longitude} onChange={value => updateForm('longitude', value)} />
-                <LocationPicker
-                  address={form.adresse}
-                  commune={form.commune}
-                  latitude={form.latitude}
-                  longitude={form.longitude}
-                  onCoordinatesChange={(latitude, longitude) => setForm(current => ({ ...current, latitude, longitude }))}
-                />
-              </div>
-            </details>
-            <details className="md:col-span-2 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-              <summary className="cursor-pointer text-sm font-bold text-blue-900">
-                {t('admin.advancedSettings')}
-              </summary>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <Input label={t('activities.form_category')} value={form.categorie} onChange={value => updateForm('categorie', value)} />
-                <Input label={t('activities.form_theme')} value={form.theme} onChange={value => updateForm('theme', value)} />
-              </div>
-            </details>
+            <ActivityFormFields key={editingActivity?.id || 'new'} form={form} setForm={setForm} groups={ownGroups} original={editingActivity} referent ready={groupsReady} onUploading={setUploading} />
             <div className="md:col-span-2 flex justify-end">
               {editingActivity && (
                 <button
@@ -272,7 +211,7 @@ export default function ReferentActivites() {
               )}
               <button
                 type="submit"
-                disabled={saving || !groupsReady || Boolean(assignmentError) || (!editingActivity && !ownGroups.length)}
+                disabled={uploading || saving || !groupsReady || Boolean(assignmentError) || (!editingActivity && !ownGroups.length)}
                 className="inline-flex items-center gap-2 rounded-2xl bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:bg-gray-300"
               >
                 <AppIcon name={editingActivity ? 'Save' : 'PlusCircle'} className="h-4 w-4" />
@@ -361,7 +300,7 @@ export default function ReferentActivites() {
                   </div>
                   {canManage(activite) && <div className="mt-4 flex flex-wrap justify-end gap-2">
                     {activite.statut === 'BROUILLON' && <button type="button" onClick={() => setPublishingActivity(activite)} className="rounded-2xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white">{t('activities.publication.publish')}</button>}
-                    {activite.statut === 'PUBLIEE' && ['TERMINEE', 'ANNULEE'].map(statut => <button key={statut} type="button" disabled={changingStatus === activite.id} onClick={() => changeStatus(activite, statut)} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold disabled:opacity-50">{t(`activities.publication.${statut === 'TERMINEE' ? 'finish' : 'cancelActivity'}`)}</button>)}
+                    {['BROUILLON', 'PUBLIEE'].includes(activite.statut) && (activite.statut === 'BROUILLON' ? ['ANNULEE'] : ['TERMINEE', 'ANNULEE']).map(statut => <button key={statut} type="button" disabled={changingStatus === activite.id} onClick={() => changeStatus(activite, statut)} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold disabled:opacity-50">{t(`activities.publication.${statut === 'TERMINEE' ? 'finish' : 'cancelActivity'}`)}</button>)}
                     <Link
                       to={`/referent/activites/${activite.id}/presences`}
                       className="mr-2 inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
@@ -369,14 +308,14 @@ export default function ReferentActivites() {
                       <AppIcon name="ClipboardList" className="h-4 w-4" />
                       {t('presence.title')}
                     </Link>
-                    <button
+                    {['BROUILLON', 'PUBLIEE'].includes(activite.statut) && <button
                       type="button"
                       onClick={() => startEdit(activite)}
                       className="inline-flex items-center gap-2 rounded-2xl border border-teal-200 px-4 py-2 text-sm font-semibold text-teal-700 transition hover:bg-teal-50"
                     >
                       <AppIcon name="Edit" className="h-4 w-4" />
                       {t('common.edit')}
-                    </button>
+                    </button>}
                   </div>}
                 </div>
               </article>
@@ -384,6 +323,7 @@ export default function ReferentActivites() {
           </div>
         )}
       </main>
+      {cancellingActivity && <ActivityCancellationDialog onClose={() => setCancellingActivity(null)} onConfirm={() => changeStatus(cancellingActivity, 'ANNULEE', true)} />}
       {publishingActivity && <ActivityPublicationDialog fixedAudience forbiddenMessage={t('referentActivity.assignmentError')} audienceSummary={t(`adminActivity.${audienceKey(publishingActivity)}`, { group: publishingActivity.groupeNom })} activity={publishingActivity} onClose={() => setPublishingActivity(null)} onPublished={updated => {
         setActivites(current => current.map(item => item.id === updated.id ? updated : item))
         setPublishingActivity(null)
@@ -395,23 +335,6 @@ export default function ReferentActivites() {
   )
 }
 
-function Input({ label, value, onChange, type = 'text', required = false, min, step, disabled = false }) {
-  return (
-    <label className="block">
-      <span className="block text-sm font-semibold text-gray-700 mb-1">{label}</span>
-      <input
-        type={type}
-        min={min}
-        step={step}
-        required={required}
-        value={value}
-        onChange={e => onChange?.(e.target.value)}
-        disabled={disabled}
-        className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
-      />
-    </label>
-  )
-}
 
 function Alert({ type, children }) {
   const styles = type === 'error'

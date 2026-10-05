@@ -76,6 +76,22 @@ public class SoutienFinancier {
     @JoinColumn(name = "projet_id")
     private Projet projet;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "inscription_id")
+    private Inscription inscription;
+
+    @Column(name = "activity_request_key", length = 36, unique = true)
+    private String activityRequestKey;
+    @Column(name = "checkout_expires_at")
+    private Long checkoutExpiresAt;
+    public String getActivityRequestKey() { return activityRequestKey; }
+    public void setActivityRequestKey(String value) { activityRequestKey = value; }
+    public Long getCheckoutExpiresAt() { return checkoutExpiresAt; }
+    public void setCheckoutExpiresAt(Long value) { checkoutExpiresAt = value; }
+
+    public Inscription getInscription() { return inscription; }
+    public void setInscription(Inscription value) { inscription = value; }
+
     // ─── Alias partenaire ─────────────────────────────────────────────────────
     public User getPartenaire() { return donateur; }
     public void setPartenaire(User partenaire) { this.donateur = partenaire; }

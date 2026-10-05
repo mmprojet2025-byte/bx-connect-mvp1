@@ -23,6 +23,7 @@ public class Activite {
 
     @Column(nullable = false)
     private LocalDateTime dateFin;
+    private LocalDateTime dateLimiteInscription;
 
     @Column(length = 200)
     private String lieu;
@@ -98,6 +99,9 @@ public class Activite {
 
     public LocalDateTime getDateDebut() { return dateDebut; }
     public void setDateDebut(LocalDateTime dateDebut) { this.dateDebut = dateDebut; }
+
+    public LocalDateTime getDateLimiteInscription() { return dateLimiteInscription; }
+    public void setDateLimiteInscription(LocalDateTime value) { dateLimiteInscription = value; }
 
     public LocalDateTime getDateFin() { return dateFin; }
     public void setDateFin(LocalDateTime dateFin) { this.dateFin = dateFin; }

@@ -1,5 +1,7 @@
 package com.bxjeunes.bx_connect.service;
 
+import com.bxjeunes.bx_connect.exception.ActivityRuleException;
+
 import com.bxjeunes.bx_connect.repository.MembreGroupeRepository;
 import com.bxjeunes.bx_connect.dto.InscriptionRequest;
 import com.bxjeunes.bx_connect.dto.InscriptionResponse;
@@ -70,19 +72,20 @@ public class InscriptionService {
 
         // 3. Vérifier que l'activité est publiée
         if (activite.getStatut() != StatutActivite.PUBLIEE) {
-            throw new RuntimeException("Cette activité n'est pas disponible à l'inscription.");
+            throw new ActivityRuleException("Cette activité n'est pas disponible à l'inscription.");
         }
 
         if (!activite.isGratuite()) {
-            throw new RuntimeException("Les inscriptions aux activités payantes sont indisponibles dans cette version.");
+            throw new ActivityRuleException("Les activités payantes nécessitent le parcours de paiement.");
         }
 
-        if (activite.getDateDebut() == null || !activite.getDateDebut().isAfter(LocalDateTime.now())) {
-            throw new RuntimeException("Les inscriptions à cette activité sont clôturées.");
+        if ((activite.getDateLimiteInscription() != null && !activite.getDateLimiteInscription().isAfter(LocalDateTime.now()))
+                || activite.getDateDebut() == null || !activite.getDateDebut().isAfter(LocalDateTime.now())) {
+            throw new ActivityRuleException("Les inscriptions à cette activité sont clôturées.");
         }
 
         if (inscriptionRepository.existsByActiviteIdAndDateValidationPresenceIsNotNull(activite.getId())) {
-            throw new IllegalArgumentException("Les inscriptions sont clôturées : feuille de présence déjà validée.");
+            throw new ActivityRuleException("Les inscriptions sont clôturées : feuille de présence déjà validée.");
         }
 
         // 4. Vérifier que le membre n'est pas déjà inscrit
@@ -91,7 +94,7 @@ public class InscriptionService {
         boolean dejaInscrit = inscriptionsExistantes.stream()
                 .anyMatch(i -> i.getStatut() != StatutInscription.ANNULEE);
         if (dejaInscrit) {
-            throw new RuntimeException("Vous êtes déjà inscrit à cette activité.");
+            throw new ActivityRuleException("Vous êtes déjà inscrit à cette activité.");
         }
 
         // 5. Vérifier la capacité maximale (si limitée)
@@ -101,7 +104,7 @@ public class InscriptionService {
                     List.of(StatutInscription.CONFIRMEE, StatutInscription.PAYEE)
             );
             if (nbInscrits >= activite.getCapaciteMax()) {
-                throw new RuntimeException("Cette activité est complète (capacité maximale atteinte).");
+                throw new ActivityRuleException("Cette activité est complète (capacité maximale atteinte).");
             }
         }
 
@@ -157,15 +160,17 @@ public class InscriptionService {
             throw new AccessDeniedException("Inscription introuvable.");
         }
         if (inscription.getStatut() == StatutInscription.ANNULEE) {
-            throw new RuntimeException("Cette inscription est déjà annulée.");
+            throw new ActivityRuleException("Cette inscription est déjà annulée.");
         }
         if (activite.getStatut() != StatutActivite.PUBLIEE
                 || activite.getDateDebut() == null || !activite.getDateDebut().isAfter(LocalDateTime.now())
                 || inscriptionRepository.existsByActiviteIdAndDateValidationPresenceIsNotNull(activiteId)) {
             // The owner may have lost private access: do not disclose status, dates or sheet details.
-            throw new IllegalArgumentException("Désinscription indisponible.");
+            throw new ActivityRuleException("Désinscription indisponible.");
         }
 
+        if (inscription.getStatut() == StatutInscription.EN_ATTENTE_PAIEMENT)
+            throw new ActivityRuleException("Un paiement est en cours. Attendez sa confirmation ou son expiration.");
         StatutInscription ancienStatut = inscription.getStatut();
         inscription.setStatut(StatutInscription.ANNULEE);
         inscription.setDateAnnulation(LocalDateTime.now());

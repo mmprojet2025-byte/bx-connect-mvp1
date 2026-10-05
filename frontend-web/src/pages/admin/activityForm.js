@@ -2,6 +2,7 @@ export const emptyActivityForm = {
   titre: '', description: '', dateDebut: '', dateFin: '', lieu: '',
   adresse: '', commune: '', latitude: '', longitude: '',
   gratuite: true, prix: '', capaciteMax: 1, categorie: '', theme: '',
+  dateLimiteInscription: '', imageStorageKey: null, imageUrl: '',
   nature: 'GENERALE', groupeId: '', visibilite: 'PUBLIC',
 }
 
@@ -15,7 +16,7 @@ export function activityToForm(activity) {
 }
 
 export function assignmentLocked(activity) {
-  return Boolean(activity && (activity.statut !== 'BROUILLON' || activity.gratuite === false || activity.visibilite === 'MEMBRES'))
+  return Boolean(activity && (activity.statut !== 'BROUILLON' || activity.visibilite === 'MEMBRES'))
 }
 
 export function eligibleGroups(groups) {
@@ -46,19 +47,23 @@ export function validateActivityForm(form, groups, referents, original) {
     }
     if (!['PUBLIC', 'PRIVE_GROUPE'].includes(form.visibilite)) errors.push('visibilite')
   }
+  if (!form.gratuite && (!Number.isFinite(Number(form.prix)) || Number(form.prix) <= 0 || !/^\d+(\.\d{1,2})?$/.test(String(form.prix)))) errors.push('prix')
+  if (form.dateLimiteInscription && (!Number.isFinite(Date.parse(form.dateLimiteInscription)) || Date.parse(form.dateLimiteInscription) > start)) errors.push('dateLimiteInscription')
   return errors
 }
 
 export function activityPayload(form, original) {
   const { nature, groupeId, visibilite, ...fields } = form
+  delete fields.imageUrl
   const payload = {
     ...fields,
     titre: form.titre.trim(), description: form.description.trim(), lieu: form.lieu.trim(),
     capaciteMax: Number(form.capaciteMax),
     latitude: form.latitude === '' ? null : Number(form.latitude),
     longitude: form.longitude === '' ? null : Number(form.longitude),
-    gratuite: original?.gratuite ?? true,
-    prix: original ? original.prix ?? null : null,
+    gratuite: form.gratuite,
+    prix: form.gratuite ? null : Number(form.prix),
+    dateLimiteInscription: form.dateLimiteInscription || null,
   }
   if (assignmentLocked(original)) return payload // Omission preserves historical and frozen assignments.
   return {

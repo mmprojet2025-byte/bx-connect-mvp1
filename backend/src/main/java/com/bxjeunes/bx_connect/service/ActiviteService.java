@@ -1,5 +1,7 @@
 package com.bxjeunes.bx_connect.service;
 
+import com.bxjeunes.bx_connect.exception.ActivityRuleException;
+
 import com.bxjeunes.bx_connect.repository.MembreGroupeRepository;
 import com.bxjeunes.bx_connect.dto.ActiviteFiltreRequest;
 import com.bxjeunes.bx_connect.dto.ActiviteRequest;
@@ -40,6 +42,11 @@ import java.util.stream.Collectors;
 public class ActiviteService {
 
     private static final Logger log = LoggerFactory.getLogger(ActiviteService.class);
+    @org.springframework.beans.factory.annotation.Autowired
+    private ActivityImageService activityImages;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.bxjeunes.bx_connect.repository.SoutienFinancierRepository paiements;
+
     private static final String TARGET_ACTIVITY = "ACTIVITY";
 
     private final ActiviteRepository activiteRepository;
@@ -70,9 +77,6 @@ public class ActiviteService {
     @Transactional
     public ActiviteResponse creer(ActiviteRequest request, String emailCreateur) {
         validerDonneesActivite(request);
-        if (!request.isGratuite() || request.getPrix() != null) {
-            throw new RuntimeException("La création d'activités payantes est indisponible dans cette version.");
-        }
         User createur = userRepository.findByEmail(emailCreateur)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + emailCreateur));
 
@@ -85,9 +89,16 @@ public class ActiviteService {
         activite.setDescription(request.getDescription());
         activite.setDateDebut(request.getDateDebut());
         activite.setDateFin(request.getDateFin());
+        if (request.isDateLimiteFournie()) activite.setDateLimiteInscription(request.getDateLimiteInscription());
+        if (activite.getDateLimiteInscription() != null && activite.getDateLimiteInscription().isAfter(activite.getDateDebut()))
+            throw new ActivityRuleException("La date limite ne peut pas dépasser le début de l'activité.");
+        if (request.getImageStorageKey() != null && !Objects.equals(request.getImageStorageKey(), activite.getImageStorageKey())) {
+            activityImages.validate(request.getImageStorageKey());
+            activite.setImageStorageKey(request.getImageStorageKey());
+        }
         appliquerLocalisation(activite, request);
         activite.setGratuite(request.isGratuite());
-        activite.setPrix(null);
+        activite.setPrix(request.isGratuite() ? null : request.getPrix());
         activite.setCapaciteMax(request.getCapaciteMax());
         activite.setCategorie(request.getCategorie());
         activite.setTheme(request.getTheme());
@@ -210,11 +221,17 @@ public class ActiviteService {
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
         User acteur = verifierDroitGestion(activite, emailUser);
         validerDonneesActivite(request);
+        if (activite.getStatut() == StatutActivite.ANNULEE || activite.getStatut() == StatutActivite.TERMINEE)
+            throw new ActivityRuleException("Cette activité ne peut plus être modifiée.");
         validerTarificationInchangee(activite, request);
+        if (inscriptionRepository.countByActiviteIdAndStatutIn(id, List.of(StatutInscription.EN_ATTENTE_PAIEMENT)) > 0
+                && (!Objects.equals(activite.getDateDebut(), request.getDateDebut())
+                || (request.isDateLimiteFournie() && !Objects.equals(activite.getDateLimiteInscription(), request.getDateLimiteInscription()))))
+            throw new ActivityRuleException("Un paiement est en cours. Les échéances ne peuvent pas être modifiées.");
         long placesOccupees = inscriptionRepository.countByActiviteIdAndStatutIn(
-                id, List.of(StatutInscription.CONFIRMEE, StatutInscription.PAYEE));
+                id, List.of(StatutInscription.CONFIRMEE, StatutInscription.PAYEE, StatutInscription.EN_ATTENTE_PAIEMENT));
         if (request.getCapaciteMax() < placesOccupees) {
-            throw new IllegalArgumentException("La capacité ne peut pas être inférieure au nombre d'inscriptions actives.");
+            throw new ActivityRuleException("La capacité ne peut pas être inférieure au nombre d'inscriptions actives.");
         }
 
         appliquerAffectation(activite, request, acteur, false);
@@ -222,8 +239,16 @@ public class ActiviteService {
         activite.setDescription(request.getDescription());
         activite.setDateDebut(request.getDateDebut());
         activite.setDateFin(request.getDateFin());
+        if (request.isDateLimiteFournie()) activite.setDateLimiteInscription(request.getDateLimiteInscription());
+        if (activite.getDateLimiteInscription() != null && activite.getDateLimiteInscription().isAfter(activite.getDateDebut()))
+            throw new ActivityRuleException("La date limite ne peut pas dépasser le début de l'activité.");
+        if (request.getImageStorageKey() != null && !Objects.equals(request.getImageStorageKey(), activite.getImageStorageKey())) {
+            activityImages.validate(request.getImageStorageKey());
+            activite.setImageStorageKey(request.getImageStorageKey());
+        }
         appliquerLocalisation(activite, request);
-        // La tarification des activités existantes est figée pour la V1.
+        activite.setGratuite(request.isGratuite());
+        activite.setPrix(request.isGratuite() ? null : request.getPrix());
         activite.setCapaciteMax(request.getCapaciteMax());
         activite.setCategorie(request.getCategorie());
         activite.setTheme(request.getTheme());
@@ -242,14 +267,17 @@ public class ActiviteService {
         User acteur = verifierDroitGestion(activite, emailUser);
         StatutActivite ancienStatut = activite.getStatut();
         validerTransition(activite, nouveauStatut);
+        if (nouveauStatut != ancienStatut && nouveauStatut != StatutActivite.PUBLIEE
+                && inscriptionRepository.countByActiviteIdAndStatutIn(id, List.of(StatutInscription.EN_ATTENTE_PAIEMENT)) > 0)
+            throw new ActivityRuleException("Un paiement est en cours. Attendez sa confirmation ou son expiration.");
         if (ancienStatut == StatutActivite.BROUILLON && nouveauStatut == StatutActivite.PUBLIEE) {
             if (visibilite == null) {
-                throw new IllegalArgumentException("La visibilite est obligatoire pour publier.");
+                throw new ActivityRuleException("La visibilite est obligatoire pour publier.");
             }
             validerPublication(activite, visibilite);
             activite.setVisibilite(visibilite);
         } else if (visibilite != null && visibilite != activite.getVisibilite()) {
-            throw new IllegalArgumentException("La visibilite se choisit lors de la publication du brouillon.");
+            throw new ActivityRuleException("La visibilite se choisit lors de la publication du brouillon.");
         }
         if (ancienStatut == StatutActivite.PUBLIEE && nouveauStatut == StatutActivite.ANNULEE) {
             LocalDateTime maintenant = LocalDateTime.now();
@@ -282,9 +310,13 @@ public class ActiviteService {
     // ─── Supprimer une activité ───────────────────────────────────────────────
     @Transactional
     public void supprimer(Long id, String emailUser) {
-        Activite activite = activiteRepository.findById(id)
+        Activite activite = activiteRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
         User acteur = verifierDroitGestion(activite, emailUser);
+        if (activite.getStatut() != StatutActivite.BROUILLON
+                || !inscriptionRepository.findByActiviteId(id).isEmpty()
+                || (paiements != null && !paiements.findByActiviteId(id).isEmpty()))
+            throw new ActivityRuleException("Cette activité possède un historique. Utilisez l'annulation.");
         activiteRepository.delete(activite);
         auditerAction(acteur, "ACTIVITY_DELETED", activite, "Activite supprimee.");
     }
@@ -320,11 +352,11 @@ public class ActiviteService {
                 .orElseThrow(() -> new IllegalArgumentException("Groupe introuvable : " + id));
         User referent = groupe.getReferent();
         if (groupe.getStatut() != StatutGroupe.VALIDE || !groupe.isActif()) {
-            throw new IllegalArgumentException("Le groupe doit être validé et actif.");
+            throw new ActivityRuleException("Le groupe doit être validé et actif.");
         }
         if (referent == null || referent.getId() == null
                 || !referent.isActif() || referent.getRole() != Role.REFERENT) {
-            throw new IllegalArgumentException("Le groupe doit avoir un référent actif de rôle REFERENT.");
+            throw new ActivityRuleException("Le groupe doit avoir un référent actif de rôle REFERENT.");
         }
         return groupe;
     }
@@ -345,12 +377,12 @@ public class ActiviteService {
                 ? activite.getVisibilite() : request.getVisibilite();
         if ((request.getNature() == ActiviteRequest.Nature.GENERALE && groupeId != null)
                 || (request.getNature() == ActiviteRequest.Nature.GROUPE && groupeId == null)) {
-            throw new IllegalArgumentException("L'intention générale/groupe ne correspond pas au groupe fourni.");
+            throw new ActivityRuleException("L'intention générale/groupe ne correspond pas au groupe fourni.");
         }
         boolean changementGroupe = !Objects.equals(ancienGroupe, groupeId);
         if (!creation && activite.getStatut() != StatutActivite.BROUILLON
                 && (changementGroupe || visibilite != activite.getVisibilite())) {
-            throw new IllegalArgumentException("Le groupe, le type et la visibilité sont figés après publication.");
+            throw new ActivityRuleException("Le groupe, le type et la visibilité sont figés après publication.");
         }
         if (!creation && acteur.getRole() == Role.REFERENT && changementGroupe) {
             throw new AccessDeniedException("Un référent ne peut pas changer le groupe d'une activité.");
@@ -364,7 +396,7 @@ public class ActiviteService {
         if (groupeId == null) {
             if (acteur.getRole() != Role.ADMIN || request.getReferentAssigneId() != null
                     || visibilite != VisibiliteActivite.PUBLIC) {
-                throw new IllegalArgumentException("Une générale exige ADMIN, PUBLIC et aucun référent assigné.");
+                throw new ActivityRuleException("Une générale exige ADMIN, PUBLIC et aucun référent assigné.");
             }
             activite.setGroupe(null);
             activite.setReferentAssigne(null);
@@ -372,20 +404,17 @@ public class ActiviteService {
             Groupe groupe = groupeEligible(groupeId);
             User referent = groupe.getReferent();
             if (visibilite != VisibiliteActivite.PUBLIC && visibilite != VisibiliteActivite.PRIVE_GROUPE) {
-                throw new IllegalArgumentException("Une activité de groupe exige PUBLIC ou PRIVE_GROUPE.");
+                throw new ActivityRuleException("Une activité de groupe exige PUBLIC ou PRIVE_GROUPE.");
             }
             if (acteur.getRole() == Role.REFERENT && !Objects.equals(acteur.getId(), referent.getId())) {
                 throw new AccessDeniedException("Vous ne pouvez créer ou gérer que les activités de votre groupe.");
             }
             if (request.isReferentFourni() && !Objects.equals(request.getReferentAssigneId(), referent.getId())) {
-                throw new IllegalArgumentException("Le référent assigné doit être le référent réel du groupe.");
+                throw new ActivityRuleException("Le référent assigné doit être le référent réel du groupe.");
             }
             // No reassignment endpoint in this lot, including when the group's referent changed.
             if (!creation && !changementGroupe && !Objects.equals(ancienReferent, referent.getId())) {
                 throw new AccessDeniedException("L'affectation ne correspond plus au référent actuel du groupe.");
-            }
-            if (!activite.isGratuite() || activite.getPrix() != null) {
-                throw new IllegalArgumentException("Une activité historique payante ne peut pas être convertie en activité de groupe.");
             }
             activite.setGroupe(groupe);
             activite.setReferentAssigne(referent);
@@ -397,19 +426,19 @@ public class ActiviteService {
         if (activite.getGroupe() != null) {
             verifierAffectationActuelle(activite);
             if (visibilite != VisibiliteActivite.PUBLIC && visibilite != VisibiliteActivite.PRIVE_GROUPE) {
-                throw new IllegalArgumentException("Une activité de groupe exige PUBLIC ou PRIVE_GROUPE.");
+                throw new ActivityRuleException("Une activité de groupe exige PUBLIC ou PRIVE_GROUPE.");
             }
         } else if (activite.getReferentAssigne() != null
                 || (visibilite != VisibiliteActivite.PUBLIC
                     && !(visibilite == VisibiliteActivite.MEMBRES
                          && activite.getVisibilite() == VisibiliteActivite.MEMBRES))) {
-            throw new IllegalArgumentException("Une générale exige PUBLIC; MEMBRES est conservé uniquement pour l'historique.");
+            throw new ActivityRuleException("Une générale exige PUBLIC; MEMBRES est conservé uniquement pour l'historique.");
         }
         if (activite.getTitre() == null || activite.getTitre().isBlank()
                 || activite.getDescription() == null || activite.getDescription().isBlank()
                 || activite.getLieu() == null || activite.getLieu().isBlank()
                 || activite.getDateFin() == null || !activite.getDateFin().isAfter(activite.getDateDebut())) {
-            throw new IllegalArgumentException("Titre, description, lieu et dates cohérentes sont requis avant publication.");
+            throw new ActivityRuleException("Titre, description, lieu et dates cohérentes sont requis avant publication.");
         }
     }
 
@@ -417,36 +446,42 @@ public class ActiviteService {
         if (request.getTitre() == null || request.getTitre().isBlank()
                 || request.getDescription() == null || request.getDescription().isBlank()
                 || request.getLieu() == null || request.getLieu().isBlank()) {
-            throw new IllegalArgumentException("Le titre, la description et le lieu sont obligatoires.");
+            throw new ActivityRuleException("Le titre, la description et le lieu sont obligatoires.");
         }
         if (request.getDateDebut() == null || request.getDateFin() == null) {
-            throw new RuntimeException("Les dates de début et de fin sont obligatoires.");
+            throw new ActivityRuleException("Les dates de début et de fin sont obligatoires.");
         }
         if (!request.getDateFin().isAfter(request.getDateDebut())) {
-            throw new RuntimeException("La date de fin doit être strictement après la date de début.");
+            throw new ActivityRuleException("La date de fin doit être strictement après la date de début.");
         }
         if (request.getCapaciteMax() <= 0) {
-            throw new RuntimeException("La capacité maximale doit être strictement positive.");
+            throw new ActivityRuleException("La capacité maximale doit être strictement positive.");
         }
+        if (request.getPrix() != null && (request.getPrix().scale() > 2 || request.getPrix().precision() > 10))
+            throw new ActivityRuleException("Le prix doit être exprimé en euros avec deux décimales maximum.");
         if (request.getPrix() != null && request.getPrix().compareTo(BigDecimal.ZERO) < 0) {
-            throw new RuntimeException("Le prix ne peut pas être négatif.");
+            throw new ActivityRuleException("Le prix ne peut pas être négatif.");
         }
-        if (request.isGratuite() && request.getPrix() != null
-                && request.getPrix().compareTo(BigDecimal.ZERO) != 0) {
-            throw new RuntimeException("Une activité gratuite ne peut pas avoir de prix.");
+        if (request.isGratuite() && request.getPrix() != null) {
+            throw new ActivityRuleException("Une activité gratuite ne peut pas avoir de prix.");
         }
         if (!request.isGratuite() && (request.getPrix() == null
                 || request.getPrix().compareTo(BigDecimal.ZERO) <= 0)) {
-            throw new RuntimeException("Une activité payante doit avoir un prix strictement positif.");
+            throw new ActivityRuleException("Une activité payante doit avoir un prix strictement positif.");
         }
     }
 
     private void validerTarificationInchangee(Activite activite, ActiviteRequest request) {
+        boolean changed = activite.isGratuite() != request.isGratuite() || !memePrix(activite.getPrix(), request.getPrix());
+        if (!changed) return;
+        if (activite.getStatut() == StatutActivite.BROUILLON
+                && inscriptionRepository.findByActiviteId(activite.getId()).isEmpty()
+                && (paiements == null || paiements.findByActiviteId(activite.getId()).isEmpty())) return;
         if (activite.isGratuite() != request.isGratuite()) {
-            throw new RuntimeException("Le caractère gratuit ou payant d'une activité existante ne peut pas être modifié.");
+            throw new ActivityRuleException("Le caractère gratuit ou payant d'une activité existante ne peut pas être modifié.");
         }
         if (!activite.isGratuite() && !memePrix(activite.getPrix(), request.getPrix())) {
-            throw new RuntimeException("Le prix d'une activité payante existante ne peut pas être modifié.");
+            throw new ActivityRuleException("Le prix d'une activité payante existante ne peut pas être modifié.");
         }
     }
 
@@ -456,7 +491,7 @@ public class ActiviteService {
 
     private void validerTransition(Activite activite, StatutActivite nouveauStatut) {
         if (nouveauStatut == null) {
-            throw new RuntimeException("Le nouveau statut est obligatoire.");
+            throw new ActivityRuleException("Le nouveau statut est obligatoire.");
         }
         StatutActivite actuel = activite.getStatut();
         if (actuel == nouveauStatut) return;
@@ -469,14 +504,14 @@ public class ActiviteService {
             throw new RuntimeException("Transition de statut non autorisée : " + actuel + " vers " + nouveauStatut + ".");
         }
         if (nouveauStatut == StatutActivite.PUBLIEE) {
-            if (!activite.isGratuite()) {
-                throw new RuntimeException("Une activité payante ne peut pas être publiée dans cette version.");
+            if (!activite.isGratuite() && (activite.getPrix() == null || activite.getPrix().signum() <= 0)) {
+                throw new ActivityRuleException("Une activité payante exige un prix positif.");
             }
             if (activite.getDateDebut() == null || !activite.getDateDebut().isAfter(LocalDateTime.now())) {
-                throw new RuntimeException("Une activité passée ne peut pas être publiée.");
+                throw new ActivityRuleException("Une activité passée ne peut pas être publiée.");
             }
             if (activite.getCapaciteMax() <= 0) {
-                throw new RuntimeException("La capacité maximale doit être strictement positive avant publication.");
+                throw new ActivityRuleException("La capacité maximale doit être strictement positive avant publication.");
             }
         }
     }
@@ -556,7 +591,15 @@ public class ActiviteService {
                 activite.getId(),
                 List.of(StatutInscription.CONFIRMEE, StatutInscription.PAYEE)
         );
-        return ActiviteResponse.fromEntity(activite, nombreInscrits);
+        ActiviteResponse response = ActiviteResponse.fromEntity(activite, nombreInscrits);
+        if (activityImages != null) response.setImageUrl(activityImages.url(activite.getImageStorageKey()));
+        response.compterReservations((int) inscriptionRepository.countByActiviteIdAndStatutIn(activite.getId(), List.of(StatutInscription.EN_ATTENTE_PAIEMENT)));
+        boolean editablePrice = activite.getStatut() == StatutActivite.BROUILLON
+                && inscriptionRepository.findByActiviteId(activite.getId()).isEmpty()
+                && (paiements == null || paiements.findByActiviteId(activite.getId()).isEmpty());
+        response.setTarifModifiable(editablePrice);
+        response.setSupprimable(editablePrice);
+        return response;
     }
 
     private ActiviteResponse toResponse(Activite activite, String emailUtilisateur) {
@@ -609,8 +652,8 @@ public class ActiviteService {
         if (activite.getStatut() != StatutActivite.PUBLIEE) {
             return "NON_PUBLIEE";
         }
-        if (!activite.isGratuite()) {
-            return "PAYANTE_INDISPONIBLE";
+        if (activite.getDateLimiteInscription() != null && !activite.getDateLimiteInscription().isAfter(LocalDateTime.now())) {
+            return "DATE_LIMITE";
         }
         LocalDateTime now = LocalDateTime.now();
         if (activite.getDateDebut() == null || !activite.getDateDebut().isAfter(now)) {
@@ -625,7 +668,7 @@ public class ActiviteService {
     private boolean responseComplete(Activite activite) {
         long nbInscrits = inscriptionRepository.countByActiviteIdAndStatutIn(
                 activite.getId(),
-                List.of(StatutInscription.CONFIRMEE, StatutInscription.PAYEE)
+                List.of(StatutInscription.CONFIRMEE, StatutInscription.PAYEE, StatutInscription.EN_ATTENTE_PAIEMENT)
         );
         return nbInscrits >= activite.getCapaciteMax();
     }

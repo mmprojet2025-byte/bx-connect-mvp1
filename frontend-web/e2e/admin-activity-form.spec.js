@@ -38,30 +38,28 @@ async function create(page) {
   return page.getByRole('form', { name: 'Créer une activité' })
 }
 async function fill(form) {
+  await form.locator('input[type="date"]').first().fill('2099-01-15')
   await form.getByRole('textbox', { name: 'Titre *', exact: true }).fill('Atelier TFE')
   await form.getByRole('textbox', { name: /^Description/ }).fill('Description')
-  await form.getByLabel('Lieu', { exact: true }).fill('Bruxelles')
-  await form.locator('input[type="datetime-local"]').nth(0).fill('2099-01-15T10:00')
-  await form.locator('input[type="datetime-local"]').nth(1).fill('2099-01-15T12:00')
+  await form.getByLabel('Lieu *', { exact: true }).fill('Bruxelles')
+  await form.locator('input[type="time"]').nth(0).fill('10:00')
+  await form.locator('input[type="time"]').nth(1).fill('12:00')
 }
 for (const visibility of [null, 'PUBLIC', 'PRIVE_GROUPE']) {
   test(`create ${visibility || 'general'} draft`, async ({ page }) => {
     const writes = await setup(page)
     const form = await create(page)
-    await expect(form.getByLabel('Type d’activité')).toHaveValue('GENERALE')
-    await expect(form.getByLabel('Type d’activité').locator('option')).toHaveText(['Activité générale', 'Activité de groupe'])
     await expect(form.getByLabel(/prix/i)).toHaveCount(0)
     if (visibility) {
-      await form.getByLabel('Type d’activité').selectOption('GROUPE')
       await form.getByRole('combobox', { name: 'Groupe', exact: true }).selectOption('5')
-      await expect(form.getByText('Référent du groupe: Anne Martin')).toBeVisible()
-      await expect(form.getByRole('combobox')).toHaveCount(3)
-      await expect(form.getByRole('combobox', { name: 'Audience', exact: true }).locator('option')).toHaveText(['Publique', 'Réservée aux membres du groupe'])
-      await form.getByRole('combobox', { name: 'Audience', exact: true }).selectOption(visibility)
+      await expect(form.getByLabel(/référent/i)).toHaveCount(0)
+      await expect(form.getByRole('combobox')).toHaveCount(2)
+      await expect(form.getByRole('combobox', { name: 'Qui peut participer ?', exact: true }).locator('option')).toHaveText(['Tout le monde', 'Membres du groupe'])
+      await form.getByRole('combobox', { name: 'Qui peut participer ?', exact: true }).selectOption(visibility)
     } else {
-      await expect(form.getByRole('combobox', { name: 'Groupe', exact: true })).toHaveCount(0)
+      await expect(form.getByRole('combobox', { name: 'Groupe', exact: true })).toHaveValue('')
       await expect(form.getByText(/Référent du groupe/)).toHaveCount(0)
-      await expect(form.getByRole('combobox', { name: 'Audience', exact: true })).toHaveCount(0)
+      await expect(form.getByRole('combobox', { name: 'Qui peut participer ?', exact: true })).toHaveCount(0)
     }
     await fill(form)
     await page.evaluate(() => window.scrollTo(0, 0))
@@ -80,7 +78,6 @@ for (const visibility of [null, 'PUBLIC', 'PRIVE_GROUPE']) {
 test('group without valid referent cannot save', async ({ page }) => {
   const writes = await setup(page, [], [group], [])
   const form = await create(page)
-  await form.getByLabel('Type d’activité').selectOption('GROUPE')
   await form.getByRole('combobox', { name: 'Groupe', exact: true }).selectOption('5')
   await expect(form.getByRole('alert')).toContainText('référent actif')
   await expect(form.getByRole('button', { name: 'Enregistrer le brouillon' })).toBeDisabled()
@@ -92,7 +89,7 @@ test('required fields and invalid dates/capacity prevent request', async ({ page
   await form.getByRole('button', { name: 'Enregistrer le brouillon' }).click()
   for (const message of ['Renseignez le titre.', 'Renseignez la description.', 'Renseignez le lieu.', 'Renseignez une date et une heure de début valides.', 'Renseignez une date et une heure de fin valides.']) await expect(form.getByRole('alert')).toContainText(message)
   await fill(form)
-  await form.locator('input[type="datetime-local"]').nth(1).fill('2099-01-15T09:00')
+  await form.locator('input[type="time"]').nth(1).fill('09:00')
   await form.getByLabel('Capacité maximale').fill('0')
   await form.getByRole('button', { name: 'Enregistrer le brouillon' }).click()
   await expect(form.getByRole('alert')).toContainText('La fin doit être postérieure au début.')
@@ -123,7 +120,7 @@ for (const statut of ['BROUILLON', 'PUBLIEE']) {
     const writes = await setup(page, [{ ...activity, statut, groupeId: 5, groupeNom: 'Sport', referentAssigneId: 9, visibilite: 'PRIVE_GROUPE' }])
     await page.getByRole('row').filter({ hasText: activity.titre }).getByRole('button', { name: 'Modifier', exact: true }).click()
     const form = page.getByRole('form')
-    for (const label of ['Type d’activité', 'Groupe', 'Audience']) {
+    for (const label of ['Groupe', 'Qui peut participer ?']) {
       if (statut === 'PUBLIEE') await expect(form.getByRole('combobox', { name: label, exact: true })).toBeDisabled()
       else await expect(form.getByRole('combobox', { name: label, exact: true })).toBeEnabled()
     }
@@ -139,9 +136,8 @@ test('historical activity remains editable without changing price or audience', 
   const writes = await setup(page, [{ ...activity, gratuite: false, prix: 15, visibilite: 'MEMBRES', categorie: 'Histoire' }])
   await page.getByRole('row').filter({ hasText: activity.titre }).getByRole('button', { name: 'Modifier', exact: true }).click()
   const form = page.getByRole('form')
-  await expect(form.getByText('Tarif historique conservé : 15 €')).toBeVisible()
+  await expect(form.getByLabel('Prix par participant (€)')).toHaveValue('15')
   await expect(form.getByText(/Cette activité historique/)).toBeVisible()
-  await expect(form.getByLabel('Type d’activité')).toBeDisabled()
   await form.getByRole('button', { name: 'Enregistrer les modifications' }).click()
   await expect(form).toHaveCount(0)
   expect(writes[0].body).toMatchObject({ gratuite: false, prix: 15, categorie: 'Histoire' })
@@ -162,19 +158,18 @@ test('a group draft can become a general draft explicitly', async ({ page }) => 
   const writes = await setup(page, [{ ...activity, groupeId: 5, groupeNom: 'Sport', referentAssigneId: 9, visibilite: 'PRIVE_GROUPE' }])
   await page.getByRole('row').filter({ hasText: activity.titre }).getByRole('button', { name: 'Modifier', exact: true }).click()
   const form = page.getByRole('form')
-  await form.getByLabel('Type d’activité').selectOption('GENERALE')
-  await expect(form.getByRole('combobox', { name: 'Groupe', exact: true })).toHaveCount(0)
+  await form.getByRole('combobox', { name: 'Groupe', exact: true }).selectOption('')
   await form.getByRole('button', { name: 'Enregistrer les modifications' }).click()
   await expect(form).toHaveCount(0)
   expect(writes[0].body).toMatchObject({ nature: 'GENERALE', groupeId: null, referentAssigneId: null, visibilite: 'PUBLIC' })
 })
-test('historical paid draft publication is blocked with an explanation', async ({ page }) => {
+test('paid draft can be published with confirmation', async ({ page }) => {
   const writes = await setup(page, [{ ...activity, gratuite: false, prix: 15 }])
   const row = page.getByRole('row').filter({ hasText: activity.titre })
   await row.locator('summary').click()
   await row.locator('select').selectOption('PUBLIEE')
   const dialog = page.getByRole('dialog')
-  await expect(dialog.getByRole('alert')).toContainText('ne peut pas être publiée')
-  await expect(dialog.getByRole('button', { name: 'Publier', exact: true })).toBeDisabled()
-  expect(writes).toHaveLength(0)
+  await expect(dialog.getByRole('button', { name: 'Publier', exact: true })).toBeEnabled()
+  await dialog.getByRole('button', { name: 'Publier', exact: true }).click()
+  expect(writes).toHaveLength(1)
 })

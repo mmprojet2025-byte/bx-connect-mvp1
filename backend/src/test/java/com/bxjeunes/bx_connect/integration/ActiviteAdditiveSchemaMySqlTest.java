@@ -88,7 +88,7 @@ class ActiviteAdditiveSchemaMySqlTest {
         historicalRegistrations = before.queryForList("SELECT * FROM inscriptions ORDER BY id");
         historicalSupports = before.queryForList("SELECT * FROM soutiens_financiers ORDER BY id");
 
-        // Spring applies V9 after the V8 snapshots, then Hibernate validates the full mapping.
+        // Spring applies subsequent migrations after the V8 snapshots, then validates the full mapping.
         properties.add("spring.datasource.url", mysql::getJdbcUrl);
         properties.add("spring.datasource.username", mysql::getUsername);
         properties.add("spring.datasource.password", mysql::getPassword);
@@ -108,7 +108,16 @@ class ActiviteAdditiveSchemaMySqlTest {
         assertThat(jdbc.queryForList("SELECT " + historicalColumns + " FROM activites ORDER BY id"))
                 .isEqualTo(historicalActivities);
         assertThat(jdbc.queryForList("SELECT * FROM inscriptions ORDER BY id")).isEqualTo(historicalRegistrations);
-        assertThat(jdbc.queryForList("SELECT * FROM soutiens_financiers ORDER BY id")).isEqualTo(historicalSupports);
+        String supportColumns = String.join(",", historicalSupports.getFirst().keySet());
+        assertThat(jdbc.queryForList("SELECT " + supportColumns + " FROM soutiens_financiers ORDER BY id"))
+                .isEqualTo(historicalSupports);
+        assertThat(jdbc.queryForObject(
+                "SELECT COUNT(*) FROM flyway_schema_history WHERE version='10' AND success=1", Integer.class))
+                .isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM soutiens_financiers WHERE inscription_id IS NULL "
+                + "AND activity_request_key IS NULL AND checkout_expires_at IS NULL", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM activites WHERE date_limite_inscription IS NULL",
+                Integer.class)).isEqualTo(2);
     }
 
     @Test

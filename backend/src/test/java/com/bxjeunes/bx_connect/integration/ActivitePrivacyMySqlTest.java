@@ -41,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DataJpaTest(showSql = false)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-@Import({ActiviteService.class, InscriptionService.class, SearchService.class,
+@Import({com.bxjeunes.bx_connect.service.ActivityImageService.class, ActiviteService.class, InscriptionService.class, SearchService.class,
         MembreDashboardService.class, NotificationService.class, ReferentService.class, PartenaireService.class})
 @Testcontainers
 class ActivitePrivacyMySqlTest {

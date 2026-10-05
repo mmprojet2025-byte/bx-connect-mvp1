@@ -143,7 +143,7 @@ class ActiviteWriteRulesTest {
     void creationRejectsInvalidFieldsAndForgedPricing(String scenario) {
         ActiviteRequest request = request();
         switch (scenario) {
-            case "payante" -> { request.setGratuite(false); request.setPrix(BigDecimal.TEN); }
+            case "payante" -> { request.setGratuite(false); request.setPrix(BigDecimal.ZERO); }
             case "prix" -> request.setPrix(BigDecimal.TEN);
             case "prixZero" -> request.setPrix(BigDecimal.ZERO);
             case "titre" -> request.setTitre(" ");
@@ -312,9 +312,8 @@ class ActiviteWriteRulesTest {
         assertThat(activity.getVisibilite()).isEqualTo(VisibiliteActivite.MEMBRES);
         assertThat(activity.getGroupe()).isNull();
         assertThat(activity.getCreateur()).isSameAs(referent);
+        service.changerStatut(20L, StatutActivite.PUBLIEE, VisibiliteActivite.MEMBRES, admin.getEmail());
         assertThatThrownBy(() -> service.modifier(20L, request(), admin.getEmail())).isInstanceOf(RuntimeException.class);
-        assertThatThrownBy(() -> service.changerStatut(20L, StatutActivite.PUBLIEE,
-                VisibiliteActivite.MEMBRES, admin.getEmail())).hasMessageContaining("payante");
         request.setPrix(BigDecimal.ONE);
         assertThatThrownBy(() -> service.modifier(20L, request, admin.getEmail())).hasMessageContaining("prix");
         assertThat(activity.getPrix()).isEqualByComparingTo("12.50");
@@ -334,6 +333,86 @@ class ActiviteWriteRulesTest {
         complete(forged);
         service.creer(forged, admin.getEmail());
         assertThat(saved.getCreateur()).isSameAs(admin);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ADMIN", "REFERENT"})
+    void paidGroupCreationAndPublication(String role) {
+        ActiviteRequest request = request(); request.setGroupeId(group.getId());
+        request.setGratuite(false); request.setPrix(new BigDecimal("10.25"));
+        User actor = role.equals("ADMIN") ? admin : referent;
+        service.creer(request, actor.getEmail());
+        when(activities.findByIdForUpdate(saved.getId())).thenReturn(Optional.of(saved));
+        service.changerStatut(saved.getId(), StatutActivite.PUBLIEE, VisibiliteActivite.PUBLIC, actor.getEmail());
+        assertThat(saved.getPrix()).isEqualByComparingTo("10.25");
+        assertThat(saved.getStatut()).isEqualTo(StatutActivite.PUBLIEE);
+        assertThat(saved.getReferentAssigne()).isSameAs(referent);
+    }
+
+    @Test
+    void paidGeneralAndMultiDayDeadlineRoundTrip() {
+        var request = request(); request.setGratuite(false); request.setPrix(BigDecimal.ONE);
+        request.setDateFin(request.getDateDebut().plusDays(2));
+        request.setDateLimiteInscription(request.getDateDebut().minusHours(2));
+        var response = service.creer(request, admin.getEmail());
+        assertThat(response.getDateFin()).isEqualTo(request.getDateFin());
+        assertThat(response.getDateLimiteInscription()).isEqualTo(request.getDateLimiteInscription());
+        request.setDateLimiteInscription(request.getDateDebut().plusMinutes(1));
+        assertThatThrownBy(() -> service.creer(request, admin.getEmail())).hasMessageContaining("limite");
+    }
+
+    @Test
+    void imageAttachmentReplacementAndOmissionPreserveData() {
+        var imageService = mock(ActivityImageService.class);
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "activityImages", imageService);
+        when(imageService.url("first")).thenReturn("https://example.test/first");
+        var request = request(); request.setImageStorageKey("first");
+        var response = service.creer(request, admin.getEmail());
+        assertThat(response.getImageUrl()).isEqualTo("https://example.test/first");
+        verify(imageService).validate("first");
+        when(activities.findByIdForUpdate(saved.getId())).thenReturn(Optional.of(saved));
+        service.modifier(saved.getId(), request(), admin.getEmail());
+        assertThat(saved.getImageStorageKey()).isEqualTo("first");
+        request.setImageStorageKey("second"); service.modifier(saved.getId(), request, admin.getEmail());
+        assertThat(saved.getImageStorageKey()).isEqualTo("second");
+        doThrow(new IllegalArgumentException("Image invalide")).when(imageService).validate("bad");
+        request.setImageStorageKey("bad");
+        assertThatThrownBy(() -> service.modifier(saved.getId(), request, admin.getEmail())).hasMessageContaining("Image");
+        assertThat(saved.getImageStorageKey()).isEqualTo("second");
+    }
+
+    @Test
+    void draftPricingCanChangeOnlyWithoutHistory() {
+        var activity = existing(false);
+        var request = request(); request.setGratuite(false); request.setPrix(BigDecimal.TEN);
+        service.modifier(20L, request, admin.getEmail());
+        assertThat(activity.isGratuite()).isFalse();
+        service.modifier(20L, request(), admin.getEmail());
+        assertThat(activity.isGratuite()).isTrue(); assertThat(activity.getPrix()).isNull();
+        var payments = mock(SoutienFinancierRepository.class);
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "paiements", payments);
+        when(payments.findByActiviteId(20L)).thenReturn(java.util.List.of(new SoutienFinancier()));
+        assertThatThrownBy(() -> service.modifier(20L, request, admin.getEmail())).isInstanceOf(RuntimeException.class);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = StatutActivite.class, names = {"TERMINEE", "ANNULEE"})
+    void terminalActivityIsReadOnly(StatutActivite status) {
+        var activity = existing(false); activity.setStatut(status);
+        assertThatThrownBy(() -> service.modifier(20L, request(), admin.getEmail())).hasMessageContaining("modifiée");
+        assertThatThrownBy(() -> service.supprimer(20L, admin.getEmail())).hasMessageContaining("historique");
+    }
+
+    @Test
+    void deadlineOmissionAndPendingCapacityAreProtected() {
+        var activity = existing(false); var deadline = request().getDateDebut().minusHours(1);
+        activity.setDateLimiteInscription(deadline);
+        var request = request(); service.modifier(20L, request, admin.getEmail());
+        assertThat(activity.getDateLimiteInscription()).isEqualTo(deadline);
+        when(registrations.countByActiviteIdAndStatutIn(eq(20L), argThat(statuses -> statuses.contains(StatutInscription.EN_ATTENTE_PAIEMENT)))).thenReturn(4L);
+        request.setCapaciteMax(3);
+        assertThatThrownBy(() -> service.modifier(20L, request, admin.getEmail())).hasMessageContaining("capacité");
+        assertThatThrownBy(() -> service.changerStatut(20L, StatutActivite.ANNULEE, null, admin.getEmail())).hasMessageContaining("paiement");
     }
 
     private Activite existing(boolean assigned) {

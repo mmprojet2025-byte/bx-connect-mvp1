@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 public class PaiementRequest {
 
     @NotNull(message = "Le montant est obligatoire")
-    @DecimalMin(value = "1.00", message = "Le montant minimum est de 1€")
+    @DecimalMin(value = "0.01", message = "Le montant doit être positif")
     private BigDecimal montant;
 
     // Cible du paiement (au moins un des deux doit être fourni)

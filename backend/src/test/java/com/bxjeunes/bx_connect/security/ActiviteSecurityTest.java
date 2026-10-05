@@ -409,7 +409,7 @@ class ActiviteSecurityTest {
     @DisplayName("Audit suppression activite")
     void audit_suppression_activite() {
         Activite activite = activite(30L, "Atelier", StatutActivite.BROUILLON, admin);
-        when(activiteRepository.findById(30L)).thenReturn(Optional.of(activite));
+        when(activiteRepository.findByIdForUpdate(30L)).thenReturn(Optional.of(activite));
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
 
         activiteService.supprimer(30L, admin.getEmail());

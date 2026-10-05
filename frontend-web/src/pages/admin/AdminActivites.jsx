@@ -1,21 +1,23 @@
+import { activityError as userFriendlyError } from '../../utils/activityError'
+import ActivityCancellationDialog from '../../components/ActivityCancellationDialog'
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../../api/axios';
 import Navbar from '../../components/Navbar';
-import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFriendlyError';
+import { confirmSensitiveAction } from '../../utils/userFriendlyError';
 import ActivityCover from '../../components/ActivityCover';
 import StatusBadge from '../../components/StatusBadge';
 import AppIcon from '../../components/ui/AppIcons';
 import PageHeader from '../../components/ui/PageHeader';
-import LocationPicker from '../../components/location/LocationPicker';
+import ActivityFormFields from '../../components/ActivityFormFields'
 import EmptyState from '../../components/ui/EmptyState';
 import ErrorState from '../../components/ui/ErrorState';
 import LoadingState from '../../components/ui/LoadingState';
 
 import ActivityPublicationDialog from '../../components/ActivityPublicationDialog';
 import ActivityVisibility from '../../components/ActivityVisibility';
-import { emptyActivityForm, activityToForm, assignmentLocked, eligibleGroups, groupReferent, validateActivityForm, activityPayload, audienceKey } from './activityForm';
+import { emptyActivityForm, activityToForm, eligibleGroups, validateActivityForm, activityPayload, audienceKey } from './activityForm';
 
 const TRANSITIONS = { BROUILLON: ['PUBLIEE', 'ANNULEE'], PUBLIEE: ['TERMINEE', 'ANNULEE'], TERMINEE: [], ANNULEE: [] };
 const STATUTS = ['BROUILLON', 'PUBLIEE', 'ANNULEE', 'TERMINEE'];
@@ -45,16 +47,15 @@ export default function AdminActivites() {
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [cancellingActivity, setCancellingActivity] = useState(null)
   const [publishingActivity, setPublishingActivity] = useState(null);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [groups, setGroups] = useState([]);
   const [referents, setReferents] = useState([]);
   const [groupsState, setGroupsState] = useState('loading');
+  const [uploading, setUploading] = useState(false)
   const [formErrors, setFormErrors] = useState([]);
   const original = activites.find(activity => activity.id === editingId);
-  const locked = assignmentLocked(original);
-  const selectedGroup = groups.find(group => group.id === Number(form.groupeId));
-  const referent = groupReferent(selectedGroup, referents);
 
   useEffect(() => {
     let active = true;
@@ -103,7 +104,7 @@ export default function AdminActivites() {
 
   const enregistrerActivite = async (e) => {
     e.preventDefault();
-    if (creating) return;
+    if (creating || uploading) return;
     const errors = validateActivityForm(form, groups, referents, original);
     setFormErrors(errors);
     if (errors.length) return;
@@ -129,12 +130,13 @@ export default function AdminActivites() {
     }
   };
 
-  const changerStatut = async (id, statut) => {
+  const changerStatut = async (id, statut, confirmed = false) => {
+    if (statut === 'ANNULEE' && !confirmed) { setCancellingActivity(id); return; }
     if (statut === 'PUBLIEE' && activites.find(activity => activity.id === id)?.statut === 'BROUILLON') {
       setPublishingActivity(activites.find(activity => activity.id === id));
       return;
     }
-    if (!confirmSensitiveAction(t('admin.confirmActivityStatusChange', {
+    if (!confirmed && !confirmSensitiveAction(t('admin.confirmActivityStatusChange', {
       status: t(`statuses.${statut}`, { defaultValue: statut }),
     }))) return;
     try {
@@ -216,88 +218,12 @@ export default function AdminActivites() {
             {formErrors.length > 0 && <ul role="alert" className="md:col-span-2 text-sm text-red-700">
               {formErrors.map(key => <li key={key}>{t(`adminActivity.errors.${key}`)}</li>)}
             </ul>}
-            <label className="block text-sm font-semibold text-gray-700">
-              {t('adminActivity.type')}
-              <select className="mt-1 w-full rounded-xl border p-2" value={form.nature} disabled={locked}
-                onChange={event => setForm({ ...form, nature: event.target.value, groupeId: '', visibilite: 'PUBLIC' })}>
-                <option value="GENERALE">{t('adminActivity.general')}</option>
-                <option value="GROUPE">{t('adminActivity.group')}</option>
-              </select>
-            </label>
-            <p className="self-center text-sm text-slate-600">{t(original?.gratuite === false ? 'adminActivity.legacyPrice' : 'adminActivity.free', { price: original?.prix })}</p>
-            {locked && <p className="md:col-span-2 text-sm text-slate-600">{t('adminActivity.locked')}</p>}
-            {form.nature === 'GROUPE' && <>
-              <label className="block text-sm font-semibold text-gray-700">
-                {t('adminActivity.groupLabel')}
-                <select className="mt-1 w-full rounded-xl border p-2" value={form.groupeId} disabled={locked || groupsState !== 'ready'}
-                  onChange={event => setForm({ ...form, groupeId: event.target.value })}>
-                  <option value="">{t('adminActivity.chooseGroup')}</option>
-                  {original?.groupeId && !eligibleGroups(groups).some(group => group.id === original.groupeId) &&
-                    <option value={original.groupeId}>{original.groupeNom || t('adminActivity.unavailableGroup')}</option>}
-                  {eligibleGroups(groups).map(group => <option key={group.id} value={group.id}>{group.nom}</option>)}
-                </select>
-              </label>
-              <p className="self-center text-sm text-slate-600">{t('adminActivity.referent')}: {referent
-                ? `${referent.prenom} ${referent.nom}`
-                : t('adminActivity.noReferent')}</p>
-              {groupsState !== 'ready' && <p role="status" className="md:col-span-2 text-sm text-slate-600">{t(`adminActivity.groups${groupsState === 'error' ? 'Error' : 'Loading'}`)}</p>}
-              {groupsState === 'ready' && form.groupeId && (!referent || (original?.groupeId === Number(form.groupeId) && original.referentAssigneId !== referent.id)) &&
-                <p role="alert" className="md:col-span-2 text-sm text-red-700">{t('adminActivity.errors.referent')}</p>}
-              <label className="block text-sm font-semibold text-gray-700">
-                {t('adminActivity.visibility')}
-                <select className="mt-1 w-full rounded-xl border p-2" value={form.visibilite} disabled={locked}
-                  onChange={event => setForm({ ...form, visibilite: event.target.value })}>
-                  <option value="PUBLIC">{t('adminActivity.public')}</option>
-                  <option value="PRIVE_GROUPE">{t('adminActivity.private')}</option>
-                </select>
-              </label>
-            </>}
-            <p className="md:col-span-2 text-sm text-slate-600">{t(`adminActivity.${audienceKey({ groupeId: form.nature === 'GROUPE' ? form.groupeId : null, visibilite: form.visibilite })}`, { group: selectedGroup?.nom || original?.groupeNom || t('adminActivity.selectedGroup') })}</p>
-            <Input label={t('admin.maxCapacity')} type="number" min="1" value={form.capaciteMax} onChange={value => setForm({ ...form, capaciteMax: value })} required />
-            <Input label={t('activities.form_title')} value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
-            <Input label={t('activities.form_place')} value={form.lieu} onChange={value => setForm({ ...form, lieu: value })} required />
-            <Input label={t('activities.form_start')} type="datetime-local" value={form.dateDebut} onChange={value => setForm({ ...form, dateDebut: value })} required />
-            <Input label={t('activities.form_end')} type="datetime-local" value={form.dateFin} onChange={value => setForm({ ...form, dateFin: value })} required />
-            <div className="md:col-span-2">
-              <label htmlFor="admin-activity-description" className="block text-sm font-semibold text-gray-700 mb-1">{t('activities.form_description')}</label>
-              <textarea id="admin-activity-description" required
-                value={form.description}
-                onChange={e => setForm({ ...form, description: e.target.value })}
-                rows={3}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
-              />
-            </div>
-            <details className="md:col-span-2 rounded-xl border border-slate-100 bg-slate-50 p-3">
-              <summary className="cursor-pointer text-xs font-black uppercase tracking-wide text-slate-500">
-                {t('admin.advancedLocation')}
-              </summary>
-              <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <Input label={t('admin.address')} value={form.adresse} onChange={value => setForm({ ...form, adresse: value })} />
-                <Input label={t('admin.commune')} value={form.commune} onChange={value => setForm({ ...form, commune: value })} />
-                <Input label={t('admin.latitude')} type="number" step="any" value={form.latitude} onChange={value => setForm({ ...form, latitude: value })} />
-                <Input label={t('admin.longitude')} type="number" step="any" value={form.longitude} onChange={value => setForm({ ...form, longitude: value })} />
-                <LocationPicker
-                  address={form.adresse}
-                  commune={form.commune}
-                  latitude={form.latitude}
-                  longitude={form.longitude}
-                  onCoordinatesChange={(latitude, longitude) => setForm(current => ({ ...current, latitude, longitude }))}
-                />
-              </div>
-            </details>
-            <details className="md:col-span-2 rounded-xl border border-slate-100 bg-slate-50 p-3">
-              <summary className="cursor-pointer text-xs font-black uppercase tracking-wide text-slate-500">
-                {t('admin.advancedSettings')}
-              </summary>
-              <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <Input label={t('activities.form_category')} value={form.categorie} onChange={value => setForm({ ...form, categorie: value })} />
-                <Input label={t('activities.form_theme')} value={form.theme} onChange={value => setForm({ ...form, theme: value })} />
-              </div>
-            </details>
+            {form.nature === 'GROUPE' && validateActivityForm(form, groups, referents, original).includes('referent') && <p role="alert">{t('adminActivity.errors.referent')}</p>}
+            <ActivityFormFields key={editingId || 'new'} form={form} setForm={setForm} groups={eligibleGroups(groups)} original={original} ready={groupsState === 'ready'} onUploading={setUploading} />
             <div className="md:col-span-2 flex justify-end">
               <button
                 type="submit"
-                disabled={creating || (form.nature === 'GROUPE' && validateActivityForm(form, groups, referents, original).some(key => ['groupeId', 'referent', 'visibilite'].includes(key)))}
+                disabled={uploading || creating || (form.nature === 'GROUPE' && validateActivityForm(form, groups, referents, original).some(key => ['groupeId', 'referent', 'visibilite'].includes(key)))}
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-600 disabled:bg-gray-300"
               >
                 <AppIcon name={editingId ? 'Save' : 'PlusCircle'} className="h-4 w-4" />
@@ -396,13 +322,13 @@ export default function AdminActivites() {
                       </div>
 
                       <div className="flex flex-wrap gap-2 pt-2">
-                        <button
+                        {['BROUILLON', 'PUBLIEE'].includes(a.statut) && <button
                           onClick={() => modifierActivite(a)}
                           className="inline-flex items-center gap-1.5 rounded-lg bg-blue-100 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-200"
                         >
                           <AppIcon name="Edit" className="h-3.5 w-3.5" />
                           {t('common.edit')}
-                        </button>
+                        </button>}
                         <button
                           type="button"
                           onClick={() => setSelectedActivity(a)}
@@ -437,14 +363,14 @@ export default function AdminActivites() {
                                 ))}
                               </select>
                             </label>
-                            <button
+                            {a.statut === 'BROUILLON' && a.supprimable !== false && !a.nombreInscrits && <button
                               type="button"
                               onClick={() => supprimerActivite(a.id, a.titre)}
                               className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-xs font-medium text-red-700 transition hover:bg-red-50"
                             >
                               <AppIcon name="XCircle" className="h-3.5 w-3.5" />
                               {t('common.delete')}
-                            </button>
+                            </button>}
                           </div>
                         </details>
                       </div>
@@ -512,13 +438,13 @@ export default function AdminActivites() {
                         </td>
                         <td className="px-3 py-2">
                           <div className="flex flex-wrap gap-2">
-                            <button
+                            {['BROUILLON', 'PUBLIEE'].includes(a.statut) && <button
                               onClick={() => modifierActivite(a)}
                               className="inline-flex items-center gap-1.5 rounded-lg bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-200"
                             >
                               <AppIcon name="Edit" className="h-3.5 w-3.5" />
                               {t('common.edit')}
-                            </button>
+                            </button>}
                             <button
                               type="button"
                               onClick={() => setSelectedActivity(a)}
@@ -553,14 +479,14 @@ export default function AdminActivites() {
                                     ))}
                                   </select>
                                 </label>
-                                <button
+                                {a.statut === 'BROUILLON' && a.supprimable !== false && !a.nombreInscrits && <button
                                   type="button"
                                   onClick={() => supprimerActivite(a.id, a.titre)}
                                   className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-xs font-medium text-red-700 transition hover:bg-red-50"
                                 >
                                   <AppIcon name="XCircle" className="h-3.5 w-3.5" />
                                   {t('common.delete')}
-                                </button>
+                                </button>}
                               </div>
                             </details>
                           </div>
@@ -576,6 +502,7 @@ export default function AdminActivites() {
         )}
       </main>
 
+      {cancellingActivity && <ActivityCancellationDialog onClose={() => setCancellingActivity(null)} onConfirm={() => changerStatut(cancellingActivity, 'ANNULEE', true)} />}
       {publishingActivity && <ActivityPublicationDialog fixedAudience audienceSummary={t(`adminActivity.${audienceKey(publishingActivity)}`, { group: publishingActivity.groupeNom || t('adminActivity.selectedGroup') })} activity={publishingActivity} onClose={() => setPublishingActivity(null)} onPublished={updated => {
         setActivites(current => current.map(item => item.id === updated.id ? updated : item));
         setSelectedActivity(current => current?.id === updated.id ? updated : current);
@@ -655,14 +582,14 @@ function ActivityFollowUpDrawer({ activity, t, language, onClose, onEdit, onStat
 
           <DrawerSection title={t('admin.availableActions')} icon="Settings">
             <div className="grid gap-2 sm:grid-cols-2">
-              <button
+              {['BROUILLON', 'PUBLIEE'].includes(activity.statut) && <button
                 type="button"
                 onClick={onEdit}
                 className="inline-flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
               >
                 <AppIcon name="Edit" className="h-4 w-4" />
                 {t('common.edit')}
-              </button>
+              </button>}
               <Link
                 to={`/admin/activites/${activity.id}/presences`}
                 className="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
@@ -689,14 +616,14 @@ function ActivityFollowUpDrawer({ activity, t, language, onClose, onEdit, onStat
                     ))}
                   </select>
                 </label>
-                <button
+                {activity.statut === 'BROUILLON' && activity.supprimable !== false && !activity.nombreInscrits && <button
                   type="button"
                   onClick={() => onDelete(activity.id, activity.titre)}
                   className="inline-flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100"
                 >
                   <AppIcon name="XCircle" className="h-4 w-4" />
                   {t('common.delete')}
-                </button>
+                </button>}
               </div>
             </details>
           </DrawerSection>
@@ -787,23 +714,6 @@ function formatActivityDate(value, language) {
   return date.toLocaleDateString(language || 'fr-BE', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function Input({ label, value, onChange, type = 'text', required = false, min, step, disabled = false }) {
-  return (
-    <label className="block">
-      <span className="block text-sm font-semibold text-gray-700 mb-1">{label}</span>
-      <input
-        type={type}
-        min={min}
-        step={step}
-        required={required}
-        value={value}
-        onChange={e => onChange?.(e.target.value)}
-        disabled={disabled}
-        className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-      />
-    </label>
-  );
-}
 
 function InfoLine({ label, value }) {
   return (

@@ -96,3 +96,27 @@ test('all form messages translated in FR/NL/EN', () => {
     for (const value of Object.values(message)) if (typeof value === 'string') assert.ok(value.trim())
   }
 })
+
+test('paid drafts validate and send a server-verifiable price', () => {
+  const paid = { ...valid, gratuite: false, prix: '10.25' }
+  assert.deepEqual(validate(paid), [])
+  assert.equal(activityPayload(paid).prix, 10.25)
+  for (const prix of ['', '0', '-1', '1.234', 'abc']) assert.ok(validate({ ...paid, prix }).includes('prix'))
+  assert.equal(activityPayload({ ...paid, gratuite: true }).prix, null)
+})
+test('optional deadline is validated and exported', () => {
+  assert.equal(activityPayload(valid).dateLimiteInscription, null)
+  assert.ok(validate({ ...valid, dateLimiteInscription: 'invalid' }).includes('dateLimiteInscription'))
+  assert.ok(validate({ ...valid, dateLimiteInscription: '2199-01-01T12:00' }).includes('dateLimiteInscription'))
+  assert.deepEqual(validate({ ...valid, dateLimiteInscription: valid.dateDebut }), [])
+})
+test('editing preserves image and hidden coordinates and multi-day dates', () => {
+  const original = { ...valid, statut: 'PUBLIEE', gratuite: true, latitude: 50.8, longitude: 4.3,
+    imageStorageKey: 'activites/key.jpg', imageUrl: 'https://example.test/image', dateFin: '2099-02-01T12:00' }
+  const payload = activityPayload(activityToForm(original), original)
+  assert.equal(payload.latitude, 50.8)
+  assert.equal(payload.longitude, 4.3)
+  assert.equal(payload.imageStorageKey, original.imageStorageKey)
+  assert.equal(payload.dateFin, original.dateFin)
+  assert.ok(!Object.hasOwn(payload, 'imageUrl'))
+})

@@ -46,12 +46,12 @@ class ActiviteInvariantTest {
     }
 
     @Test
-    void creationRejectsIncoherentDatesAndPaidActivity() {
+    void creationRejectsIncoherentDatesAndInvalidPaidPrice() {
         ActiviteRequest invalidDates = validRequest();
         invalidDates.setDateFin(invalidDates.getDateDebut().minusMinutes(1));
         assertThatThrownBy(() -> activityService.creer(invalidDates, admin.getEmail())).hasMessageContaining("date de fin");
-        ActiviteRequest paid = validRequest(); paid.setGratuite(false); paid.setPrix(BigDecimal.TEN);
-        assertThatThrownBy(() -> activityService.creer(paid, admin.getEmail())).hasMessageContaining("payantes");
+        ActiviteRequest paid = validRequest(); paid.setGratuite(false); paid.setPrix(BigDecimal.ZERO);
+        assertThatThrownBy(() -> activityService.creer(paid, admin.getEmail())).hasMessageContaining("strictement positif");
     }
 
     @Test
@@ -76,6 +76,17 @@ class ActiviteInvariantTest {
         assertThatThrownBy(() -> registrationService.inscrire(request, member.getEmail())).hasMessageContaining("clôturées");
         activity.setDateDebut(LocalDateTime.now().plusDays(1)); activity.setGratuite(false);
         assertThatThrownBy(() -> registrationService.inscrire(request, member.getEmail())).hasMessageContaining("payantes");
+    }
+
+    @Test
+    void freeRegistrationRespectsOptionalDeadline() {
+        User member = new User(); member.setId(2L); member.setEmail("member@test.invalid"); member.setRole(Role.MEMBRE); member.setActif(true);
+        InscriptionRequest request = new InscriptionRequest(); request.setActiviteId(3L);
+        Activite activity = activity(true); activity.setDateDebut(LocalDateTime.now().plusDays(1));
+        when(users.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
+        when(activities.findByIdForUpdate(3L)).thenReturn(Optional.of(activity));
+        activity.setDateLimiteInscription(LocalDateTime.now().minusSeconds(1));
+        assertThatThrownBy(() -> registrationService.inscrire(request, member.getEmail())).hasMessageContaining("clôturées");
     }
 
     @Test

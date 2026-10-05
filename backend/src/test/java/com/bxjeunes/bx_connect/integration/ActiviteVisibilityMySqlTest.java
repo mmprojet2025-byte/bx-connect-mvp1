@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.*;
 @DataJpaTest(showSql = false)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-@Import(ActiviteService.class)
+@Import({ActiviteService.class, com.bxjeunes.bx_connect.service.ActivityImageService.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @Testcontainers
 class ActiviteVisibilityMySqlTest {
@@ -153,6 +153,11 @@ class ActiviteVisibilityMySqlTest {
         cancelled.setDateAnnulation(previousCancellation); inscriptions.saveAndFlush(cancelled);
         active.setStatutPresence(StatutPresence.PRESENT);
         active.setCommentairePresence("Historique"); inscriptions.saveAndFlush(active);
+        assertThatThrownBy(() -> service.changerStatut(activity.getId(), StatutActivite.ANNULEE, null, "referent@test.invalid"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("paiement est en cours");
+        assertThat(activities.findById(activity.getId()).orElseThrow().getStatut()).isEqualTo(StatutActivite.PUBLIEE);
+        // Once provider confirmation resolves the reservation, cancellation can preserve all histories.
+        pending.setStatut(StatutInscription.PAYEE); inscriptions.saveAndFlush(pending);
         var response = service.changerStatut(activity.getId(), StatutActivite.ANNULEE, null, "referent@test.invalid");
         assertThat(response.getStatut()).isEqualTo(StatutActivite.ANNULEE);
         assertThat(response.getVisibilite()).isEqualTo(VisibiliteActivite.MEMBRES);

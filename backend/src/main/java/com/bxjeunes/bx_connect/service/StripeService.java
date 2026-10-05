@@ -28,6 +28,8 @@ import java.util.stream.Collectors;
         matchIfMissing = false
 )
 public class StripeService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private ActivityPaymentService activityPayments;
 
     private final SoutienFinancierRepository soutienRepo;
     private final UserRepository userRepository;
@@ -54,6 +56,7 @@ public class StripeService {
     }
 
     // ─── Créer une session Stripe Checkout ───────────────────────────────────
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public PaiementResponse creerSessionCheckout(PaiementRequest request) throws StripeException {
 
         // Récupérer l'utilisateur connecté
@@ -64,11 +67,12 @@ public class StripeService {
         // Déterminer la description
         String description = "Soutien BX-CONNECT";
         Activite activite = null;
+        Inscription registration = null;
         Projet projet = null;
 
         verifierCibleUnique(request);
         if (request.getActiviteId() != null) {
-            throw new AccessDeniedException("Les paiements d'activité sont indisponibles dans cette version.");
+            return creerPaiementActivite(request, donateur);
         } else if (request.getProjetId() != null) {
             projet = projetRepository.findById(request.getProjetId())
                     .orElseThrow(() -> new RuntimeException("Projet introuvable"));
@@ -111,6 +115,7 @@ public class StripeService {
         // Sauvegarder en base avec statut EN_ATTENTE
         SoutienFinancier soutien = new SoutienFinancier();
         soutien.setMontant(request.getMontant());
+        soutien.setInscription(registration);
         soutien.setDonateur(donateur);
         soutien.setFournisseur("STRIPE");
         soutien.setTypeSource("STRIPE");
@@ -124,6 +129,49 @@ public class StripeService {
 
         SoutienFinancier saved = soutienRepo.save(soutien);
         return PaiementResponse.fromEntity(saved);
+    }
+
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    public void annulerPaiementActivite(Long paymentId) throws StripeException {
+        var p = soutienRepo.findById(paymentId).orElseThrow();
+        if (p.getActivite() == null) throw new IllegalArgumentException("Paiement d'activité requis.");
+        p = activityPayments.lockedPayment(p);
+        activityPayments.owner(p);
+        if (p.getStatutPaiement() != StatutPaiement.EN_ATTENTE) return;
+        if (p.getStripeSessionId() == null)
+            throw new IllegalArgumentException("Le paiement est encore en cours de vérification.");
+        var remote = lireSessionExterne(p.getStripeSessionId());
+        if ("open".equals(remote.getStatus())) remote = expirerSessionExterne(remote);
+        if (!"expired".equals(remote.getStatus()))
+            throw new IllegalArgumentException("Le paiement est encore en cours de confirmation.");
+        activityPayments.complete(p, false);
+    }
+    Session lireSessionExterne(String id) throws StripeException { return Session.retrieve(id); }
+    Session expirerSessionExterne(Session session) throws StripeException { return session.expire(); }
+
+    private PaiementResponse creerPaiementActivite(PaiementRequest request, User user) throws StripeException {
+        var attempt = activityPayments.prepare(request.getActiviteId(), user, request.getMontant(), "STRIPE");
+        if (attempt.getCheckoutUrl() != null) return PaiementResponse.fromEntity(attempt);
+        var params = SessionCreateParams.builder()
+                .setMode(SessionCreateParams.Mode.PAYMENT)
+                .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
+                .setExpiresAt(attempt.getCheckoutExpiresAt())
+                .setSuccessUrl(successUrl + "?session_id={CHECKOUT_SESSION_ID}")
+                .setCancelUrl(cancelUrl)
+                .putMetadata("activity_payment_id", attempt.getId().toString())
+                .addLineItem(SessionCreateParams.LineItem.builder().setQuantity(1L)
+                    .setPriceData(SessionCreateParams.LineItem.PriceData.builder().setCurrency("eur")
+                        .setUnitAmount(attempt.getMontant().movePointRight(2).longValueExact())
+                        .setProductData(SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                            .setName("BX-Connect — Activité " + request.getActiviteId()).build()).build()).build())
+                .build();
+        Session session = creerSessionActiviteExterne(params, attempt.getActivityRequestKey());
+        return PaiementResponse.fromEntity(activityPayments.attach(request.getActiviteId(), attempt.getId(),
+                session.getId(), session.getUrl(), "STRIPE"));
+    }
+
+    Session creerSessionActiviteExterne(SessionCreateParams params, String key) throws StripeException {
+        return Session.create(params, com.stripe.net.RequestOptions.builder().setIdempotencyKey(key).build());
     }
 
     // ─── Vérifier le statut d'une session Stripe ─────────────────────────────
@@ -141,6 +189,7 @@ public class StripeService {
     }
 
     // ─── Webhook Stripe (mise à jour automatique du statut) ──────────────────
+    @org.springframework.transaction.annotation.Transactional
     public void traiterWebhook(String payload, String sigHeader) throws StripeException {
         Event event;
         try {
@@ -153,7 +202,19 @@ public class StripeService {
             case "checkout.session.completed" -> {
                 Session session = (Session) event.getDataObjectDeserializer()
                         .getObject().orElseThrow();
-                soutienRepo.findByStripeSessionId(session.getId()).ifPresent(s -> {
+                trouverPaiementSession(session).ifPresent(s -> {
+                    if (s.getActivite() != null) {
+                        s = activityPayments.lockedPayment(s);
+                        if (!"paid".equals(session.getPaymentStatus()) || !"eur".equalsIgnoreCase(session.getCurrency())
+                                || session.getAmountTotal() == null
+                                || session.getAmountTotal() != s.getMontant().movePointRight(2).longValueExact())
+                            throw new IllegalArgumentException("Paiement non confirmé ou montant invalide.");
+                        if (s.getStatutPaiement() == StatutPaiement.PAYE) return;
+                        activityPayments.complete(s, true);
+                        s.setStripePaymentIntentId(session.getPaymentIntent());
+                        soutienRepo.save(s);
+                        return;
+                    }
                     s.setStatutPaiement(StatutPaiement.PAYE);
                     s.setStripePaymentIntentId(session.getPaymentIntent());
                     s.setDatePaiement(LocalDateTime.now());
@@ -163,9 +224,14 @@ public class StripeService {
             case "checkout.session.expired" -> {
                 Session session = (Session) event.getDataObjectDeserializer()
                         .getObject().orElseThrow();
-                soutienRepo.findByStripeSessionId(session.getId()).ifPresent(s -> {
-                    s.setStatutPaiement(StatutPaiement.ANNULE);
-                    soutienRepo.save(s);
+                trouverPaiementSession(session).ifPresent(s -> {
+                    if (s.getActivite() != null) {
+                        s = activityPayments.lockedPayment(s);
+                        activityPayments.complete(s, false);
+                    } else if (s.getStatutPaiement() != StatutPaiement.PAYE) {
+                        s.setStatutPaiement(StatutPaiement.ANNULE);
+                        soutienRepo.save(s);
+                    }
                 });
             }
             case "charge.refunded" -> {
@@ -175,6 +241,22 @@ public class StripeService {
                 // Événement non géré — ignorer
             }
         }
+    }
+
+    private java.util.Optional<SoutienFinancier> trouverPaiementSession(Session session) {
+        var found = soutienRepo.findByStripeSessionId(session.getId());
+        if (found.isPresent()) return found;
+        String id = session.getMetadata() == null ? null : session.getMetadata().get("activity_payment_id");
+        if (id == null) return java.util.Optional.empty();
+        var payment = soutienRepo.findById(Long.valueOf(id)).orElseThrow();
+        if (payment.getInscription() == null || !"STRIPE".equals(payment.getFournisseur()))
+            throw new IllegalArgumentException("Paiement invalide.");
+        payment = activityPayments.lockedPayment(payment);
+        if (payment.getStripeSessionId() != null && !payment.getStripeSessionId().equals(session.getId()))
+            throw new IllegalArgumentException("Session invalide.");
+        payment.setStripeSessionId(session.getId());
+        soutienRepo.saveAndFlush(payment);
+        return java.util.Optional.of(payment);
     }
 
     // ─── Historique des paiements Stripe de l'utilisateur connecté ───────────
@@ -217,13 +299,11 @@ public class StripeService {
     private void verifierCibleUnique(PaiementRequest request) {
         boolean cibleActivite = request.getActiviteId() != null;
         boolean cibleProjet = request.getProjetId() != null;
+        if (cibleProjet && (request.getMontant() == null || request.getMontant().compareTo(BigDecimal.ONE) < 0))
+            throw new IllegalArgumentException("Le montant minimum est de 1€.");
         if (cibleActivite == cibleProjet) {
             throw new AccessDeniedException("Le paiement doit cibler une seule activité ou un seul projet ouvert au soutien.");
         }
-    }
-
-    private void verifierActivitePayable(Activite activite) {
-        throw new AccessDeniedException("Les paiements d'activité sont indisponibles dans cette version.");
     }
 
     private void verifierProjetPayable(Projet projet) {

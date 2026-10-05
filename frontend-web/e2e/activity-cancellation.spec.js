@@ -37,9 +37,27 @@ for (const cancelled of [true, false]) {
   })
 }
 
+test('MEMBRE : paiement en attente sans ancien message de module indisponible', async ({ page }) => {
+  await session(page, 'MEMBRE')
+  await page.route(url => url.pathname.startsWith('/api/'), route => route.fulfill({
+    json: new URL(route.request().url()).pathname === '/api/membre/dashboard'
+      ? { inscriptions: [{ id: 1, activiteId: 42, activiteTitre: 'Atelier payant',
+        activiteDateDebut: new Date(Date.now() + 86400000).toISOString(),
+        statut: 'EN_ATTENTE_PAIEMENT', activiteStatut: 'PUBLIEE' }], projets: [], notifications: [] } : [],
+  }))
+  await page.goto('/dashboard')
+  await expect(page.getByText('Paiement en attente de confirmation', { exact: true })).toBeVisible()
+  await expect(page.getByText('Inscriptions indisponibles pour les activités payantes dans cette version')).toHaveCount(0)
+  await expect(page.getByText('Activité imminente', { exact: true })).toHaveCount(0)
+})
+
 test('REFERENT : capacité accessible sans ouvrir les paramètres avancés', async ({ page }) => {
   await session(page, 'REFERENT')
-  await page.route(url => url.pathname.startsWith('/api/'), route => route.fulfill({ json: [] }))
+  await page.route(url => url.pathname.startsWith('/api/'), route => {
+    const path = new URL(route.request().url()).pathname
+    return route.fulfill({ json: path === '/api/users/me' ? { id: 1, role: 'REFERENT', actif: true }
+      : path === '/api/referent/groupes' ? [{ id: 5, referentId: 1, nom: 'Sport', actif: true, statut: 'VALIDE' }] : [] })
+  })
   await page.goto('/referent/activites')
   await page.getByRole('button', { name: 'Nouvelle activité', exact: true }).click()
   const capacity = page.getByRole('spinbutton', { name: /Capacité/ })
