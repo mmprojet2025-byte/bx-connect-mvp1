@@ -32,6 +32,7 @@ class NotificationServicePushTest {
     @Mock private UserRepository userRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
 
+    @Mock private com.bxjeunes.bx_connect.repository.ActiviteRepository activiteRepository;
     private NotificationService service;
 
     @BeforeEach
@@ -40,7 +41,7 @@ class NotificationServicePushTest {
                 notificationRepository,
                 userRepository,
                 eventPublisher
-        );
+        , activiteRepository, org.mockito.Mockito.mock(com.bxjeunes.bx_connect.repository.MembreGroupeRepository.class));
     }
 
     @Test
@@ -50,6 +51,9 @@ class NotificationServicePushTest {
         when(notificationRepository.save(any(Notification.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
+        var activity = new com.bxjeunes.bx_connect.entity.Activite();
+        activity.setStatut(com.bxjeunes.bx_connect.entity.StatutActivite.PUBLIEE);
+        when(activiteRepository.findById(7L)).thenReturn(Optional.of(activity));
         service.creer(
                 destinataire,
                 "Nouvelle activité",
@@ -68,6 +72,21 @@ class NotificationServicePushTest {
     }
 
     @Test
+    void privateNotificationIsStoredButNotPushedToAnUnauthorizedRecipient() {
+        User user = new User();
+        user.setId(42L); user.setRole(com.bxjeunes.bx_connect.entity.Role.MEMBRE);
+        var activity = new com.bxjeunes.bx_connect.entity.Activite();
+        activity.setVisibilite(com.bxjeunes.bx_connect.entity.VisibiliteActivite.PRIVE_GROUPE);
+        activity.setStatut(com.bxjeunes.bx_connect.entity.StatutActivite.PUBLIEE);
+        when(activiteRepository.findById(7L)).thenReturn(Optional.of(activity));
+
+        service.creer(user, "SECRET", "SECRET", "ACTIVITE_ANNULEE", "/activites/7");
+
+        verify(notificationRepository).save(any(Notification.class));
+        org.mockito.Mockito.verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
     void notifications_pagees_ne_lisent_que_le_destinataire_connecte() {
         User user = new User();
         user.setId(42L);
@@ -76,15 +95,14 @@ class NotificationServicePushTest {
         notification.setId(99L);
 
         when(userRepository.findByEmail("membre@test.be")).thenReturn(Optional.of(user));
-        when(notificationRepository.findByDestinataireId(eq(42L), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(notification), PageRequest.of(0, 1), 1));
+        when(notificationRepository.findByDestinataireIdOrderByDateCreationDesc(42L))
+                .thenReturn(List.of(notification));
 
         var response = service.mesNotificationsPage("membre@test.be", 0, 20);
 
         assertThat(response.content()).hasSize(1);
         assertThat(response.content().get(0)).containsEntry("id", 99L);
-        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-        verify(notificationRepository).findByDestinataireId(eq(42L), captor.capture());
-        assertThat(captor.getValue().getSort().getOrderFor("dateCreation").isDescending()).isTrue();
+        verify(notificationRepository).findByDestinataireIdOrderByDateCreationDesc(42L);
+        assertThat(response.totalElements()).isEqualTo(1);
     }
 }

@@ -61,7 +61,7 @@ class ReferentDashboardServiceTest {
         Projet brouillon = projet(12L, "Projet brouillon", StatutProjet.BROUILLON);
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(referent));
-        when(activiteRepository.findByCreateurId(referent.getId())).thenReturn(List.of());
+        when(activiteRepository.findByCreateurIdOrReferentAssigneId(referent.getId(), referent.getId())).thenReturn(List.of());
         when(projetRepository.findByGroupeReferentEmail(email))
                 .thenReturn(List.of(soumis, brouillon));
 

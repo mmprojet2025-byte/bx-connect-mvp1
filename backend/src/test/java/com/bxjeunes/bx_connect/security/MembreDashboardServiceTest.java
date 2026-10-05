@@ -86,6 +86,9 @@ class MembreDashboardServiceTest {
 
         Inscription inscription = new Inscription();
         inscription.setId(100L);
+        var activity = new com.bxjeunes.bx_connect.entity.Activite();
+        activity.setStatut(com.bxjeunes.bx_connect.entity.StatutActivite.PUBLIEE);
+        inscription.setActivite(activity);
         inscription.setMembre(membre);
         inscription.setStatut(StatutInscription.CONFIRMEE);
 

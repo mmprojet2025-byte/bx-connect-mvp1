@@ -56,6 +56,7 @@ class ActiviteSecurityTest {
     @Mock private NotificationService notificationService;
     @Mock private AuditLogService auditLogService;
 
+    @Mock private com.bxjeunes.bx_connect.repository.MembreGroupeRepository membreGroupeRepository;
     @InjectMocks private ActiviteService activiteService;
     @InjectMocks private InscriptionService inscriptionService;
     @InjectMocks private PresenceService presenceService;

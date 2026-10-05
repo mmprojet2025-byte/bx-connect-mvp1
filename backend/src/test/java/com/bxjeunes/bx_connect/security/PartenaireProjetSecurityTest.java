@@ -200,7 +200,6 @@ class PartenaireProjetSecurityTest {
             SoutienRequest request = new SoutienRequest();
             request.setActiviteId(10L);
             request.setMontant(BigDecimal.TEN);
-            when(activiteRepository.findById(10L)).thenReturn(Optional.of(activite));
 
             assertThatThrownBy(() -> partenaireService.soutenirActivite(request, partenaire.getEmail()))
                     .isInstanceOf(AccessDeniedException.class)
@@ -216,8 +215,6 @@ class PartenaireProjetSecurityTest {
         request.setMontant(BigDecimal.TEN);
 
         when(userRepository.findByEmail(partenaire.getEmail())).thenReturn(Optional.of(partenaire));
-        when(activiteRepository.findById(10L))
-                .thenReturn(Optional.of(activite(10L, StatutActivite.PUBLIEE)));
         assertThatThrownBy(() -> partenaireService.soutenirActivite(request, partenaire.getEmail()))
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessage("Les soutiens financiers aux activités sont indisponibles dans cette version.");
@@ -234,7 +231,6 @@ class PartenaireProjetSecurityTest {
         activite.setGratuite(false);
 
         when(userRepository.findByEmail(partenaire.getEmail())).thenReturn(Optional.of(partenaire));
-        when(activiteRepository.findById(10L)).thenReturn(Optional.of(activite));
 
         assertThatThrownBy(() -> partenaireService.soutenirActivite(request, partenaire.getEmail()))
                 .isInstanceOf(AccessDeniedException.class)

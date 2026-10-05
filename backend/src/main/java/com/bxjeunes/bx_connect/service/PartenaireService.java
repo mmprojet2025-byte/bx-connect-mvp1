@@ -131,9 +131,6 @@ public class PartenaireService {
             throw new RuntimeException("L'identifiant de l'activité est obligatoire.");
         }
 
-        activiteRepository.findById(request.getActiviteId())
-                .orElseThrow(() -> new RuntimeException("Activité introuvable : " + request.getActiviteId()));
-
         throw new org.springframework.security.access.AccessDeniedException(
                 "Les soutiens financiers aux activités sont indisponibles dans cette version.");
     }
@@ -248,7 +245,7 @@ public class PartenaireService {
     // ─── P04 : Activités ouvertes au soutien ─────────────────────────────────
     public List<Map<String, Object>> activitesSoutienOuverts(boolean authentifie) {
         return activiteRepository.findByStatut(StatutActivite.PUBLIEE).stream()
-                .filter(a -> authentifie || a.getVisibilite() == VisibiliteActivite.PUBLIC)
+                .filter(a -> ActiviteLecture.sansAppartenance(a, authentifie))
                 .map(a -> {
                     Map<String, Object> m = new HashMap<>();
                     m.put("id",          a.getId());

@@ -37,7 +37,7 @@ class ActiviteVisibilityTest {
 
     @BeforeEach
     void setup() {
-        service = new ActiviteService(activities, users, inscriptions, notifications, audit, mock(com.bxjeunes.bx_connect.repository.GroupeRepository.class));
+        service = new ActiviteService(activities, users, inscriptions, notifications, audit, mock(com.bxjeunes.bx_connect.repository.GroupeRepository.class), org.mockito.Mockito.mock(com.bxjeunes.bx_connect.repository.MembreGroupeRepository.class));
         owner = user(1L, Role.REFERENT);
         publique = activity(10L, VisibiliteActivite.PUBLIC);
         membres = activity(11L, VisibiliteActivite.MEMBRES);
@@ -131,28 +131,26 @@ class ActiviteVisibilityTest {
         ActiviteFiltreRequest filter = new ActiviteFiltreRequest();
         List<Activite> found = List.of(publique, membres);
         switch (branch) {
-            case "texte" -> { filter.setQ("atelier"); when(activities.rechercherMultiChamps(any(), eq("atelier"))).thenReturn(found); }
-            case "dates" -> {
-                filter.setDateDebut(LocalDateTime.now()); filter.setDateFin(LocalDateTime.now().plusDays(3));
-                when(activities.findByStatutAndDateDebutBetween(any(), any(), any())).thenReturn(found);
-            }
-            case "categorieTheme" -> {
-                filter.setCategorie("Sport"); filter.setTheme("Collectif");
-                when(activities.findByStatutAndCategorieAndTheme(any(), any(), any())).thenReturn(found);
-            }
-            case "categorie" -> { filter.setCategorie("Sport"); when(activities.findByStatutAndCategorie(any(), any())).thenReturn(found); }
-            case "theme" -> { filter.setTheme("Collectif"); when(activities.findByStatutAndTheme(any(), any())).thenReturn(found); }
-            case "lieu" -> { filter.setLieu("Bruxelles"); when(activities.findByStatutAndLieuContainingIgnoreCase(any(), any())).thenReturn(found); }
-            case "gratuite" -> { filter.setGratuite(true); when(activities.findByStatutAndGratuite(any(), eq(true))).thenReturn(found); }
-            default -> when(activities.findByStatut(StatutActivite.PUBLIEE)).thenReturn(found);
+            case "texte" -> filter.setQ("atelier");
+            case "dates" -> { filter.setDateDebut(LocalDateTime.now()); filter.setDateFin(LocalDateTime.now().plusDays(3)); }
+            case "categorieTheme" -> { filter.setCategorie("Sport"); filter.setTheme("Collectif"); }
+            case "categorie" -> filter.setCategorie("Sport");
+            case "theme" -> filter.setTheme("Collectif");
+            case "lieu" -> filter.setLieu("Bruxelles");
+            case "gratuite" -> filter.setGratuite(true);
+            default -> { }
         }
+        when(activities.filtrerCombines(StatutActivite.PUBLIEE, filter.getQ(), filter.getCategorie(),
+                filter.getTheme(), filter.getLieu(), filter.getDateDebut(), filter.getDateFin(), filter.getGratuite()))
+                .thenReturn(found);
+        when(users.findByEmail(owner.getEmail())).thenReturn(Optional.of(owner));
         assertThat(service.filtrer(filter, null)).extracting(ActiviteResponse::getId).containsExactly(10L);
         assertThat(service.filtrer(filter, owner.getEmail())).extracting(ActiviteResponse::getId).containsExactly(10L, 11L);
     }
 
     @Test
     void paginationFiltersBeforeCountingAndPaging() {
-        when(activities.findByStatutAndVisibilite(eq(StatutActivite.PUBLIEE), eq(VisibiliteActivite.PUBLIC), any(Pageable.class)))
+        when(activities.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(publique)));
         var page = service.listerPublieesPage(null, 0, 20);
         assertThat(page.totalElements()).isEqualTo(1);
@@ -163,12 +161,13 @@ class ActiviteVisibilityTest {
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void filterOptionsUseAuthenticationScope(boolean authenticated) {
-        when(activities.findDistinctCategories(authenticated)).thenReturn(List.of("Sport"));
-        when(activities.findDistinctThemes(authenticated)).thenReturn(List.of("Collectif"));
-        when(activities.findDistinctLieux(authenticated)).thenReturn(List.of("Bruxelles"));
-        assertThat(service.getOptionsFiltre(authenticated ? owner.getEmail() : null).get("categories")).containsExactly("Sport");
-        verify(activities).findDistinctThemes(authenticated);
-        verify(activities).findDistinctLieux(authenticated);
+        publique.setCategorie("Sport"); publique.setTheme("Collectif");
+        when(activities.findByStatut(StatutActivite.PUBLIEE)).thenReturn(List.of(publique));
+        if (authenticated) when(users.findByEmail(owner.getEmail())).thenReturn(Optional.of(owner));
+        var options = service.getOptionsFiltre(authenticated ? owner.getEmail() : null);
+        assertThat(options.get("categories")).containsExactly("Sport");
+        assertThat(options.get("themes")).containsExactly("Collectif");
+        assertThat(options.get("lieux")).containsExactly("Bruxelles");
     }
 
     @Test

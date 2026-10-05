@@ -1,5 +1,6 @@
 package com.bxjeunes.bx_connect.repository;
 
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import com.bxjeunes.bx_connect.entity.Activite;
 import com.bxjeunes.bx_connect.entity.StatutActivite;
 import com.bxjeunes.bx_connect.entity.VisibiliteActivite;
@@ -17,7 +18,7 @@ import java.util.Optional;
 import jakarta.persistence.LockModeType;
 
 @Repository
-public interface ActiviteRepository extends JpaRepository<Activite, Long> {
+public interface ActiviteRepository extends JpaRepository<Activite, Long>, JpaSpecificationExecutor<Activite> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT a FROM Activite a WHERE a.id = :id")
@@ -86,6 +87,8 @@ public interface ActiviteRepository extends JpaRepository<Activite, Long> {
 
     // ─── Activités créées par un utilisateur (référent/admin) ────────────────
     List<Activite> findByCreateurId(Long createurId);
+
+    List<Activite> findByCreateurIdOrReferentAssigneId(Long createurId, Long referentAssigneId);
 
     // ─── Activités d'un référent (pour dashboard référent) ───────────────────
     List<Activite> findByCreateurIdAndStatut(Long createurId, StatutActivite statut);

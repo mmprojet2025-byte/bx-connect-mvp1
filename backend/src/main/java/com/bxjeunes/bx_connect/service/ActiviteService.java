@@ -1,5 +1,6 @@
 package com.bxjeunes.bx_connect.service;
 
+import com.bxjeunes.bx_connect.repository.MembreGroupeRepository;
 import com.bxjeunes.bx_connect.dto.ActiviteFiltreRequest;
 import com.bxjeunes.bx_connect.dto.ActiviteRequest;
 import com.bxjeunes.bx_connect.dto.ActiviteResponse;
@@ -35,6 +36,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class ActiviteService {
 
     private static final Logger log = LoggerFactory.getLogger(ActiviteService.class);
@@ -46,19 +48,22 @@ public class ActiviteService {
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
     private final GroupeRepository groupeRepository;
+    private final MembreGroupeRepository membreGroupeRepository;
 
     public ActiviteService(ActiviteRepository activiteRepository,
                            UserRepository userRepository,
                            InscriptionRepository inscriptionRepository,
                            NotificationService notificationService,
                            AuditLogService auditLogService,
-                           GroupeRepository groupeRepository) {
+                           GroupeRepository groupeRepository,
+                           MembreGroupeRepository membreGroupeRepository) {
         this.activiteRepository = activiteRepository;
         this.userRepository = userRepository;
         this.inscriptionRepository = inscriptionRepository;
         this.notificationService = notificationService;
         this.auditLogService = auditLogService;
         this.groupeRepository = groupeRepository;
+        this.membreGroupeRepository = membreGroupeRepository;
     }
 
     // ─── Créer une activité ───────────────────────────────────────────────────
@@ -102,18 +107,17 @@ public class ActiviteService {
 
     // ─── Lister activités publiées (public) ───────────────────────────────────
     public List<ActiviteResponse> listerPubliees(String emailUtilisateur) {
+        var lecteur = lecteur(emailUtilisateur);
         return activiteRepository.findByStatut(StatutActivite.PUBLIEE)
                 .stream()
-                .filter(activite -> estPublieeVisible(activite, emailUtilisateur))
+                .filter(lecteur::catalogue)
                 .map(activite -> toResponse(activite, emailUtilisateur))
                 .collect(Collectors.toList());
     }
 
     public PagedResponse<ActiviteResponse> listerPublieesPage(String emailUtilisateur, int page, int size) {
         var pageable = PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation"));
-        var activites = emailUtilisateur == null
-                ? activiteRepository.findByStatutAndVisibilite(StatutActivite.PUBLIEE, VisibiliteActivite.PUBLIC, pageable)
-                : activiteRepository.findByStatut(StatutActivite.PUBLIEE, pageable);
+        var activites = activiteRepository.findAll(lecteur(emailUtilisateur).catalogueSql(), pageable);
         return PagedResponse.fromPage(activites.map(activite -> toResponse(activite, emailUtilisateur)));
     }
 
@@ -136,28 +140,7 @@ public class ActiviteService {
         Activite activite = activiteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
 
-        if (emailUtilisateur == null) {
-            if (!estPublieeVisible(activite, null)) {
-                throw new RuntimeException("Activité introuvable : " + id);
-            }
-            return toResponse(activite, null);
-        }
-
-        User utilisateur = userRepository.findByEmail(emailUtilisateur)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + emailUtilisateur));
-
-        if (utilisateur.getRole() == Role.ADMIN) {
-            return toResponse(activite, emailUtilisateur);
-        }
-
-        if (utilisateur.getRole() == Role.REFERENT) {
-            if (activite.getCreateur() != null &&
-                    activite.getCreateur().getId().equals(utilisateur.getId())) {
-                return toResponse(activite, emailUtilisateur);
-            }
-        }
-
-        if (activite.getStatut() != StatutActivite.PUBLIEE) {
+        if (!lecteur(emailUtilisateur).detail(activite)) {
             throw new RuntimeException("Activité introuvable : " + id);
         }
         return toResponse(activite, emailUtilisateur);
@@ -165,23 +148,25 @@ public class ActiviteService {
 
     // ─── Recherche par mot-clé (V06 / M16) ───────────────────────────────────
     public List<ActiviteResponse> rechercher(String motCle, String emailUtilisateur) {
+        var lecteur = lecteur(emailUtilisateur);
         return activiteRepository
                 .rechercherMultiChamps(StatutActivite.PUBLIEE, motCle)
                 .stream()
-                .filter(activite -> estPublieeVisible(activite, emailUtilisateur))
+                .filter(lecteur::catalogue)
                 .map(activite -> toResponse(activite, emailUtilisateur))
                 .collect(Collectors.toList());
     }
 
     // ─── Filtres avancés (V03) ────────────────────────────────────────────────
     public List<ActiviteResponse> filtrer(ActiviteFiltreRequest filtre, String emailUtilisateur) {
+        var lecteur = lecteur(emailUtilisateur);
         List<Activite> resultats = activiteRepository.filtrerCombines(
                 StatutActivite.PUBLIEE, critereTexte(filtre.getQ()), critereTexte(filtre.getCategorie()),
                 critereTexte(filtre.getTheme()), critereTexte(filtre.getLieu()),
                 filtre.getDateDebut(), filtre.getDateFin(), filtre.getGratuite());
 
         return resultats.stream()
-                .filter(activite -> estPublieeVisible(activite, emailUtilisateur))
+                .filter(lecteur::catalogue)
                 .map(activite -> toResponse(activite, emailUtilisateur))
                 .collect(Collectors.toList());
     }
@@ -192,25 +177,28 @@ public class ActiviteService {
 
     // ─── Options de filtres (catégories, thèmes, lieux disponibles) ──────────
     public Map<String, List<String>> getOptionsFiltre(String emailUtilisateur) {
-        boolean authentifie = emailUtilisateur != null;
+        var lecteur = lecteur(emailUtilisateur);
+        var visibles = activiteRepository.findByStatut(StatutActivite.PUBLIEE).stream()
+                .filter(lecteur::catalogue).toList();
         return Map.of(
-            "categories", activiteRepository.findDistinctCategories(authentifie),
-            "themes",     activiteRepository.findDistinctThemes(authentifie),
-            "lieux",      activiteRepository.findDistinctLieux(authentifie)
-        );
+                "categories", visibles.stream().map(Activite::getCategorie).filter(Objects::nonNull).distinct().toList(),
+                "themes", visibles.stream().map(Activite::getTheme).filter(Objects::nonNull).distinct().toList(),
+                "lieux", visibles.stream().map(Activite::getLieu).filter(Objects::nonNull).distinct().toList());
     }
 
-    private boolean estPublieeVisible(Activite activite, String emailUtilisateur) {
-        return activite.getStatut() == StatutActivite.PUBLIEE
-                && (emailUtilisateur != null || activite.getVisibilite() == VisibiliteActivite.PUBLIC);
+    private ActiviteLecture.Lecteur lecteur(String email) {
+        User user = email == null ? null : userRepository.findByEmail(email).orElse(null);
+        return ActiviteLecture.lecteur(user, user != null && user.getRole() == Role.MEMBRE
+                ? membreGroupeRepository.findByUserId(user.getId()) : List.of());
     }
 
     // ─── Activités du référent ────────────────────────────────────────────────
     public List<ActiviteResponse> mesActivites(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + email));
-        return activiteRepository.findByCreateurId(user.getId())
+        return activiteRepository.findByCreateurIdOrReferentAssigneId(user.getId(), user.getId())
                 .stream()
+                .filter(a -> ActiviteLecture.gestion(a, user))
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -272,7 +260,7 @@ public class ActiviteService {
                 inscriptionRepository.save(inscription);
                 notificationService.creer(inscription.getMembre(), "Activité annulée",
                         "L'activité « " + activite.getTitre() + " » a été annulée. Votre inscription est annulée.",
-                        "ACTIVITE_ANNULEE", "/dashboard");
+                        "ACTIVITE_ANNULEE", "/activites/" + activite.getId());
             }
         }
         activite.setStatut(nouveauStatut);

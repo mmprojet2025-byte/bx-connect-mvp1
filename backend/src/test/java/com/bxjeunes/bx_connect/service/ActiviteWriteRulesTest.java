@@ -25,7 +25,7 @@ class ActiviteWriteRulesTest {
     final GroupeRepository groups = mock(GroupeRepository.class);
     final InscriptionRepository registrations = mock(InscriptionRepository.class);
     final ActiviteService service = new ActiviteService(activities, users, registrations,
-            mock(NotificationService.class), mock(AuditLogService.class), groups);
+            mock(NotificationService.class), mock(AuditLogService.class), groups, org.mockito.Mockito.mock(com.bxjeunes.bx_connect.repository.MembreGroupeRepository.class));
     User admin, referent, other;
     Groupe group;
     Activite saved;

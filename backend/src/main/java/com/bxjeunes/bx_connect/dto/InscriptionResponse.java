@@ -23,13 +23,17 @@ public class InscriptionResponse {
     // ─── Constructeur depuis entité ──────────────────────────────────────────
 
     public static InscriptionResponse fromEntity(Inscription inscription) {
+        return fromEntity(inscription, true);
+    }
+
+    public static InscriptionResponse fromEntity(Inscription inscription, boolean activiteVisible) {
         InscriptionResponse response = new InscriptionResponse();
         response.id = inscription.getId();
         response.statut = inscription.getStatut();
         response.dateInscription = inscription.getDateInscription();
         response.dateAnnulation = inscription.getDateAnnulation();
 
-        if (inscription.getActivite() != null) {
+        if (activiteVisible && inscription.getActivite() != null) {
             response.activiteId = inscription.getActivite().getId();
             response.activiteTitre = inscription.getActivite().getTitre();
             response.activiteLieu = inscription.getActivite().getLieu();

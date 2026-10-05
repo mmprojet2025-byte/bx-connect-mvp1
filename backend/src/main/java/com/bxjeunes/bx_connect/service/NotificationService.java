@@ -1,5 +1,9 @@
 package com.bxjeunes.bx_connect.service;
 
+import org.springframework.data.domain.PageImpl;
+import org.springframework.transaction.annotation.Transactional;
+import com.bxjeunes.bx_connect.repository.MembreGroupeRepository;
+import com.bxjeunes.bx_connect.repository.ActiviteRepository;
 import com.bxjeunes.bx_connect.dto.PagedResponse;
 import com.bxjeunes.bx_connect.entity.Notification;
 import com.bxjeunes.bx_connect.entity.Role;
@@ -24,13 +28,19 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final ActiviteRepository activiteRepository;
+    private final MembreGroupeRepository membreGroupeRepository;
 
     public NotificationService(NotificationRepository notificationRepository,
                                 UserRepository userRepository,
-                                ApplicationEventPublisher eventPublisher) {
+                                ApplicationEventPublisher eventPublisher,
+                                ActiviteRepository activiteRepository,
+                                MembreGroupeRepository membreGroupeRepository) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
         this.eventPublisher = eventPublisher;
+        this.activiteRepository = activiteRepository;
+        this.membreGroupeRepository = membreGroupeRepository;
     }
 
     // ─── Créer une notification ───────────────────────────────────────────────
@@ -38,6 +48,7 @@ public class NotificationService {
         creer(destinataire, titre, message, type, null);
     }
 
+    @Transactional
     public void creer(User destinataire, String titre, String message, String type, String lienAction) {
         if (destinataire != null && destinataire.getRole() == Role.SUPER_ADMIN) {
             return;
@@ -45,6 +56,11 @@ public class NotificationService {
         Notification notif = new Notification(destinataire, titre, message, type);
         notif.setLienAction(lienAction);
         notificationRepository.save(notif);
+        if (ActiviteLecture.notificationActivite(notif)) {
+            var lecteur = ActiviteLecture.lecteur(destinataire, destinataire.getRole() == Role.MEMBRE
+                    ? membreGroupeRepository.findByUserId(destinataire.getId()) : List.of());
+            if (!ActiviteLecture.notificationVisible(notif, lecteur, activiteRepository)) return;
+        }
         eventPublisher.publishEvent(new PushNotificationEvent(
                 destinataire.getId(),
                 titre,
@@ -55,31 +71,39 @@ public class NotificationService {
     }
 
     // ─── Mes notifications ────────────────────────────────────────────────────
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> mesNotifications(String email) {
         User user = requireNotificationUser(email);
 
-        return notificationRepository
-                .findByDestinataireIdOrderByDateCreationDesc(user.getId())
-                .stream()
+        return notificationsVisibles(user).stream()
                 .map(this::toMap)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public PagedResponse<Map<String, Object>> mesNotificationsPage(String email, int page, int size) {
         User user = requireNotificationUser(email);
 
-        return PagedResponse.fromPage(notificationRepository
-                .findByDestinataireId(
-                        user.getId(),
-                        PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation"))
-                )
-                .map(this::toMap));
+        var visibles = notificationsVisibles(user);
+        var pageable = PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation"));
+        int debut = (int) Math.min(pageable.getOffset(), visibles.size());
+        int fin = Math.min(debut + pageable.getPageSize(), visibles.size());
+        return PagedResponse.fromPage(new PageImpl<>(
+                visibles.subList(debut, fin).stream().map(this::toMap).toList(), pageable, visibles.size()));
+    }
+
+    private List<Notification> notificationsVisibles(User user) {
+        var lecteur = ActiviteLecture.lecteur(user, user.getRole() == Role.MEMBRE
+                ? membreGroupeRepository.findByUserId(user.getId()) : List.of());
+        return notificationRepository.findByDestinataireIdOrderByDateCreationDesc(user.getId()).stream()
+                .filter(n -> ActiviteLecture.notificationVisible(n, lecteur, activiteRepository)).toList();
     }
 
     // ─── Compter les non lues (badge) ─────────────────────────────────────────
+    @Transactional(readOnly = true)
     public long compterNonLues(String email) {
         User user = requireNotificationUser(email);
-        return notificationRepository.countByDestinataireIdAndLueFalse(user.getId());
+        return notificationsVisibles(user).stream().filter(n -> !n.isLue()).count();
     }
 
     // ─── Marquer une notification comme lue ──────────────────────────────────

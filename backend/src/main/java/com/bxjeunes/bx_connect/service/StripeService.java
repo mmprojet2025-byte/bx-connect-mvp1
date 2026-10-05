@@ -68,10 +68,7 @@ public class StripeService {
 
         verifierCibleUnique(request);
         if (request.getActiviteId() != null) {
-            activite = activiteRepository.findById(request.getActiviteId())
-                    .orElseThrow(() -> new RuntimeException("Activité introuvable"));
-            verifierActivitePayable(activite);
-            description = "Soutien activité : " + activite.getTitre();
+            throw new AccessDeniedException("Les paiements d'activité sont indisponibles dans cette version.");
         } else if (request.getProjetId() != null) {
             projet = projetRepository.findById(request.getProjetId())
                     .orElseThrow(() -> new RuntimeException("Projet introuvable"));

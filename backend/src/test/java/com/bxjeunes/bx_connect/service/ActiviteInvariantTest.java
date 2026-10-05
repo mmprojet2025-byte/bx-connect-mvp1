@@ -30,8 +30,8 @@ class ActiviteInvariantTest {
 
     @BeforeEach
     void setUp() {
-        activityService = new ActiviteService(activities, users, registrations, notifications, audit, mock(com.bxjeunes.bx_connect.repository.GroupeRepository.class));
-        registrationService = new InscriptionService(registrations, activities, users, notifications, audit);
+        activityService = new ActiviteService(activities, users, registrations, notifications, audit, mock(com.bxjeunes.bx_connect.repository.GroupeRepository.class), org.mockito.Mockito.mock(com.bxjeunes.bx_connect.repository.MembreGroupeRepository.class));
+        registrationService = new InscriptionService(registrations, activities, users, notifications, audit, org.mockito.Mockito.mock(com.bxjeunes.bx_connect.repository.MembreGroupeRepository.class));
         admin = new User(); admin.setId(1L); admin.setEmail("admin@test.invalid"); admin.setRole(Role.ADMIN);
     }
 

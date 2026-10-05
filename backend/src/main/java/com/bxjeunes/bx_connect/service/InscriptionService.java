@@ -1,5 +1,6 @@
 package com.bxjeunes.bx_connect.service;
 
+import com.bxjeunes.bx_connect.repository.MembreGroupeRepository;
 import com.bxjeunes.bx_connect.dto.InscriptionRequest;
 import com.bxjeunes.bx_connect.dto.InscriptionResponse;
 import com.bxjeunes.bx_connect.entity.*;
@@ -29,17 +30,20 @@ public class InscriptionService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
+    private final MembreGroupeRepository membreGroupeRepository;
 
     public InscriptionService(InscriptionRepository inscriptionRepository,
                                ActiviteRepository activiteRepository,
                                UserRepository userRepository,
                                NotificationService notificationService,
-                               AuditLogService auditLogService) {
+                               AuditLogService auditLogService,
+                               MembreGroupeRepository membreGroupeRepository) {
         this.inscriptionRepository = inscriptionRepository;
         this.activiteRepository = activiteRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
         this.auditLogService = auditLogService;
+        this.membreGroupeRepository = membreGroupeRepository;
     }
 
     // ─── S'inscrire à une activité (M06 CDC) ────────────────────────────────
@@ -54,6 +58,11 @@ public class InscriptionService {
         // 2. Récupérer l'activité
         Activite activite = activiteRepository.findByIdForUpdate(request.getActiviteId())
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + request.getActiviteId()));
+
+        if (activite.getVisibilite() == VisibiliteActivite.PRIVE_GROUPE
+                && !lecteur(membre).catalogue(activite)) {
+            throw new RuntimeException("Activité introuvable : " + request.getActiviteId());
+        }
 
         // 3. Vérifier que l'activité est publiée
         if (activite.getStatut() != StatutActivite.PUBLIEE) {
@@ -126,6 +135,7 @@ public class InscriptionService {
 
     // ─── Annuler son inscription (M12 CDC) ──────────────────────────────────
 
+    @Transactional
     public InscriptionResponse annuler(Long inscriptionId, String emailMembre) {
         Inscription inscription = inscriptionRepository.findById(inscriptionId)
                 .orElseThrow(() -> new RuntimeException("Inscription introuvable : " + inscriptionId));
@@ -151,43 +161,47 @@ public class InscriptionService {
                 nomStatut(ancienStatut),
                 nomStatut(inscriptionSauvee.getStatut()),
                 "Inscription activite annulee.");
-        return InscriptionResponse.fromEntity(inscriptionSauvee);
+        return InscriptionResponse.fromEntity(inscriptionSauvee,
+                lecteur(inscriptionSauvee.getMembre()).historique(inscriptionSauvee.getActivite()));
     }
 
     // ─── Consulter ses inscriptions (M11 CDC) ───────────────────────────────
 
+    @Transactional(readOnly = true)
     public List<InscriptionResponse> mesInscriptions(String emailMembre) {
         User membre = userRepository.findByEmail(emailMembre)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + emailMembre));
 
+        var lecteur = lecteur(membre);
         return inscriptionRepository
                 .findByMembreIdAndStatutNot(membre.getId(), StatutInscription.ANNULEE)
-                .stream()
+                .stream().filter(i -> lecteur.historique(i.getActivite()))
                 .map(InscriptionResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
     // ─── Consulter toutes les inscriptions d'une activité (R07 / admin) ─────
 
+    @Transactional(readOnly = true)
     public List<InscriptionResponse> inscriptionsParActivite(Long activiteId, String emailUtilisateur) {
         User utilisateur = userRepository.findByEmail(emailUtilisateur)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + emailUtilisateur));
         Activite activite = activiteRepository.findById(activiteId)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + activiteId));
 
-        if (utilisateur.getRole() == Role.REFERENT &&
-                (activite.getCreateur() == null ||
-                        !activite.getCreateur().getId().equals(utilisateur.getId()))) {
+        if (!ActiviteLecture.gestion(activite, utilisateur)) {
             throw new AccessDeniedException("Vous ne pouvez consulter que les inscriptions de vos propres activites.");
-        }
-        if (utilisateur.getRole() != Role.ADMIN && utilisateur.getRole() != Role.REFERENT) {
-            throw new AccessDeniedException("Acces reserve aux ADMIN et REFERENTS.");
         }
 
         return inscriptionRepository.findByActiviteId(activiteId)
                 .stream()
                 .map(InscriptionResponse::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    private ActiviteLecture.Lecteur lecteur(User user) {
+        return ActiviteLecture.lecteur(user, user.getRole() == Role.MEMBRE
+                ? membreGroupeRepository.findByUserId(user.getId()) : List.of());
     }
 
     private void auditerStatut(

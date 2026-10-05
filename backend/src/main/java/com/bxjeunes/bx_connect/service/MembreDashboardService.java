@@ -68,14 +68,17 @@ public class MembreDashboardService {
                 .filter(adhesion -> adhesion.getStatut() == StatutMembre.EN_ATTENTE)
                 .findFirst();
 
-        List<Inscription> inscriptions = inscriptionRepository.findByMembreId(membre.getId());
+        var lecteur = ActiviteLecture.lecteur(membre, adhesions);
+        List<Inscription> inscriptions = inscriptionRepository.findByMembreId(membre.getId()).stream()
+                .filter(i -> lecteur.historique(i.getActivite())).toList();
         List<Projet> projets = projetRepository.findByPorteurId(membre.getId());
         List<Notification> notifications = notificationRepository
-                .findByDestinataireIdOrderByDateCreationDesc(membre.getId());
+                .findByDestinataireIdOrderByDateCreationDesc(membre.getId()).stream()
+                .filter(n -> ActiviteLecture.notificationVisible(n, lecteur, activiteRepository)).toList();
 
         MembreDashboardResponse response = new MembreDashboardResponse();
         adhesionAcceptee.or(() -> adhesionEnAttente).ifPresent(adhesion -> {
-            response.setGroupe(toGroupeDashboard(adhesion));
+            response.setGroupe(toGroupeDashboard(adhesion, lecteur));
             response.setReferent(toReferentDashboard(adhesion.getGroupe()));
         });
         response.setMessagerieDisponible(adhesionAcceptee.isPresent());
@@ -101,7 +104,7 @@ public class MembreDashboardService {
         return response;
     }
 
-    private MembreDashboardResponse.GroupeDashboard toGroupeDashboard(MembreGroupe adhesion) {
+    private MembreDashboardResponse.GroupeDashboard toGroupeDashboard(MembreGroupe adhesion, ActiviteLecture.Lecteur lecteur) {
         Groupe groupe = adhesion.getGroupe();
         MembreDashboardResponse.GroupeDashboard dto = new MembreDashboardResponse.GroupeDashboard();
         dto.setId(groupe.getId());
@@ -110,7 +113,7 @@ public class MembreDashboardService {
         dto.setImageUrl(null);
         dto.setStatutAdhesion(adhesion.getStatut().name());
         dto.setNombreMembres((int) membreGroupeRepository.countByGroupeIdAndStatut(groupe.getId(), StatutMembre.ACCEPTE));
-        dto.setNombreActivitesAVenir(compterActivitesAVenir(groupe));
+        dto.setNombreActivitesAVenir(compterActivitesAVenir(groupe, lecteur));
         dto.setDateAdhesion(adhesion.getDateAdhesion());
         return dto;
     }
@@ -128,14 +131,14 @@ public class MembreDashboardService {
         return dto;
     }
 
-    private long compterActivitesAVenir(Groupe groupe) {
+    private long compterActivitesAVenir(Groupe groupe, ActiviteLecture.Lecteur lecteur) {
         if (groupe.getReferent() == null) {
             return 0;
         }
         LocalDateTime now = LocalDateTime.now();
         return activiteRepository
                 .findByCreateurIdAndStatut(groupe.getReferent().getId(), StatutActivite.PUBLIEE)
-                .stream()
+                .stream().filter(lecteur::catalogue)
                 .filter(activite -> activite.getDateDebut() != null && activite.getDateDebut().isAfter(now))
                 .count();
     }

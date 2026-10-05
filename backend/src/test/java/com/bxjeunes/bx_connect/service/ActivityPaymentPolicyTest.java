@@ -73,31 +73,30 @@ class ActivityPaymentPolicyTest {
     @Test
     void publishedPaidActivityIsRejectedByStripeBeforeProviderCall() throws Exception {
         PaiementRequest request = activityRequest();
-        when(activiteRepository.findById(10L)).thenReturn(Optional.of(activity(false, StatutActivite.PUBLIEE)));
 
         assertThatThrownBy(() -> stripeService.creerSessionCheckout(request))
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessage("Les paiements d'activité sont indisponibles dans cette version.");
         verify(stripeService, never()).creerSessionExterne(any());
         verify(soutienRepo, never()).save(any());
+        verify(activiteRepository, never()).findById(any());
     }
 
     @Test
     void publishedPaidActivityIsRejectedByPayPalBeforeProviderCall() throws Exception {
         PaiementRequest request = activityRequest();
-        when(activiteRepository.findById(10L)).thenReturn(Optional.of(activity(false, StatutActivite.PUBLIEE)));
 
         assertThatThrownBy(() -> payPalService.creerPaiement(request))
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessage("Les paiements d'activité sont indisponibles dans cette version.");
         verify(payPalService, never()).creerPaiementExterne(any());
         verify(soutienRepo, never()).save(any());
+        verify(activiteRepository, never()).findById(any());
     }
 
     @Test
     void unpublishedFreeActivityIsRejectedByBothServices() throws Exception {
         PaiementRequest request = activityRequest();
-        when(activiteRepository.findById(10L)).thenReturn(Optional.of(activity(true, StatutActivite.BROUILLON)));
 
         assertThatThrownBy(() -> stripeService.creerSessionCheckout(request))
                 .isInstanceOf(AccessDeniedException.class)
@@ -108,30 +107,31 @@ class ActivityPaymentPolicyTest {
         verify(stripeService, never()).creerSessionExterne(any());
         verify(payPalService, never()).creerPaiementExterne(any());
         verify(soutienRepo, never()).save(any());
+        verify(activiteRepository, never()).findById(any());
     }
 
     @Test
     void publishedFreeActivityIsRejectedByStripeBeforeProviderCall() throws Exception {
         PaiementRequest request = activityRequest();
-        when(activiteRepository.findById(10L)).thenReturn(Optional.of(activity(true, StatutActivite.PUBLIEE)));
 
         assertThatThrownBy(() -> stripeService.creerSessionCheckout(request))
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessage("Les paiements d'activité sont indisponibles dans cette version.");
         verify(stripeService, never()).creerSessionExterne(any());
         verify(soutienRepo, never()).save(any());
+        verify(activiteRepository, never()).findById(any());
     }
 
     @Test
     void publishedFreeActivityIsRejectedByPayPalBeforeProviderCall() throws Exception {
         PaiementRequest request = activityRequest();
-        when(activiteRepository.findById(10L)).thenReturn(Optional.of(activity(true, StatutActivite.PUBLIEE)));
 
         assertThatThrownBy(() -> payPalService.creerPaiement(request))
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessage("Les paiements d'activité sont indisponibles dans cette version.");
         verify(payPalService, never()).creerPaiementExterne(any());
         verify(soutienRepo, never()).save(any());
+        verify(activiteRepository, never()).findById(any());
     }
 
     @Test
@@ -153,6 +153,29 @@ class ActivityPaymentPolicyTest {
         assertThatNoException().isThrownBy(() -> stripeService.creerSessionCheckout(request));
         verify(stripeService).creerSessionExterne(any());
         verify(soutienRepo).save(any());
+    }
+
+    @Test
+    void privateActivityFinancialReadRejectsAnUnassignedReferentBeforeReturningSupports() {
+        User actor = new User(); actor.setId(1L); actor.setEmail("membre@example.test");
+        actor.setRole(com.bxjeunes.bx_connect.entity.Role.REFERENT);
+        when(userRepository.findByEmail(actor.getEmail())).thenReturn(Optional.of(actor));
+        Activite activity = activity(true, StatutActivite.PUBLIEE);
+        activity.setVisibilite(com.bxjeunes.bx_connect.entity.VisibiliteActivite.PRIVE_GROUPE);
+        activity.setCreateur(actor);
+        when(activiteRepository.findById(10L)).thenReturn(Optional.of(activity));
+        assertThatThrownBy(() -> payPalService.soutiensParActivite(10L)).hasMessage("Activité introuvable");
+        org.mockito.Mockito.verifyNoInteractions(soutienRepo);
+    }
+
+    @Test
+    void adminKeepsAuthorizedFinancialRead() {
+        User actor = new User(); actor.setId(1L); actor.setEmail("membre@example.test");
+        actor.setRole(com.bxjeunes.bx_connect.entity.Role.ADMIN);
+        when(userRepository.findByEmail(actor.getEmail())).thenReturn(Optional.of(actor));
+        when(activiteRepository.findById(10L)).thenReturn(Optional.of(activity(true, StatutActivite.PUBLIEE)));
+        assertThatNoException().isThrownBy(() -> payPalService.soutiensParActivite(10L));
+        verify(soutienRepo).findByActiviteId(10L);
     }
 
     private PaiementRequest activityRequest() {

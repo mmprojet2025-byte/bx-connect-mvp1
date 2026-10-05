@@ -1,5 +1,6 @@
 package com.bxjeunes.bx_connect.service;
 
+import com.bxjeunes.bx_connect.entity.VisibiliteActivite;
 import com.bxjeunes.bx_connect.dto.PresenceBulkRequest;
 import com.bxjeunes.bx_connect.dto.PresenceRequest;
 import com.bxjeunes.bx_connect.dto.PresenceResponse;
@@ -198,6 +199,10 @@ public class PresenceService {
     }
 
     private void verifierAccesReferent(User utilisateur, Activite activite) {
+        if (activite.getVisibilite() == VisibiliteActivite.PRIVE_GROUPE
+                && !ActiviteLecture.gestion(activite, utilisateur)) {
+            throw new AccessDeniedException("Activité introuvable.");
+        }
         if (utilisateur.getRole() != Role.REFERENT) {
             throw new AccessDeniedException("Acces reserve aux ADMIN et REFERENTS.");
         }

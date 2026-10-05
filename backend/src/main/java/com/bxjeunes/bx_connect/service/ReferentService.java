@@ -1,5 +1,6 @@
 package com.bxjeunes.bx_connect.service;
 
+import org.springframework.transaction.annotation.Transactional;
 import com.bxjeunes.bx_connect.dto.ActiviteResponse;
 import com.bxjeunes.bx_connect.dto.ProjetResponse;
 import com.bxjeunes.bx_connect.entity.*;
@@ -13,6 +14,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class ReferentService {
 
     private final UserRepository userRepository;
@@ -39,8 +41,8 @@ public class ReferentService {
                 .orElseThrow(() -> new RuntimeException("Référent introuvable"));
 
         List<ActiviteResponse> mesActivites = activiteRepository
-                .findByCreateurId(referent.getId())
-                .stream()
+                .findByCreateurIdOrReferentAssigneId(referent.getId(), referent.getId())
+                .stream().filter(a -> ActiviteLecture.gestion(a, referent))
                 .map(ActiviteResponse::fromEntity)
                 .collect(Collectors.toList());
 
@@ -70,8 +72,8 @@ public class ReferentService {
     public List<ActiviteResponse> mesActivites(String email) {
         User referent = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Référent introuvable"));
-        return activiteRepository.findByCreateurId(referent.getId())
-                .stream()
+        return activiteRepository.findByCreateurIdOrReferentAssigneId(referent.getId(), referent.getId())
+                .stream().filter(a -> ActiviteLecture.gestion(a, referent))
                 .map(ActiviteResponse::fromEntity)
                 .collect(Collectors.toList());
     }
@@ -81,7 +83,8 @@ public class ReferentService {
         User referent = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Référent introuvable"));
 
-        return activiteRepository.findByCreateurId(referent.getId()).stream()
+        return activiteRepository.findByCreateurIdOrReferentAssigneId(referent.getId(), referent.getId()).stream()
+                .filter(a -> ActiviteLecture.gestion(a, referent))
                 .map(a -> {
                     long inscrits = inscriptionRepository.findByActiviteId(a.getId()).size();
                     int capacite  = a.getCapaciteMax();
@@ -107,7 +110,7 @@ public class ReferentService {
         Activite activite = activiteRepository.findById(activiteId)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + activiteId));
 
-        if (activite.getCreateur() == null || !activite.getCreateur().getId().equals(referent.getId())) {
+        if (!ActiviteLecture.gestion(activite, referent)) {
             throw new AccessDeniedException("Vous ne pouvez exporter que les participants de vos propres activites.");
         }
 
@@ -153,7 +156,8 @@ public class ReferentService {
                 .orElseThrow(() -> new RuntimeException("Référent introuvable"));
 
         // Soutiens sur les activités du référent
-        return activiteRepository.findByCreateurId(referent.getId()).stream()
+        return activiteRepository.findByCreateurIdOrReferentAssigneId(referent.getId(), referent.getId()).stream()
+                .filter(a -> ActiviteLecture.gestion(a, referent))
                 .flatMap(a -> soutienRepository.findByActiviteId(a.getId()).stream()
                         .map(s -> {
                             Map<String, Object> m = new HashMap<>();

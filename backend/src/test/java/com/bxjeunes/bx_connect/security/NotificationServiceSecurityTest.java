@@ -43,7 +43,7 @@ class NotificationServiceSecurityTest {
         notificationService = new NotificationService(
                 notificationRepository,
                 userRepository,
-                eventPublisher);
+                eventPublisher, org.mockito.Mockito.mock(com.bxjeunes.bx_connect.repository.ActiviteRepository.class), org.mockito.Mockito.mock(com.bxjeunes.bx_connect.repository.MembreGroupeRepository.class));
     }
 
     @Test

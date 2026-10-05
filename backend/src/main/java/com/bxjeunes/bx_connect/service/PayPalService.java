@@ -1,5 +1,6 @@
 package com.bxjeunes.bx_connect.service;
 
+import org.springframework.transaction.annotation.Transactional;
 import com.bxjeunes.bx_connect.dto.PaiementRequest;
 import com.bxjeunes.bx_connect.dto.PaiementResponse;
 import com.bxjeunes.bx_connect.entity.*;
@@ -67,9 +68,7 @@ public class PayPalService {
         Projet projet = null;
         verifierCibleUnique(request);
         if (request.getActiviteId() != null) {
-            activite = activiteRepository.findById(request.getActiviteId())
-                    .orElseThrow(() -> new RuntimeException("Activité non trouvée"));
-            verifierActivitePayable(activite);
+            throw new AccessDeniedException("Les paiements d'activité sont indisponibles dans cette version.");
         } else {
             projet = projetRepository.findById(request.getProjetId())
                     .orElseThrow(() -> new RuntimeException("Projet non trouvé"));
@@ -193,7 +192,15 @@ public class PayPalService {
 
     // ─── Soutiens d'une activité (admin/référent) ─────────────────────────────
 
+    @Transactional(readOnly = true)
     public List<PaiementResponse> soutiensParActivite(Long activiteId) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        Activite activite = activiteRepository.findById(activiteId)
+                .orElseThrow(() -> new RuntimeException("Activité introuvable"));
+        if (!ActiviteLecture.gestion(activite, user)) {
+            throw new RuntimeException("Activité introuvable");
+        }
         return soutienRepo.findByActiviteId(activiteId)
                 .stream()
                 .map(PaiementResponse::fromEntity)

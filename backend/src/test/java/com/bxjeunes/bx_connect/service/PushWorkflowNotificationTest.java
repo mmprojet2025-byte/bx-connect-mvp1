@@ -62,7 +62,7 @@ class PushWorkflowNotificationTest {
                 notificationService,
                 auditLogService,
                 groupeRepository
-        ).changerStatut(8L, StatutActivite.PUBLIEE, com.bxjeunes.bx_connect.entity.VisibiliteActivite.PUBLIC, admin.getEmail());
+        , org.mockito.Mockito.mock(com.bxjeunes.bx_connect.repository.MembreGroupeRepository.class)).changerStatut(8L, StatutActivite.PUBLIEE, com.bxjeunes.bx_connect.entity.VisibiliteActivite.PUBLIC, admin.getEmail());
 
         verify(notificationService, never()).creer(
                 any(User.class),
@@ -94,7 +94,7 @@ class PushWorkflowNotificationTest {
                 userRepository,
                 notificationService,
                 auditLogService
-        ).inscrire(request, membre.getEmail());
+        , org.mockito.Mockito.mock(com.bxjeunes.bx_connect.repository.MembreGroupeRepository.class)).inscrire(request, membre.getEmail());
 
         verify(notificationService).creer(
                 membre,
@@ -123,7 +123,7 @@ class PushWorkflowNotificationTest {
                 userRepository,
                 notificationService,
                 auditLogService
-        );
+        , org.mockito.Mockito.mock(com.bxjeunes.bx_connect.repository.MembreGroupeRepository.class));
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.inscrire(request, membre.getEmail()))
                 .hasMessageContaining("payantes");

@@ -168,7 +168,7 @@ class ActiviteVisibilityMySqlTest {
         assertThat(inscriptions.findById(active.getId()).orElseThrow().getCommentairePresence()).isEqualTo("Historique");
         assertThat(inscriptions.findById(cancelled.getId()).orElseThrow().getDateAnnulation()).isEqualTo(previousCancellation);
         service.changerStatut(activity.getId(), StatutActivite.ANNULEE, null, "referent@test.invalid");
-        verify(notifications, times(3)).creer(any(User.class), eq("Activité annulée"), contains("Cancellation"), eq("ACTIVITE_ANNULEE"), eq("/dashboard"));
+        verify(notifications, times(3)).creer(any(User.class), eq("Activité annulée"), contains("Cancellation"), eq("ACTIVITE_ANNULEE"), eq("/activites/" + activity.getId()));
         assertThat(inscriptions.findByActiviteId(activity.getId())).hasSize(4);
     }
 
