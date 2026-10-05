@@ -218,6 +218,22 @@
     "see_projects": "Voir les projets"
   },
   "activities": {
+    "cancelledActivity": "Activité annulée",
+    "publication": {
+      "title": "Publier une activité",
+      "choose": "Choisissez qui peut voir cette activité",
+      "everyone": "Tout le monde",
+      "authenticated": "Utilisateurs connectés",
+      "everyoneHelp": "Visible également sans connexion.",
+      "authenticatedHelp": "Visible uniquement après connexion.",
+      "publish": "Publier",
+      "visibility": "Visibilité",
+      "success": "Activité publiée.",
+      "error": "Impossible de publier cette activité.",
+      "errorStatus": "Impossible de modifier le statut de cette activité.",
+      "finish": "Terminer",
+      "cancelActivity": "Annuler l’activité"
+    },
     "title": "Activités",
     "new_activity": "+ Nouvelle activité",
     "cancel": "Annuler",
@@ -2534,14 +2550,14 @@
   "presence": {
     "title": "Présences",
     "eyebrow": "Feuille de présence",
-    "description": "Encodez la participation réelle des inscrits à cette activité.",
+    "description": "Choisissez les présences, enregistrez vos modifications, puis validez la feuille complète.",
     "activityFallback": "Activité",
     "backToActivities": "Retour aux activités",
     "loading": "Chargement de la feuille de présence...",
-    "bulkActions": "Actions rapides",
+    "bulkActions": "Enregistrer puis valider",
     "attendanceRate": "Taux de présence",
     "commentPlaceholder": "Commentaire facultatif",
-    "sheetClosed": "Cette feuille de présence est clôturée. Les actions sont désactivées.",
+    "sheetClosed": "Cette feuille est déjà validée. Consultation uniquement.",
     "validatedAt": "Validée le {{date}}",
     "statuses": {
       "NON_RENSEIGNEE": "Non renseigné",
@@ -2561,7 +2577,7 @@
       "markAllPresent": "Tout marquer présent",
       "markAllAbsent": "Tout marquer absent",
       "resetAll": "Réinitialiser",
-      "closeSheet": "Clôturer la feuille"
+      "closeSheet": "Valider les présences"
     },
     "table": {
       "member": "Membre",
@@ -2572,19 +2588,26 @@
     "messages": {
       "saved": "Présence enregistrée.",
       "bulkSaved": "Présences mises à jour.",
-      "closed": "Feuille de présence clôturée."
+      "closed": "Présences validées. La feuille est en lecture seule."
     },
     "errors": {
       "loadTitle": "Impossible de charger les présences",
       "load": "Impossible de charger la feuille de présence.",
       "save": "Impossible d’enregistrer la présence.",
       "bulk": "Impossible de mettre à jour les présences.",
-      "close": "Impossible de clôturer la feuille de présence."
+      "close": "Impossible de valider les présences."
     },
     "empty": {
       "title": "Aucun inscrit",
       "description": "Cette activité n’a pas encore d’inscription à afficher."
-    }
+    },
+    "notStarted": "L’activité n’a pas encore commencé. Les présences ne peuvent pas encore être renseignées.",
+    "cancelled": "Cette activité est annulée. Les présences sont en lecture seule.",
+    "finished": "Cette activité est terminée. Les présences sont en lecture seule.",
+    "draft": "Les présences ne sont pas disponibles pour un brouillon.",
+    "unsaved": "Enregistrez les modifications avant de valider les présences",
+    "incomplete": "Renseignez et enregistrez toutes les présences actives avant de valider.",
+    "validation": "Validation"
   },
   "referentPartners": {
     "nav": "Mes partenaires",

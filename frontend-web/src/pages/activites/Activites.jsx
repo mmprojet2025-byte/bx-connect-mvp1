@@ -39,7 +39,7 @@ export default function Activites() {
 
   const [recherche, setRecherche] = useState('');
   const [filtreCategorie, setFiltreCategorie] = useState('');
-  const [filtreGratuite, setFiltreGratuite] = useState('');
+  const [filtersApplied, setFiltersApplied] = useState(false);
   const [options, setOptions] = useState({ categories: [], themes: [], lieux: [] });
   const [actionLoading, setActionLoading] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
@@ -104,10 +104,12 @@ export default function Activites() {
       const params = new URLSearchParams();
       if (recherche)       params.append('q', recherche);
       if (filtreCategorie) params.append('categorie', filtreCategorie);
-      if (filtreGratuite !== '') params.append('gratuite', filtreGratuite);
+
 
       const res = await api.get(`/activites/filtrer?${params.toString()}`);
       setActivites(res.data);
+      setFiltersApplied(Boolean(recherche.trim() || filtreCategorie));
+      setError('');
     } catch {
       setError(t('activities.error_load'));
     } finally {
@@ -117,7 +119,8 @@ export default function Activites() {
 
   const handleReset = () => {
     setRecherche(''); setFiltreCategorie('');
-    setFiltreGratuite('');
+    setFiltersApplied(false);
+    setLoading(true);
     setNearbyMode(false);
     fetchActivites({ t, setActivites, setError, setLoading });
   };
@@ -309,12 +312,14 @@ export default function Activites() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
             <input
               type="text"
+              aria-label={t('activities.search_placeholder')}
               placeholder={t('activities.search_placeholder')}
               value={recherche}
               onChange={e => setRecherche(e.target.value)}
               className="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
             <select
+              aria-label={t('activities.all_categories')}
               value={filtreCategorie}
               onChange={e => setFiltreCategorie(e.target.value)}
               className="border border-gray-300 rounded-lg px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -322,15 +327,7 @@ export default function Activites() {
               <option value="">{t('activities.all_categories')}</option>
               {options.categories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <select
-              value={filtreGratuite}
-              onChange={e => setFiltreGratuite(e.target.value)}
-              className="border border-gray-300 rounded-lg px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-            >
-              <option value="">{t('activities.free_and_paid')}</option>
-              <option value="true">{t('activities.free_only')}</option>
-              <option value="false">{t('activities.paid_only')}</option>
-            </select>
+
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <button
@@ -359,6 +356,14 @@ export default function Activites() {
             description={error || t('common.loadErrorDescription')}
             actionLabel={t('common.retry')}
             action={() => fetchActivites({ t, setActivites, setError, setLoading })}
+          />
+        ) : activites.length === 0 && filtersApplied ? (
+          <EmptyState
+            icon="Search"
+            title={t('activities.noFilteredActivities')}
+            description={t('activities.noFilteredActivitiesDesc')}
+            actionLabel={t('activities.reset_filters')}
+            action={handleReset}
           />
         ) : activites.length === 0 ? (
           <EmptyState

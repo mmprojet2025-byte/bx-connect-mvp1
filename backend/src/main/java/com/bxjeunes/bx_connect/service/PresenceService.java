@@ -7,6 +7,7 @@ import com.bxjeunes.bx_connect.entity.Activite;
 import com.bxjeunes.bx_connect.entity.Inscription;
 import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.StatutInscription;
+import com.bxjeunes.bx_connect.entity.StatutActivite;
 import com.bxjeunes.bx_connect.entity.StatutPresence;
 import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.repository.ActiviteRepository;
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -57,7 +59,7 @@ public class PresenceService {
                 .toList();
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public PresenceResponse modifierPresence(
             Long activiteId,
             Long inscriptionId,
@@ -65,8 +67,9 @@ public class PresenceService {
             String emailUtilisateur) {
         User utilisateur = utilisateur(emailUtilisateur);
         refuserSuperAdmin(utilisateur);
-        Activite activite = activite(activiteId);
+        Activite activite = activiteVerrouillee(activiteId);
         verifierAccesGestion(utilisateur, activite);
+        verifierFeuilleModifiable(activite);
 
         Inscription inscription = inscriptionRepository.findByIdAndActiviteId(inscriptionId, activiteId)
                 .orElseThrow(() -> new RuntimeException("Inscription introuvable pour cette activite : " + inscriptionId));
@@ -76,15 +79,16 @@ public class PresenceService {
         return PresenceResponse.fromEntity(sauvegardee);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public List<PresenceResponse> modifierPresencesBulk(
             Long activiteId,
             PresenceBulkRequest request,
             String emailUtilisateur) {
         User utilisateur = utilisateur(emailUtilisateur);
         refuserSuperAdmin(utilisateur);
-        Activite activite = activite(activiteId);
+        Activite activite = activiteVerrouillee(activiteId);
         verifierAccesGestion(utilisateur, activite);
+        verifierFeuilleModifiable(activite);
 
         List<PresenceResponse> responses = new ArrayList<>();
         for (PresenceBulkRequest.PresenceBulkItemRequest item : request.getPresences()) {
@@ -100,17 +104,25 @@ public class PresenceService {
         return responses;
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public List<PresenceResponse> cloturerPresences(Long activiteId, String emailUtilisateur) {
         User utilisateur = utilisateur(emailUtilisateur);
         refuserSuperAdmin(utilisateur);
-        Activite activite = activite(activiteId);
+        Activite activite = activiteVerrouillee(activiteId);
         verifierAccesGestion(utilisateur, activite);
+        verifierFeuilleModifiable(activite);
 
         LocalDateTime maintenant = LocalDateTime.now();
-        List<Inscription> inscriptions = inscriptionRepository.findByActiviteId(activiteId);
-        List<PresenceResponse> responses = inscriptions.stream()
+        List<Inscription> inscriptions = inscriptionRepository.findByActiviteId(activiteId).stream()
                 .filter(inscription -> inscription.getStatut() != StatutInscription.ANNULEE)
+                .toList();
+        if (inscriptions.isEmpty()) {
+            throw new IllegalArgumentException("Aucune inscription active à valider.");
+        }
+        if (inscriptions.stream().anyMatch(inscription -> inscription.getStatutPresence() == StatutPresence.NON_RENSEIGNEE)) {
+            throw new IllegalArgumentException("Renseignez et enregistrez toutes les présences actives avant de valider.");
+        }
+        List<PresenceResponse> responses = inscriptions.stream()
                 .map(inscription -> {
                     inscription.setPresenceValideePar(utilisateur);
                     inscription.setDateValidationPresence(maintenant);
@@ -131,8 +143,6 @@ public class PresenceService {
         inscription.setCommentairePresence(normaliserCommentaire(request.getCommentairePresence()));
         inscription.setPresenceEncodeePar(utilisateur);
         inscription.setDatePresence(LocalDateTime.now());
-        inscription.setPresenceValideePar(null);
-        inscription.setDateValidationPresence(null);
 
         auditerModification(utilisateur, inscription, ancienStatut, inscription.getStatutPresence());
     }
@@ -145,6 +155,26 @@ public class PresenceService {
     private Activite activite(Long activiteId) {
         return activiteRepository.findById(activiteId)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + activiteId));
+    }
+
+    private Activite activiteVerrouillee(Long activiteId) {
+        return activiteRepository.findByIdForUpdate(activiteId)
+                .orElseThrow(() -> new RuntimeException("Activité introuvable : " + activiteId));
+    }
+
+    private void verifierFeuilleModifiable(Activite activite) {
+        if (activite.getStatut() != StatutActivite.PUBLIEE) {
+            throw new IllegalArgumentException("Les présences ne sont modifiables que pour une activité publiée ayant commencé.");
+        }
+        if (activite.getDateDebut() == null || activite.getDateDebut().isAfter(LocalDateTime.now())) {
+            throw new IllegalArgumentException("L'activité n'a pas encore commencé.");
+        }
+        // Les marqueurs existants suffisent : aucune réouverture normale, même sur une ancienne feuille partielle.
+        if (inscriptionRepository.findByActiviteId(activite.getId()).stream()
+                .filter(inscription -> inscription.getStatut() != StatutInscription.ANNULEE)
+                .anyMatch(inscription -> inscription.getDateValidationPresence() != null)) {
+            throw new IllegalArgumentException("Cette feuille de présence est déjà validée et reste en lecture seule.");
+        }
     }
 
     private void refuserSuperAdmin(User utilisateur) {

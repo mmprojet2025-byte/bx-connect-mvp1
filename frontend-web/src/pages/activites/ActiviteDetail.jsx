@@ -16,10 +16,13 @@ import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 
 async function fetchActivite({ id, t, setActivite, setError, setLoading }) {
+  setLoading(true);
+  setError('');
   try {
     const res = await api.get(`/activites/${id}`);
     setActivite(res.data);
   } catch {
+    setActivite(null);
     setError(t('activities.not_found'));
   } finally {
     setLoading(false);

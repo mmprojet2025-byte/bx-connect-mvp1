@@ -13,6 +13,10 @@ import EmptyState from '../../components/ui/EmptyState';
 import ErrorState from '../../components/ui/ErrorState';
 import LoadingState from '../../components/ui/LoadingState';
 
+import ActivityPublicationDialog from '../../components/ActivityPublicationDialog';
+import ActivityVisibility from '../../components/ActivityVisibility';
+
+const TRANSITIONS = { BROUILLON: ['PUBLIEE', 'ANNULEE'], PUBLIEE: ['TERMINEE', 'ANNULEE'], TERMINEE: [], ANNULEE: [] };
 const STATUTS = ['BROUILLON', 'PUBLIEE', 'ANNULEE', 'TERMINEE'];
 const emptyForm = {
   titre: '',
@@ -55,6 +59,7 @@ export default function AdminActivites() {
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [publishingActivity, setPublishingActivity] = useState(null);
   const [selectedActivity, setSelectedActivity] = useState(null);
 
   useEffect(() => {
@@ -133,6 +138,10 @@ export default function AdminActivites() {
   };
 
   const changerStatut = async (id, statut) => {
+    if (statut === 'PUBLIEE' && activites.find(activity => activity.id === id)?.statut === 'BROUILLON') {
+      setPublishingActivity(activites.find(activity => activity.id === id));
+      return;
+    }
     if (!confirmSensitiveAction(t('admin.confirmActivityStatusChange', {
       status: t(`statuses.${statut}`, { defaultValue: statut }),
     }))) return;
@@ -279,6 +288,7 @@ export default function AdminActivites() {
               <AppIcon name="Search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
+                aria-label={t('admin.searchActivityPlaceholder')}
                 placeholder={t('admin.searchActivityPlaceholder')}
                 value={recherche}
                 onChange={e => { setRecherche(e.target.value); setMessage(''); setError(''); }}
@@ -286,7 +296,7 @@ export default function AdminActivites() {
               />
             </label>
             <select
-              value={filtreStatut}
+              aria-label={t('users.status')} value={filtreStatut}
               onChange={e => setFiltreStatut(e.target.value)}
               className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
@@ -294,7 +304,7 @@ export default function AdminActivites() {
               {STATUTS.map(s => <option key={s} value={s}>{t(`statuses.${s}`, { defaultValue: s })}</option>)}
             </select>
             <select
-              value={filtreCategorie}
+              aria-label={t('activities.all_categories')} value={filtreCategorie}
               onChange={e => setFiltreCategorie(e.target.value)}
               className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
@@ -356,7 +366,7 @@ export default function AdminActivites() {
                       <div>
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <p className="text-xs text-gray-400">{t('users.status')}</p>
-                          <StatusBadge status={a.statut}>{t(`statuses.${a.statut}`, { defaultValue: a.statut })}</StatusBadge>
+                          <StatusBadge status={a.statut}>{t(`statuses.${a.statut}`, { defaultValue: a.statut })}</StatusBadge><ActivityVisibility activity={a} />
                         </div>
                       </div>
 
@@ -393,10 +403,11 @@ export default function AdminActivites() {
                               {t('users.status')}
                               <select
                                 value={a.statut}
+                    disabled={!(TRANSITIONS[a.statut] || []).length}
                                 onChange={e => changerStatut(a.id, e.target.value)}
                                 className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
                               >
-                                {STATUTS.map(s => (
+                                {[a.statut, ...(TRANSITIONS[a.statut] || [])].map(s => (
                                   <option key={s} value={s}>{t(`statuses.${s}`, { defaultValue: s })}</option>
                                 ))}
                               </select>
@@ -472,7 +483,7 @@ export default function AdminActivites() {
                           <FollowUpBadge followUp={activityFollowUp(a, t)} />
                         </td>
                         <td className="px-3 py-2">
-                          <StatusBadge status={a.statut}>{t(`statuses.${a.statut}`, { defaultValue: a.statut })}</StatusBadge>
+                          <StatusBadge status={a.statut}>{t(`statuses.${a.statut}`, { defaultValue: a.statut })}</StatusBadge><ActivityVisibility activity={a} />
                         </td>
                         <td className="px-3 py-2">
                           <div className="flex flex-wrap gap-2">
@@ -508,10 +519,11 @@ export default function AdminActivites() {
                                   {t('users.status')}
                                   <select
                                     value={a.statut}
+                    disabled={!(TRANSITIONS[a.statut] || []).length}
                                     onChange={e => changerStatut(a.id, e.target.value)}
                                     className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
                                   >
-                                    {STATUTS.map(s => (
+                                    {[a.statut, ...(TRANSITIONS[a.statut] || [])].map(s => (
                                       <option key={s} value={s}>{t(`statuses.${s}`, { defaultValue: s })}</option>
                                     ))}
                                   </select>
@@ -539,6 +551,13 @@ export default function AdminActivites() {
         )}
       </main>
 
+      {publishingActivity && <ActivityPublicationDialog activity={publishingActivity} onClose={() => setPublishingActivity(null)} onPublished={updated => {
+        setActivites(current => current.map(item => item.id === updated.id ? updated : item));
+        setSelectedActivity(current => current?.id === updated.id ? updated : current);
+        setPublishingActivity(null);
+        setError('');
+        setMessage(t('activities.publication.success'));
+      }} />}
       {selectedActivity && (
         <ActivityFollowUpDrawer
           activity={selectedActivity}
@@ -602,6 +621,7 @@ function ActivityFollowUpDrawer({ activity, t, language, onClose, onEdit, onStat
           <div className="mb-4 grid grid-cols-2 gap-2">
             <DrawerMetric label={t('admin.responsible')} value={activityResponsible(activity, t)} icon="User" />
             <DrawerMetric label={t('users.status')} value={t(`statuses.${activity.statut}`, { defaultValue: activity.statut })} icon="CheckCircle" />
+            <ActivityVisibility activity={activity} />
             <DrawerMetric label={t('admin.participation')} value={participationLabel(activity, t) || '—'} icon="Users" />
             <DrawerMetric label={t('admin.followUp')} value={followUp.label} icon="ClipboardList" />
           </div>
@@ -640,10 +660,11 @@ function ActivityFollowUpDrawer({ activity, t, language, onClose, onEdit, onStat
                   {t('users.status')}
                   <select
                     value={activity.statut}
+                    disabled={!(TRANSITIONS[activity.statut] || []).length}
                     onChange={e => onStatusChange(activity.id, e.target.value)}
                     className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   >
-                    {STATUTS.map(s => (
+                    {[activity.statut, ...(TRANSITIONS[activity.statut] || [])].map(s => (
                       <option key={s} value={s}>{t(`statuses.${s}`, { defaultValue: s })}</option>
                     ))}
                   </select>

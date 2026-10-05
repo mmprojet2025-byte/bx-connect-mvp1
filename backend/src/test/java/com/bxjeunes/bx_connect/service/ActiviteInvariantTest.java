@@ -58,7 +58,7 @@ class ActiviteInvariantTest {
     void legacyPaidPricingIsImmutableButGeneralFieldsMayChange() {
         Activite paid = activity(false); paid.setPrix(BigDecimal.TEN);
         ActiviteRequest request = validRequest(); request.setGratuite(false); request.setPrix(BigDecimal.TEN);
-        when(activities.findById(3L)).thenReturn(Optional.of(paid));
+        when(activities.findByIdForUpdate(3L)).thenReturn(Optional.of(paid));
         when(users.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
         when(activities.save(paid)).thenReturn(paid);
         activityService.modifier(3L, request, admin.getEmail());
@@ -81,9 +81,9 @@ class ActiviteInvariantTest {
     @Test
     void terminalStatusCannotTransition() {
         Activite activity = activity(true); activity.setStatut(StatutActivite.ANNULEE);
-        when(activities.findById(3L)).thenReturn(Optional.of(activity));
+        when(activities.findByIdForUpdate(3L)).thenReturn(Optional.of(activity));
         when(users.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
-        assertThatThrownBy(() -> activityService.changerStatut(3L, StatutActivite.PUBLIEE, admin.getEmail()))
+        assertThatThrownBy(() -> activityService.changerStatut(3L, StatutActivite.PUBLIEE, VisibiliteActivite.PUBLIC, admin.getEmail()))
                 .hasMessageContaining("non autorisée");
     }
 

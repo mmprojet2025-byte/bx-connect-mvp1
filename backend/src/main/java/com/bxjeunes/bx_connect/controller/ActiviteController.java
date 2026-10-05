@@ -8,6 +8,7 @@ import com.bxjeunes.bx_connect.dto.PresenceBulkRequest;
 import com.bxjeunes.bx_connect.dto.PresenceRequest;
 import com.bxjeunes.bx_connect.dto.PresenceResponse;
 import com.bxjeunes.bx_connect.entity.StatutActivite;
+import com.bxjeunes.bx_connect.entity.VisibiliteActivite;
 import com.bxjeunes.bx_connect.service.ActiviteService;
 import com.bxjeunes.bx_connect.service.PresenceService;
 import jakarta.validation.Valid;
@@ -91,8 +92,8 @@ public class ActiviteController {
 
     // ─── PUBLIC : Options de filtres (catégories, thèmes, lieux) ─────────────
     @GetMapping("/options-filtres")
-    public ResponseEntity<Map<String, List<String>>> getOptionsFiltres() {
-        return ResponseEntity.ok(activiteService.getOptionsFiltre());
+    public ResponseEntity<Map<String, List<String>>> getOptionsFiltres(Authentication authentication) {
+        return ResponseEntity.ok(activiteService.getOptionsFiltre(emailConnecte(authentication)));
     }
 
     // ─── ADMIN/REFERENT : Lister toutes les activités ────────────────────────
@@ -143,8 +144,9 @@ public class ActiviteController {
     public ResponseEntity<ActiviteResponse> changerStatut(
             @PathVariable Long id,
             @RequestParam StatutActivite statut,
+            @RequestParam(required = false) VisibiliteActivite visibilite,
             Authentication authentication) {
-        return ResponseEntity.ok(activiteService.changerStatut(id, statut, authentication.getName()));
+        return ResponseEntity.ok(activiteService.changerStatut(id, statut, visibilite, authentication.getName()));
     }
 
     // ─── ADMIN/REFERENT : Supprimer une activité (R03 / A06) ─────────────────

@@ -108,14 +108,6 @@ function PublicOrMembreRoute({ children }) {
   return children
 }
 
-function ActivityCatalogRoute({ children }) {
-  const { isAuthenticated, isMembre, isAdmin, isReferent, isSuperAdmin, user } = useAuth()
-  if (isAuthenticated && !isMembre && !isAdmin && !isReferent && !isSuperAdmin) {
-    return <Navigate to={getDefaultRouteForRole(user?.role)} replace />
-  }
-  return children
-}
-
 function PublicOnlyRoute({ children }) {
   const { isAuthenticated, user } = useAuth()
   if (isAuthenticated) return <Navigate to={getDefaultRouteForRole(user?.role)} replace />
@@ -208,8 +200,8 @@ export default function App() {
           <Route path="/mot-de-passe-oublie" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
           <Route path="/forgot-password" element={<Navigate to="/mot-de-passe-oublie" replace />} />
           <Route path="/reinitialiser-mot-de-passe" element={<ResetPassword />} />
-          <Route path="/activites"     element={<SuperAdminExcludedRoute><ActivityCatalogRoute><Activites /></ActivityCatalogRoute></SuperAdminExcludedRoute>} />
-          <Route path="/activites/:id" element={<SuperAdminExcludedRoute><ActivityCatalogRoute><ActiviteDetail /></ActivityCatalogRoute></SuperAdminExcludedRoute>} />
+          <Route path="/activites"     element={<Activites key={user?.email || user?.role || 'visitor'} />} />
+          <Route path="/activites/:id" element={<ActiviteDetail key={user?.email || user?.role || 'visitor'} />} />
           <Route path="/groupes"       element={<SuperAdminExcludedRoute><PublicOrMembreRoute><Groupes /></PublicOrMembreRoute></SuperAdminExcludedRoute>} />
           <Route path="/groupes/:id"   element={<SuperAdminExcludedRoute><GroupeEspace /></SuperAdminExcludedRoute>} />
           <Route path="/projets/:id"   element={<SuperAdminExcludedRoute><Projets /></SuperAdminExcludedRoute>} />

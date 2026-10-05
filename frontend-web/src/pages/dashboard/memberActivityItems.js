@@ -12,7 +12,9 @@ export function buildMemberActivityItems({ dashboard, groupe, t, language }) {
     key: `inscription-${inscription.id || inscription.activiteId || inscription.titre}`,
     icon: 'Calendar',
     title: inscription.titre || inscription.activiteTitre || t('memberDashboard.activities.title'),
-    description: (inscription.activiteDateDebut || inscription.dateDebut)
+    description: inscription.activiteStatut === 'ANNULEE'
+      ? t('activities.cancelledActivity')
+      : (inscription.activiteDateDebut || inscription.dateDebut)
       ? t('activityFeed.activityDate', { date: new Date(inscription.activiteDateDebut || inscription.dateDebut).toLocaleDateString(language || 'fr-BE') })
       : t('memberDashboard.activities.dateToConfirm'),
     date: inscription.dateInscription || inscription.dateCreation || inscription.activiteDateDebut || inscription.dateDebut,

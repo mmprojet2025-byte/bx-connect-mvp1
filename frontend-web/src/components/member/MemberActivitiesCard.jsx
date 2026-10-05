@@ -24,7 +24,9 @@ export default function MemberActivitiesCard({ inscriptions = [] }) {
                     {inscription.activiteLieu ? ` · ${inscription.activiteLieu}` : ''}
                   </p>
                 </div>
-                <StatusBadge statut={inscription.statut} t={t} />
+                {inscription.activiteStatut === 'ANNULEE'
+                  ? <span className="h-fit whitespace-nowrap rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">{t('activities.cancelledActivity')}</span>
+                  : <StatusBadge statut={inscription.statut} t={t} />}
               </div>
             </li>
           ))}

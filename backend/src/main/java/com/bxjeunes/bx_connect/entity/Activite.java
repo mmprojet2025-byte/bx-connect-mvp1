@@ -52,6 +52,10 @@ public class Activite {
     @Column(nullable = false)
     private StatutActivite statut = StatutActivite.BROUILLON;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private VisibiliteActivite visibilite = VisibiliteActivite.PUBLIC;
+
     @Column(length = 100)
     private String categorie;
 
@@ -112,6 +116,9 @@ public class Activite {
 
     public StatutActivite getStatut() { return statut; }
     public void setStatut(StatutActivite statut) { this.statut = statut; }
+
+    public VisibiliteActivite getVisibilite() { return visibilite; }
+    public void setVisibilite(VisibiliteActivite visibilite) { this.visibilite = visibilite; }
 
     public String getCategorie() { return categorie; }
     public void setCategorie(String categorie) { this.categorie = categorie; }

@@ -9,7 +9,7 @@ export function getOpenPartnerProjects() {
 }
 
 export function getOpenPartnerActivities() {
-  return api.get('/partenaire/activites-ouvertes');
+  return api.get('/activites');
 }
 
 export function getPartnerProfile() {

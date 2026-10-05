@@ -143,7 +143,7 @@ function MemberPrioritySection({ groupe, inscriptions, notifications, projets, t
   const hasGroup = !!groupe
   const unreadNotifications = notifications.filter(notification => !notification.lue).length
   const paymentPending = inscriptions.find(inscription => inscription.statut === 'EN_ATTENTE_PAIEMENT')
-  const imminentInscription = inscriptions.find(inscription => inscription.statut !== 'EN_ATTENTE_PAIEMENT' && isImminentInscription(inscription))
+  const imminentInscription = inscriptions.find(inscription => ['CONFIRMEE', 'PAYEE'].includes(inscription.statut) && inscription.activiteStatut !== 'ANNULEE' && isImminentInscription(inscription))
   const projectNeedingAction = projets.find(projet => ['BROUILLON', 'REFUSE_REFERENT', 'REJETE'].includes(projet.statut))
   const priorities = [
     !hasGroup && {

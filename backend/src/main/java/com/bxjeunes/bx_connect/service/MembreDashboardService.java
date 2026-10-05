@@ -146,6 +146,7 @@ public class MembreDashboardService {
         dto.setStatut(inscription.getStatut());
         Activite activite = inscription.getActivite();
         if (activite != null) {
+            dto.setActiviteStatut(activite.getStatut());
             dto.setActiviteId(activite.getId());
             dto.setActiviteTitre(activite.getTitre());
             dto.setActiviteLieu(activite.getLieu());

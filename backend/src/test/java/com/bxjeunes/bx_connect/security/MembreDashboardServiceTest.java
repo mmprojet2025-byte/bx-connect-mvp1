@@ -120,6 +120,29 @@ class MembreDashboardServiceTest {
                 .isInstanceOf(AccessDeniedException.class);
     }
 
+    @Test
+    void dashboard_preserve_inscription_et_statut_activite_annulee() {
+        var activite = new com.bxjeunes.bx_connect.entity.Activite();
+        activite.setId(42L);
+        activite.setTitre("Atelier annulé");
+        activite.setStatut(com.bxjeunes.bx_connect.entity.StatutActivite.ANNULEE);
+        Inscription inscription = new Inscription();
+        inscription.setId(100L);
+        inscription.setMembre(membre);
+        inscription.setActivite(activite);
+        inscription.setStatut(StatutInscription.ANNULEE);
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        when(inscriptionRepository.findByMembreId(membre.getId())).thenReturn(List.of(inscription));
+
+        var response = membreDashboardService.dashboard(membre.getEmail());
+
+        assertThat(response.getInscriptions()).hasSize(1);
+        var historique = response.getInscriptions().getFirst();
+        assertThat(historique.getActiviteTitre()).isEqualTo("Atelier annulé");
+        assertThat(historique.getStatut()).isEqualTo(StatutInscription.ANNULEE);
+        assertThat(historique.getActiviteStatut()).isEqualTo(com.bxjeunes.bx_connect.entity.StatutActivite.ANNULEE);
+    }
+
     private User user(Long id, String email, Role role) {
         User user = new User();
         user.setId(id);

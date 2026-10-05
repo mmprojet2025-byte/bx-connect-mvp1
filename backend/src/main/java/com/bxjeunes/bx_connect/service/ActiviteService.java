@@ -8,6 +8,7 @@ import com.bxjeunes.bx_connect.entity.Activite;
 import com.bxjeunes.bx_connect.entity.Inscription;
 import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.StatutActivite;
+import com.bxjeunes.bx_connect.entity.VisibiliteActivite;
 import com.bxjeunes.bx_connect.entity.StatutInscription;
 import com.bxjeunes.bx_connect.entity.User;
 import com.bxjeunes.bx_connect.repository.ActiviteRepository;
@@ -19,6 +20,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
@@ -89,17 +92,17 @@ public class ActiviteService {
     public List<ActiviteResponse> listerPubliees(String emailUtilisateur) {
         return activiteRepository.findByStatut(StatutActivite.PUBLIEE)
                 .stream()
+                .filter(activite -> estPublieeVisible(activite, emailUtilisateur))
                 .map(activite -> toResponse(activite, emailUtilisateur))
                 .collect(Collectors.toList());
     }
 
     public PagedResponse<ActiviteResponse> listerPublieesPage(String emailUtilisateur, int page, int size) {
-        return PagedResponse.fromPage(activiteRepository
-                .findByStatut(
-                        StatutActivite.PUBLIEE,
-                        PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation"))
-                )
-                .map(activite -> toResponse(activite, emailUtilisateur)));
+        var pageable = PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation"));
+        var activites = emailUtilisateur == null
+                ? activiteRepository.findByStatutAndVisibilite(StatutActivite.PUBLIEE, VisibiliteActivite.PUBLIC, pageable)
+                : activiteRepository.findByStatut(StatutActivite.PUBLIEE, pageable);
+        return PagedResponse.fromPage(activites.map(activite -> toResponse(activite, emailUtilisateur)));
     }
 
     // ─── Lister toutes les activités (admin/référent) ─────────────────────────
@@ -122,7 +125,7 @@ public class ActiviteService {
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
 
         if (emailUtilisateur == null) {
-            if (activite.getStatut() != StatutActivite.PUBLIEE) {
+            if (!estPublieeVisible(activite, null)) {
                 throw new RuntimeException("Activité introuvable : " + id);
             }
             return toResponse(activite, null);
@@ -140,7 +143,6 @@ public class ActiviteService {
                     activite.getCreateur().getId().equals(utilisateur.getId())) {
                 return toResponse(activite, emailUtilisateur);
             }
-            throw new AccessDeniedException("Vous ne pouvez consulter que vos propres activites.");
         }
 
         if (activite.getStatut() != StatutActivite.PUBLIEE) {
@@ -154,77 +156,41 @@ public class ActiviteService {
         return activiteRepository
                 .rechercherMultiChamps(StatutActivite.PUBLIEE, motCle)
                 .stream()
+                .filter(activite -> estPublieeVisible(activite, emailUtilisateur))
                 .map(activite -> toResponse(activite, emailUtilisateur))
                 .collect(Collectors.toList());
     }
 
     // ─── Filtres avancés (V03) ────────────────────────────────────────────────
     public List<ActiviteResponse> filtrer(ActiviteFiltreRequest filtre, String emailUtilisateur) {
-        List<Activite> resultats;
-
-        // Recherche mot-clé multi-champs
-        if (filtre.getQ() != null && !filtre.getQ().isBlank()) {
-            resultats = activiteRepository.rechercherMultiChamps(
-                StatutActivite.PUBLIEE, filtre.getQ().trim()
-            );
-        }
-        // Filtre par date
-        else if (filtre.getDateDebut() != null && filtre.getDateFin() != null) {
-            resultats = activiteRepository.findByStatutAndDateDebutBetween(
-                StatutActivite.PUBLIEE,
-                filtre.getDateDebut(),
-                filtre.getDateFin()
-            );
-        }
-        // Filtre catégorie + thème
-        else if (filtre.getCategorie() != null && filtre.getTheme() != null) {
-            resultats = activiteRepository.findByStatutAndCategorieAndTheme(
-                StatutActivite.PUBLIEE,
-                filtre.getCategorie(),
-                filtre.getTheme()
-            );
-        }
-        // Filtre catégorie seule
-        else if (filtre.getCategorie() != null) {
-            resultats = activiteRepository.findByStatutAndCategorie(
-                StatutActivite.PUBLIEE, filtre.getCategorie()
-            );
-        }
-        // Filtre thème seul
-        else if (filtre.getTheme() != null) {
-            resultats = activiteRepository.findByStatutAndTheme(
-                StatutActivite.PUBLIEE, filtre.getTheme()
-            );
-        }
-        // Filtre lieu
-        else if (filtre.getLieu() != null && !filtre.getLieu().isBlank()) {
-            resultats = activiteRepository.findByStatutAndLieuContainingIgnoreCase(
-                StatutActivite.PUBLIEE, filtre.getLieu()
-            );
-        }
-        // Filtre gratuit/payant
-        else if (filtre.getGratuite() != null) {
-            resultats = activiteRepository.findByStatutAndGratuite(
-                StatutActivite.PUBLIEE, filtre.getGratuite()
-            );
-        }
-        // Aucun filtre → toutes les publiées
-        else {
-            resultats = activiteRepository.findByStatut(StatutActivite.PUBLIEE);
-        }
+        List<Activite> resultats = activiteRepository.filtrerCombines(
+                StatutActivite.PUBLIEE, critereTexte(filtre.getQ()), critereTexte(filtre.getCategorie()),
+                critereTexte(filtre.getTheme()), critereTexte(filtre.getLieu()),
+                filtre.getDateDebut(), filtre.getDateFin(), filtre.getGratuite());
 
         return resultats.stream()
+                .filter(activite -> estPublieeVisible(activite, emailUtilisateur))
                 .map(activite -> toResponse(activite, emailUtilisateur))
                 .collect(Collectors.toList());
     }
 
+    private String critereTexte(String valeur) {
+        return valeur == null || valeur.isBlank() ? null : valeur.trim();
+    }
+
     // ─── Options de filtres (catégories, thèmes, lieux disponibles) ──────────
-    public Map<String, List<String>> getOptionsFiltre() {
+    public Map<String, List<String>> getOptionsFiltre(String emailUtilisateur) {
+        boolean authentifie = emailUtilisateur != null;
         return Map.of(
-            "categories", activiteRepository.findDistinctCategories(),
-            "themes",     activiteRepository.findDistinctThemes(),
-            "lieux",      activiteRepository.findDistinctLieux()
+            "categories", activiteRepository.findDistinctCategories(authentifie),
+            "themes",     activiteRepository.findDistinctThemes(authentifie),
+            "lieux",      activiteRepository.findDistinctLieux(authentifie)
         );
+    }
+
+    private boolean estPublieeVisible(Activite activite, String emailUtilisateur) {
+        return activite.getStatut() == StatutActivite.PUBLIEE
+                && (emailUtilisateur != null || activite.getVisibilite() == VisibiliteActivite.PUBLIC);
     }
 
     // ─── Activités du référent ────────────────────────────────────────────────
@@ -238,12 +204,18 @@ public class ActiviteService {
     }
 
     // ─── Modifier une activité ────────────────────────────────────────────────
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public ActiviteResponse modifier(Long id, ActiviteRequest request, String emailUser) {
-        Activite activite = activiteRepository.findById(id)
+        Activite activite = activiteRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
         User acteur = verifierDroitGestion(activite, emailUser);
         validerDonneesActivite(request);
         validerTarificationInchangee(activite, request);
+        long placesOccupees = inscriptionRepository.countByActiviteIdAndStatutIn(
+                id, List.of(StatutInscription.CONFIRMEE, StatutInscription.PAYEE));
+        if (request.getCapaciteMax() < placesOccupees) {
+            throw new IllegalArgumentException("La capacité ne peut pas être inférieure au nombre d'inscriptions actives.");
+        }
 
         activite.setTitre(request.getTitre());
         activite.setDescription(request.getDescription());
@@ -261,12 +233,34 @@ public class ActiviteService {
     }
 
     // ─── Changer le statut ────────────────────────────────────────────────────
-    public ActiviteResponse changerStatut(Long id, StatutActivite nouveauStatut, String emailUser) {
-        Activite activite = activiteRepository.findById(id)
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public ActiviteResponse changerStatut(Long id, StatutActivite nouveauStatut,
+                                         VisibiliteActivite visibilite, String emailUser) {
+        Activite activite = activiteRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
         User acteur = verifierDroitGestion(activite, emailUser);
         StatutActivite ancienStatut = activite.getStatut();
         validerTransition(activite, nouveauStatut);
+        if (ancienStatut == StatutActivite.BROUILLON && nouveauStatut == StatutActivite.PUBLIEE) {
+            if (visibilite == null) {
+                throw new IllegalArgumentException("La visibilite PUBLIC ou MEMBRES est obligatoire pour publier.");
+            }
+            activite.setVisibilite(visibilite);
+        } else if (visibilite != null && visibilite != activite.getVisibilite()) {
+            throw new IllegalArgumentException("La visibilite se choisit lors de la publication du brouillon.");
+        }
+        if (ancienStatut == StatutActivite.PUBLIEE && nouveauStatut == StatutActivite.ANNULEE) {
+            LocalDateTime maintenant = LocalDateTime.now();
+            for (Inscription inscription : inscriptionRepository.findByActiviteId(id)) {
+                if (inscription.getStatut() == StatutInscription.ANNULEE) continue;
+                inscription.setStatut(StatutInscription.ANNULEE);
+                inscription.setDateAnnulation(maintenant);
+                inscriptionRepository.save(inscription);
+                notificationService.creer(inscription.getMembre(), "Activité annulée",
+                        "L'activité « " + activite.getTitre() + " » a été annulée. Votre inscription est annulée.",
+                        "ACTIVITE_ANNULEE", "/dashboard");
+            }
+        }
         activite.setStatut(nouveauStatut);
         Activite activiteSauvee = activiteRepository.save(activite);
 

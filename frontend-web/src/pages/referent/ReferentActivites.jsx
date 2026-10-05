@@ -13,6 +13,10 @@ import LocationPicker from '../../components/location/LocationPicker'
 import ErrorState from '../../components/ui/ErrorState'
 import LoadingState from '../../components/ui/LoadingState'
 
+import ActivityPublicationDialog from '../../components/ActivityPublicationDialog'
+import ActivityVisibility from '../../components/ActivityVisibility'
+import { confirmSensitiveAction, userFriendlyError } from '../../utils/userFriendlyError'
+
 const emptyForm = {
   titre: '',
   description: '',
@@ -32,6 +36,8 @@ const emptyForm = {
 
 export default function ReferentActivites() {
   const { t, i18n } = useTranslation()
+  const [publishingActivity, setPublishingActivity] = useState(null)
+  const [changingStatus, setChangingStatus] = useState(null)
   const [activites, setActivites] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(emptyForm)
@@ -135,6 +141,22 @@ export default function ReferentActivites() {
     }
   }
 
+  const changeStatus = async (activity, statut) => {
+    if (!confirmSensitiveAction(t('admin.confirmActivityStatusChange', { status: t(`statuses.${statut}`) }))) return
+    setChangingStatus(activity.id)
+    setError('')
+    setMessage('')
+    try {
+      const response = await api.patch(`/activites/${activity.id}/statut`, null, { params: { statut } })
+      setActivites(current => current.map(item => item.id === activity.id ? response.data : item))
+      setMessage(t('admin.statusUpdatedWithValue', { status: t(`statuses.${statut}`) }))
+    } catch (err) {
+      setError(userFriendlyError(err, t('activities.publication.errorStatus')))
+    } finally {
+      setChangingStatus(null)
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
@@ -181,6 +203,7 @@ export default function ReferentActivites() {
             <Input label={t('activities.form_place')} value={form.lieu} onChange={value => updateForm('lieu', value)} />
             <Input label={t('activities.start_date')} type="datetime-local" value={form.dateDebut} onChange={value => updateForm('dateDebut', value)} required />
             <Input label={t('activities.end_date')} type="datetime-local" value={form.dateFin} onChange={value => updateForm('dateFin', value)} required />
+            <Input label={t('activities.form_capacity')} type="number" min="1" value={form.capaciteMax} onChange={value => updateForm('capaciteMax', value)} required />
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-1">{t('activities.form_description')}</label>
               <textarea
@@ -215,7 +238,6 @@ export default function ReferentActivites() {
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <Input label={t('activities.form_category')} value={form.categorie} onChange={value => updateForm('categorie', value)} />
                 <Input label={t('activities.form_theme')} value={form.theme} onChange={value => updateForm('theme', value)} />
-                <Input label={t('activities.form_capacity')} type="number" min="1" value={form.capaciteMax} onChange={value => updateForm('capaciteMax', value)} required />
                 <label className="flex items-center gap-2 text-sm text-gray-700 pt-7">
                   <input type="checkbox" checked={form.gratuite} disabled />
                   {t('activities.form_free')}
@@ -307,6 +329,7 @@ export default function ReferentActivites() {
                 </div>
                 <div className="p-5">
                   <h2 className="font-bold text-blue-900 text-lg">{activite.titre}</h2>
+                  <ActivityVisibility activity={activite} />
                   {activite.description && <p className="text-sm text-gray-500 mt-2 line-clamp-2">{activite.description}</p>}
                   <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 mt-4">
                     <InfoPill label={t('activities.form_place')} value={activite.lieu || '—'} />
@@ -320,7 +343,9 @@ export default function ReferentActivites() {
                       value={activite.capaciteMax > 0 ? t('activities.capacity_max', { count: activite.capaciteMax }) : t('activities.unlimited')}
                     />
                   </div>
-                  <div className="mt-4 flex justify-end">
+                  <div className="mt-4 flex flex-wrap justify-end gap-2">
+                    {activite.statut === 'BROUILLON' && <button type="button" onClick={() => setPublishingActivity(activite)} className="rounded-2xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white">{t('activities.publication.publish')}</button>}
+                    {activite.statut === 'PUBLIEE' && ['TERMINEE', 'ANNULEE'].map(statut => <button key={statut} type="button" disabled={changingStatus === activite.id} onClick={() => changeStatus(activite, statut)} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold disabled:opacity-50">{t(`activities.publication.${statut === 'TERMINEE' ? 'finish' : 'cancelActivity'}`)}</button>)}
                     <Link
                       to={`/referent/activites/${activite.id}/presences`}
                       className="mr-2 inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
@@ -343,6 +368,12 @@ export default function ReferentActivites() {
           </div>
         )}
       </main>
+      {publishingActivity && <ActivityPublicationDialog activity={publishingActivity} onClose={() => setPublishingActivity(null)} onPublished={updated => {
+        setActivites(current => current.map(item => item.id === updated.id ? updated : item))
+        setPublishingActivity(null)
+        setError('')
+        setMessage(t('activities.publication.success'))
+      }} />}
       <Footer />
     </div>
   )

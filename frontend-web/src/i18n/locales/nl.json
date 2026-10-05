@@ -218,6 +218,22 @@
     "see_projects": "Bekijk projecten"
   },
   "activities": {
+    "cancelledActivity": "Activiteit geannuleerd",
+    "publication": {
+      "title": "Een activiteit publiceren",
+      "choose": "Kies wie deze activiteit kan zien",
+      "everyone": "Iedereen",
+      "authenticated": "Ingelogde gebruikers",
+      "everyoneHelp": "Ook zichtbaar zonder in te loggen.",
+      "authenticatedHelp": "Alleen zichtbaar na het inloggen.",
+      "publish": "Publiceren",
+      "visibility": "Zichtbaarheid",
+      "success": "Activiteit gepubliceerd.",
+      "error": "Deze activiteit kan niet worden gepubliceerd.",
+      "errorStatus": "De status van deze activiteit kan niet worden gewijzigd.",
+      "finish": "Afronden",
+      "cancelActivity": "Activiteit annuleren"
+    },
     "title": "Activiteiten",
     "new_activity": "+ Nieuwe activiteit",
     "cancel": "Annuleren",
@@ -2534,14 +2550,14 @@
   "presence": {
     "title": "Aanwezigheden",
     "eyebrow": "Aanwezigheidslijst",
-    "description": "Registreer de werkelijke deelname van de ingeschreven deelnemers aan deze activiteit.",
+    "description": "Kies de aanwezigheden, sla uw wijzigingen op en valideer daarna het volledige blad.",
     "activityFallback": "Activiteit",
     "backToActivities": "Terug naar activiteiten",
     "loading": "Aanwezigheidslijst laden...",
-    "bulkActions": "Snelle acties",
+    "bulkActions": "Opslaan en valideren",
     "attendanceRate": "Aanwezigheidspercentage",
     "commentPlaceholder": "Optionele opmerking",
-    "sheetClosed": "Deze aanwezigheidslijst is afgesloten. De acties zijn uitgeschakeld.",
+    "sheetClosed": "Dit blad is al gevalideerd en alleen-lezen.",
     "validatedAt": "Gevalideerd op {{date}}",
     "statuses": {
       "NON_RENSEIGNEE": "Niet ingevuld",
@@ -2561,7 +2577,7 @@
       "markAllPresent": "Alles aanwezig",
       "markAllAbsent": "Alles afwezig",
       "resetAll": "Resetten",
-      "closeSheet": "Lijst afsluiten"
+      "closeSheet": "Aanwezigheden valideren"
     },
     "table": {
       "member": "Lid",
@@ -2572,19 +2588,26 @@
     "messages": {
       "saved": "Aanwezigheid opgeslagen.",
       "bulkSaved": "Aanwezigheden bijgewerkt.",
-      "closed": "Aanwezigheidslijst afgesloten."
+      "closed": "Aanwezigheden gevalideerd. Het blad is alleen-lezen."
     },
     "errors": {
       "loadTitle": "Kan aanwezigheden niet laden",
       "load": "Kan de aanwezigheidslijst niet laden.",
       "save": "Kan de aanwezigheid niet opslaan.",
       "bulk": "Kan de aanwezigheden niet bijwerken.",
-      "close": "Kan de aanwezigheidslijst niet afsluiten."
+      "close": "De aanwezigheden kunnen niet worden gevalideerd."
     },
     "empty": {
       "title": "Geen inschrijvingen",
       "description": "Deze activiteit heeft nog geen inschrijvingen om weer te geven."
-    }
+    },
+    "notStarted": "De activiteit is nog niet begonnen. Aanwezigheden kunnen nog niet worden ingevuld.",
+    "cancelled": "Deze activiteit is geannuleerd. Aanwezigheden zijn alleen-lezen.",
+    "finished": "Deze activiteit is afgelopen. Aanwezigheden zijn alleen-lezen.",
+    "draft": "Aanwezigheden zijn niet beschikbaar voor een concept.",
+    "unsaved": "Sla de wijzigingen op voordat u de aanwezigheden valideert",
+    "incomplete": "Vul alle actieve aanwezigheden in en sla ze op voordat u valideert.",
+    "validation": "Validatie"
   },
   "referentPartners": {
     "nav": "Mijn partners",

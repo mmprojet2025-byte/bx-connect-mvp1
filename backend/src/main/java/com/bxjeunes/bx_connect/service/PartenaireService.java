@@ -246,8 +246,9 @@ public class PartenaireService {
     }
 
     // ─── P04 : Activités ouvertes au soutien ─────────────────────────────────
-    public List<Map<String, Object>> activitesSoutienOuverts() {
+    public List<Map<String, Object>> activitesSoutienOuverts(boolean authentifie) {
         return activiteRepository.findByStatut(StatutActivite.PUBLIEE).stream()
+                .filter(a -> authentifie || a.getVisibilite() == VisibiliteActivite.PUBLIC)
                 .map(a -> {
                     Map<String, Object> m = new HashMap<>();
                     m.put("id",          a.getId());

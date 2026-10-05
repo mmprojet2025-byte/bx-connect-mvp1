@@ -2,6 +2,7 @@ package com.bxjeunes.bx_connect.dto;
 
 import com.bxjeunes.bx_connect.entity.Activite;
 import com.bxjeunes.bx_connect.entity.StatutActivite;
+import com.bxjeunes.bx_connect.entity.VisibiliteActivite;
 import com.bxjeunes.bx_connect.entity.StatutInscription;
 
 import java.math.BigDecimal;
@@ -23,6 +24,7 @@ public class ActiviteResponse {
     private BigDecimal prix;
     private int capaciteMax;
     private StatutActivite statut;
+    private VisibiliteActivite visibilite;
     private String categorie;
     private String theme;
     private LocalDateTime dateCreation;
@@ -55,6 +57,7 @@ public class ActiviteResponse {
         response.prix = activite.getPrix();
         response.capaciteMax = activite.getCapaciteMax();
         response.statut = activite.getStatut();
+        response.visibilite = activite.getVisibilite();
         response.categorie = activite.getCategorie();
         response.theme = activite.getTheme();
         response.dateCreation = activite.getDateCreation();
@@ -94,6 +97,7 @@ public class ActiviteResponse {
     public BigDecimal getPrix() { return prix; }
     public int getCapaciteMax() { return capaciteMax; }
     public StatutActivite getStatut() { return statut; }
+    public VisibiliteActivite getVisibilite() { return visibilite; }
     public String getCategorie() { return categorie; }
     public String getTheme() { return theme; }
     public LocalDateTime getDateCreation() { return dateCreation; }

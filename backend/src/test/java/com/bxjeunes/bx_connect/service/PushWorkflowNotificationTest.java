@@ -50,7 +50,7 @@ class PushWorkflowNotificationTest {
         User admin = user(1L, "admin@test.be", Role.ADMIN);
         Activite activite = activite(8L, admin, true);
 
-        when(activiteRepository.findById(8L)).thenReturn(Optional.of(activite));
+        when(activiteRepository.findByIdForUpdate(8L)).thenReturn(Optional.of(activite));
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
         when(activiteRepository.save(activite)).thenReturn(activite);
         when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);
@@ -61,7 +61,7 @@ class PushWorkflowNotificationTest {
                 inscriptionRepository,
                 notificationService,
                 auditLogService
-        ).changerStatut(8L, StatutActivite.PUBLIEE, admin.getEmail());
+        ).changerStatut(8L, StatutActivite.PUBLIEE, com.bxjeunes.bx_connect.entity.VisibiliteActivite.PUBLIC, admin.getEmail());
 
         verify(notificationService, never()).creer(
                 any(User.class),

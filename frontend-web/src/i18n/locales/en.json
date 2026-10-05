@@ -218,6 +218,22 @@
     "see_projects": "View projects"
   },
   "activities": {
+    "cancelledActivity": "Activity cancelled",
+    "publication": {
+      "title": "Publish an activity",
+      "choose": "Choose who can see this activity",
+      "everyone": "Everyone",
+      "authenticated": "Signed-in users",
+      "everyoneHelp": "Also visible without signing in.",
+      "authenticatedHelp": "Only visible after signing in.",
+      "publish": "Publish",
+      "visibility": "Visibility",
+      "success": "Activity published.",
+      "error": "Unable to publish this activity.",
+      "errorStatus": "Unable to change this activity’s status.",
+      "finish": "Finish",
+      "cancelActivity": "Cancel activity"
+    },
     "title": "Activities",
     "new_activity": "+ New activity",
     "cancel": "Cancel",
@@ -2534,14 +2550,14 @@
   "presence": {
     "title": "Attendance",
     "eyebrow": "Attendance sheet",
-    "description": "Record the real participation of registered people for this activity.",
+    "description": "Choose attendance statuses, save your changes, then validate the completed sheet.",
     "activityFallback": "Activity",
     "backToActivities": "Back to activities",
     "loading": "Loading attendance sheet...",
-    "bulkActions": "Quick actions",
+    "bulkActions": "Save then validate",
     "attendanceRate": "Attendance rate",
     "commentPlaceholder": "Optional comment",
-    "sheetClosed": "This attendance sheet is closed. Actions are disabled.",
+    "sheetClosed": "This sheet has already been validated and is read-only.",
     "validatedAt": "Validated on {{date}}",
     "statuses": {
       "NON_RENSEIGNEE": "Not filled in",
@@ -2561,7 +2577,7 @@
       "markAllPresent": "Mark all present",
       "markAllAbsent": "Mark all absent",
       "resetAll": "Reset",
-      "closeSheet": "Close sheet"
+      "closeSheet": "Validate attendance"
     },
     "table": {
       "member": "Member",
@@ -2572,19 +2588,26 @@
     "messages": {
       "saved": "Attendance saved.",
       "bulkSaved": "Attendance updated.",
-      "closed": "Attendance sheet closed."
+      "closed": "Attendance validated. The sheet is read-only."
     },
     "errors": {
       "loadTitle": "Unable to load attendance",
       "load": "Unable to load the attendance sheet.",
       "save": "Unable to save attendance.",
       "bulk": "Unable to update attendance.",
-      "close": "Unable to close the attendance sheet."
+      "close": "Unable to validate attendance."
     },
     "empty": {
       "title": "No registrations",
       "description": "This activity has no registrations to display yet."
-    }
+    },
+    "notStarted": "The activity has not started yet. Attendance cannot be recorded yet.",
+    "cancelled": "This activity is cancelled. Attendance is read-only.",
+    "finished": "This activity has ended. Attendance is read-only.",
+    "draft": "Attendance is not available for a draft activity.",
+    "unsaved": "Save your changes before validating attendance",
+    "incomplete": "Fill in and save all active attendance statuses before validating.",
+    "validation": "Validation"
   },
   "referentPartners": {
     "nav": "My partners",
