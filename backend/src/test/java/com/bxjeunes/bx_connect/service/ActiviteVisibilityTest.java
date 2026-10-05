@@ -44,7 +44,8 @@ class ActiviteVisibilityTest {
     }
 
     @ParameterizedTest
-    @EnumSource(VisibiliteActivite.class)
+    // Existing publication contract only; private-group business rules are a later lot.
+    @EnumSource(value = VisibiliteActivite.class, names = {"PUBLIC", "MEMBRES"})
     void ownerPublishesWithExplicitVisibility(VisibiliteActivite visibility) {
         publique.setStatut(StatutActivite.BROUILLON);
         when(activities.findByIdForUpdate(10L)).thenReturn(Optional.of(publique));

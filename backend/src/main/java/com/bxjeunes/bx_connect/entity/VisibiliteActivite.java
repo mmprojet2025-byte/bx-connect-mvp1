@@ -2,5 +2,6 @@ package com.bxjeunes.bx_connect.entity;
 
 public enum VisibiliteActivite {
     PUBLIC,
-    MEMBRES
+    MEMBRES,
+    PRIVE_GROUPE
 }

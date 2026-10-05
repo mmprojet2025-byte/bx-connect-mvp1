@@ -69,6 +69,18 @@ public class Activite {
     @JoinColumn(name = "createur_id", nullable = false)
     private User createur;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "groupe_id")
+    private Groupe groupe;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "referent_assigne_id")
+    private User referentAssigne;
+
+    // Internal storage key, not an arbitrary external image URL.
+    @Column(name = "image_storage_key", length = 255)
+    private String imageStorageKey;
+
     // ─── Constructeurs ───────────────────────────────────────────────────────
 
     public Activite() {}
@@ -131,4 +143,13 @@ public class Activite {
 
     public User getCreateur() { return createur; }
     public void setCreateur(User createur) { this.createur = createur; }
+
+    public Groupe getGroupe() { return groupe; }
+    public void setGroupe(Groupe groupe) { this.groupe = groupe; }
+
+    public User getReferentAssigne() { return referentAssigne; }
+    public void setReferentAssigne(User referentAssigne) { this.referentAssigne = referentAssigne; }
+
+    public String getImageStorageKey() { return imageStorageKey; }
+    public void setImageStorageKey(String imageStorageKey) { this.imageStorageKey = imageStorageKey; }
 }
