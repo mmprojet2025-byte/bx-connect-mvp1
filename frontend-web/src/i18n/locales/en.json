@@ -3038,5 +3038,13 @@
       "referent": "This group needs an active coordinator matching the activity assignment. Check the group before continuing.",
       "visibilite": "Choose a public or group-only audience."
     }
+  },
+  "referentActivity": {
+    "title": "My assigned activities",
+    "empty": "No assigned activities yet.",
+    "noGroups": "No approved, active group is assigned to you. Creation is unavailable.",
+    "groupsUnavailable": "Authorized groups are unavailable. Reload the page to try again.",
+    "assignmentError": "You can no longer manage this activity or group. Check your assignment with the administration, then reload the page.",
+    "legacyGroup": "Historical activity without a group"
   }
 }

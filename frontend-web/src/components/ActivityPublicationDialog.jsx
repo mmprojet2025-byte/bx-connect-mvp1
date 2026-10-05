@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import api from '../api/axios'
 import { userFriendlyError } from '../utils/userFriendlyError'
 
-export default function ActivityPublicationDialog({ activity, onClose, onPublished, fixedAudience = false, audienceSummary }) {
+export default function ActivityPublicationDialog({ activity, onClose, onPublished, fixedAudience = false, audienceSummary, forbiddenMessage }) {
   const { t } = useTranslation()
   const dialog = useRef(null)
   const [visibility, setVisibility] = useState(fixedAudience ? activity.visibilite : '')
@@ -27,7 +27,7 @@ export default function ActivityPublicationDialog({ activity, onClose, onPublish
       })
       onPublished(response.data)
     } catch (err) {
-      setError(userFriendlyError(err, t('activities.publication.error')))
+      setError(err.response?.status === 403 && forbiddenMessage ? forbiddenMessage : userFriendlyError(err, t('activities.publication.error')))
       setSaving(false)
     }
   }

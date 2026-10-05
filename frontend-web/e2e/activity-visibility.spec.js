@@ -24,6 +24,8 @@ async function managementApi(page, initial = activity, failOnce = false) {
   const patches = []
   await page.route(url => url.pathname.startsWith('/api/'), async route => {
     const url = new URL(route.request().url())
+    if (url.pathname === '/api/users/me') return route.fulfill({ json: { id: 1, role: 'REFERENT', actif: true } })
+    if (url.pathname === '/api/referent/groupes') return route.fulfill({ json: [{ id: 5, nom: 'Sport', referentId: 1, actif: true, statut: 'VALIDE' }] })
     if (url.pathname.endsWith('/42/statut')) {
       patches.push(Object.fromEntries(url.searchParams))
       if (failOnce && patches.length === 1) return route.fulfill({ status: 400, json: {} })
@@ -38,30 +40,25 @@ async function managementApi(page, initial = activity, failOnce = false) {
   return patches
 }
 
-for (const role of ['REFERENT']) {
-  for (const [label, value] of [['Tout le monde', 'PUBLIC'], ['Utilisateurs connectés', 'MEMBRES']]) {
-    test(`${role} publie directement avec ${value} et un choix obligatoire`, async ({ page }) => {
-      await session(page, role)
-      const patches = await managementApi(page)
-      await page.goto(role === 'REFERENT' ? '/referent/activites' : '/admin/activites')
-      if (role === 'REFERENT') {
-        await page.getByRole('button', { name: 'Publier', exact: true }).click()
-      } else {
-        const row = page.getByRole('row').filter({ hasText: activity.titre })
-        await row.locator('summary').click()
-        await row.locator('select').selectOption('PUBLIEE')
-      }
-      const dialog = page.getByRole('dialog')
-      await expect(dialog).toBeVisible()
-      await expect(dialog.getByRole('button', { name: 'Publier', exact: true })).toBeDisabled()
-      expect(patches).toHaveLength(0)
-      await dialog.getByRole('radio', { name: new RegExp(`^${label}`) }).check()
-      await dialog.getByRole('button', { name: 'Publier', exact: true }).click()
-      await expect(dialog).toHaveCount(0)
-      expect(patches).toEqual([{ statut: 'PUBLIEE', visibilite: value }])
-      await expect(page.getByText(`Visibilité: ${label}`, { exact: true }).filter({ visible: true })).toBeVisible()
-    })
-  }
+for (const [label, value, summary] of [
+  ['Tout le monde', 'PUBLIC', 'Cette activité du groupe Sport sera visible par tout le monde.'],
+  ['Réservée aux membres du groupe', 'PRIVE_GROUPE', 'Cette activité sera réservée aux membres acceptés du groupe Sport.'],
+]) {
+  test(`REFERENT publie avec l’audience enregistrée ${value}`, async ({ page }) => {
+    await session(page, 'REFERENT')
+    const patches = await managementApi(page, { ...activity, groupeId: 5, groupeNom: 'Sport', referentAssigneId: 1, visibilite: value })
+    await page.goto('/referent/activites')
+    await page.getByRole('button', { name: 'Publier', exact: true }).click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog.getByText(summary)).toBeVisible()
+    await expect(dialog.getByRole('radio')).toHaveCount(0)
+    await expect(dialog.getByRole('combobox')).toHaveCount(0)
+    expect(patches).toHaveLength(0)
+    await dialog.getByRole('button', { name: 'Publier', exact: true }).click()
+    await expect(dialog).toHaveCount(0)
+    expect(patches).toEqual([{ statut: 'PUBLIEE', visibilite: value }])
+    await expect(page.getByText(`Visibilité: ${label}`, { exact: true })).toBeVisible()
+  })
 }
 
 test('un échec de publication conserve le brouillon et permet de réessayer', async ({ page }) => {
@@ -70,7 +67,6 @@ test('un échec de publication conserve le brouillon et permet de réessayer', a
   await page.goto('/referent/activites')
   await page.getByRole('button', { name: 'Publier', exact: true }).click()
   const dialog = page.getByRole('dialog')
-  await dialog.getByRole('radio', { name: /^Tout le monde/ }).check()
   await dialog.getByRole('button', { name: 'Publier', exact: true }).click()
   await expect(dialog.getByRole('alert')).toBeVisible()
   await dialog.getByRole('button', { name: 'Publier', exact: true }).click()

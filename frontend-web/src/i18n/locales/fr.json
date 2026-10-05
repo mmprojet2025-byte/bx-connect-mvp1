@@ -3038,5 +3038,13 @@
       "referent": "Ce groupe doit avoir un référent actif correspondant à l’affectation de l’activité. Vérifiez le groupe avant de continuer.",
       "visibilite": "Choisissez une audience publique ou réservée au groupe."
     }
+  },
+  "referentActivity": {
+    "title": "Mes activités assignées",
+    "empty": "Aucune activité assignée pour le moment.",
+    "noGroups": "Aucun groupe validé et actif ne vous est assigné. La création est indisponible.",
+    "groupsUnavailable": "Les groupes autorisés ne sont pas disponibles. Rechargez la page pour réessayer.",
+    "assignmentError": "Vous ne pouvez plus gérer cette activité ou ce groupe. Vérifiez votre affectation auprès de l’administration, puis rechargez la page.",
+    "legacyGroup": "Activité historique sans groupe"
   }
 }

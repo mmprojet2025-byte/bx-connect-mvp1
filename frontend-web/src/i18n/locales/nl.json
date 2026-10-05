@@ -3038,5 +3038,13 @@
       "referent": "Deze groep heeft een actieve begeleider nodig die overeenkomt met de toewijzing van de activiteit. Controleer de groep voordat u doorgaat.",
       "visibilite": "Kies een openbare doelgroep of alleen groepsleden."
     }
+  },
+  "referentActivity": {
+    "title": "Mijn toegewezen activiteiten",
+    "empty": "Er zijn nog geen activiteiten toegewezen.",
+    "noGroups": "Er is geen goedgekeurde, actieve groep aan u toegewezen. Aanmaken is niet beschikbaar.",
+    "groupsUnavailable": "De toegestane groepen zijn niet beschikbaar. Herlaad de pagina om opnieuw te proberen.",
+    "assignmentError": "U kunt deze activiteit of groep niet meer beheren. Controleer uw toewijzing bij de administratie en herlaad daarna de pagina.",
+    "legacyGroup": "Historische activiteit zonder groep"
   }
 }
