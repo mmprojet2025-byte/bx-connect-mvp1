@@ -15,25 +15,11 @@ import LoadingState from '../../components/ui/LoadingState';
 
 import ActivityPublicationDialog from '../../components/ActivityPublicationDialog';
 import ActivityVisibility from '../../components/ActivityVisibility';
+import { emptyActivityForm, activityToForm, assignmentLocked, eligibleGroups, groupReferent, validateActivityForm, activityPayload, audienceKey } from './activityForm';
 
 const TRANSITIONS = { BROUILLON: ['PUBLIEE', 'ANNULEE'], PUBLIEE: ['TERMINEE', 'ANNULEE'], TERMINEE: [], ANNULEE: [] };
 const STATUTS = ['BROUILLON', 'PUBLIEE', 'ANNULEE', 'TERMINEE'];
-const emptyForm = {
-  titre: '',
-  description: '',
-  dateDebut: '',
-  dateFin: '',
-  lieu: '',
-  adresse: '',
-  commune: '',
-  latitude: '',
-  longitude: '',
-  gratuite: true,
-  prix: '',
-  capaciteMax: 1,
-  categorie: '',
-  theme: '',
-};
+const emptyForm = emptyActivityForm;
 
 async function fetchActivites({ t, setActivites, setError, setLoading }) {
   try {
@@ -61,12 +47,33 @@ export default function AdminActivites() {
   const [form, setForm] = useState(emptyForm);
   const [publishingActivity, setPublishingActivity] = useState(null);
   const [selectedActivity, setSelectedActivity] = useState(null);
+  const [groups, setGroups] = useState([]);
+  const [referents, setReferents] = useState([]);
+  const [groupsState, setGroupsState] = useState('loading');
+  const [formErrors, setFormErrors] = useState([]);
+  const original = activites.find(activity => activity.id === editingId);
+  const locked = assignmentLocked(original);
+  const selectedGroup = groups.find(group => group.id === Number(form.groupeId));
+  const referent = groupReferent(selectedGroup, referents);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([api.get('/admin/groupes'), api.get('/admin/referents')])
+      .then(([groupResponse, referentResponse]) => {
+        if (!active) return;
+        setGroups(groupResponse.data);
+        setReferents(referentResponse.data);
+        setGroupsState('ready');
+      }).catch(() => { if (active) setGroupsState('error'); });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     fetchActivites({ t, setActivites, setError, setLoading });
   }, [t]);
 
   const resetForm = () => {
+    setFormErrors([]);
     setForm(emptyForm);
     setEditingId(null);
     setShowForm(false);
@@ -79,6 +86,7 @@ export default function AdminActivites() {
       resetForm();
       return;
     }
+    setFormErrors([]);
     setForm(emptyForm);
     setEditingId(null);
     setShowForm(true);
@@ -88,37 +96,21 @@ export default function AdminActivites() {
     setMessage('');
     setError('');
     setEditingId(activite.id);
-    setForm({
-      titre: activite.titre || '',
-      description: activite.description || '',
-      dateDebut: toDateTimeLocalValue(activite.dateDebut),
-      dateFin: toDateTimeLocalValue(activite.dateFin),
-      lieu: activite.lieu || '',
-      adresse: activite.adresse || '',
-      commune: activite.commune || '',
-      latitude: activite.latitude ?? '',
-      longitude: activite.longitude ?? '',
-      gratuite: activite.gratuite ?? true,
-      prix: activite.prix ?? '',
-      capaciteMax: activite.capaciteMax ?? 0,
-      categorie: activite.categorie || '',
-      theme: activite.theme || '',
-    });
+    setFormErrors([]);
+    setForm(activityToForm(activite));
     setShowForm(true);
   };
 
   const enregistrerActivite = async (e) => {
     e.preventDefault();
+    if (creating) return;
+    const errors = validateActivityForm(form, groups, referents, original);
+    setFormErrors(errors);
+    if (errors.length) return;
     setCreating(true);
     setMessage('');
     setError('');
-    const payload = {
-      ...form,
-      prix: form.gratuite ? null : Number(form.prix),
-      capaciteMax: Number(form.capaciteMax) || 0,
-      latitude: form.latitude === '' ? null : Number(form.latitude),
-      longitude: form.longitude === '' ? null : Number(form.longitude),
-    };
+    const payload = activityPayload(form, original);
     try {
       if (editingId) {
         const res = await api.put(`/activites/${editingId}`, payload);
@@ -127,7 +119,7 @@ export default function AdminActivites() {
       } else {
         const res = await api.post('/activites', payload);
         setActivites(prev => [res.data, ...prev]);
-        setMessage(t('activities.success_create'));
+        setMessage(t('adminActivity.draftSaved'));
       }
       resetForm();
     } catch (err) {
@@ -201,12 +193,12 @@ export default function AdminActivites() {
         {message && (
           <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4 text-sm">{message}</div>
         )}
-        {error && activites.length > 0 && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>
+        {error && (
+          <div role="alert" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">{error}</div>
         )}
 
         {showForm && (
-          <form onSubmit={enregistrerActivite} className="mb-4 grid rounded-2xl border border-slate-100 bg-white p-4 shadow-sm md:grid-cols-2 gap-3">
+          <form noValidate aria-label={t('admin.createActivity')} onSubmit={enregistrerActivite} className="mb-4 grid rounded-2xl border border-slate-100 bg-white p-4 shadow-sm md:grid-cols-2 gap-3">
             <div className="md:col-span-2 flex items-center justify-between gap-3">
               <h2 className="text-lg font-bold text-blue-900">
                 {editingId ? t('common.edit') : t('admin.createActivity')}
@@ -221,13 +213,54 @@ export default function AdminActivites() {
                 </button>
               )}
             </div>
+            {formErrors.length > 0 && <ul role="alert" className="md:col-span-2 text-sm text-red-700">
+              {formErrors.map(key => <li key={key}>{t(`adminActivity.errors.${key}`)}</li>)}
+            </ul>}
+            <label className="block text-sm font-semibold text-gray-700">
+              {t('adminActivity.type')}
+              <select className="mt-1 w-full rounded-xl border p-2" value={form.nature} disabled={locked}
+                onChange={event => setForm({ ...form, nature: event.target.value, groupeId: '', visibilite: 'PUBLIC' })}>
+                <option value="GENERALE">{t('adminActivity.general')}</option>
+                <option value="GROUPE">{t('adminActivity.group')}</option>
+              </select>
+            </label>
+            <p className="self-center text-sm text-slate-600">{t(original?.gratuite === false ? 'adminActivity.legacyPrice' : 'adminActivity.free', { price: original?.prix })}</p>
+            {locked && <p className="md:col-span-2 text-sm text-slate-600">{t('adminActivity.locked')}</p>}
+            {form.nature === 'GROUPE' && <>
+              <label className="block text-sm font-semibold text-gray-700">
+                {t('adminActivity.groupLabel')}
+                <select className="mt-1 w-full rounded-xl border p-2" value={form.groupeId} disabled={locked || groupsState !== 'ready'}
+                  onChange={event => setForm({ ...form, groupeId: event.target.value })}>
+                  <option value="">{t('adminActivity.chooseGroup')}</option>
+                  {original?.groupeId && !eligibleGroups(groups).some(group => group.id === original.groupeId) &&
+                    <option value={original.groupeId}>{original.groupeNom || t('adminActivity.unavailableGroup')}</option>}
+                  {eligibleGroups(groups).map(group => <option key={group.id} value={group.id}>{group.nom}</option>)}
+                </select>
+              </label>
+              <p className="self-center text-sm text-slate-600">{t('adminActivity.referent')}: {referent
+                ? `${referent.prenom} ${referent.nom}`
+                : t('adminActivity.noReferent')}</p>
+              {groupsState !== 'ready' && <p role="status" className="md:col-span-2 text-sm text-slate-600">{t(`adminActivity.groups${groupsState === 'error' ? 'Error' : 'Loading'}`)}</p>}
+              {groupsState === 'ready' && form.groupeId && (!referent || (original?.groupeId === Number(form.groupeId) && original.referentAssigneId !== referent.id)) &&
+                <p role="alert" className="md:col-span-2 text-sm text-red-700">{t('adminActivity.errors.referent')}</p>}
+              <label className="block text-sm font-semibold text-gray-700">
+                {t('adminActivity.visibility')}
+                <select className="mt-1 w-full rounded-xl border p-2" value={form.visibilite} disabled={locked}
+                  onChange={event => setForm({ ...form, visibilite: event.target.value })}>
+                  <option value="PUBLIC">{t('adminActivity.public')}</option>
+                  <option value="PRIVE_GROUPE">{t('adminActivity.private')}</option>
+                </select>
+              </label>
+            </>}
+            <p className="md:col-span-2 text-sm text-slate-600">{t(`adminActivity.${audienceKey({ groupeId: form.nature === 'GROUPE' ? form.groupeId : null, visibilite: form.visibilite })}`, { group: selectedGroup?.nom || original?.groupeNom || t('adminActivity.selectedGroup') })}</p>
+            <Input label={t('admin.maxCapacity')} type="number" min="1" value={form.capaciteMax} onChange={value => setForm({ ...form, capaciteMax: value })} required />
             <Input label={t('activities.form_title')} value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
-            <Input label={t('activities.form_place')} value={form.lieu} onChange={value => setForm({ ...form, lieu: value })} />
+            <Input label={t('activities.form_place')} value={form.lieu} onChange={value => setForm({ ...form, lieu: value })} required />
             <Input label={t('activities.form_start')} type="datetime-local" value={form.dateDebut} onChange={value => setForm({ ...form, dateDebut: value })} required />
             <Input label={t('activities.form_end')} type="datetime-local" value={form.dateFin} onChange={value => setForm({ ...form, dateFin: value })} required />
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">{t('activities.form_description')}</label>
-              <textarea
+              <label htmlFor="admin-activity-description" className="block text-sm font-semibold text-gray-700 mb-1">{t('activities.form_description')}</label>
+              <textarea id="admin-activity-description" required
                 value={form.description}
                 onChange={e => setForm({ ...form, description: e.target.value })}
                 rows={3}
@@ -259,24 +292,16 @@ export default function AdminActivites() {
               <div className="mt-3 grid gap-3 md:grid-cols-2">
                 <Input label={t('activities.form_category')} value={form.categorie} onChange={value => setForm({ ...form, categorie: value })} />
                 <Input label={t('activities.form_theme')} value={form.theme} onChange={value => setForm({ ...form, theme: value })} />
-                <Input label={t('admin.maxCapacity')} type="number" min="1" value={form.capaciteMax} onChange={value => setForm({ ...form, capaciteMax: value })} required />
-                <label className="flex items-center gap-2 text-sm text-gray-700 pt-7">
-                  <input type="checkbox" checked={form.gratuite} disabled />
-                  {t('activities.form_free')}
-                </label>
-                {!form.gratuite && (
-                  <Input label={t('activities.form_price')} type="number" min="0" value={form.prix} disabled />
-                )}
               </div>
             </details>
             <div className="md:col-span-2 flex justify-end">
               <button
                 type="submit"
-                disabled={creating}
+                disabled={creating || (form.nature === 'GROUPE' && validateActivityForm(form, groups, referents, original).some(key => ['groupeId', 'referent', 'visibilite'].includes(key)))}
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-600 disabled:bg-gray-300"
               >
                 <AppIcon name={editingId ? 'Save' : 'PlusCircle'} className="h-4 w-4" />
-                {creating ? t('common.saving') : editingId ? t('common.saveChanges') : t('admin.createActivity')}
+                {creating ? t('common.saving') : editingId ? t('common.saveChanges') : t('adminActivity.saveDraft')}
               </button>
             </div>
           </form>
@@ -316,7 +341,7 @@ export default function AdminActivites() {
 
         {loading ? (
           <LoadingState label={t('admin.loading')} />
-        ) : error && activites.length === 0 ? (
+        ) : error && activites.length === 0 && !showForm ? (
           <ErrorState
             title={t('common.loadErrorTitle')}
             description={error}
@@ -551,7 +576,7 @@ export default function AdminActivites() {
         )}
       </main>
 
-      {publishingActivity && <ActivityPublicationDialog activity={publishingActivity} onClose={() => setPublishingActivity(null)} onPublished={updated => {
+      {publishingActivity && <ActivityPublicationDialog fixedAudience audienceSummary={t(`adminActivity.${audienceKey(publishingActivity)}`, { group: publishingActivity.groupeNom || t('adminActivity.selectedGroup') })} activity={publishingActivity} onClose={() => setPublishingActivity(null)} onPublished={updated => {
         setActivites(current => current.map(item => item.id === updated.id ? updated : item));
         setSelectedActivity(current => current?.id === updated.id ? updated : current);
         setPublishingActivity(null);
@@ -580,11 +605,6 @@ export default function AdminActivites() {
       )}
     </div>
   );
-}
-
-function toDateTimeLocalValue(value) {
-  if (!value) return '';
-  return String(value).slice(0, 16);
 }
 
 function ActivityFollowUpDrawer({ activity, t, language, onClose, onEdit, onStatusChange, onDelete }) {

@@ -3000,5 +3000,43 @@
     "supportsByStatus": "Steun per status",
     "adminsByStatus": "Beheerders per status",
     "auditOverview": "Auditoverzicht"
+  },
+  "adminActivity": {
+    "type": "Type activiteit",
+    "general": "Algemene activiteit",
+    "group": "Groepsactiviteit",
+    "groupLabel": "Groep",
+    "chooseGroup": "Kies een groep",
+    "referent": "Groepsbegeleider",
+    "noReferent": "Geen begeleider beschikbaar",
+    "visibility": "Doelgroep",
+    "public": "Openbaar",
+    "private": "Alleen voor groepsleden",
+    "free": "Gratis deelname",
+    "saveDraft": "Concept opslaan",
+    "draftSaved": "Concept opgeslagen.",
+    "generalAudience": "Deze activiteit is na publicatie zichtbaar voor iedereen.",
+    "groupAudience": "Deze activiteit van groep {{group}} is zichtbaar voor iedereen.",
+    "privateAudience": "Deze activiteit is alleen zichtbaar voor geaccepteerde leden van groep {{group}}.",
+    "legacyAudience": "Deze historische activiteit blijft na publicatie zichtbaar voor aangemelde gebruikers.",
+    "legacyPrice": "Historische prijs behouden: €{{price}}",
+    "locked": "Het type, de groep en de doelgroep blijven behouden voor deze gepubliceerde of historische activiteit.",
+    "groupsLoading": "Groepen en begeleiders laden…",
+    "groupsError": "Groepen en begeleiders konden niet worden geladen. Herlaad de pagina om opnieuw te proberen.",
+    "unavailableGroup": "Groep niet beschikbaar",
+    "selectedGroup": "geselecteerd",
+    "paidPublication": "Een historische betaalde activiteit kan niet worden gepubliceerd. De gegevens blijven behouden.",
+    "errors": {
+      "titre": "Vul een titel in.",
+      "description": "Vul een beschrijving in.",
+      "lieu": "Vul een locatie in.",
+      "dateDebut": "Vul een geldige begindatum en -tijd in.",
+      "dateFin": "Vul een geldige einddatum en -tijd in.",
+      "dateOrder": "Het einde moet na het begin vallen.",
+      "capaciteMax": "De capaciteit moet een geheel getal groter dan nul zijn.",
+      "groupeId": "Kies een goedgekeurde, actieve groep.",
+      "referent": "Deze groep heeft een actieve begeleider nodig die overeenkomt met de toewijzing van de activiteit. Controleer de groep voordat u doorgaat.",
+      "visibilite": "Kies een openbare doelgroep of alleen groepsleden."
+    }
   }
 }

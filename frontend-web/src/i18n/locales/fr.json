@@ -3000,5 +3000,43 @@
     "supportsByStatus": "Soutiens par statut",
     "adminsByStatus": "Administrateurs par statut",
     "auditOverview": "Aperçu audit"
+  },
+  "adminActivity": {
+    "type": "Type d’activité",
+    "general": "Activité générale",
+    "group": "Activité de groupe",
+    "groupLabel": "Groupe",
+    "chooseGroup": "Choisir un groupe",
+    "referent": "Référent du groupe",
+    "noReferent": "Aucun référent disponible",
+    "visibility": "Audience",
+    "public": "Publique",
+    "private": "Réservée aux membres du groupe",
+    "free": "Participation gratuite",
+    "saveDraft": "Enregistrer le brouillon",
+    "draftSaved": "Brouillon enregistré.",
+    "generalAudience": "Cette activité sera visible par tout le monde après sa publication.",
+    "groupAudience": "Cette activité du groupe {{group}} sera visible par tout le monde.",
+    "privateAudience": "Cette activité sera réservée aux membres acceptés du groupe {{group}}.",
+    "legacyAudience": "Cette activité historique reste visible par les utilisateurs connectés après sa publication.",
+    "legacyPrice": "Tarif historique conservé : {{price}} €",
+    "locked": "Le type, le groupe et l’audience sont conservés pour cette activité publiée ou historique.",
+    "groupsLoading": "Chargement des groupes et des référents…",
+    "groupsError": "Impossible de charger les groupes et leurs référents. Rechargez la page pour réessayer.",
+    "unavailableGroup": "Groupe indisponible",
+    "selectedGroup": "sélectionné",
+    "paidPublication": "Une ancienne activité payante ne peut pas être publiée. Ses données restent conservées.",
+    "errors": {
+      "titre": "Renseignez le titre.",
+      "description": "Renseignez la description.",
+      "lieu": "Renseignez le lieu.",
+      "dateDebut": "Renseignez une date et une heure de début valides.",
+      "dateFin": "Renseignez une date et une heure de fin valides.",
+      "dateOrder": "La fin doit être postérieure au début.",
+      "capaciteMax": "La capacité doit être un nombre entier supérieur à zéro.",
+      "groupeId": "Choisissez un groupe validé et actif.",
+      "referent": "Ce groupe doit avoir un référent actif correspondant à l’affectation de l’activité. Vérifiez le groupe avant de continuer.",
+      "visibilite": "Choisissez une audience publique ou réservée au groupe."
+    }
   }
 }

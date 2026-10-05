@@ -11,6 +11,11 @@ import java.time.LocalDateTime;
 public class ActiviteResponse {
 
     private Long id;
+    private Long groupeId;
+    private String groupeNom;
+    private Long referentAssigneId;
+    private String referentAssignePrenom;
+    private String referentAssigneNom;
     private String titre;
     private String description;
     private LocalDateTime dateDebut;
@@ -65,6 +70,15 @@ public class ActiviteResponse {
             response.createurPrenom = activite.getCreateur().getPrenom();
             response.createurNom = activite.getCreateur().getNom();
         }
+        if (activite.getGroupe() != null) {
+            response.groupeId = activite.getGroupe().getId();
+            response.groupeNom = activite.getGroupe().getNom();
+        }
+        if (activite.getReferentAssigne() != null) {
+            response.referentAssigneId = activite.getReferentAssigne().getId();
+            response.referentAssignePrenom = activite.getReferentAssigne().getPrenom();
+            response.referentAssigneNom = activite.getReferentAssigne().getNom();
+        }
         return response;
     }
 
@@ -83,6 +97,11 @@ public class ActiviteResponse {
 
     // ─── Getters ─────────────────────────────────────────────────────────────
 
+    public Long getGroupeId() { return groupeId; }
+    public String getGroupeNom() { return groupeNom; }
+    public Long getReferentAssigneId() { return referentAssigneId; }
+    public String getReferentAssignePrenom() { return referentAssignePrenom; }
+    public String getReferentAssigneNom() { return referentAssigneNom; }
     public Long getId() { return id; }
     public String getTitre() { return titre; }
     public String getDescription() { return description; }

@@ -209,6 +209,27 @@ class ActivitePrivacyMySqlTest {
     }
 
     @Test
+    void authorizedResponseIncludesAssignmentAndPreservesUnassignedHistory() throws Exception {
+        em.clear();
+        ActiviteResponse response = service.getById(privateActivity.getId(), admin.getEmail());
+        assertThat(response.getGroupeId()).isEqualTo(group.getId());
+        assertThat(response.getGroupeNom()).isEqualTo(group.getNom());
+        assertThat(response.getReferentAssigneId()).isEqualTo(referent.getId());
+        assertThat(response.getReferentAssignePrenom()).isEqualTo(referent.getPrenom());
+        assertThat(response.getReferentAssigneNom()).isEqualTo(referent.getNom());
+        var json = new ObjectMapper().findAndRegisterModules().valueToTree(response);
+        assertThat(json.get("groupeId").asLong()).isEqualTo(group.getId());
+        assertThat(json.get("referentAssigneId").asLong()).isEqualTo(referent.getId());
+        ActiviteResponse legacy = service.getById(historical.getId(), admin.getEmail());
+        assertThat(legacy.getGroupeId()).isNull();
+        assertThat(legacy.getGroupeNom()).isNull();
+        assertThat(legacy.getReferentAssigneId()).isNull();
+        assertThat(legacy.getReferentAssignePrenom()).isNull();
+        assertThat(legacy.getReferentAssigneNom()).isNull();
+        assertThat(legacy.getVisibilite()).isEqualTo(VisibiliteActivite.MEMBRES);
+    }
+
+    @Test
     void partnerCatalogAndImageDtoCannotExposePrivateData() throws Exception {
         assertThat(partners.activitesSoutienOuverts(false)).extracting(m -> m.get("id")).containsExactly(publicActivity.getId());
         assertThat(partners.activitesSoutienOuverts(true)).extracting(m -> m.get("id"))

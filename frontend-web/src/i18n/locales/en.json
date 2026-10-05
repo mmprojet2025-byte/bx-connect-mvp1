@@ -3000,5 +3000,43 @@
     "supportsByStatus": "Support by status",
     "adminsByStatus": "Administrators by status",
     "auditOverview": "Audit overview"
+  },
+  "adminActivity": {
+    "type": "Activity type",
+    "general": "General activity",
+    "group": "Group activity",
+    "groupLabel": "Group",
+    "chooseGroup": "Choose a group",
+    "referent": "Group coordinator",
+    "noReferent": "No coordinator available",
+    "visibility": "Audience",
+    "public": "Public",
+    "private": "Group members only",
+    "free": "Free participation",
+    "saveDraft": "Save draft",
+    "draftSaved": "Draft saved.",
+    "generalAudience": "This activity will be visible to everyone after publication.",
+    "groupAudience": "This activity from group {{group}} will be visible to everyone.",
+    "privateAudience": "This activity will be restricted to accepted members of group {{group}}.",
+    "legacyAudience": "This historical activity remains visible to signed-in users after publication.",
+    "legacyPrice": "Historical price retained: €{{price}}",
+    "locked": "The type, group and audience are retained for this published or historical activity.",
+    "groupsLoading": "Loading groups and coordinators…",
+    "groupsError": "Unable to load groups and coordinators. Reload the page to try again.",
+    "unavailableGroup": "Group unavailable",
+    "selectedGroup": "selected",
+    "paidPublication": "A historical paid activity cannot be published. Its data is preserved.",
+    "errors": {
+      "titre": "Enter a title.",
+      "description": "Enter a description.",
+      "lieu": "Enter a location.",
+      "dateDebut": "Enter a valid start date and time.",
+      "dateFin": "Enter a valid end date and time.",
+      "dateOrder": "The end must be after the start.",
+      "capaciteMax": "Capacity must be a whole number greater than zero.",
+      "groupeId": "Choose an approved, active group.",
+      "referent": "This group needs an active coordinator matching the activity assignment. Check the group before continuing.",
+      "visibilite": "Choose a public or group-only audience."
+    }
   }
 }

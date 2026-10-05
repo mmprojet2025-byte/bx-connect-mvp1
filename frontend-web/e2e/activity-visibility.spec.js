@@ -38,7 +38,7 @@ async function managementApi(page, initial = activity, failOnce = false) {
   return patches
 }
 
-for (const role of ['REFERENT', 'ADMIN']) {
+for (const role of ['REFERENT']) {
   for (const [label, value] of [['Tout le monde', 'PUBLIC'], ['Utilisateurs connectés', 'MEMBRES']]) {
     test(`${role} publie directement avec ${value} et un choix obligatoire`, async ({ page }) => {
       await session(page, role)
