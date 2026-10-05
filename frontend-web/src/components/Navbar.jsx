@@ -163,7 +163,6 @@ export default function Navbar() {
               <AccountDropdown
                 open={openDropdown === 'account'}
                 active={location.pathname === '/profil'}
-                notificationsActive={location.pathname === '/notifications'}
                 onToggle={toggleDropdown}
                 isAuthenticated={isAuthenticated}
                 user={user}
@@ -260,7 +259,7 @@ function LanguageDropdown({ open, onToggle, i18n, onLanguageChange, t }) {
   )
 }
 
-function AccountDropdown({ open, active, notificationsActive, onToggle, isAuthenticated, user, onLogout, t }) {
+function AccountDropdown({ open, active, onToggle, isAuthenticated, user, onLogout, t }) {
   return (
     <div className="relative">
       <button
@@ -302,9 +301,6 @@ function AccountDropdown({ open, active, notificationsActive, onToggle, isAuthen
                 active={active}
                 dropdown
               />
-              {user?.role !== 'SUPER_ADMIN' && (
-                <NavItem item={{ to: '/notifications', label: t('nav.notifications'), icon: 'Bell' }} active={notificationsActive} dropdown />
-              )}
               <div className="my-1 border-t border-slate-100" />
               <button
                 type="button"

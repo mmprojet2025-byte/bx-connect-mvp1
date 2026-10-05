@@ -27,7 +27,6 @@ import SuperAdminAccountSecurity from './pages/super-admin/SuperAdminAccountSecu
 import Groupes          from './pages/groupes/Groupes'
 import GroupeEspace     from './pages/groupes/GroupeEspace'
 import Messagerie       from './pages/messagerie/Messagerie'
-import BusinessConversations from './pages/messagerie/BusinessConversations'
 
 // Pages Partenaire
 import PartenaireSpace from './pages/partenaire/PartenaireSpace'
@@ -223,7 +222,7 @@ export default function App() {
 
           {/* ── Pages Partenaire ── */}
           <Route path="/partenaire" element={<PartenaireRoute><PartenaireSpace /></PartenaireRoute>} />
-          <Route path="/partenaire/conversations" element={<PartenaireRoute><BusinessConversations mode="partenaire" /></PartenaireRoute>} />
+          <Route path="/partenaire/conversations/*" element={<PartenaireRoute><Navigate to="/partenaire" replace /></PartenaireRoute>} />
 
           {/* ── Pages Référent ── */}
           <Route path="/referent"             element={<Navigate to="/referent/dashboard" replace />} />
@@ -235,7 +234,7 @@ export default function App() {
           <Route path="/referent/activites/:id/presences" element={<ReferentRoute><PresenceSheet backTo="/referent/activites" tone="teal" /></ReferentRoute>} />
           <Route path="/referent/projets"     element={<ReferentRoute><ReferentProjets /></ReferentRoute>} />
           <Route path="/referent/messagerie"  element={<ReferentRoute><ReferentMessagerie /></ReferentRoute>} />
-          <Route path="/referent/conversations" element={<ReferentRoute><BusinessConversations mode="referent" /></ReferentRoute>} />
+          <Route path="/referent/conversations/*" element={<ReferentRoute><Navigate to="/referent/dashboard" replace /></ReferentRoute>} />
           <Route path="/referent/annonces"    element={<ReferentRoute><Annonces /></ReferentRoute>} />
 
           {/* MVP1.5 / masqué volontairement */}

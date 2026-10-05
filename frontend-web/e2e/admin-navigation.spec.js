@@ -159,33 +159,111 @@ test('notifications still support read state, deletion and ordinary module desti
   await expect(page).toHaveURL(/\/admin\/groupes$/)
 })
 
-for (const role of ['ADMIN', 'MEMBRE', 'REFERENT']) {
-  test(`${role}: recent storage ${role === 'ADMIN' ? 'is left untouched' : 'continues to record visits'}`, async ({ page }) => {
+
+for (const role of ['ADMIN', 'MEMBRE', 'REFERENT', 'PARTENAIRE', 'SUPER_ADMIN']) {
+  test(`${role}: recent navigation is absent and old storage is preserved`, async ({ page }) => {
     await setup(page, { role })
     await page.goto('/activites/99')
     await expect(page.locator('aside.app-sidebar nav')).toBeVisible()
-    if (role === 'ADMIN') {
-      await expect(page.getByRole('link', { name: 'Projet historique', exact: true })).toHaveCount(0)
-      expect(await page.evaluate(() => localStorage.getItem('bx-sidebar-recents-1'))).toBe(oldRecents)
-    } else {
-      await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('bx-sidebar-recents-1'))[0].to)).toBe('/activites/99')
-      await expect(page.locator('aside.app-sidebar nav').getByText('Récents', { exact: true })).toBeVisible()
-    }
+    await expect(page.getByRole('link', { name: 'Projet historique', exact: true })).toHaveCount(0)
+    await expect(page.locator('aside.app-sidebar nav').getByText('Récents', { exact: true })).toHaveCount(0)
+    expect(await page.evaluate(() => localStorage.getItem('bx-sidebar-recents-1'))).toBe(oldRecents)
   })
 }
 
-for (const [role, paths] of [
-  ['MEMBRE', ['/messagerie']],
-  ['REFERENT', ['/referent/messagerie', '/referent/conversations']],
-  ['PARTENAIRE', ['/partenaire/conversations']],
-]) {
-  test(`${role}: existing messaging routes remain accessible`, async ({ page }) => {
+for (const [role, path] of [['MEMBRE', '/messagerie'], ['REFERENT', '/referent/messagerie']]) {
+  test(`${role}: member–referent messaging remains accessible`, async ({ page }) => {
     await setup(page, { role })
-    for (const path of paths) {
-      await page.goto(path)
-      await expect(page).toHaveURL(new RegExp(`${path}$`))
-      await expect(page.locator(`aside.app-sidebar nav a[href="${path}"]`)).toBeVisible()
-      await expect(page.locator('aside.app-sidebar nav a[href="/notifications"]')).toBeVisible()
+    await page.goto(path)
+    await expect(page).toHaveURL(new RegExp(`${path}$`))
+    await expect(page.locator(`aside.app-sidebar nav a[href="${path}"]`)).toBeVisible()
+    await expect(page.locator('aside.app-sidebar nav a[href="/notifications"]')).toHaveCount(0)
+  })
+}
+
+const roleNavigation = {
+  REFERENT: t => ({
+    paths: ['/referent/dashboard', '/referent/groupes', '/referent/membres', '/referent/activites', '/referent/projets', '/referent/demandes', '/referent/messagerie'],
+    labels: [t.nav.dashboard, t.nav.myGroups, t.nav.members, t.nav.activities, t.nav.projects, t.sidebar.labels.membershipRequests, t.nav.messaging],
+    sections: [t.sidebar.sections.pilotage, t.sidebar.sections.management, t.sidebar.sections.communication],
+  }),
+  PARTENAIRE: t => ({
+    paths: ['/partenaire?tab=dashboard', '/partenaire?tab=projets', '/partenaire?tab=activites', '/partenaire?tab=soutiens'],
+    labels: [t.nav.dashboard, t.nav.projects, t.nav.activities, t.nav.supports],
+    sections: [t.sidebar.sections.pilotage, t.sidebar.sections.management],
+  }),
+  MEMBRE: t => ({
+    paths: ['/dashboard', '/groupes', '/activites', '/projets', '/messagerie'],
+    labels: [t.nav.dashboard, t.nav.groups, t.nav.activities, t.nav.projects, t.nav.messaging],
+    sections: [t.sidebar.sections.pilotage, t.sidebar.sections.management, t.sidebar.sections.communication],
+  }),
+  SUPER_ADMIN: t => ({
+    paths: ['/super-admin/dashboard', '/super-admin/admins', '/super-admin/logs'],
+    labels: [t.nav.dashboard, t.nav.admins, t.nav.logs],
+    sections: [t.sidebar.sections.pilotage, t.sidebar.sections.security],
+  }),
+}
+
+for (const role of Object.keys(roleNavigation)) {
+  for (const lang of ['fr', 'nl', 'en']) {
+    for (const layout of ['desktop', 'compact', 'responsive']) {
+      test(`${role} ${lang}: harmonized navigation in ${layout}`, async ({ page }) => {
+        const t = translations[lang]
+        const expected = roleNavigation[role](t)
+        await page.setViewportSize(layout === 'responsive' ? { width: 390, height: 844 } : { width: 1440, height: 900 })
+        await setup(page, { role, lang })
+        await page.goto('/activites/99')
+        let nav = page.locator('aside.app-sidebar nav')
+        if (layout === 'compact') await page.getByRole('button', { name: t.sidebar.collapse, exact: true }).click()
+        if (layout === 'responsive') {
+          await page.getByRole('button', { name: t.nav.openMenu, exact: true }).click()
+          nav = page.locator('#app-sidebar-mobile-drawer nav')
+        }
+        await expect(nav).toBeVisible()
+        expect(await nav.getByRole('link').evaluateAll(links => links.map(link => link.getAttribute('href')))).toEqual(expected.paths)
+        if (layout === 'compact') {
+          expect(await nav.getByRole('link').evaluateAll(links => links.map(link => link.title))).toEqual(expected.labels)
+        } else {
+          await expect(nav.getByRole('link')).toHaveText(expected.labels)
+          await expect(nav.locator('section > p')).toHaveText(expected.sections)
+        }
+      })
+    }
+  }
+}
+
+for (const [role, home] of [['REFERENT', '/referent/dashboard'], ['PARTENAIRE', '/partenaire']]) {
+  test(`${role}: retired conversation URLs and notifications do not reopen the module`, async ({ page }) => {
+    const { requests, notifications } = await setup(page, { role })
+    for (const suffix of ['', '?conversationId=42', '/42']) {
+      await page.goto(`/${role.toLowerCase()}/conversations${suffix}`)
+      await expect(page).toHaveURL(new RegExp(`${home}$`))
+    }
+    await page.getByRole('link', { name: translations.fr.nav.notifications, exact: true }).click()
+    const card = page.locator('article').filter({ hasText: notifications[0].titre })
+    await card.getByRole('button', { name: translations.fr.common.open, exact: true }).click()
+    await expect(page).toHaveURL(new RegExp(`${home.replaceAll('?', '\\?')}(?:\\?tab=dashboard)?$`))
+    expect(notifications[0].lue).toBe(true)
+    expect(requests.some(request => request.path.includes('conversations-metier'))).toBe(false)
+  })
+}
+
+for (const role of ['ADMIN', 'REFERENT', 'PARTENAIRE', 'MEMBRE', 'SUPER_ADMIN']) {
+  test(`${role}: bell access and account menu have no notification duplicate`, async ({ page }) => {
+    const { requests } = await setup(page, { role })
+    await page.goto('/activites/99')
+    await page.getByRole('button', { name: new RegExp(`${translations.fr.nav.account}$`) }).click()
+    await expect(page.getByRole('menu').locator('a[href="/notifications"]')).toHaveCount(0)
+    const bell = page.getByRole('link', { name: translations.fr.nav.notifications, exact: true })
+    if (role === 'SUPER_ADMIN') {
+      await expect(bell).toHaveCount(0)
+      expect(requests.some(request => request.path.startsWith('/api/notifications'))).toBe(false)
+    } else {
+      await expect(bell).toHaveCount(1)
+      await expect(bell).toContainText('3')
+      await bell.click()
+      await expect(page).toHaveURL(/\/notifications$/)
+      await expect(page.locator('article')).toHaveCount(3)
     }
   })
 }

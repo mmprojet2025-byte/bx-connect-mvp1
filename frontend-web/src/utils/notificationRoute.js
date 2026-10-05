@@ -76,7 +76,7 @@ export function dashboardRouteForRole(role) {
 }
 
 export function resolveNotificationRoute(notification = {}, role = 'MEMBRE') {
-  if (isRetiredAdminConversation(notification, role)) return ROLE_ROUTES.ADMIN.dashboard
+  if (isRetiredBusinessConversation(notification, role)) return dashboardRouteForRole(role)
 
   const type = String(notification.type || '').toUpperCase()
   const actionPath = String(notification.lienAction || '').toLowerCase()
@@ -99,7 +99,7 @@ export function resolveNotificationRoute(notification = {}, role = 'MEMBRE') {
 }
 
 export function hasExactNotificationRoute(notification = {}, role = 'MEMBRE') {
-  if (isRetiredAdminConversation(notification, role)) return false
+  if (isRetiredBusinessConversation(notification, role)) return false
   return !!exactRouteFromAction(String(notification.lienAction || '').toLowerCase(), role)
 }
 
@@ -150,10 +150,10 @@ function isBusinessConversationNotification(type) {
   return type === 'BUSINESS_CONVERSATION_CREATED' || type === 'BUSINESS_MESSAGE'
 }
 
-function isRetiredAdminConversation(notification, role) {
-  if (role !== 'ADMIN') return false
+function isRetiredBusinessConversation(notification, role) {
+  if (!['ADMIN', 'REFERENT', 'PARTENAIRE'].includes(role)) return false
   const type = String(notification.type || '').toUpperCase()
   const actionPath = String(notification.lienAction || '').toLowerCase()
   return isBusinessConversationNotification(type)
-    || /\/(?:admin\/conversations|conversations-metier)(?:[/?#]|$)/.test(actionPath)
+    || /\/(?:(?:admin|referent|partenaire)\/conversations|conversations-metier)(?:[/?#]|$)/.test(actionPath)
 }

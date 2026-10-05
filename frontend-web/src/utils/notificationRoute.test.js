@@ -31,12 +31,12 @@ test('ordinary ADMIN notification destinations remain available', () => {
   }
 })
 
-test('REFERENT and PARTENAIRE retain their exact business conversation destinations', () => {
-  for (const [role, path] of [['REFERENT', '/referent/conversations'], ['PARTENAIRE', '/partenaire/conversations']]) {
+test('REFERENT and PARTENAIRE historical business notifications fall back to their dashboards', () => {
+  for (const [role, path] of [['REFERENT', '/referent/dashboard'], ['PARTENAIRE', '/partenaire?tab=dashboard']]) {
     for (const type of ['BUSINESS_MESSAGE', 'BUSINESS_CONVERSATION_CREATED']) {
       const notification = { type, lienAction: '/api/conversations-metier/42' }
-      assert.equal(resolveNotificationRoute(notification, role), `${path}?conversationId=42`)
-      assert.equal(hasExactNotificationRoute(notification, role), true)
+      assert.equal(resolveNotificationRoute(notification, role), path)
+      assert.equal(hasExactNotificationRoute(notification, role), false)
     }
   }
 })
@@ -46,5 +46,30 @@ test('normal member and referent messaging destinations remain unchanged', () =>
     const notification = { type: 'MESSAGE', lienAction: '/messages/17' }
     assert.equal(resolveNotificationRoute(notification, role), path)
     assert.equal(hasExactNotificationRoute(notification, role), true)
+  }
+})
+
+test('retired role conversation links without a type return to the role dashboard', () => {
+  for (const [role, prefix, dashboard] of [
+    ['REFERENT', '/referent', '/referent/dashboard'],
+    ['PARTENAIRE', '/partenaire', '/partenaire?tab=dashboard'],
+  ]) {
+    for (const suffix of ['/conversations', '/conversations/42', '/conversations?conversationId=42']) {
+      assert.equal(resolveNotificationRoute({ lienAction: prefix + suffix }, role), dashboard)
+      assert.equal(hasExactNotificationRoute({ lienAction: prefix + suffix }, role), false)
+    }
+  }
+})
+
+test('ordinary notifications retain destinations for each business role', () => {
+  for (const [role, lienAction, expected] of [
+    ['MEMBRE', '/activites/9', '/activites/9'],
+    ['MEMBRE', '/groupes/7', '/groupes/7'],
+    ['REFERENT', '/referent/demandes', '/referent/demandes'],
+    ['REFERENT', '/projets/8', '/referent/projets'],
+    ['PARTENAIRE', '/partenaire?tab=soutiens&soutien=12', '/partenaire?tab=soutiens&soutien=12'],
+    ['PARTENAIRE', '/projets/8', '/projets/8'],
+  ]) {
+    assert.equal(resolveNotificationRoute({ lienAction }, role), expected)
   }
 })
