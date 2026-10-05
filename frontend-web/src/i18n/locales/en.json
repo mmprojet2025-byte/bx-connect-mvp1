@@ -1895,6 +1895,7 @@
     "errorResetPassword": "Unable to reset the password.",
     "createAdmin": "Create an ADMIN",
     "createAdminButton": "Create ADMIN",
+    "confirmTemporaryPassword": "Confirm temporary password",
     "noAdmin": "No ADMIN.",
     "resetPassword": "Reset password",
     "newTemporaryPassword": "New temporary password",

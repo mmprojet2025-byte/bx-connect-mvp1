@@ -1895,6 +1895,7 @@
     "errorResetPassword": "Kan het wachtwoord niet resetten.",
     "createAdmin": "ADMIN aanmaken",
     "createAdminButton": "ADMIN aanmaken",
+    "confirmTemporaryPassword": "Tijdelijk wachtwoord bevestigen",
     "noAdmin": "Geen ADMIN.",
     "resetPassword": "Wachtwoord resetten",
     "newTemporaryPassword": "Nieuw tijdelijk wachtwoord",

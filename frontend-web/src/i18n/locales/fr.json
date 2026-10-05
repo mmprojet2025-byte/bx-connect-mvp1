@@ -1895,6 +1895,7 @@
     "errorResetPassword": "Impossible de réinitialiser le mot de passe.",
     "createAdmin": "Créer un ADMIN",
     "createAdminButton": "Créer ADMIN",
+    "confirmTemporaryPassword": "Confirmer le mot de passe temporaire",
     "noAdmin": "Aucun ADMIN.",
     "resetPassword": "Réinitialiser le mot de passe",
     "newTemporaryPassword": "Nouveau mot de passe temporaire",

@@ -32,6 +32,9 @@ export default function SuperAdminAdmins() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [form, setForm] = useState(emptyForm)
+  const [confirmation, setConfirmation] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmation, setShowConfirmation] = useState(false)
   const [resetTarget, setResetTarget] = useState(null)
   const [newPassword, setNewPassword] = useState('')
   const [recherche, setRecherche] = useState('')
@@ -48,11 +51,23 @@ export default function SuperAdminAdmins() {
   const createAdmin = async (e) => {
     e.preventDefault()
     clearFeedback()
+    // Preserve the existing CreateAdminRequest policy (@NotBlank, @Size(min = 8)).
+    if (!form.motDePasseTemporaire.trim() || form.motDePasseTemporaire.length < 8) {
+      setError(t('users.errorTemporaryPassword'))
+      return
+    }
+    if (form.motDePasseTemporaire !== confirmation) {
+      setError(t('auth.error_passwords'))
+      return
+    }
     setSaving(true)
     try {
       const res = await api.post('/super-admin/admins', form)
       setAdmins(prev => [...prev, res.data])
       setForm(emptyForm)
+      setConfirmation('')
+      setShowPassword(false)
+      setShowConfirmation(false)
       setMessage(t('superAdmin.adminCreated'))
     } catch (err) {
       setError(formatCreationError(err, t, t('superAdmin.errorAdminCreate')))
@@ -130,12 +145,26 @@ export default function SuperAdminAdmins() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input label={t('users.firstname')} value={form.prenom} onChange={value => setForm({ ...form, prenom: value })} />
           <Input label={t('users.lastname')} value={form.nom} onChange={value => setForm({ ...form, nom: value })} />
-          <Input label={t('users.email')} type="email" value={form.email} onChange={value => setForm({ ...form, email: value })} />
-          <Input
+          <div className="md:col-span-2">
+            <Input label={t('users.email')} type="email" value={form.email} onChange={value => setForm({ ...form, email: value })} />
+          </div>
+          <PasswordInput
+            id="admin-temporary-password"
             label={t('users.temporaryPassword')}
-            type="password"
             value={form.motDePasseTemporaire}
             onChange={value => setForm({ ...form, motDePasseTemporaire: value })}
+            visible={showPassword}
+            onToggle={() => setShowPassword(value => !value)}
+            t={t}
+          />
+          <PasswordInput
+            id="admin-temporary-password-confirmation"
+            label={t('superAdmin.confirmTemporaryPassword')}
+            value={confirmation}
+            onChange={setConfirmation}
+            visible={showConfirmation}
+            onToggle={() => setShowConfirmation(value => !value)}
+            t={t}
           />
         </div>
         <button
@@ -389,6 +418,35 @@ function Input({ label, value, onChange, type = 'text' }) {
   )
 }
 
+function PasswordInput({ id, label, value, onChange, visible, onToggle, t }) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <div className="relative">
+        <input
+          id={id}
+          type={visible ? 'text' : 'password'}
+          required
+          autoComplete="new-password"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={visible ? t('auth.hide_password') : t('auth.show_password')}
+          aria-pressed={visible}
+          aria-controls={id}
+          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-400 transition hover:text-blue-700"
+        >
+          <AppIcon name={visible ? 'EyeOff' : 'Eye'} className="h-5 w-5" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function StatusBadge({ actif, t }) {
   const className = actif ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
   return (
@@ -403,7 +461,7 @@ function Alert({ type, children }) {
     ? 'bg-red-50 border-red-200 text-red-700'
     : 'bg-green-50 border-green-200 text-green-700'
 
-  return <div className={`border px-4 py-3 rounded-xl mb-5 text-sm ${styles}`}>{children}</div>
+  return <div role={type === 'error' ? 'alert' : 'status'} className={`border px-4 py-3 rounded-xl mb-5 text-sm ${styles}`}>{children}</div>
 }
 
 function formatDate(value, language = 'fr') {
