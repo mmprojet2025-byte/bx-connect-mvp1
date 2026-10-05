@@ -1,6 +1,5 @@
 package com.bxjeunes.bx_connect.service;
 
-import com.bxjeunes.bx_connect.entity.VisibiliteActivite;
 import com.bxjeunes.bx_connect.dto.PresenceBulkRequest;
 import com.bxjeunes.bx_connect.dto.PresenceRequest;
 import com.bxjeunes.bx_connect.dto.PresenceResponse;
@@ -171,9 +170,7 @@ public class PresenceService {
             throw new IllegalArgumentException("L'activité n'a pas encore commencé.");
         }
         // Les marqueurs existants suffisent : aucune réouverture normale, même sur une ancienne feuille partielle.
-        if (inscriptionRepository.findByActiviteId(activite.getId()).stream()
-                .filter(inscription -> inscription.getStatut() != StatutInscription.ANNULEE)
-                .anyMatch(inscription -> inscription.getDateValidationPresence() != null)) {
+        if (inscriptionRepository.existsByActiviteIdAndDateValidationPresenceIsNotNull(activite.getId())) {
             throw new IllegalArgumentException("Cette feuille de présence est déjà validée et reste en lecture seule.");
         }
     }
@@ -185,28 +182,21 @@ public class PresenceService {
     }
 
     private void verifierAccesLecture(User utilisateur, Activite activite) {
-        if (utilisateur.getRole() == Role.ADMIN) {
+        if (utilisateur.getRole() == Role.ADMIN && utilisateur.isActif()) {
             return;
         }
         verifierAccesReferent(utilisateur, activite);
     }
 
     private void verifierAccesGestion(User utilisateur, Activite activite) {
-        if (utilisateur.getRole() == Role.ADMIN) {
+        if (utilisateur.getRole() == Role.ADMIN && utilisateur.isActif()) {
             return;
         }
         verifierAccesReferent(utilisateur, activite);
     }
 
     private void verifierAccesReferent(User utilisateur, Activite activite) {
-        if (activite.getVisibilite() == VisibiliteActivite.PRIVE_GROUPE
-                && !ActiviteLecture.gestion(activite, utilisateur)) {
-            throw new AccessDeniedException("Activité introuvable.");
-        }
-        if (utilisateur.getRole() != Role.REFERENT) {
-            throw new AccessDeniedException("Acces reserve aux ADMIN et REFERENTS.");
-        }
-        if (activite.getCreateur() == null || !activite.getCreateur().getId().equals(utilisateur.getId())) {
+        if (!ActiviteLecture.gestion(activite, utilisateur)) {
             throw new AccessDeniedException("Vous ne pouvez gerer que les presences de vos propres activites.");
         }
     }

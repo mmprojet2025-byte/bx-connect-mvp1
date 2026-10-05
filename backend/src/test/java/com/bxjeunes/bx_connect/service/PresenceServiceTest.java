@@ -146,6 +146,7 @@ class PresenceServiceTest {
     @Test
     void validatedSheetCannotBeEditedOrValidatedAgainButRemainsReadable() {
         writableActivity(); active.setDateValidationPresence(LocalDateTime.now());
+        when(inscriptions.existsByActiviteIdAndDateValidationPresenceIsNotNull(42L)).thenReturn(true);
         when(inscriptions.findByActiviteId(42L)).thenReturn(List.of(active));
         when(activites.findById(42L)).thenReturn(Optional.of(activity));
         allWritesRefused(IllegalArgumentException.class);

@@ -137,7 +137,7 @@ public class MembreDashboardService {
         }
         LocalDateTime now = LocalDateTime.now();
         return activiteRepository
-                .findByCreateurIdAndStatut(groupe.getReferent().getId(), StatutActivite.PUBLIEE)
+                .findByGroupeIdAndStatut(groupe.getId(), StatutActivite.PUBLIEE)
                 .stream().filter(lecteur::catalogue)
                 .filter(activite -> activite.getDateDebut() != null && activite.getDateDebut().isAfter(now))
                 .count();

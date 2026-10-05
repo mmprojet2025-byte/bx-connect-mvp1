@@ -100,7 +100,7 @@ class MembreDashboardServiceTest {
         when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
         when(membreGroupeRepository.findByUserId(membre.getId())).thenReturn(List.of(adhesion));
         when(membreGroupeRepository.countByGroupeIdAndStatut(10L, StatutMembre.ACCEPTE)).thenReturn(1L);
-        when(activiteRepository.findByCreateurIdAndStatut(org.mockito.Mockito.eq(referent.getId()), org.mockito.Mockito.any()))
+        when(activiteRepository.findByGroupeIdAndStatut(org.mockito.Mockito.eq(10L), org.mockito.Mockito.any()))
                 .thenReturn(List.of());
         when(inscriptionRepository.findByMembreId(membre.getId())).thenReturn(List.of(inscription));
         when(projetRepository.findByPorteurId(membre.getId())).thenReturn(List.of(projet));

@@ -55,6 +55,10 @@ public class InscriptionService {
         User membre = userRepository.findByEmail(emailMembre)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + emailMembre));
 
+        if (membre.getRole() != Role.MEMBRE || !membre.isActif()) {
+            throw new AccessDeniedException("Inscription réservée aux membres actifs.");
+        }
+
         // 2. Récupérer l'activité
         Activite activite = activiteRepository.findByIdForUpdate(request.getActiviteId())
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + request.getActiviteId()));
@@ -75,6 +79,10 @@ public class InscriptionService {
 
         if (activite.getDateDebut() == null || !activite.getDateDebut().isAfter(LocalDateTime.now())) {
             throw new RuntimeException("Les inscriptions à cette activité sont clôturées.");
+        }
+
+        if (inscriptionRepository.existsByActiviteIdAndDateValidationPresenceIsNotNull(activite.getId())) {
+            throw new IllegalArgumentException("Les inscriptions sont clôturées : feuille de présence déjà validée.");
         }
 
         // 4. Vérifier que le membre n'est pas déjà inscrit
@@ -135,18 +143,27 @@ public class InscriptionService {
 
     // ─── Annuler son inscription (M12 CDC) ──────────────────────────────────
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public InscriptionResponse annuler(Long inscriptionId, String emailMembre) {
-        Inscription inscription = inscriptionRepository.findById(inscriptionId)
-                .orElseThrow(() -> new RuntimeException("Inscription introuvable : " + inscriptionId));
-
-        // Vérifier que c'est bien l'inscription du membre connecté
-        if (!inscription.getMembre().getEmail().equals(emailMembre)) {
-            throw new RuntimeException("Vous n'êtes pas autorisé à annuler cette inscription.");
+        Long activiteId = inscriptionRepository.findActiviteIdForOwner(inscriptionId, emailMembre)
+                .orElseThrow(() -> new RuntimeException("Inscription introuvable ou vous n'êtes pas autorisé."));
+        // Same lock and ordering as registration, attendance encoding/validation and activity status changes.
+        Activite activite = activiteRepository.findByIdForUpdate(activiteId)
+                .orElseThrow(() -> new RuntimeException("Inscription introuvable."));
+        Inscription inscription = inscriptionRepository.findByIdAndActiviteId(inscriptionId, activiteId)
+                .orElseThrow(() -> new RuntimeException("Inscription introuvable."));
+        User membre = inscription.getMembre();
+        if (!membre.getEmail().equals(emailMembre) || membre.getRole() != Role.MEMBRE || !membre.isActif()) {
+            throw new AccessDeniedException("Inscription introuvable.");
         }
-
         if (inscription.getStatut() == StatutInscription.ANNULEE) {
             throw new RuntimeException("Cette inscription est déjà annulée.");
+        }
+        if (activite.getStatut() != StatutActivite.PUBLIEE
+                || activite.getDateDebut() == null || !activite.getDateDebut().isAfter(LocalDateTime.now())
+                || inscriptionRepository.existsByActiviteIdAndDateValidationPresenceIsNotNull(activiteId)) {
+            // The owner may have lost private access: do not disclose status, dates or sheet details.
+            throw new IllegalArgumentException("Désinscription indisponible.");
         }
 
         StatutInscription ancienStatut = inscription.getStatut();

@@ -470,7 +470,9 @@ class ActiviteSecurityTest {
         inscription.setActivite(activite);
         inscription.setStatut(StatutInscription.CONFIRMEE);
 
-        when(inscriptionRepository.findById(70L)).thenReturn(Optional.of(inscription));
+        when(inscriptionRepository.findActiviteIdForOwner(70L, membre.getEmail())).thenReturn(Optional.of(30L));
+        when(activiteRepository.findByIdForUpdate(30L)).thenReturn(Optional.of(activite));
+        when(inscriptionRepository.findByIdAndActiviteId(70L, 30L)).thenReturn(Optional.of(inscription));
         when(inscriptionRepository.save(inscription)).thenReturn(inscription);
 
         var response = inscriptionService.annuler(70L, membre.getEmail());

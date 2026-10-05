@@ -35,6 +35,11 @@ public class ReferentService {
         this.soutienRepository   = soutienRepository;
     }
 
+    private long participantsActifs(Long activiteId) {
+        return inscriptionRepository.countByActiviteIdAndStatutIn(
+                activiteId, List.of(StatutInscription.CONFIRMEE, StatutInscription.PAYEE));
+    }
+
     // ─── Dashboard référent ───────────────────────────────────────────────────
     public Map<String, Object> dashboard(String email) {
         User referent = userRepository.findByEmail(email)
@@ -43,11 +48,11 @@ public class ReferentService {
         List<ActiviteResponse> mesActivites = activiteRepository
                 .findByCreateurIdOrReferentAssigneId(referent.getId(), referent.getId())
                 .stream().filter(a -> ActiviteLecture.gestion(a, referent))
-                .map(ActiviteResponse::fromEntity)
+                .map(a -> ActiviteResponse.fromEntity(a, (int) participantsActifs(a.getId())))
                 .collect(Collectors.toList());
 
         long totalInscriptions = mesActivites.stream()
-                .mapToLong(a -> inscriptionRepository.findByActiviteId(a.getId()).size())
+                .mapToLong(ActiviteResponse::getNombreInscrits)
                 .sum();
 
         List<ProjetResponse> projetsSoumis = projetRepository
@@ -74,7 +79,7 @@ public class ReferentService {
                 .orElseThrow(() -> new RuntimeException("Référent introuvable"));
         return activiteRepository.findByCreateurIdOrReferentAssigneId(referent.getId(), referent.getId())
                 .stream().filter(a -> ActiviteLecture.gestion(a, referent))
-                .map(ActiviteResponse::fromEntity)
+                .map(a -> ActiviteResponse.fromEntity(a, (int) participantsActifs(a.getId())))
                 .collect(Collectors.toList());
     }
 
@@ -86,7 +91,7 @@ public class ReferentService {
         return activiteRepository.findByCreateurIdOrReferentAssigneId(referent.getId(), referent.getId()).stream()
                 .filter(a -> ActiviteLecture.gestion(a, referent))
                 .map(a -> {
-                    long inscrits = inscriptionRepository.findByActiviteId(a.getId()).size();
+                    long inscrits = participantsActifs(a.getId());
                     int capacite  = a.getCapaciteMax();
                     double taux   = capacite > 0 ? (inscrits * 100.0 / capacite) : 0;
 

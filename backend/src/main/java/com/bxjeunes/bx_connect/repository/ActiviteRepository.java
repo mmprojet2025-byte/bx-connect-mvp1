@@ -88,6 +88,8 @@ public interface ActiviteRepository extends JpaRepository<Activite, Long>, JpaSp
     // ─── Activités créées par un utilisateur (référent/admin) ────────────────
     List<Activite> findByCreateurId(Long createurId);
 
+    List<Activite> findByGroupeIdAndStatut(Long groupeId, StatutActivite statut);
+
     List<Activite> findByCreateurIdOrReferentAssigneId(Long createurId, Long referentAssigneId);
 
     // ─── Activités d'un référent (pour dashboard référent) ───────────────────
