@@ -37,16 +37,17 @@ class ActiviteVisibilityTest {
 
     @BeforeEach
     void setup() {
-        service = new ActiviteService(activities, users, inscriptions, notifications, audit);
+        service = new ActiviteService(activities, users, inscriptions, notifications, audit, mock(com.bxjeunes.bx_connect.repository.GroupeRepository.class));
         owner = user(1L, Role.REFERENT);
         publique = activity(10L, VisibiliteActivite.PUBLIC);
         membres = activity(11L, VisibiliteActivite.MEMBRES);
     }
 
     @ParameterizedTest
-    // Existing publication contract only; private-group business rules are a later lot.
+    // Historical MEMBRES drafts retain their visibility; no new MEMBRES activity is created.
     @EnumSource(value = VisibiliteActivite.class, names = {"PUBLIC", "MEMBRES"})
     void ownerPublishesWithExplicitVisibility(VisibiliteActivite visibility) {
+        publique.setVisibilite(visibility);
         publique.setStatut(StatutActivite.BROUILLON);
         when(activities.findByIdForUpdate(10L)).thenReturn(Optional.of(publique));
         when(users.findByEmail(owner.getEmail())).thenReturn(Optional.of(owner));
@@ -62,6 +63,7 @@ class ActiviteVisibilityTest {
 
     @Test
     void adminPublishesWithoutApprovalAndLaterTransitionPreservesVisibility() {
+        publique.setVisibilite(VisibiliteActivite.MEMBRES);
         User admin = user(3L, Role.ADMIN);
         publique.setStatut(StatutActivite.BROUILLON);
         when(activities.findByIdForUpdate(10L)).thenReturn(Optional.of(publique));
@@ -195,7 +197,7 @@ class ActiviteVisibilityTest {
 
     private Activite activity(Long id, VisibiliteActivite visibility) {
         Activite a = new Activite();
-        a.setId(id); a.setTitre("Atelier"); a.setCreateur(owner); a.setStatut(StatutActivite.PUBLIEE);
+        a.setId(id); a.setTitre("Atelier"); a.setDescription("Description"); a.setLieu("Bruxelles"); a.setCreateur(owner); a.setStatut(StatutActivite.PUBLIEE);
         a.setVisibilite(visibility); a.setCapaciteMax(1); a.setDateDebut(LocalDateTime.now().plusDays(1));
         a.setDateFin(LocalDateTime.now().plusDays(1).plusHours(1));
         return a;

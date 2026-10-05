@@ -90,7 +90,7 @@ class ActiviteVisibilityMySqlTest {
 
     @Test
     void publicationPersistsStatusAndVisibilityTogether() {
-        Activite draft = create("Publication", StatutActivite.BROUILLON, VisibiliteActivite.PUBLIC);
+        Activite draft = create("Publication", StatutActivite.BROUILLON, VisibiliteActivite.MEMBRES);
         assertThatThrownBy(() -> service.changerStatut(draft.getId(), StatutActivite.PUBLIEE, null, "referent@test.invalid"))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(activities.findById(draft.getId()).orElseThrow().getStatut()).isEqualTo(StatutActivite.BROUILLON);
@@ -129,6 +129,7 @@ class ActiviteVisibilityMySqlTest {
         register(activity, StatutInscription.PAYEE);
         register(activity, StatutInscription.ANNULEE);
         ActiviteRequest request = new ActiviteRequest();
+        request.setDescription("Description"); request.setLieu(activity.getLieu());
         request.setTitre(activity.getTitre()); request.setDateDebut(activity.getDateDebut());
         request.setDateFin(activity.getDateFin()); request.setCapaciteMax(capacity);
         if (capacity < 2) {
@@ -197,7 +198,7 @@ class ActiviteVisibilityMySqlTest {
         Activite activity = new Activite();
         User owner = new User(); owner.setId(1L);
         activity.setCreateur(owner); activity.setTitre(label); activity.setCategorie(label);
-        activity.setTheme(label); activity.setLieu(label); activity.setStatut(status); activity.setVisibilite(visibility);
+        activity.setDescription("Description"); activity.setTheme(label); activity.setLieu(label); activity.setStatut(status); activity.setVisibilite(visibility);
         activity.setCapaciteMax(5); activity.setDateDebut(LocalDateTime.now().plusDays(1));
         activity.setDateFin(LocalDateTime.now().plusDays(2));
         return activities.saveAndFlush(activity);

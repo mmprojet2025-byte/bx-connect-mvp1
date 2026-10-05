@@ -60,7 +60,8 @@ class PushWorkflowNotificationTest {
                 userRepository,
                 inscriptionRepository,
                 notificationService,
-                auditLogService
+                auditLogService,
+                groupeRepository
         ).changerStatut(8L, StatutActivite.PUBLIEE, com.bxjeunes.bx_connect.entity.VisibiliteActivite.PUBLIC, admin.getEmail());
 
         verify(notificationService, never()).creer(

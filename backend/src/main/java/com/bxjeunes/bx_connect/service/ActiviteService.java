@@ -5,6 +5,9 @@ import com.bxjeunes.bx_connect.dto.ActiviteRequest;
 import com.bxjeunes.bx_connect.dto.ActiviteResponse;
 import com.bxjeunes.bx_connect.dto.PagedResponse;
 import com.bxjeunes.bx_connect.entity.Activite;
+import com.bxjeunes.bx_connect.entity.Groupe;
+import com.bxjeunes.bx_connect.entity.StatutGroupe;
+import com.bxjeunes.bx_connect.repository.GroupeRepository;
 import com.bxjeunes.bx_connect.entity.Inscription;
 import com.bxjeunes.bx_connect.entity.Role;
 import com.bxjeunes.bx_connect.entity.StatutActivite;
@@ -28,6 +31,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,29 +45,37 @@ public class ActiviteService {
     private final InscriptionRepository inscriptionRepository;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
+    private final GroupeRepository groupeRepository;
 
     public ActiviteService(ActiviteRepository activiteRepository,
                            UserRepository userRepository,
                            InscriptionRepository inscriptionRepository,
                            NotificationService notificationService,
-                           AuditLogService auditLogService) {
+                           AuditLogService auditLogService,
+                           GroupeRepository groupeRepository) {
         this.activiteRepository = activiteRepository;
         this.userRepository = userRepository;
         this.inscriptionRepository = inscriptionRepository;
         this.notificationService = notificationService;
         this.auditLogService = auditLogService;
+        this.groupeRepository = groupeRepository;
     }
 
     // ─── Créer une activité ───────────────────────────────────────────────────
+    @Transactional
     public ActiviteResponse creer(ActiviteRequest request, String emailCreateur) {
         validerDonneesActivite(request);
-        if (!request.isGratuite()) {
+        if (!request.isGratuite() || request.getPrix() != null) {
             throw new RuntimeException("La création d'activités payantes est indisponible dans cette version.");
         }
         User createur = userRepository.findByEmail(emailCreateur)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + emailCreateur));
 
+        if (createur.getRole() != Role.ADMIN && createur.getRole() != Role.REFERENT) {
+            throw new AccessDeniedException("Seuls ADMIN et REFERENT peuvent créer une activité.");
+        }
         Activite activite = new Activite();
+        appliquerAffectation(activite, request, createur, true);
         activite.setTitre(request.getTitre());
         activite.setDescription(request.getDescription());
         activite.setDateDebut(request.getDateDebut());
@@ -217,6 +229,7 @@ public class ActiviteService {
             throw new IllegalArgumentException("La capacité ne peut pas être inférieure au nombre d'inscriptions actives.");
         }
 
+        appliquerAffectation(activite, request, acteur, false);
         activite.setTitre(request.getTitre());
         activite.setDescription(request.getDescription());
         activite.setDateDebut(request.getDateDebut());
@@ -243,8 +256,9 @@ public class ActiviteService {
         validerTransition(activite, nouveauStatut);
         if (ancienStatut == StatutActivite.BROUILLON && nouveauStatut == StatutActivite.PUBLIEE) {
             if (visibilite == null) {
-                throw new IllegalArgumentException("La visibilite PUBLIC ou MEMBRES est obligatoire pour publier.");
+                throw new IllegalArgumentException("La visibilite est obligatoire pour publier.");
             }
+            validerPublication(activite, visibilite);
             activite.setVisibilite(visibilite);
         } else if (visibilite != null && visibilite != activite.getVisibilite()) {
             throw new IllegalArgumentException("La visibilite se choisit lors de la publication du brouillon.");
@@ -278,6 +292,7 @@ public class ActiviteService {
     }
 
     // ─── Supprimer une activité ───────────────────────────────────────────────
+    @Transactional
     public void supprimer(Long id, String emailUser) {
         Activite activite = activiteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
@@ -292,20 +307,135 @@ public class ActiviteService {
         if (user.getRole() == Role.ADMIN) {
             return user;
         }
-        if (user.getRole() == Role.REFERENT &&
-                activite.getCreateur() != null &&
-                activite.getCreateur().getId().equals(user.getId())) {
-            return user;
+        if (user.getRole() == Role.REFERENT) {
+            if (activite.getGroupe() != null && activite.getReferentAssigne() != null
+                    && Objects.equals(activite.getReferentAssigne().getId(), user.getId())) {
+                verifierAffectationActuelle(activite);
+                return user;
+            }
+            // Compatibility: only unassigned historical activities retain creator ownership.
+            // New general activities can only be created by ADMIN.
+            if (sansAffectation(activite) && activite.getCreateur() != null
+                    && Objects.equals(activite.getCreateur().getId(), user.getId())) {
+                return user;
+            }
         }
         throw new AccessDeniedException("Vous ne pouvez gerer que vos propres activites.");
     }
 
+    private boolean sansAffectation(Activite activite) {
+        return activite.getGroupe() == null && activite.getReferentAssigne() == null;
+    }
+
+    private Groupe groupeEligible(Long id) {
+        Groupe groupe = groupeRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new IllegalArgumentException("Groupe introuvable : " + id));
+        User referent = groupe.getReferent();
+        if (groupe.getStatut() != StatutGroupe.VALIDE || !groupe.isActif()) {
+            throw new IllegalArgumentException("Le groupe doit être validé et actif.");
+        }
+        if (referent == null || referent.getId() == null
+                || !referent.isActif() || referent.getRole() != Role.REFERENT) {
+            throw new IllegalArgumentException("Le groupe doit avoir un référent actif de rôle REFERENT.");
+        }
+        return groupe;
+    }
+
+    private void verifierAffectationActuelle(Activite activite) {
+        Groupe groupe = groupeEligible(activite.getGroupe().getId());
+        if (activite.getReferentAssigne() == null
+                || !Objects.equals(groupe.getReferent().getId(), activite.getReferentAssigne().getId())) {
+            throw new AccessDeniedException("L'affectation ne correspond plus au référent actuel du groupe.");
+        }
+    }
+
+    private void appliquerAffectation(Activite activite, ActiviteRequest request, User acteur, boolean creation) {
+        Long ancienGroupe = activite.getGroupe() == null ? null : activite.getGroupe().getId();
+        Long groupeId = creation || request.isGroupeFourni() ? request.getGroupeId() : ancienGroupe;
+        Long ancienReferent = activite.getReferentAssigne() == null ? null : activite.getReferentAssigne().getId();
+        VisibiliteActivite visibilite = request.getVisibilite() == null
+                ? activite.getVisibilite() : request.getVisibilite();
+        if ((request.getNature() == ActiviteRequest.Nature.GENERALE && groupeId != null)
+                || (request.getNature() == ActiviteRequest.Nature.GROUPE && groupeId == null)) {
+            throw new IllegalArgumentException("L'intention générale/groupe ne correspond pas au groupe fourni.");
+        }
+        boolean changementGroupe = !Objects.equals(ancienGroupe, groupeId);
+        if (!creation && activite.getStatut() != StatutActivite.BROUILLON
+                && (changementGroupe || visibilite != activite.getVisibilite())) {
+            throw new IllegalArgumentException("Le groupe, le type et la visibilité sont figés après publication.");
+        }
+        if (!creation && acteur.getRole() == Role.REFERENT && changementGroupe) {
+            throw new AccessDeniedException("Un référent ne peut pas changer le groupe d'une activité.");
+        }
+        // Historical unassigned records keep their visibility and finances, never converted implicitly.
+        if (!creation && sansAffectation(activite) && groupeId == null
+                && visibilite == activite.getVisibilite()
+                && request.getReferentAssigneId() == null) {
+            return;
+        }
+        if (groupeId == null) {
+            if (acteur.getRole() != Role.ADMIN || request.getReferentAssigneId() != null
+                    || visibilite != VisibiliteActivite.PUBLIC) {
+                throw new IllegalArgumentException("Une générale exige ADMIN, PUBLIC et aucun référent assigné.");
+            }
+            activite.setGroupe(null);
+            activite.setReferentAssigne(null);
+        } else {
+            Groupe groupe = groupeEligible(groupeId);
+            User referent = groupe.getReferent();
+            if (visibilite != VisibiliteActivite.PUBLIC && visibilite != VisibiliteActivite.PRIVE_GROUPE) {
+                throw new IllegalArgumentException("Une activité de groupe exige PUBLIC ou PRIVE_GROUPE.");
+            }
+            if (acteur.getRole() == Role.REFERENT && !Objects.equals(acteur.getId(), referent.getId())) {
+                throw new AccessDeniedException("Vous ne pouvez créer ou gérer que les activités de votre groupe.");
+            }
+            if (request.isReferentFourni() && !Objects.equals(request.getReferentAssigneId(), referent.getId())) {
+                throw new IllegalArgumentException("Le référent assigné doit être le référent réel du groupe.");
+            }
+            // No reassignment endpoint in this lot, including when the group's referent changed.
+            if (!creation && !changementGroupe && !Objects.equals(ancienReferent, referent.getId())) {
+                throw new AccessDeniedException("L'affectation ne correspond plus au référent actuel du groupe.");
+            }
+            if (!activite.isGratuite() || activite.getPrix() != null) {
+                throw new IllegalArgumentException("Une activité historique payante ne peut pas être convertie en activité de groupe.");
+            }
+            activite.setGroupe(groupe);
+            activite.setReferentAssigne(referent);
+        }
+        activite.setVisibilite(visibilite);
+    }
+
+    private void validerPublication(Activite activite, VisibiliteActivite visibilite) {
+        if (activite.getGroupe() != null) {
+            verifierAffectationActuelle(activite);
+            if (visibilite != VisibiliteActivite.PUBLIC && visibilite != VisibiliteActivite.PRIVE_GROUPE) {
+                throw new IllegalArgumentException("Une activité de groupe exige PUBLIC ou PRIVE_GROUPE.");
+            }
+        } else if (activite.getReferentAssigne() != null
+                || (visibilite != VisibiliteActivite.PUBLIC
+                    && !(visibilite == VisibiliteActivite.MEMBRES
+                         && activite.getVisibilite() == VisibiliteActivite.MEMBRES))) {
+            throw new IllegalArgumentException("Une générale exige PUBLIC; MEMBRES est conservé uniquement pour l'historique.");
+        }
+        if (activite.getTitre() == null || activite.getTitre().isBlank()
+                || activite.getDescription() == null || activite.getDescription().isBlank()
+                || activite.getLieu() == null || activite.getLieu().isBlank()
+                || activite.getDateFin() == null || !activite.getDateFin().isAfter(activite.getDateDebut())) {
+            throw new IllegalArgumentException("Titre, description, lieu et dates cohérentes sont requis avant publication.");
+        }
+    }
+
     private void validerDonneesActivite(ActiviteRequest request) {
+        if (request.getTitre() == null || request.getTitre().isBlank()
+                || request.getDescription() == null || request.getDescription().isBlank()
+                || request.getLieu() == null || request.getLieu().isBlank()) {
+            throw new IllegalArgumentException("Le titre, la description et le lieu sont obligatoires.");
+        }
         if (request.getDateDebut() == null || request.getDateFin() == null) {
             throw new RuntimeException("Les dates de début et de fin sont obligatoires.");
         }
-        if (request.getDateFin().isBefore(request.getDateDebut())) {
-            throw new RuntimeException("La date de fin ne peut pas précéder la date de début.");
+        if (!request.getDateFin().isAfter(request.getDateDebut())) {
+            throw new RuntimeException("La date de fin doit être strictement après la date de début.");
         }
         if (request.getCapaciteMax() <= 0) {
             throw new RuntimeException("La capacité maximale doit être strictement positive.");

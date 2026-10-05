@@ -30,7 +30,7 @@ class ActiviteInvariantTest {
 
     @BeforeEach
     void setUp() {
-        activityService = new ActiviteService(activities, users, registrations, notifications, audit);
+        activityService = new ActiviteService(activities, users, registrations, notifications, audit, mock(com.bxjeunes.bx_connect.repository.GroupeRepository.class));
         registrationService = new InscriptionService(registrations, activities, users, notifications, audit);
         admin = new User(); admin.setId(1L); admin.setEmail("admin@test.invalid"); admin.setRole(Role.ADMIN);
     }
@@ -89,7 +89,7 @@ class ActiviteInvariantTest {
 
     private ActiviteRequest validRequest() {
         ActiviteRequest request = new ActiviteRequest();
-        request.setTitre("Atelier"); request.setDateDebut(LocalDateTime.now().plusDays(1));
+        request.setTitre("Atelier"); request.setDescription("Description"); request.setLieu("Bruxelles"); request.setDateDebut(LocalDateTime.now().plusDays(1));
         request.setDateFin(LocalDateTime.now().plusDays(1).plusHours(1));
         request.setCapaciteMax(10); request.setGratuite(true); return request;
     }
