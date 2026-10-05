@@ -11,12 +11,14 @@ import LoadingState from '../../components/ui/LoadingState';
 
 const ROLES = ['MEMBRE', 'REFERENT', 'PARTENAIRE'];
 
-async function fetchUtilisateurs({ endpoint, t, setUtilisateurs, setError, setLoading }) {
+async function fetchUtilisateurs({ endpoint, errorMessage, setUtilisateurs, setError, setLoading }) {
+  setLoading(true);
+  setError('');
   try {
     const res = await api.get(endpoint);
     setUtilisateurs(res.data);
   } catch (err) {
-    setError(userFriendlyError(err, t('users.errorLoad')));
+    setError(userFriendlyError(err, errorMessage));
   } finally {
     setLoading(false);
   }
@@ -25,10 +27,13 @@ async function fetchUtilisateurs({ endpoint, t, setUtilisateurs, setError, setLo
 export default function AdminUtilisateurs({
   endpoint = '/admin/utilisateurs',
   readOnly = false,
+  fixedRole,
   pageTitle,
   pageDescription,
 }) {
   const { t, i18n } = useTranslation();
+  const isPartnerView = fixedRole === 'PARTENAIRE';
+  const errorMessage = t(isPartnerView ? 'users.partners.errorLoad' : 'users.errorLoad');
   const [utilisateurs, setUtilisateurs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -37,8 +42,8 @@ export default function AdminUtilisateurs({
   const [filtre, setFiltre] = useState('TOUS');
 
   useEffect(() => {
-    fetchUtilisateurs({ endpoint, t, setUtilisateurs, setError, setLoading });
-  }, [endpoint, t]);
+    fetchUtilisateurs({ endpoint, errorMessage, setUtilisateurs, setError, setLoading });
+  }, [endpoint, errorMessage]);
 
   const changerRole = async (user, role) => {
     if (user.role === role) return;
@@ -87,7 +92,10 @@ export default function AdminUtilisateurs({
     }
   };
 
-  const utilisateursFiltres = utilisateurs.filter(u => {
+  const utilisateursDuPerimetre = fixedRole
+    ? utilisateurs.filter(user => user.role === fixedRole)
+    : utilisateurs;
+  const utilisateursFiltres = utilisateursDuPerimetre.filter(u => {
     const search = recherche.toLowerCase();
     const matchRecherche = u.prenom?.toLowerCase().includes(search) ||
       u.nom?.toLowerCase().includes(search) ||
@@ -102,9 +110,7 @@ export default function AdminUtilisateurs({
     { id: 'TOUS', label: t('users.filters.all') },
     { id: 'ACTIFS', label: t('users.filters.active') },
     { id: 'INACTIFS', label: t('users.filters.inactive') },
-    { id: 'MEMBRE', label: t('roles.MEMBRE') },
-    { id: 'REFERENT', label: t('roles.REFERENT') },
-    { id: 'PARTENAIRE', label: t('roles.PARTENAIRE') },
+    ...(!fixedRole ? ROLES.map(role => ({ id: role, label: t(`roles.${role}`) })) : []),
   ];
 
   const peutModifier = (user) => !readOnly && canManageUser(user);
@@ -115,16 +121,16 @@ export default function AdminUtilisateurs({
 
       <main className="flex-1 mx-auto w-full max-w-none px-2 py-3 sm:px-4">
         <header className="mb-2 flex flex-col gap-1 px-1 sm:flex-row sm:items-baseline sm:justify-between">
-          <h1 className="text-2xl font-black tracking-tight text-slate-950">{pageTitle || t('admin.users_title')}</h1>
+          <h1 className="text-2xl font-black tracking-tight text-slate-950">{pageTitle || t(isPartnerView ? 'users.partners.title' : 'admin.users_title')}</h1>
           <p className="text-sm font-medium text-slate-500">
-            {pageDescription || t('users.registeredCount', { count: utilisateurs.length })}
+            {pageDescription || t(isPartnerView ? 'users.partners.registeredCount' : 'users.registeredCount', { count: utilisateursDuPerimetre.length })}
           </p>
         </header>
 
         {message && (
           <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-xl mb-2 text-sm">{message}</div>
         )}
-        {error && utilisateurs.length > 0 && (
+        {error && utilisateursDuPerimetre.length > 0 && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-xl mb-2 text-sm">{error}</div>
         )}
 
@@ -134,7 +140,8 @@ export default function AdminUtilisateurs({
               <AppIcon name="Search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder={t('users.searchPlaceholder')}
+                aria-label={t(isPartnerView ? 'users.partners.searchPlaceholder' : 'users.searchPlaceholder')}
+                placeholder={t(isPartnerView ? 'users.partners.searchPlaceholder' : 'users.searchPlaceholder')}
                 value={recherche}
                 onChange={e => { setRecherche(e.target.value); setMessage(''); setError(''); }}
                 className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -160,18 +167,18 @@ export default function AdminUtilisateurs({
         </section>
 
         {loading ? (
-          <LoadingState label={t('admin.loading')} />
-        ) : error && utilisateurs.length === 0 ? (
+          <LoadingState label={t(isPartnerView ? 'users.partners.loading' : 'admin.loading')} />
+        ) : error && utilisateursDuPerimetre.length === 0 ? (
           <ErrorState
             title={t('common.loadErrorTitle')}
             description={error}
             actionLabel={t('common.retry')}
-            action={() => fetchUtilisateurs({ endpoint, t, setUtilisateurs, setError, setLoading })}
+            action={() => fetchUtilisateurs({ endpoint, errorMessage, setUtilisateurs, setError, setLoading })}
           />
-        ) : utilisateurs.length === 0 ? (
+        ) : utilisateursDuPerimetre.length === 0 ? (
           <EmptyState
             icon="Users"
-            title={t('users.noneFound')}
+            title={t(isPartnerView ? 'users.partners.noneFound' : 'users.noneFound')}
           />
         ) : utilisateursFiltres.length === 0 ? (
           <EmptyState
@@ -182,7 +189,7 @@ export default function AdminUtilisateurs({
           <>
             <div className="md:hidden space-y-3">
               {utilisateursFiltres.length === 0 ? (
-                <ModernEmpty icon="Users" title={t('users.noneFound')} />
+                <ModernEmpty icon="Users" title={t(isPartnerView ? 'users.partners.noneFound' : 'users.noneFound')} />
               ) : (
                 utilisateursFiltres.map(u => (
                   <article key={u.id} className={`rounded-xl border border-slate-100 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg ${u.actif ? '' : 'opacity-70'}`}>
@@ -199,7 +206,7 @@ export default function AdminUtilisateurs({
                     <div className="grid gap-2 text-sm">
                       <div>
                         <p className="text-xs text-gray-400 mb-1">{t('users.role')}</p>
-                        {peutModifier(u) ? (
+                        {peutModifier(u) && !fixedRole ? (
                           <RoleSelect user={u} onChangeRole={changerRole} t={t} />
                         ) : (
                           <RoleBadge user={u} t={t} />
@@ -216,7 +223,7 @@ export default function AdminUtilisateurs({
                               <AppIcon name={u.actif ? 'Clock' : 'CheckCircle'} className="h-3.5 w-3.5" />
                               {u.actif ? t('users.disable') : t('users.enable')}
                             </button>
-                            <details className="relative">
+                            {!fixedRole && <details className="relative">
                               <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-200">
                                 <AppIcon name="Settings" className="h-3.5 w-3.5" />
                                 {t('common.more')}
@@ -231,7 +238,7 @@ export default function AdminUtilisateurs({
                                   {t('common.delete')}
                                 </button>
                               </div>
-                            </details>
+                            </details>}
                           </>
                         ) : (
                           <span className="text-xs text-gray-400">{protectedUserReason(u, t)}</span>
@@ -259,7 +266,7 @@ export default function AdminUtilisateurs({
                 <tbody>
                   {utilisateursFiltres.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-10 text-gray-400 text-sm">{t('users.noneFound')}</td>
+                      <td colSpan={6} className="text-center py-10 text-gray-400 text-sm">{t(isPartnerView ? 'users.partners.noneFound' : 'users.noneFound')}</td>
                     </tr>
                   ) : (
                     utilisateursFiltres.map((u, i) => (
@@ -269,7 +276,7 @@ export default function AdminUtilisateurs({
                         </td>
                         <td className="px-3 py-1.5 text-sm text-gray-600">{u.email}</td>
                         <td className="px-3 py-1.5">
-                          {peutModifier(u) ? (
+                          {peutModifier(u) && !fixedRole ? (
                             <RoleSelect user={u} onChangeRole={changerRole} t={t} />
                           ) : (
                             <RoleBadge user={u} t={t} />
@@ -294,7 +301,7 @@ export default function AdminUtilisateurs({
                                   <AppIcon name={u.actif ? 'Clock' : 'CheckCircle'} className="h-3.5 w-3.5" />
                                   {u.actif ? t('users.disable') : t('users.enable')}
                                 </button>
-                                <details className="relative">
+                                {!fixedRole && <details className="relative">
                                   <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-200">
                                     <AppIcon name="Settings" className="h-3.5 w-3.5" />
                                     {t('common.more')}
@@ -309,7 +316,7 @@ export default function AdminUtilisateurs({
                                       {t('common.delete')}
                                     </button>
                                   </div>
-                                </details>
+                                </details>}
                               </>
                             ) : (
                               <span className="text-xs text-gray-400">{protectedUserReason(u, t)}</span>

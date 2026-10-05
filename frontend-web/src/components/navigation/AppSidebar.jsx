@@ -45,14 +45,13 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
 
   const role = user?.role || 'MEMBRE'
   const routes = ROLE_ROUTES[role] || ROLE_ROUTES.MEMBRE
-  const recentItems = useRecentWorkspaceItems(location, user, role === 'SUPER_ADMIN')
+  const recentItems = useRecentWorkspaceItems(location, user, role === 'SUPER_ADMIN' || role === 'ADMIN')
   const mainSections = getMainSections(role, t)
   const spaceSections = getSpaceSections(role, t)
   const workSections = getWorkSections(role, t)
   const sidebarSections = [...mainSections, ...spaceSections, ...workSections]
   const homeRoute = routes.home || getDefaultRouteForRole(role)
-  const showRecentLast = role === 'ADMIN'
-  const showRecentSection = role !== 'PARTENAIRE' && role !== 'SUPER_ADMIN'
+  const showRecentSection = role !== 'ADMIN' && role !== 'PARTENAIRE' && role !== 'SUPER_ADMIN'
 
   useEffect(() => {
     setMobileOpen(false)
@@ -138,7 +137,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                   />
                 ))}
 
-                {showRecentSection && !showRecentLast && <RecentSection items={recentItems} location={location} />}
+                {showRecentSection && <RecentSection items={recentItems} location={location} />}
 
                 {spaceSections.map(section => (
                   <ContextSection
@@ -156,7 +155,6 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                   />
                 ))}
 
-                {showRecentSection && showRecentLast && <RecentSection items={recentItems} location={location} />}
               </div>
             </nav>
 
@@ -245,7 +243,7 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                 />
               ))}
 
-              {showRecentSection && !showRecentLast && <RecentSection items={recentItems} location={location} onNavigate={() => setMobileOpen(false)} />}
+              {showRecentSection && <RecentSection items={recentItems} location={location} onNavigate={() => setMobileOpen(false)} />}
 
               {spaceSections.map(section => (
                 <ContextSection
@@ -265,7 +263,6 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                 />
               ))}
 
-              {showRecentSection && showRecentLast && <RecentSection items={recentItems} location={location} onNavigate={() => setMobileOpen(false)} />}
             </div>
           </nav>
 
@@ -325,8 +322,6 @@ function getMainSections(role, t) {
     return sections([
       group(t('sidebar.sections.pilotage'), [
         link(t('nav.dashboard'), '/admin/dashboard', 'Home'),
-        link(t('nav.conversations'), '/admin/conversations', 'MessagesSquare'),
-        link(t('nav.notifications'), '/notifications', 'Bell'),
       ]),
     ])
   }
@@ -386,7 +381,11 @@ function getSpaceSections(role, t) {
       group(t('sidebar.sections.management'), [
         link(t('nav.users'), '/admin/utilisateurs', 'Users'),
         link(t('nav.referents'), '/admin/referents', 'User'),
+        link(t('users.partners.title'), '/admin/partenaires', 'Handshake'),
+        link(t('nav.groups'), '/admin/groupes', 'Users'),
         link(t('nav.activities'), '/admin/activites', 'Calendar'),
+        link(t('nav.projects'), '/admin/projets', 'Rocket'),
+        link(t('nav.supports'), '/admin/soutiens', 'Wallet'),
       ]),
     ])
   }
@@ -418,15 +417,7 @@ function getSpaceSections(role, t) {
 }
 
 function getWorkSections(role, t) {
-  if (role === 'ADMIN') {
-    return sections([
-      group(t('sidebar.sections.validation'), [
-        link(t('sidebar.labels.pendingGroups'), '/admin/groupes?vue=en-attente', 'ClipboardList'),
-        link(t('admin.projectsToValidate'), '/admin/projets?vue=a-valider', 'Rocket'),
-        link(t('nav.supports'), '/admin/soutiens', 'Wallet'),
-      ]),
-    ])
-  }
+  if (role === 'ADMIN') return []
 
   if (role === 'REFERENT') {
     return sections([

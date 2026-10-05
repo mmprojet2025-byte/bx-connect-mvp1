@@ -247,14 +247,15 @@ export default function App() {
           {/* ── Pages Admin ── */}
           <Route path="/admin"               element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/dashboard"     element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-          <Route path="/admin/utilisateurs"  element={<AdminRoute><AdminUtilisateurs /></AdminRoute>} />
+          <Route path="/admin/utilisateurs"  element={<AdminRoute><AdminUtilisateurs key="users" /></AdminRoute>} />
+          <Route path="/admin/partenaires"   element={<AdminRoute><AdminUtilisateurs key="partners" fixedRole="PARTENAIRE" /></AdminRoute>} />
           <Route path="/admin/referents"     element={<AdminRoute><AdminReferents /></AdminRoute>} />
           <Route path="/admin/activites"     element={<AdminRoute><AdminActivites /></AdminRoute>} />
           <Route path="/admin/activites/:id/presences" element={<AdminRoute><PresenceSheet backTo="/admin/activites" /></AdminRoute>} />
           <Route path="/admin/projets"       element={<AdminRoute><AdminProjets /></AdminRoute>} />
           <Route path="/admin/groupes"       element={<AdminRoute><AdminGroupes /></AdminRoute>} />
           <Route path="/admin/annonces"      element={<AdminRoute><Annonces /></AdminRoute>} />
-          <Route path="/admin/conversations" element={<SuperAdminExcludedRoute><AdminOrSuperAdminRoute><BusinessConversations mode="admin" /></AdminOrSuperAdminRoute></SuperAdminExcludedRoute>} />
+          <Route path="/admin/conversations/*" element={<SuperAdminExcludedRoute><AdminOrSuperAdminRoute><Navigate to="/admin/dashboard" replace /></AdminOrSuperAdminRoute></SuperAdminExcludedRoute>} />
           <Route path="/admin/soutiens"      element={<AdminRoute><AdminSoutiens /></AdminRoute>} />
 
           {/* MVP1.5 / masqué volontairement */}
