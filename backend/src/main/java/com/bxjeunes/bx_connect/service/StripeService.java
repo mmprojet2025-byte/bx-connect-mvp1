@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
         matchIfMissing = false
 )
 public class StripeService {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(StripeService.class);
     @org.springframework.beans.factory.annotation.Autowired
     private ActivityPaymentService activityPayments;
 
@@ -198,49 +199,81 @@ public class StripeService {
             throw new RuntimeException("Signature webhook Stripe invalide");
         }
 
-        switch (event.getType()) {
-            case "checkout.session.completed" -> {
-                Session session = (Session) event.getDataObjectDeserializer()
-                        .getObject().orElseThrow();
-                trouverPaiementSession(session).ifPresent(s -> {
-                    if (s.getActivite() != null) {
-                        s = activityPayments.lockedPayment(s);
-                        if (!"paid".equals(session.getPaymentStatus()) || !"eur".equalsIgnoreCase(session.getCurrency())
-                                || session.getAmountTotal() == null
-                                || session.getAmountTotal() != s.getMontant().movePointRight(2).longValueExact())
-                            throw new IllegalArgumentException("Paiement non confirmé ou montant invalide.");
-                        if (s.getStatutPaiement() == StatutPaiement.PAYE) return;
-                        activityPayments.complete(s, true);
+        try {
+            switch (event.getType()) {
+                case "checkout.session.completed" -> {
+                    Session session = completedActivitySession(event);
+                    trouverPaiementSession(session).ifPresent(s -> {
+                        if (s.getActivite() != null) {
+                            s = activityPayments.lockedPayment(s);
+                            if (!s.getId().toString().equals(session.getMetadata() == null ? null
+                                    : session.getMetadata().get("activity_payment_id")))
+                                throw new IllegalArgumentException("Référence du paiement d'activité invalide.");
+                            if (!"paid".equals(session.getPaymentStatus()) || !"eur".equalsIgnoreCase(session.getCurrency())
+                                    || session.getAmountTotal() == null
+                                    || session.getAmountTotal() != s.getMontant().movePointRight(2).longValueExact())
+                                throw new IllegalArgumentException("Paiement non confirmé ou montant invalide.");
+                            if (s.getStatutPaiement() == StatutPaiement.PAYE) return;
+                            activityPayments.complete(s, true);
+                            s.setStripePaymentIntentId(session.getPaymentIntent());
+                            soutienRepo.save(s);
+                            return;
+                        }
+                        s.setStatutPaiement(StatutPaiement.PAYE);
                         s.setStripePaymentIntentId(session.getPaymentIntent());
+                        s.setDatePaiement(LocalDateTime.now());
                         soutienRepo.save(s);
-                        return;
-                    }
-                    s.setStatutPaiement(StatutPaiement.PAYE);
-                    s.setStripePaymentIntentId(session.getPaymentIntent());
-                    s.setDatePaiement(LocalDateTime.now());
-                    soutienRepo.save(s);
-                });
+                    });
+                }
+                case "checkout.session.expired" -> {
+                    Session session = (Session) event.getDataObjectDeserializer()
+                            .getObject().orElseThrow();
+                    trouverPaiementSession(session).ifPresent(s -> {
+                        if (s.getActivite() != null) {
+                            s = activityPayments.lockedPayment(s);
+                            activityPayments.complete(s, false);
+                        } else if (s.getStatutPaiement() != StatutPaiement.PAYE) {
+                            s.setStatutPaiement(StatutPaiement.ANNULE);
+                            soutienRepo.save(s);
+                        }
+                    });
+                }
+                case "charge.refunded" -> {
+                    // Gérer les remboursements
+                }
+                default -> {
+                    // Événement non géré — ignorer
+                }
             }
-            case "checkout.session.expired" -> {
-                Session session = (Session) event.getDataObjectDeserializer()
-                        .getObject().orElseThrow();
-                trouverPaiementSession(session).ifPresent(s -> {
-                    if (s.getActivite() != null) {
-                        s = activityPayments.lockedPayment(s);
-                        activityPayments.complete(s, false);
-                    } else if (s.getStatutPaiement() != StatutPaiement.PAYE) {
-                        s.setStatutPaiement(StatutPaiement.ANNULE);
-                        soutienRepo.save(s);
-                    }
-                });
-            }
-            case "charge.refunded" -> {
-                // Gérer les remboursements
-            }
-            default -> {
-                // Événement non géré — ignorer
-            }
+        } catch (RuntimeException | StripeException e) {
+            // Never log the payload, signature, credentials, or provider exception message.
+            log.warn("Signed Stripe webhook failed: event={}, type={}, apiVersion={}, error={}",
+                    event.getId(), event.getType(), event.getApiVersion(), e.getClass().getSimpleName());
+            throw e;
         }
+    }
+
+    private Session completedActivitySession(Event event) throws StripeException {
+        var deserializer = event.getDataObjectDeserializer();
+        var object = deserializer.getObject();
+        if (object.isPresent()) return (Session) object.get();
+
+        // A signed event can use a newer schema than this SDK. Read only its identity,
+        // then retrieve the existing activity session using the SDK's pinned API version.
+        var raw = com.google.gson.JsonParser.parseString(deserializer.getRawJson()).getAsJsonObject();
+        if (!raw.has("object") || !"checkout.session".equals(raw.get("object").getAsString())
+                || !raw.has("id") || !raw.has("metadata") || !raw.get("metadata").isJsonObject()
+                || !raw.getAsJsonObject("metadata").has("activity_payment_id"))
+            throw new IllegalArgumentException("Objet Stripe inattendu.");
+        String id = raw.get("id").getAsString();
+        String paymentId = raw.getAsJsonObject("metadata").get("activity_payment_id").getAsString();
+        if (!id.startsWith("cs_") || !paymentId.matches("[1-9][0-9]*"))
+            throw new IllegalArgumentException("Référence Stripe invalide.");
+        Session session = lireSessionExterne(id);
+        if (session == null || !id.equals(session.getId()) || session.getMetadata() == null
+                || !paymentId.equals(session.getMetadata().get("activity_payment_id")))
+            throw new IllegalArgumentException("Session Stripe incohérente.");
+        return session;
     }
 
     private java.util.Optional<SoutienFinancier> trouverPaiementSession(Session session) {
