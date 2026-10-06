@@ -50,8 +50,8 @@ export default function Accueil() {
   useEffect(() => { fetchGroupes() }, [])
 
   useEffect(() => {
-    api.get('/projets')
-      .then(res => setProjets(Array.isArray(res.data) ? res.data.slice(0, 3) : []))
+    api.get('/projets?catalogue=true')
+      .then(res => setProjets(Array.isArray(res.data) ? res.data.filter(project => ['APPROUVE', 'EN_COURS', 'TERMINE'].includes(project.statut)).slice(0, 3) : []))
       .catch(() => { setProjets([]); setProjetsError(true) })
       .finally(() => setLoadingProjets(false))
   }, [])

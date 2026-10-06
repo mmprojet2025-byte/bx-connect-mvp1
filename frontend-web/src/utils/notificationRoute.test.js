@@ -73,3 +73,9 @@ test('ordinary notifications retain destinations for each business role', () => 
     assert.equal(resolveNotificationRoute({ lienAction }, role), expected)
   }
 })
+
+test('project payment receipt notification opens personal invoices only for a member', () => {
+  const notification = { type: 'RECU_PROJET', lienAction: '/mes-factures?recu=3' }
+  assert.equal(resolveNotificationRoute(notification, 'MEMBRE'), '/mes-factures?recu=3')
+  assert.notEqual(resolveNotificationRoute(notification, 'REFERENT'), '/mes-factures?recu=3')
+})

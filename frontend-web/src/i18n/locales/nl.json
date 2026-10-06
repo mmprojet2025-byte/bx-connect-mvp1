@@ -1,5 +1,6 @@
 {
   "nav": {
+    "mySpace": "Mijn omgeving",
     "home": "Startpagina",
     "activities": "Activiteiten",
     "projects": "Projecten",
@@ -340,6 +341,11 @@
     "locationMapAria": "Kaart van de activiteitlocatie"
   },
   "projects": {
+    "view": "Bekijken",
+    "catalogue": "Catalogus",
+    "myProjects": "Mijn projecten",
+    "privateProjectsHelp": "Uw concepten en projecten in afwachting van goedkeuring staan niet in de openbare catalogus.",
+    "joinConditions": "Deelname is mogelijk aan goedgekeurde of lopende projecten. Voor een groepsproject is een actief groepslidmaatschap vereist.",
     "title": "Samenwerkingsprojecten",
     "new_project": "+ Nieuw project",
     "cancel": "Annuleren",
@@ -360,18 +366,20 @@
     "error_submit": "Fout bij het indienen van het project.",
     "submit_project": "Project indienen",
     "submit_draft": "Ontwerp indienen",
+    "saveDraft": "Concept opslaan",
+    "saveDraftHelp": "Het project blijft privé. U kunt het later wijzigen en indienen vanuit de projectdetails.",
     "draftCreated": "Ontwerp opgeslagen. Dien het in wanneer u klaar bent.",
     "description_soon": "Beschrijving volgt binnenkort.",
     "fallback_image": "BX-Connect-project",
     "group_label": "Groep: {{group}}",
     "owner_label": "Indiener: {{owner}}",
     "participants_count": "{{count}} deelnemer(s)",
-    "visibility": "Zichtbaarheid",
+    "visibility": "Projecttype",
     "group": "Gekoppelde groep",
     "noGroup": "Verenigingsproject zonder groep",
     "participationSoon": "Deelname aanvragen wordt in een volgende fase beschikbaar.",
     "successSubmitted": "Project aangemaakt en ter goedkeuring ingediend.",
-    "submissionResult": { "SOUMIS": "Project ingediend bij de verantwoordelijke referent.", "VALIDE_REFERENT": "Project teruggestuurd naar de administratieve beslissingswachtrij.", "APPROUVE": "Project automatisch goedgekeurd volgens de ADMIN-workflow." },
+    "submissionResult": { "SOUMIS": "Project ingediend bij de verantwoordelijke referent.", "VALIDE_REFERENT": "Ingediend ter goedkeuring door ADMIN", "APPROUVE": "Project automatisch goedgekeurd volgens de ADMIN-workflow." },
     "type": "Projecttype",
     "typeGroup": "Groepsproject",
     "typeInstitutional": "Verenigingsproject",
@@ -405,7 +413,7 @@
     "filteredCount": "{{count}}/{{total}} project(en) weergegeven",
     "searchPlaceholder": "Een project zoeken...",
     "allGroups": "Alle groepen",
-    "allVisibilities": "Alle zichtbaarheidstypes",
+    "allVisibilities": "Alle types",
     "noFilteredProjects": "Geen enkel project voldoet aan uw criteria",
     "noFilteredProjectsDesc": "Pas de zoekopdracht, fase, groep of zichtbaarheid aan om een project terug te vinden.",
     "emptyNoGroupTitle": "Sluit u eerst aan bij een groep om een project voor te stellen",
@@ -471,10 +479,10 @@
     "eventComment": "Nieuwe reactie"
   },
   "projectVisibility": {
-    "GROUPE": "Groep",
+    "GROUPE": "Groepsproject",
     "COMMUNAUTE": "Gemeenschap",
     "PARTENAIRES": "Partners",
-    "PUBLIC": "Openbaar"
+    "PUBLIC": "Openbaar project"
   },
   "groups": {
     "title": "Groepen",
@@ -1028,7 +1036,7 @@
     "projectFinallyApproved": "Project definitief goedgekeurd.",
     "projectFinallyRejected": "Project definitief geweigerd.",
     "projectWorkflowState": "Workflow",
-    "statusValidatedByReferent": "Goedgekeurd door referent, wacht op admin",
+    "statusValidatedByReferent": "Ingediend ter goedkeuring door ADMIN",
     "statusRejectedByReferent": "Geweigerd door referent",
     "statusLegacySubmitted": "Oude flow / ingediend zonder referentvalidatie",
     "statusFinallyApproved": "Definitief goedgekeurd",
@@ -1173,6 +1181,7 @@
       "noGroup": "Word lid van een groep"
     },
     "referent": {
+
       "title": "Mijn begeleider",
       "ofGroup": "Begeleider van {{group}}",
       "pending": "Je begeleider wordt zichtbaar zodra je aanvraag is goedgekeurd.",
@@ -1286,7 +1295,7 @@
       "project": {
         "BROUILLON": "Concept",
         "SOUMIS": "Ingediend",
-        "VALIDE_REFERENT": "Goedgekeurd door begeleider",
+        "VALIDE_REFERENT": "Ingediend ter goedkeuring door ADMIN",
         "REFUSE_REFERENT": "Geweigerd door begeleider",
         "APPROUVE": "Goedgekeurd",
         "EN_COURS": "Lopend",
@@ -1333,7 +1342,7 @@
     "CONFIRMEE": "Bevestigd",
     "EN_ATTENTE_PAIEMENT": "Betaling in behandeling",
     "PAYEE": "Betaald",
-    "VALIDE_REFERENT": "Goedgekeurd referent",
+    "VALIDE_REFERENT": "Ingediend ter goedkeuring door ADMIN",
     "REFUSE_REFERENT": "Geweigerd referent",
     "A_CORRIGER_REFERENT": "Te corrigeren na beoordeling door referent",
     "A_CORRIGER_ADMIN": "Te corrigeren na beslissing van beheerder",
@@ -1392,6 +1401,9 @@
     "user": "Gebruiker"
   },
   "referent": {
+    "openProject": "Projectfiche openen",
+    "projectDetails": "Projectfiche",
+    "projectDecision": "Beslissing bevestigen",
     "title": "Begeleiders",
     "subtitle": "Actieve begeleiders van de vereniging aanmaken en opvolgen.",
     "managementSubtitle": "Begeleiders, hun groepen en de uitwisselingen met het beheer opvolgen.",
@@ -1505,22 +1517,22 @@
     "projectReviewSubtitle": "De referent beoordeelt eerst de groepsprojecten vóór de definitieve beslissing van de administratie.",
     "projectReviewFilters": {
       "A_RELIRE": "Te beoordelen projecten",
-      "VALIDES_REFERENT": "Goedgekeurd door referent",
+      "VALIDES_REFERENT": "Wacht op ADMIN",
       "REFUSES_REFERENT": "Geweigerd door referent",
       "TOUS": "Alle"
     },
-    "validateForAdmin": "Doorsturen naar admin",
+    "validateForAdmin": "Indienen bij ADMIN",
     "requestProjectCorrection": "Correctie vragen",
     "projectCorrectionRequested": "Correctieverzoek naar de indiener verzonden.",
     "projectDecisionCommentRequired": "Een duidelijke opmerking is verplicht.",
     "refuseWithComment": "Weigeren",
     "referentComment": "Commentaar referent",
     "referentCommentPlaceholder": "Licht je beslissing kort toe indien nodig.",
-    "projectValidatedForAdmin": "Project goedgekeurd door de referent. Het wacht nu op adminvalidatie.",
+    "projectValidatedForAdmin": "Project ingediend ter goedkeuring door ADMIN.",
     "projectRejectedByReferent": "Project geweigerd door de referent.",
     "projectWorkflowState": "Workflow",
     "statusSubmittedToReferent": "Ingediend bij referent",
-    "statusValidatedByReferent": "Goedgekeurd door referent",
+    "statusValidatedByReferent": "Ingediend ter goedkeuring door ADMIN",
     "statusRejectedByReferent": "Geweigerd door referent",
     "statusApprovedByAdmin": "Definitief goedgekeurd",
     "statusRejectedByAdmin": "Geweigerd door admin",
@@ -2407,7 +2419,7 @@
     "projectStatuses": {
       "BROUILLON": "Concept",
       "SOUMIS": "Ingediend bij referent",
-      "VALIDE_REFERENT": "Gevalideerd door referent, wacht op admin",
+      "VALIDE_REFERENT": "Ingediend ter goedkeuring door ADMIN",
       "REFUSE_REFERENT": "Geweigerd door referent",
       "APPROUVE": "Definitief goedgekeurd",
       "REJETE": "Definitief geweigerd",
@@ -3175,5 +3187,41 @@
     "reactiverConfirm": "Dit lidmaatschap heractiveren? De capaciteit en andere lidmaatschappen worden gecontroleerd.",
     "membership": "Lidmaatschap",
     "suspendedHelp": "Je lidmaatschap is opgeschort. Neem contact op met je begeleider om het te heractiveren."
+  },
+  "projectPayment": {
+    "participation": "Deelname",
+    "free": "Gratis",
+    "paid": "Betalend",
+    "price": "Prijs per deelnemer (€)",
+    "budgetHelp": "Het aangevraagde budget dient voor de projectbeoordeling. Elke deelnemer betaalt de deelnameprijs.",
+    "payJoin": "Betalen en deelnemen",
+    "invoices": "Mijn facturen",
+    "invoiceHelp": "Betalingsbewijzen voor projectdeelname. Terugkeren van Stripe bevestigt de betaling niet: vernieuw om de bevestiging te controleren.",
+    "transactions": "Transacties en betalingsbewijzen",
+    "empty": "Nog geen transacties.",
+    "unavailable": "Gegevens niet beschikbaar.",
+    "pending": "Betaling wacht op bevestiging. Er is nog geen betalingsbewijs beschikbaar.",
+    "resume": "Betaling hervatten",
+    "download": "Betalingsbewijs downloaden als PDF",
+    "receipt": "Betalingsbewijs",
+    "project": "Project",
+    "participant": "Deelnemer",
+    "amount": "Betaald bedrag",
+    "date": "Betaaldatum",
+    "confirmed": "Betaling bevestigd — projectdeelname.",
+    "error": "Deze actie kan niet worden voltooid. Probeer opnieuw of neem contact op met de organisator."
+  },
+  "projectDetails": {
+    "planning": "Datums en capaciteit",
+    "execution": "Uitvoeringsdatum",
+    "deadline": "Uiterste deelnamedatum",
+    "capacity": "Maximumaantal deelnemers",
+    "cover": "Omslagafbeelding",
+    "chooseCover": "Kies een omslag",
+    "help": "Geen capaciteit: onbeperkt. Geen deadline: inschrijven blijft mogelijk tot de uitvoeringsdatum, indien ingevuld.",
+    "notSet": "Niet ingevuld",
+    "unlimited": "Onbeperkt",
+    "closed": "Inschrijvingen gesloten",
+    "full": "Volzet"
   }
 }

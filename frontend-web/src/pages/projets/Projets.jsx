@@ -1,3 +1,7 @@
+import ProjectDetailsFields from '../../components/projects/ProjectDetailsFields'
+import ProjectDetailsSummary from '../../components/projects/ProjectDetailsSummary'
+import { projectDetailsForm, projectDetailsPayload, projectRegistrationClosed, projectFull } from '../../components/projects/projectDetails'
+import ProjectPriceFields from '../../components/projects/ProjectPriceFields'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -13,13 +17,12 @@ import ProjectCover from '../../components/ProjectCover'
 import { userFriendlyError } from '../../utils/userFriendlyError'
 import PageHeader from '../../components/ui/PageHeader'
 import ProjectVisibilityBadge from '../../components/ProjectVisibilityBadge'
-import ProjectTypeBadge from '../../components/ProjectTypeBadge'
 import LoadingState from '../../components/ui/LoadingState'
 import ErrorState from '../../components/ui/ErrorState'
 import AppIcon from '../../components/ui/AppIcons'
 
-const MEMBER_VISIBILITIES = ['GROUPE', 'COMMUNAUTE']
-const PROJECT_VISIBILITIES = ['GROUPE', 'COMMUNAUTE', 'PARTENAIRES', 'PUBLIC']
+const MEMBER_VISIBILITIES = ['GROUPE', 'PUBLIC']
+const PROJECT_VISIBILITIES = ['GROUPE', 'PUBLIC']
 const PROJECT_STAGES = [
   { id: 'PREPARATION', statuses: ['BROUILLON'], icon: 'PlusCircle' },
   { id: 'REFERENT_REVIEW', statuses: ['SOUMIS'], icon: 'Shield' },
@@ -29,10 +32,14 @@ const PROJECT_STAGES = [
 ]
 
 export default function Projets() {
-  const { isAuthenticated, isMembre, isAdmin, isPartenaire } = useAuth()
+  const { isAuthenticated, isMembre, isAdmin, isPartenaire, isReferent } = useAuth()
   const { id: focusedProjectId } = useParams()
   const { t } = useTranslation()
-  const [projets, setProjets] = useState([])
+  const [projectData, setProjets] = useState([])
+  const [ownView, setOwnView] = useState(false)
+  const projets = useMemo(() => projectData.filter(project => focusedProjectId
+    ? String(project.id) === String(focusedProjectId)
+    : ownView ? project.estPorteurConnecte : ['APPROUVE', 'EN_COURS', 'TERMINE'].includes(project.statut)), [projectData, ownView, focusedProjectId])
   const [adhesions, setAdhesions] = useState([])
   const [adhesionsLoading, setAdhesionsLoading] = useState(isAuthenticated && isMembre)
   const [adhesionsError, setAdhesionsError] = useState('')
@@ -47,41 +54,40 @@ export default function Projets() {
   const [filtreVisibilite, setFiltreVisibilite] = useState('')
   const [expandedProjectId, setExpandedProjectId] = useState(null)
   const [actionLoading, setActionLoading] = useState(null)
+  const [referentGroupIds, setReferentGroupIds] = useState([])
   const [participationIds, setParticipationIds] = useState([])
   const [commentsByProject, setCommentsByProject] = useState({})
   const [commentsLoading, setCommentsLoading] = useState(null)
   const [commentDrafts, setCommentDrafts] = useState({})
+  const [imageUploading, setImageUploading] = useState(false)
   const [form, setForm] = useState({
     titre: '',
     description: '',
-    budgetDemande: '',
+    budgetDemande: '', prixParticipation: 0, ...projectDetailsForm(),
     visibilite: 'GROUPE',
   })
 
   const fetchProjets = useCallback(async () => {
     setLoading(true)
     try {
-      const endpoint = isAdmin
-        ? '/projets/admin/tous'
-        : isPartenaire
-          ? '/partenaire/projets-ouverts'
-          : '/projets'
-      const [res, ownRes] = await Promise.all([
-        api.get(endpoint),
+      const [res, ownRes, detailRes] = await Promise.all([
+        api.get('/projets?catalogue=true'),
         isAuthenticated && !isPartenaire ? api.get('/projets/mes-projets') : Promise.resolve({ data: [] }),
+        focusedProjectId ? api.get(`/projets/${focusedProjectId}`) : Promise.resolve({ data: null }),
       ])
       const ownIds = new Set((ownRes.data || []).map(projet => String(projet.id)))
-      setProjets((res.data || []).map(projet => ({
-        ...projet,
-        estPorteurConnecte: ownIds.has(String(projet.id)),
-      })))
+      const combined = new Map()
+      for (const project of [...(res.data || []), ...(ownRes.data || []), ...(detailRes.data ? [detailRes.data] : [])]) {
+        combined.set(String(project.id), { ...project, estPorteurConnecte: ownIds.has(String(project.id)) })
+      }
+      setProjets([...combined.values()])
       setError('')
     } catch {
       setError(t('projects.error_load'))
     } finally {
       setLoading(false)
     }
-  }, [isAdmin, isAuthenticated, isPartenaire, t])
+  }, [isAuthenticated, isPartenaire, focusedProjectId, t])
 
   const fetchAdhesions = useCallback(async () => {
     setAdhesionsLoading(true)
@@ -112,6 +118,13 @@ export default function Projets() {
     if (isAuthenticated && isMembre) fetchAdhesions()
   }, [fetchAdhesions, isAuthenticated, isMembre])
 
+  useEffect(() => {
+    if (!isAuthenticated || !isReferent) return
+    api.get('/referent/groupes')
+      .then(res => setReferentGroupIds((res.data || []).map(groupe => groupe.id)))
+      .catch(() => setReferentGroupIds([]))
+  }, [isAuthenticated, isReferent])
+
   const groupeActif = useMemo(
     () => adhesions.find(adhesion => adhesion.statut === 'ACCEPTE' && adhesion.groupeActif !== false),
     [adhesions]
@@ -122,7 +135,11 @@ export default function Projets() {
     () => [...new Set(projets.map(projet => projet.groupeNom).filter(Boolean))],
     [projets]
   )
-  const afficherFiltres = !isMembre || !!groupeActif
+  const afficherFiltres = true
+  const canDiscuss = useCallback(projet => projet.visibilite === 'PUBLIC'
+    || projet.estPorteurConnecte || isAdmin
+    || (isReferent && referentGroupIds.includes(projet.groupeId))
+    || (isMembre && groupeActif?.groupeId != null && groupeActif.groupeId === projet.groupeId), [isAdmin, isMembre, groupeActif, isReferent, referentGroupIds])
   const projetsFiltres = useMemo(() => {
     return projets.filter(projet => {
       if (focusedProjectId && String(projet.id) !== String(focusedProjectId)) return false
@@ -148,17 +165,22 @@ export default function Projets() {
 
   useEffect(() => {
     if (!isAuthenticated || !expandedProjectId || commentsByProject[expandedProjectId]) return
+    const projet = projets.find(item => item.id === expandedProjectId)
+    if (!projet || !canDiscuss(projet)) return
     fetchProjectComments(expandedProjectId)
-  }, [commentsByProject, expandedProjectId, isAuthenticated])
+  }, [commentsByProject, expandedProjectId, isAuthenticated, projets, canDiscuss])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (imageUploading) return
     setMessage('')
     setError('')
     try {
       const payload = {
         ...form,
         budgetDemande: parseFloat(form.budgetDemande) || 0,
+        prixParticipation: Number(form.prixParticipation),
+        ...projectDetailsPayload(form),
         groupeId: groupeActif?.groupeId,
       }
       if (editingProject) {
@@ -171,9 +193,11 @@ export default function Projets() {
         : t('projects.draftCreated')
       setMessage(feedback)
       toast.success(feedback)
+      setOwnView(true)
+      setFiltreStatut('')
       setShowForm(false)
       setEditingProject(null)
-      setForm({ titre: '', description: '', budgetDemande: '', visibilite: 'GROUPE' })
+      setForm({ titre: '', description: '', budgetDemande: '', prixParticipation: 0, ...projectDetailsForm(), visibilite: 'GROUPE' })
       await fetchProjets()
     } catch (err) {
       const feedback = userFriendlyError(err, t('projects.error_submit'))
@@ -187,16 +211,16 @@ export default function Projets() {
     setForm(projet ? {
       titre: projet.titre || '',
       description: projet.description || '',
-      budgetDemande: projet.budgetDemande ?? '',
+      budgetDemande: projet.budgetDemande ?? '', prixParticipation: projet.prixParticipation ?? 0, ...projectDetailsForm(projet),
       visibilite: projet.visibilite || 'GROUPE',
-    } : { titre: '', description: '', budgetDemande: '', visibilite: 'GROUPE' })
+    } : { titre: '', description: '', budgetDemande: '', prixParticipation: 0, ...projectDetailsForm(), visibilite: 'GROUPE' })
     setShowForm(true)
   }
 
   const closeProjectForm = () => {
     setShowForm(false)
     setEditingProject(null)
-    setForm({ titre: '', description: '', budgetDemande: '', visibilite: 'GROUPE' })
+    setForm({ titre: '', description: '', budgetDemande: '', prixParticipation: 0, ...projectDetailsForm(), visibilite: 'GROUPE' })
   }
 
   const handleFollow = (projet) => {
@@ -229,6 +253,14 @@ export default function Projets() {
     setError('')
     setMessage('')
     try {
+      if (Number(projet.prixParticipation) > 0) {
+        const { data } = await api.post(`/projets-paiements/projets/${projet.id}/checkout`)
+        if (!data.checkoutUrl) throw new Error(t('projectPayment.pending'))
+        const checkout = new URL(data.checkoutUrl)
+        if (checkout.protocol !== 'https:' || checkout.hostname !== 'checkout.stripe.com') throw new Error(t('projectPayment.error'))
+        window.location.assign(checkout.href)
+        return
+      }
       await api.post(`/projets/${projet.id}/rejoindre`)
       setParticipationIds(current => current.includes(projet.id) ? current : [...current, projet.id])
       setProjets(current => current.map(item => item.id === projet.id
@@ -311,6 +343,12 @@ export default function Projets() {
           )}
         />
 
+        {isAuthenticated && !focusedProjectId && <div className="mb-5 flex gap-2" aria-label={t('projects.catalogue')}>
+          <button type="button" aria-pressed={!ownView} onClick={() => { setOwnView(false); resetFilters() }} className={`rounded-lg px-4 py-2 font-bold ${!ownView ? 'bg-blue-700 text-white' : 'bg-white text-blue-700'}`}>{t('projects.catalogue')}</button>
+          <button type="button" aria-pressed={ownView} onClick={() => { setOwnView(true); resetFilters() }} className={`rounded-lg px-4 py-2 font-bold ${ownView ? 'bg-blue-700 text-white' : 'bg-white text-blue-700'}`}>{t('projects.myProjects')}</button>
+        </div>}
+        {ownView && !focusedProjectId && <p className="mb-4 text-sm text-slate-600">{t('projects.privateProjectsHelp')}</p>}
+
         {message && <Alert>{message}</Alert>}
         {error && projets.length > 0 && (
           <Alert type="error">
@@ -337,7 +375,7 @@ export default function Projets() {
           </div>
         )}
 
-        {isAuthenticated && <WorkflowStepper projets={projets} activeStatus={filtreStatut} onSelectStatus={setFiltreStatut} t={t} />}
+        {isAuthenticated && (ownView || focusedProjectId) && <WorkflowStepper projets={projets} activeStatus={filtreStatut} onSelectStatus={setFiltreStatut} t={t} />}
 
         {isAuthenticated && afficherFiltres && <section className="mb-5 rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
           <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -389,14 +427,17 @@ export default function Projets() {
                 />
               </div>
               <Input id="project-budget" label={t('projects.form_budget')} value={form.budgetDemande} onChange={value => setForm({ ...form, budgetDemande: value })} type="number" min="0" />
+              <ProjectDetailsFields form={form} setForm={setForm} onUploadingChange={setImageUploading} />
+              <ProjectPriceFields key={editingProject?.id || "new"} value={form.prixParticipation} onChange={value => setForm({ ...form, prixParticipation: value })} />
               <VisibilitySelect
                 value={form.visibilite}
                 options={MEMBER_VISIBILITIES}
                 onChange={value => setForm({ ...form, visibilite: value })}
                 t={t}
               />
-              <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-2 rounded-lg transition">
-                {editingProject ? t('common.save', { defaultValue: 'Enregistrer' }) : t('projects.submit_project')}
+              {!editingProject && <p className="text-sm text-slate-500">{t('projects.saveDraftHelp')}</p>}
+              <button type="submit" disabled={imageUploading} className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-2 rounded-lg transition">
+                {editingProject ? t('common.save', { defaultValue: 'Enregistrer' }) : t('projects.saveDraft')}
               </button>
             </form>
           </section>
@@ -471,6 +512,8 @@ export default function Projets() {
                 isPartenaire={isPartenaire}
                 expanded={expandedProjectId === projet.id}
                 actionLoading={actionLoading}
+                canJoin={!projectRegistrationClosed(projet) && !projectFull(projet) && ['APPROUVE', 'EN_COURS'].includes(projet.statut) && (projet.visibilite === 'PUBLIC' || (groupeActif?.groupeId != null && groupeActif.groupeId === projet.groupeId))}
+                canDiscuss={canDiscuss(projet)}
                 isParticipant={participationIds.includes(projet.id)}
                 comments={commentsByProject[projet.id] || []}
                 commentsLoading={commentsLoading === projet.id}
@@ -557,6 +600,8 @@ function ProjectCard({
   expanded,
   actionLoading,
   isParticipant,
+  canJoin,
+  canDiscuss,
   comments,
   commentsLoading,
   commentDraft,
@@ -571,14 +616,13 @@ function ProjectCard({
   onCommentSubmit,
   t,
 }) {
-  const besoinSoutien = Number(projet.budgetDemande) > 0
   const nextStep = projectNextStep(projet, isPartenaire, isMembre, isParticipant, t)
   const actor = projectCurrentActor(projet, t)
 
   return (
     <article className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition flex flex-col">
       <div className="relative">
-        <ProjectCover imageUrl={projet.imageUrl} title={projet.titre} className="h-28" />
+        <ProjectCover imageUrl={projet.imageUrl} title={projet.titre} className="h-44" />
         {isAuthenticated && (
           <div className="absolute left-4 top-4">
             <StatusBadge status={projet.statut}>
@@ -590,7 +634,6 @@ function ProjectCard({
       <div className="p-3.5 flex flex-col flex-1">
         <div className="mb-2">
           <div className="mb-2 flex flex-wrap gap-2">
-            <ProjectTypeBadge groupName={projet.groupeNom} />
             <ProjectVisibilityBadge visibility={projet.visibilite} />
           </div>
           <h2 className="font-black text-slate-950 text-base leading-tight">{projet.titre}</h2>
@@ -604,6 +647,8 @@ function ProjectCard({
         <p className="text-sm text-slate-500 leading-relaxed line-clamp-2">
           {projet.description || t('projects.description_soon')}
         </p>
+        <p className="mt-3 text-sm font-bold text-blue-800">{t('projectPayment.price')} : {Number(projet.prixParticipation) > 0 ? `${Number(projet.prixParticipation).toFixed(2)} €` : t('projectPayment.free')}</p>
+        <ProjectDetailsSummary project={projet} />
         {isAuthenticated && projet.motifCorrection && (
           <Alert type="warning" className="mt-3">
             {projet.motifCorrection}
@@ -623,13 +668,18 @@ function ProjectCard({
             </dl>
             <div className="grid grid-cols-2 gap-2 text-xs mt-3">
               <InfoPill label={t('projects.owner')} value={formatProjectOwner(projet, t)} />
-              <InfoPill label={t('projects.form_budget')} value={projet.budgetDemande ? `${projet.budgetDemande} €` : '—'} highlight={besoinSoutien} />
+
               <InfoPill label={t('groups.members')} value={t('projects.participants_count', { count: projet.nombreParticipants ?? 0 })} highlight={isParticipant} />
               <InfoPill label={t('projects.comments', { defaultValue: 'Commentaires' })} value={projet.nombreCommentaires ?? comments.length} />
             </div>
           </>
         )}
-        {expanded && isAuthenticated && (
+        {expanded && <section id={`project-details-${projet.id}`} aria-label={t('common.details')} className="mt-3 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+          <h3 className="font-bold">{t('common.details')}</h3>
+          <p className="whitespace-pre-wrap">{projet.description || t('projects.description_soon')}</p>
+          {projet.objectifs && <p className="whitespace-pre-wrap">{projet.objectifs}</p>}
+        </section>}
+        {expanded && isAuthenticated && canDiscuss && (
           <ProjectAlivePanel
             projet={projet}
             nextStep={nextStep}
@@ -649,7 +699,9 @@ function ProjectCard({
           isMembre={isMembre}
           isPartenaire={isPartenaire}
           isParticipant={isParticipant}
+          canJoin={canJoin}
           actionLoading={actionLoading}
+          expanded={expanded}
           onToggleDetails={onToggleDetails}
           onFollow={onFollow}
           onJoin={onJoin}
@@ -739,12 +791,12 @@ function ProjectAlivePanel({ projet, nextStep, comments, commentsLoading, commen
   )
 }
 
-function ProjectActions({ projet, isAuthenticated, isMembre, isPartenaire, isParticipant, actionLoading, onToggleDetails, onFollow, onJoin, canSubmit, onSubmit, canEdit, onEdit, t }) {
+function ProjectActions({ projet, expanded, isAuthenticated, isMembre, isPartenaire, isParticipant, canJoin, actionLoading, onToggleDetails, onFollow, onJoin, canSubmit, onSubmit, canEdit, onEdit, t }) {
   return (
     <div className="mt-auto flex flex-wrap gap-2 pt-4">
-      <button type="button" onClick={onToggleDetails} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-200">
+      <button type="button" aria-expanded={expanded} aria-controls={`project-details-${projet.id}`} onClick={onToggleDetails} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-200">
         <AppIcon name="Eye" className="h-3.5 w-3.5" />
-        {t('common.open', { defaultValue: 'Voir' })}
+        {expanded ? t('common.close') : t('projects.view')}
       </button>
       {canSubmit && (
         <button type="button" onClick={onSubmit} disabled={actionLoading === `${projet.id}-SUBMIT`} className="inline-flex flex-1 items-center justify-center rounded-lg bg-blue-700 px-3 py-2 text-xs font-black text-white disabled:opacity-60">
@@ -760,7 +812,8 @@ function ProjectActions({ projet, isAuthenticated, isMembre, isPartenaire, isPar
         <button
           type="button"
           onClick={isParticipant ? onFollow : onJoin}
-          disabled={actionLoading === `${projet.id}-JOIN`}
+          disabled={projectFull(projet) || actionLoading === `${projet.id}-JOIN` || (!isParticipant && !canJoin)}
+          title={projectFull(projet) ? t('projectDetails.full') : !isParticipant && !canJoin ? t('projects.joinConditions') : undefined}
           className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-black transition disabled:opacity-60 ${
             isParticipant
               ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
@@ -768,7 +821,7 @@ function ProjectActions({ projet, isAuthenticated, isMembre, isPartenaire, isPar
           }`}
         >
           <AppIcon name={isParticipant ? 'CheckCircle' : 'PlusCircle'} className="h-3.5 w-3.5" />
-          {isParticipant ? t('projects.joinedLabel', { defaultValue: 'Participant' }) : t('projects.join', { defaultValue: 'Rejoindre' })}
+          {isParticipant ? t('projects.joinedLabel', { defaultValue: 'Participant' }) : t('projects.join')}
         </button>
       )}
       {isPartenaire && projet.statut === 'APPROUVE' && (
@@ -777,12 +830,16 @@ function ProjectActions({ projet, isAuthenticated, isMembre, isPartenaire, isPar
           {t('partnerSpace.proposeSupport')}
         </Link>
       )}
-      {!isAuthenticated && (
+      {!isAuthenticated && (projectFull(projet) ? (
+        <button type="button" disabled title={t('projectDetails.full')} className="inline-flex flex-1 cursor-not-allowed items-center justify-center rounded-lg bg-slate-200 px-3 py-2 text-xs font-black text-slate-500">
+          {t('projects.join')}
+        </button>
+      ) : (
         <Link to="/login" className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-black text-white transition hover:bg-blue-500">
           <AppIcon name="User" className="h-3.5 w-3.5" />
-          {t('nav.login')}
+          {t('projects.join')}
         </Link>
-      )}
+      ))}
     </div>
   )
 }

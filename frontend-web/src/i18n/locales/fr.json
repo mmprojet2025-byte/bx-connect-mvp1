@@ -1,5 +1,6 @@
 {
   "nav": {
+    "mySpace": "Mon espace",
     "home": "Accueil",
     "activities": "Activités",
     "projects": "Projets",
@@ -340,6 +341,11 @@
     "locationMapAria": "Carte de localisation de l’activité"
   },
   "projects": {
+    "view": "Voir",
+    "catalogue": "Catalogue",
+    "myProjects": "Mes projets",
+    "privateProjectsHelp": "Vos brouillons et projets en validation restent hors du catalogue public.",
+    "joinConditions": "Participation ouverte aux projets approuvés ou en cours. Pour un projet Groupe, une adhésion active au groupe est requise.",
     "title": "Projets collaboratifs",
     "new_project": "+ Nouveau projet",
     "cancel": "Annuler",
@@ -360,18 +366,20 @@
     "error_submit": "Erreur lors de la soumission du projet.",
     "submit_project": "Soumettre le projet",
     "submit_draft": "Soumettre le brouillon",
+    "saveDraft": "Enregistrer le brouillon",
+    "saveDraftHelp": "Le projet reste privé. Vous pourrez le modifier et le soumettre plus tard depuis sa fiche.",
     "draftCreated": "Brouillon enregistré. Soumettez-le lorsque vous êtes prêt.",
     "description_soon": "Description à venir.",
     "fallback_image": "Projet BX-Connect",
     "group_label": "Groupe : {{group}}",
     "owner_label": "Porteur : {{owner}}",
     "participants_count": "{{count}} participant(s)",
-    "visibility": "Visibilité",
+    "visibility": "Type de projet",
     "group": "Groupe associé",
     "noGroup": "Projet institutionnel sans groupe",
     "participationSoon": "La demande de participation sera disponible dans une prochaine étape.",
     "successSubmitted": "Projet créé et soumis à validation.",
-    "submissionResult": { "SOUMIS": "Projet soumis au référent responsable.", "VALIDE_REFERENT": "Projet renvoyé dans la file de décision administrative.", "APPROUVE": "Projet approuvé automatiquement conformément au workflow ADMIN." },
+    "submissionResult": { "SOUMIS": "Projet soumis au référent responsable.", "VALIDE_REFERENT": "Soumis à la validation ADMIN", "APPROUVE": "Projet approuvé automatiquement conformément au workflow ADMIN." },
     "type": "Type de projet",
     "typeGroup": "Projet de groupe",
     "typeInstitutional": "Projet institutionnel",
@@ -405,7 +413,7 @@
     "filteredCount": "{{count}}/{{total}} projet(s) affiché(s)",
     "searchPlaceholder": "Rechercher un projet...",
     "allGroups": "Tous les groupes",
-    "allVisibilities": "Toutes les visibilités",
+    "allVisibilities": "Tous les types",
     "noFilteredProjects": "Aucun projet ne correspond à vos critères",
     "noFilteredProjectsDesc": "Modifiez la recherche, l’étape, le groupe ou la visibilité pour retrouver un projet.",
     "emptyNoGroupTitle": "Rejoignez d’abord un groupe pour proposer un projet",
@@ -441,7 +449,7 @@
     "noComments": "Aucun commentaire pour le moment.",
     "commentPlaceholder": "Ajouter une note de suivi...",
     "joinedLabel": "Participant",
-    "join": "Rejoindre",
+    "join": "Participer",
     "workflowDraft": "Ce projet est encore en préparation.",
     "workflowSubmitted": "Ce projet attend la relecture du référent.",
     "workflowReferentApproved": "Ce projet a été validé par le référent et attend la décision admin.",
@@ -471,10 +479,10 @@
     "eventComment": "Event Comment"
   },
   "projectVisibility": {
-    "GROUPE": "Groupe",
+    "GROUPE": "Projet Groupe",
     "COMMUNAUTE": "Communauté",
     "PARTENAIRES": "Partenaires",
-    "PUBLIC": "Public"
+    "PUBLIC": "Projet Public"
   },
   "groups": {
     "title": "Groupes",
@@ -1028,7 +1036,7 @@
     "projectFinallyApproved": "Projet approuvé définitivement.",
     "projectFinallyRejected": "Projet refusé définitivement.",
     "projectWorkflowState": "Workflow",
-    "statusValidatedByReferent": "Validé par référent, en attente admin",
+    "statusValidatedByReferent": "Soumis à la validation ADMIN",
     "statusRejectedByReferent": "Refusé par référent",
     "statusLegacySubmitted": "Ancien flux / soumis sans validation référent",
     "statusFinallyApproved": "Approuvé définitivement",
@@ -1173,6 +1181,7 @@
       "noGroup": "Rejoindre un groupe"
     },
     "referent": {
+
       "title": "Mon référent",
       "ofGroup": "Référent du {{group}}",
       "pending": "Le référent sera disponible après validation de ta demande.",
@@ -1286,7 +1295,7 @@
       "project": {
         "BROUILLON": "Brouillon",
         "SOUMIS": "Soumis",
-        "VALIDE_REFERENT": "Validé par le référent",
+        "VALIDE_REFERENT": "Soumis à la validation ADMIN",
         "REFUSE_REFERENT": "Refusé par le référent",
         "APPROUVE": "Approuvé",
         "EN_COURS": "En cours",
@@ -1333,7 +1342,7 @@
     "CONFIRMEE": "Confirmée",
     "EN_ATTENTE_PAIEMENT": "Paiement en attente",
     "PAYEE": "Payée",
-    "VALIDE_REFERENT": "Validé référent",
+    "VALIDE_REFERENT": "Soumis à la validation ADMIN",
     "REFUSE_REFERENT": "Refusé référent",
     "A_CORRIGER_REFERENT": "À corriger après relecture référent",
     "A_CORRIGER_ADMIN": "À corriger après décision admin",
@@ -1392,6 +1401,9 @@
     "user": "Utilisateur"
   },
   "referent": {
+    "openProject": "Ouvrir la fiche",
+    "projectDetails": "Fiche du projet",
+    "projectDecision": "Confirmation de la décision",
     "title": "Référents",
     "subtitle": "Créer et suivre les référents actifs de l'association.",
     "managementSubtitle": "Suivre les référents, leurs groupes et les échanges avec l’administration.",
@@ -1505,22 +1517,22 @@
     "projectReviewSubtitle": "Le référent valide d’abord les projets de ses groupes avant la décision finale de l’administration.",
     "projectReviewFilters": {
       "A_RELIRE": "Projets à relire",
-      "VALIDES_REFERENT": "Validés référent",
+      "VALIDES_REFERENT": "En attente ADMIN",
       "REFUSES_REFERENT": "Refusés référent",
       "TOUS": "Tous"
     },
-    "validateForAdmin": "Valider pour admin",
+    "validateForAdmin": "Soumettre à l’ADMIN",
     "requestProjectCorrection": "Demander une correction",
     "projectCorrectionRequested": "Demande de correction envoyée au porteur.",
     "projectDecisionCommentRequired": "Un commentaire précis est obligatoire.",
     "refuseWithComment": "Refuser",
     "referentComment": "Commentaire référent",
     "referentCommentPlaceholder": "Expliquez brièvement votre décision si nécessaire.",
-    "projectValidatedForAdmin": "Projet validé par le référent. Il attend maintenant la validation admin.",
+    "projectValidatedForAdmin": "Projet soumis à la validation ADMIN.",
     "projectRejectedByReferent": "Projet refusé par le référent.",
     "projectWorkflowState": "Workflow",
     "statusSubmittedToReferent": "Soumis au référent",
-    "statusValidatedByReferent": "Validé par le référent",
+    "statusValidatedByReferent": "Soumis à la validation ADMIN",
     "statusRejectedByReferent": "Refusé par le référent",
     "statusApprovedByAdmin": "Approuvé définitivement",
     "statusRejectedByAdmin": "Refusé par admin",
@@ -2407,7 +2419,7 @@
     "projectStatuses": {
       "BROUILLON": "Brouillon",
       "SOUMIS": "Soumis au référent",
-      "VALIDE_REFERENT": "Validé par référent, en attente admin",
+      "VALIDE_REFERENT": "Soumis à la validation ADMIN",
       "REFUSE_REFERENT": "Refusé par référent",
       "APPROUVE": "Approuvé définitivement",
       "REJETE": "Rejeté définitivement",
@@ -3175,5 +3187,41 @@
     "reactiverConfirm": "Réactiver cette appartenance ? La capacité et les autres appartenances seront vérifiées.",
     "membership": "Appartenance",
     "suspendedHelp": "Votre appartenance est suspendue. Contactez votre référent pour la réactiver."
+  },
+  "projectPayment": {
+    "participation": "Participation",
+    "free": "Gratuite",
+    "paid": "Payante",
+    "price": "Prix par participant (€)",
+    "budgetHelp": "Le budget demandé sert à l’analyse du projet. Le prix de participation est payé par chaque participant.",
+    "payJoin": "Payer et participer",
+    "invoices": "Mes factures",
+    "invoiceHelp": "Reçus des participations aux projets. Le retour de Stripe ne confirme pas le paiement : actualisez pour consulter la confirmation.",
+    "transactions": "Transactions et reçus",
+    "empty": "Aucune transaction pour le moment.",
+    "unavailable": "Données indisponibles.",
+    "pending": "Paiement en attente de confirmation. Aucun reçu disponible pour le moment.",
+    "resume": "Reprendre le paiement",
+    "download": "Télécharger le reçu PDF",
+    "receipt": "Reçu de paiement",
+    "project": "Projet",
+    "participant": "Participant",
+    "amount": "Montant payé",
+    "date": "Date de paiement",
+    "confirmed": "Paiement confirmé — participation au projet.",
+    "error": "Impossible de terminer cette opération. Réessayez ou contactez l’organisateur."
+  },
+  "projectDetails": {
+    "planning": "Dates et capacité",
+    "execution": "Date d’exécution",
+    "deadline": "Date limite de participation",
+    "capacity": "Capacité maximale",
+    "cover": "Image de couverture",
+    "chooseCover": "Choisir une couverture",
+    "help": "Sans capacité : aucune limite. Sans date limite : participations ouvertes jusqu’à la date d’exécution, si elle est renseignée.",
+    "notSet": "Non renseignée",
+    "unlimited": "Sans limite",
+    "closed": "Participations clôturées",
+    "full": "Complet"
   }
 }

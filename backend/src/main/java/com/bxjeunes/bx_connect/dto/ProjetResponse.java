@@ -13,7 +13,14 @@ public class ProjetResponse {
     private String titre;
     private String description;
     private String objectifs;
+
+    private Integer capacite;
+    private java.time.LocalDate dateExecution;
+    private java.time.LocalDate dateLimiteParticipation;
+    private String imageUrl;
+
     private BigDecimal budgetDemande;
+    private BigDecimal prixParticipation;
     private StatutProjet statut;
     private VisibiliteProjet visibilite;
     private LocalDateTime dateCreation;
@@ -32,11 +39,16 @@ public class ProjetResponse {
 
     protected ProjetResponse(Projet projet) {
         ProjetResponse r = this;
+        r.capacite = projet.getCapacite();
+        r.dateExecution = projet.getDateExecution();
+        r.dateLimiteParticipation = projet.getDateLimiteParticipation();
+        r.imageUrl = projet.getImageUrl();
         r.id = projet.getId();
         r.titre = projet.getTitre();
         r.description = projet.getDescription();
         r.objectifs = projet.getObjectifs();
         r.budgetDemande = projet.getBudgetDemande();
+        r.prixParticipation = projet.getPrixParticipation();
         r.statut = projet.getStatut();
         r.visibilite = projet.getVisibilite();
         r.dateCreation = projet.getDateCreation();
@@ -70,6 +82,7 @@ public class ProjetResponse {
     public String getTitre() { return titre; }
     public String getDescription() { return description; }
     public String getObjectifs() { return objectifs; }
+    public BigDecimal getPrixParticipation() { return prixParticipation; }
     public BigDecimal getBudgetDemande() { return budgetDemande; }
     public StatutProjet getStatut() { return statut; }
     public VisibiliteProjet getVisibilite() { return visibilite; }
@@ -84,4 +97,13 @@ public class ProjetResponse {
     public String getGroupeNom() { return groupeNom; }
     public int getNombreParticipants() { return nombreParticipants; }
     public int getNombreCommentaires() { return nombreCommentaires; }
+
+    public Integer getCapacite() { return capacite; }
+    public void setCapacite(Integer value) { capacite = value; }
+    public java.time.LocalDate getDateExecution() { return dateExecution; }
+    public void setDateExecution(java.time.LocalDate value) { dateExecution = value; }
+    public java.time.LocalDate getDateLimiteParticipation() { return dateLimiteParticipation; }
+    public void setDateLimiteParticipation(java.time.LocalDate value) { dateLimiteParticipation = value; }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String value) { imageUrl = value; }
 }

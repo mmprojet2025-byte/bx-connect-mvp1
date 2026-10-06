@@ -37,6 +37,7 @@ class PaymentFeatureFlagsTest {
             )
             .withBean(jakarta.persistence.EntityManagerFactory.class, () -> mock(jakarta.persistence.EntityManagerFactory.class))
             .withBean(com.bxjeunes.bx_connect.service.ActivityPaymentService.class, () -> mock(com.bxjeunes.bx_connect.service.ActivityPaymentService.class))
+            .withBean(com.bxjeunes.bx_connect.service.ProjetParticipationPaiementService.class, () -> mock(com.bxjeunes.bx_connect.service.ProjetParticipationPaiementService.class))
             .withBean(SoutienFinancierRepository.class, () -> mock(SoutienFinancierRepository.class))
             .withBean(UserRepository.class, () -> mock(UserRepository.class))
             .withBean(ActiviteRepository.class, () -> mock(ActiviteRepository.class))

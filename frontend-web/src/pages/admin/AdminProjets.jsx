@@ -1,3 +1,8 @@
+import ProjectDetailsFields from '../../components/projects/ProjectDetailsFields'
+import ProjectDetailsSummary from '../../components/projects/ProjectDetailsSummary'
+import { projectDetailsForm, projectDetailsPayload } from '../../components/projects/projectDetails'
+import ProjectPayments from '../../components/projects/ProjectPayments'
+import ProjectPriceFields from '../../components/projects/ProjectPriceFields'
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -12,9 +17,9 @@ import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 
-const VISIBILITES = ['GROUPE', 'COMMUNAUTE', 'PARTENAIRES', 'PUBLIC'];
+const VISIBILITES = ['GROUPE', 'PUBLIC'];
 const STATUTS = ['BROUILLON', 'SOUMIS', 'A_CORRIGER_REFERENT', 'VALIDE_REFERENT', 'A_CORRIGER_ADMIN', 'REFUSE_REFERENT', 'APPROUVE', 'EN_COURS', 'TERMINE', 'REJETE', 'ANNULE', 'ARCHIVE'];
-const emptyForm = { titre: '', description: '', budgetDemande: '', groupeId: '', justificationAdmin: '', visibilite: 'PUBLIC' };
+const emptyForm = { titre: '', description: '', budgetDemande: '', prixParticipation: 0, ...projectDetailsForm(), groupeId: '', justificationAdmin: '', visibilite: 'PUBLIC' };
 
 export default function AdminProjets() {
   const { t } = useTranslation();
@@ -33,6 +38,7 @@ export default function AdminProjets() {
   const [showForm, setShowForm] = useState(false);
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [imageUploading, setImageUploading] = useState(false)
   const [form, setForm] = useState(emptyForm);
   const [selectedProject, setSelectedProject] = useState(null);
   const [command, setCommand] = useState(null);
@@ -123,7 +129,7 @@ export default function AdminProjets() {
     setForm({
       titre: projetAdmin.titre || '',
       description: projetAdmin.description || '',
-      budgetDemande: projetAdmin.budgetDemande ?? '',
+      budgetDemande: projetAdmin.budgetDemande ?? '', prixParticipation: projetAdmin.prixParticipation ?? 0, ...projectDetailsForm(projetAdmin),
       groupeId: projetAdmin.groupeId ?? '',
       justificationAdmin: projetAdmin.justificationAdmin || '',
       visibilite: projetAdmin.visibilite || 'GROUPE',
@@ -133,12 +139,15 @@ export default function AdminProjets() {
 
   const enregistrerProjet = async (e) => {
     e.preventDefault();
+    if (imageUploading) return;
     setCreating(true);
     setMessage('');
     setError('');
     const payload = {
       ...form,
       budgetDemande: parseFloat(form.budgetDemande) || 0,
+        prixParticipation: Number(form.prixParticipation),
+        ...projectDetailsPayload(form),
       groupeId: form.groupeId ? Number(form.groupeId) : null,
     };
     try {
@@ -150,7 +159,7 @@ export default function AdminProjets() {
       } else {
         const res = await api.post('/projets', payload);
         setProjets(prev => [res.data, ...prev]);
-        setMessage(t('admin.projectCreated'));
+        setMessage(t('projects.draftCreated'));
       }
       resetForm();
     } catch (err) {
@@ -333,6 +342,8 @@ export default function AdminProjets() {
             </div>
             <Input label={t('projects.form_title')} value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
             <Input label={t('projects.form_budget')} value={form.budgetDemande} onChange={value => setForm({ ...form, budgetDemande: value })} type="number" min="0" />
+              <ProjectDetailsFields form={form} setForm={setForm} onUploadingChange={setImageUploading} />
+              <ProjectPriceFields key={editingId || "new"} value={form.prixParticipation} onChange={value => setForm({ ...form, prixParticipation: value })} />
             <Select
               label={t('projects.group')}
               value={form.groupeId}
@@ -361,14 +372,15 @@ export default function AdminProjets() {
                 className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
               />
             </div>
+            {!editingId && <p className="md:col-span-2 text-sm text-slate-500">{t('projects.saveDraftHelp')}</p>}
             <div className="md:col-span-2 flex justify-end">
               <button
                 type="submit"
-                disabled={creating}
+                disabled={creating || imageUploading}
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-600 disabled:bg-gray-300"
               >
                 <AppIcon name={editingId ? 'Save' : 'PlusCircle'} className="h-4 w-4" />
-                {creating ? t('common.saving') : editingId ? t('common.saveChanges') : t('admin.createProject')}
+                {creating ? t('common.saving') : editingId ? t('common.saveChanges') : t('projects.saveDraft')}
               </button>
             </div>
           </form>
@@ -579,6 +591,7 @@ function ProjectDetailDrawer({ projet, t, onClose, onEdit, onExecute, onDelete, 
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
           <div className="mb-4 grid grid-cols-3 gap-2">
+            <ProjectDrawerMetric label={t('projectPayment.price')} value={Number(projet.prixParticipation) > 0 ? `${Number(projet.prixParticipation).toFixed(2)} €` : t('projectPayment.free')} icon="Wallet" />
             <ProjectDrawerMetric label={t('admin.budgetLabel')} value={projectBudget(projet, t)} icon="Wallet" />
             <ProjectDrawerMetric label={t('projects.owner')} value={projectOwner(projet, t)} icon="User" />
             <ProjectDrawerMetric label={t('projects.group')} value={projet.groupeNom || t('projects.noGroup')} icon="Users" />
@@ -612,6 +625,8 @@ function ProjectDetailDrawer({ projet, t, onClose, onEdit, onExecute, onDelete, 
             </ProjectDrawerSection>
           )}
 
+          <ProjectDetailsSummary project={projet} />
+          <ProjectPayments projectId={projet.id} />
           <ProjectDrawerSection title={t('admin.availableActions')} icon="Settings">
             {projet.statut === 'VALIDE_REFERENT' && (
               <div className="mb-3 grid gap-2 sm:grid-cols-2">

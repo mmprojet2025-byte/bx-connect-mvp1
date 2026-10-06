@@ -31,6 +31,8 @@ public class StripeService {
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(StripeService.class);
     @org.springframework.beans.factory.annotation.Autowired
     private ActivityPaymentService activityPayments;
+    @org.springframework.beans.factory.annotation.Autowired
+    private ProjetParticipationPaiementService projectParticipationPayments;
 
     private final SoutienFinancierRepository soutienRepo;
     private final UserRepository userRepository;
@@ -202,7 +204,11 @@ public class StripeService {
         try {
             switch (event.getType()) {
                 case "checkout.session.completed" -> {
-                    Session session = completedActivitySession(event);
+                    Session session = checkoutSession(event);
+                    if (session.getMetadata() != null && session.getMetadata().containsKey("project_participation_payment_id")) {
+                        projectParticipationPayments.handle(session, true);
+                        break;
+                    }
                     trouverPaiementSession(session).ifPresent(s -> {
                         if (s.getActivite() != null) {
                             s = activityPayments.lockedPayment(s);
@@ -226,8 +232,11 @@ public class StripeService {
                     });
                 }
                 case "checkout.session.expired" -> {
-                    Session session = (Session) event.getDataObjectDeserializer()
-                            .getObject().orElseThrow();
+                    Session session = checkoutSession(event);
+                    if (session.getMetadata() != null && session.getMetadata().containsKey("project_participation_payment_id")) {
+                        projectParticipationPayments.handle(session, false);
+                        break;
+                    }
                     trouverPaiementSession(session).ifPresent(s -> {
                         if (s.getActivite() != null) {
                             s = activityPayments.lockedPayment(s);
@@ -253,25 +262,31 @@ public class StripeService {
         }
     }
 
-    private Session completedActivitySession(Event event) throws StripeException {
+    private Session checkoutSession(Event event) throws StripeException {
         var deserializer = event.getDataObjectDeserializer();
         var object = deserializer.getObject();
         if (object.isPresent()) return (Session) object.get();
 
         // A signed event can use a newer schema than this SDK. Read only its identity,
-        // then retrieve the existing activity session using the SDK's pinned API version.
+        // then retrieve the existing Checkout session using the SDK's pinned API version.
         var raw = com.google.gson.JsonParser.parseString(deserializer.getRawJson()).getAsJsonObject();
         if (!raw.has("object") || !"checkout.session".equals(raw.get("object").getAsString())
                 || !raw.has("id") || !raw.has("metadata") || !raw.get("metadata").isJsonObject()
-                || !raw.getAsJsonObject("metadata").has("activity_payment_id"))
+                || (!raw.getAsJsonObject("metadata").has("activity_payment_id")
+                    && !raw.getAsJsonObject("metadata").has("project_participation_payment_id")))
             throw new IllegalArgumentException("Objet Stripe inattendu.");
         String id = raw.get("id").getAsString();
-        String paymentId = raw.getAsJsonObject("metadata").get("activity_payment_id").getAsString();
+        String metadataKey = raw.getAsJsonObject("metadata").has("project_participation_payment_id")
+                ? "project_participation_payment_id" : "activity_payment_id";
+        if (raw.getAsJsonObject("metadata").has("project_participation_payment_id")
+                && raw.getAsJsonObject("metadata").has("activity_payment_id"))
+            throw new IllegalArgumentException("Référence ambiguë.");
+        String paymentId = raw.getAsJsonObject("metadata").get(metadataKey).getAsString();
         if (!id.startsWith("cs_") || !paymentId.matches("[1-9][0-9]*"))
             throw new IllegalArgumentException("Référence Stripe invalide.");
         Session session = lireSessionExterne(id);
         if (session == null || !id.equals(session.getId()) || session.getMetadata() == null
-                || !paymentId.equals(session.getMetadata().get("activity_payment_id")))
+                || !paymentId.equals(session.getMetadata().get(metadataKey)))
             throw new IllegalArgumentException("Session Stripe incohérente.");
         return session;
     }

@@ -331,6 +331,7 @@ function getSpaceSections(role, t) {
     link(t('nav.groups'), '/groupes', 'Users'),
     link(t('nav.activities'), '/activites', 'Calendar'),
     link(t('nav.projects'), '/projets', 'Rocket'),
+    link(t('projectPayment.invoices'), '/mes-factures', 'FileText'),
   ])]
 }
 

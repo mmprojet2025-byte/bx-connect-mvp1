@@ -193,8 +193,8 @@ const roleNavigation = {
     sections: [t.sidebar.sections.pilotage, t.sidebar.sections.management],
   }),
   MEMBRE: t => ({
-    paths: ['/dashboard', '/groupes', '/activites', '/projets', '/messagerie'],
-    labels: [t.nav.dashboard, t.nav.groups, t.nav.activities, t.nav.projects, t.nav.messaging],
+    paths: ['/dashboard', '/groupes', '/activites', '/projets', '/mes-factures', '/messagerie'],
+    labels: [t.nav.dashboard, t.nav.groups, t.nav.activities, t.nav.projects, t.projectPayment.invoices, t.nav.messaging],
     sections: [t.sidebar.sections.pilotage, t.sidebar.sections.management, t.sidebar.sections.communication],
   }),
   SUPER_ADMIN: t => ({

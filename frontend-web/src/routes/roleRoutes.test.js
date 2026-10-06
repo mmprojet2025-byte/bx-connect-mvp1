@@ -1,8 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { getAuthenticatedRootRedirect } from './roleRoutes.js'
+import { getDefaultRouteForRole } from './roleRoutes.js'
 
-test('redirects authenticated users from root to the dashboard for their role', () => {
+test('preserves role destinations after login and for private route guards', () => {
   const destinations = {
     MEMBRE: '/dashboard',
     REFERENT: '/referent/dashboard',
@@ -10,32 +10,13 @@ test('redirects authenticated users from root to the dashboard for their role', 
     PARTENAIRE: '/partenaire',
     SUPER_ADMIN: '/super-admin/dashboard',
   }
-
   for (const [role, destination] of Object.entries(destinations)) {
-    assert.equal(
-      getAuthenticatedRootRedirect({ isAuthenticated: true, pathname: '/', role }),
-      destination,
-    )
+    assert.equal(getDefaultRouteForRole(role), destination)
   }
 })
 
-test('keeps root public for visitors and incomplete or invalid sessions', () => {
+test('preserves the default destination for an unknown role', () => {
   for (const role of [undefined, null, '', 'UNKNOWN']) {
-    assert.equal(
-      getAuthenticatedRootRedirect({ isAuthenticated: true, pathname: '/', role }),
-      null,
-    )
+    assert.equal(getDefaultRouteForRole(role), '/dashboard')
   }
-
-  assert.equal(
-    getAuthenticatedRootRedirect({ isAuthenticated: false, pathname: '/', role: 'MEMBRE' }),
-    null,
-  )
-})
-
-test('does not redirect authenticated users away from non-root routes', () => {
-  assert.equal(
-    getAuthenticatedRootRedirect({ isAuthenticated: true, pathname: '/activites', role: 'MEMBRE' }),
-    null,
-  )
 })

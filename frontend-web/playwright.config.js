@@ -36,6 +36,13 @@ export default defineConfig({
         ...devices['Desktop Safari'],
       },
     },
+    {
+      name: 'webkit-project-details',
+      testMatch: ['**/project-details.spec.js', '**/project-referent-review.spec.js', '**/project-catalogue.spec.js'],
+      use: {
+        ...devices['Desktop Safari'],
+      },
+    },
   ],
 
   webServer: {

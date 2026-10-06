@@ -1,5 +1,6 @@
 {
   "nav": {
+    "mySpace": "My workspace",
     "home": "Home",
     "activities": "Activities",
     "projects": "Projects",
@@ -340,6 +341,11 @@
     "locationMapAria": "Activity location map"
   },
   "projects": {
+    "view": "View",
+    "catalogue": "Catalogue",
+    "myProjects": "My projects",
+    "privateProjectsHelp": "Your drafts and projects awaiting approval stay outside the public catalogue.",
+    "joinConditions": "Join approved or ongoing projects. Group projects require active membership in the relevant group.",
     "title": "Collaborative projects",
     "new_project": "+ New project",
     "cancel": "Cancel",
@@ -360,18 +366,20 @@
     "error_submit": "Error submitting the project.",
     "submit_project": "Submit project",
     "submit_draft": "Submit draft",
+    "saveDraft": "Save draft",
+    "saveDraftHelp": "The project remains private. You can edit and submit it later from its details.",
     "draftCreated": "Draft saved. Submit it when you are ready.",
     "description_soon": "Description coming soon.",
     "fallback_image": "BX-Connect project",
     "group_label": "Group: {{group}}",
     "owner_label": "Owner: {{owner}}",
     "participants_count": "{{count}} participant(s)",
-    "visibility": "Visibility",
+    "visibility": "Project type",
     "group": "Linked group",
     "noGroup": "Association project without a group",
     "participationSoon": "Participation requests will be available in a later phase.",
     "successSubmitted": "Project created and submitted for approval.",
-    "submissionResult": { "SOUMIS": "Project submitted to the responsible coordinator.", "VALIDE_REFERENT": "Project returned to the administrative decision queue.", "APPROUVE": "Project automatically approved according to the ADMIN workflow." },
+    "submissionResult": { "SOUMIS": "Project submitted to the responsible coordinator.", "VALIDE_REFERENT": "Submitted for ADMIN approval", "APPROUVE": "Project automatically approved according to the ADMIN workflow." },
     "type": "Project type",
     "typeGroup": "Group project",
     "typeInstitutional": "Association project",
@@ -405,7 +413,7 @@
     "filteredCount": "{{count}}/{{total}} project(s) shown",
     "searchPlaceholder": "Search for a project...",
     "allGroups": "All groups",
-    "allVisibilities": "All visibility options",
+    "allVisibilities": "All types",
     "noFilteredProjects": "No project matches your criteria",
     "noFilteredProjectsDesc": "Change the search, stage, group or visibility to find a project.",
     "emptyNoGroupTitle": "Join a group first to propose a project",
@@ -441,7 +449,7 @@
     "noComments": "No comments yet.",
     "commentPlaceholder": "Add a follow-up note...",
     "joinedLabel": "Participant",
-    "join": "Join",
+    "join": "Participate",
     "workflowDraft": "This project is still being prepared.",
     "workflowSubmitted": "This project is waiting for referent review.",
     "workflowReferentApproved": "This project was validated by the referent and is waiting for the admin decision.",
@@ -471,10 +479,10 @@
     "eventComment": "New comment"
   },
   "projectVisibility": {
-    "GROUPE": "Group",
+    "GROUPE": "Group project",
     "COMMUNAUTE": "Community",
     "PARTENAIRES": "Partners",
-    "PUBLIC": "Public"
+    "PUBLIC": "Public project"
   },
   "groups": {
     "title": "Groups",
@@ -1028,7 +1036,7 @@
     "projectFinallyApproved": "Project finally approved.",
     "projectFinallyRejected": "Project finally rejected.",
     "projectWorkflowState": "Workflow",
-    "statusValidatedByReferent": "Validated by referent, waiting for admin",
+    "statusValidatedByReferent": "Submitted for ADMIN approval",
     "statusRejectedByReferent": "Rejected by referent",
     "statusLegacySubmitted": "Legacy flow / submitted without referent validation",
     "statusFinallyApproved": "Finally approved",
@@ -1173,6 +1181,7 @@
       "noGroup": "Join a group"
     },
     "referent": {
+
       "title": "My mentor",
       "ofGroup": "Mentor for {{group}}",
       "pending": "Your mentor will be available once your request has been approved.",
@@ -1286,7 +1295,7 @@
       "project": {
         "BROUILLON": "Draft",
         "SOUMIS": "Submitted",
-        "VALIDE_REFERENT": "Approved by mentor",
+        "VALIDE_REFERENT": "Submitted for ADMIN approval",
         "REFUSE_REFERENT": "Rejected by mentor",
         "APPROUVE": "Approved",
         "EN_COURS": "In progress",
@@ -1333,7 +1342,7 @@
     "CONFIRMEE": "Confirmed",
     "EN_ATTENTE_PAIEMENT": "Payment pending",
     "PAYEE": "Paid",
-    "VALIDE_REFERENT": "Validated by referent",
+    "VALIDE_REFERENT": "Submitted for ADMIN approval",
     "REFUSE_REFERENT": "Rejected by referent",
     "A_CORRIGER_REFERENT": "Corrections requested by coordinator",
     "A_CORRIGER_ADMIN": "Corrections requested by administrator",
@@ -1392,6 +1401,9 @@
     "user": "User"
   },
   "referent": {
+    "openProject": "Open project details",
+    "projectDetails": "Project details",
+    "projectDecision": "Confirm decision",
     "title": "Mentors",
     "subtitle": "Create and monitor active mentors for the association.",
     "managementSubtitle": "Track mentors, their groups and exchanges with administration.",
@@ -1505,22 +1517,22 @@
     "projectReviewSubtitle": "The referent reviews group projects before the final administration decision.",
     "projectReviewFilters": {
       "A_RELIRE": "Projects to review",
-      "VALIDES_REFERENT": "Validated by referent",
+      "VALIDES_REFERENT": "Awaiting ADMIN",
       "REFUSES_REFERENT": "Rejected by referent",
       "TOUS": "All"
     },
-    "validateForAdmin": "Validate for admin",
+    "validateForAdmin": "Submit to ADMIN",
     "requestProjectCorrection": "Request corrections",
     "projectCorrectionRequested": "Correction request sent to the owner.",
     "projectDecisionCommentRequired": "A precise comment is required.",
     "refuseWithComment": "Reject",
     "referentComment": "Referent comment",
     "referentCommentPlaceholder": "Briefly explain your decision if needed.",
-    "projectValidatedForAdmin": "Project validated by the referent. It is now waiting for admin validation.",
+    "projectValidatedForAdmin": "Project submitted for ADMIN approval.",
     "projectRejectedByReferent": "Project rejected by the referent.",
     "projectWorkflowState": "Workflow",
     "statusSubmittedToReferent": "Submitted to referent",
-    "statusValidatedByReferent": "Validated by referent",
+    "statusValidatedByReferent": "Submitted for ADMIN approval",
     "statusRejectedByReferent": "Rejected by referent",
     "statusApprovedByAdmin": "Finally approved",
     "statusRejectedByAdmin": "Rejected by admin",
@@ -2407,7 +2419,7 @@
     "projectStatuses": {
       "BROUILLON": "Draft",
       "SOUMIS": "Submitted to referent",
-      "VALIDE_REFERENT": "Validated by referent, awaiting admin",
+      "VALIDE_REFERENT": "Submitted for ADMIN approval",
       "REFUSE_REFERENT": "Rejected by referent",
       "APPROUVE": "Finally approved",
       "REJETE": "Finally rejected",
@@ -3175,5 +3187,41 @@
     "reactiverConfirm": "Reactivate this membership? Capacity and other memberships will be checked.",
     "membership": "Membership",
     "suspendedHelp": "Your membership is suspended. Contact your mentor to reactivate it."
+  },
+  "projectPayment": {
+    "participation": "Participation",
+    "free": "Free",
+    "paid": "Paid",
+    "price": "Price per participant (€)",
+    "budgetHelp": "The requested budget is for project review. The participation price is paid by each participant.",
+    "payJoin": "Pay and join",
+    "invoices": "My invoices",
+    "invoiceHelp": "Project participation receipts. Returning from Stripe does not confirm payment: refresh to check confirmation.",
+    "transactions": "Transactions and receipts",
+    "empty": "No transactions yet.",
+    "unavailable": "Data unavailable.",
+    "pending": "Payment awaiting confirmation. No receipt is available yet.",
+    "resume": "Resume payment",
+    "download": "Download PDF receipt",
+    "receipt": "Payment receipt",
+    "project": "Project",
+    "participant": "Participant",
+    "amount": "Amount paid",
+    "date": "Payment date",
+    "confirmed": "Payment confirmed — project participation.",
+    "error": "Unable to complete this action. Try again or contact the organiser."
+  },
+  "projectDetails": {
+    "planning": "Dates and capacity",
+    "execution": "Execution date",
+    "deadline": "Participation deadline",
+    "capacity": "Maximum participants",
+    "cover": "Cover image",
+    "chooseCover": "Choose a cover",
+    "help": "No capacity: unlimited. No deadline: registration remains open until the execution date, if specified.",
+    "notSet": "Not specified",
+    "unlimited": "Unlimited",
+    "closed": "Registration closed",
+    "full": "Full"
   }
 }

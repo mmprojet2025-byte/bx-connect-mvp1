@@ -105,6 +105,7 @@ export function hasExactNotificationRoute(notification = {}, role = 'MEMBRE') {
 
 function exactRouteFromAction(actionPath, role) {
   if (!actionPath) return ''
+  if (role === 'MEMBRE' && /^\/mes-factures(?:\?recu=[1-9][0-9]*)?$/.test(actionPath)) return actionPath
 
   const routes = ROLE_ROUTES[role] || ROLE_ROUTES.MEMBRE
   const isAdmin = role === 'ADMIN'

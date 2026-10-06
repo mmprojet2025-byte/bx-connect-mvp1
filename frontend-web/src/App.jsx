@@ -1,3 +1,4 @@
+import MesFactures from './pages/paiement/MesFactures'
 import ActivityPaymentReturn from './pages/paiement/ActivityPaymentReturn'
 import { useEffect, useState } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
@@ -53,7 +54,7 @@ import SuperAdminRoute      from './routes/SuperAdminRoute'
 import SuperAdminDashboard  from './pages/super-admin/SuperAdminDashboard'
 import SuperAdminAdmins     from './pages/super-admin/SuperAdminAdmins'
 import SuperAdminLogs       from './pages/super-admin/SuperAdminLogs'
-import { getAuthenticatedRootRedirect, getDefaultRouteForRole } from './routes/roleRoutes'
+import { getDefaultRouteForRole } from './routes/roleRoutes'
 import { trackDashboardView } from './monitoring/analytics'
 
 // ─── Guards ───────────────────────────────────────────────────────────────────
@@ -140,7 +141,7 @@ export default function App() {
   const { isAuthenticated, isRestoringSession, user } = useAuth()
   const { t } = useTranslation()
   const location = useLocation()
-  const showAppShell = isAuthenticated && !PUBLIC_ONLY_PATHS.has(location.pathname)
+  const showAppShell = isAuthenticated && location.pathname !== '/' && !PUBLIC_ONLY_PATHS.has(location.pathname)
   const [contextSidebarCollapsed, setContextSidebarCollapsed] = useState(() => {
     if (typeof window === 'undefined') return false
     const stored = window.localStorage.getItem('bx-app-sidebar-collapsed')
@@ -172,13 +173,6 @@ export default function App() {
   if (isRestoringSession) {
     return <div role="status" className="grid min-h-screen place-items-center bg-[#f5f7fb] text-slate-600">{t('common.loading', { defaultValue: 'Chargement...' })}</div>
   }
-
-  const authenticatedRootRedirect = getAuthenticatedRootRedirect({
-    isAuthenticated,
-    pathname: location.pathname,
-    role: user?.role,
-  })
-  if (authenticatedRootRedirect) return <Navigate to={authenticatedRootRedirect} replace />
 
   return (
     <>
@@ -213,6 +207,7 @@ export default function App() {
 
           {/* ── Pages membres connectés ── */}
           <Route path="/messagerie"    element={<MembreRoute><Messagerie /></MembreRoute>} />
+          <Route path="/mes-factures" element={<MembreRoute><MesFactures /></MembreRoute>} />
           <Route path="/dashboard"     element={<MembreRoute><Dashboard /></MembreRoute>} />
           <Route path="/profil"        element={<PrivateRoute><AccountRoute /></PrivateRoute>} />
           <Route path="/notifications" element={<SuperAdminExcludedRoute><PrivateRoute><Notifications /></PrivateRoute></SuperAdminExcludedRoute>} />

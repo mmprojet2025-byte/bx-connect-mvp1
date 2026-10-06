@@ -87,6 +87,116 @@ class ProjetSecurityTest {
         verifyNoInteractions(projetRepository);
     }
 
+
+    @ParameterizedTest
+    @CsvSource({"PUBLIC,APPROUVE", "PUBLIC,EN_COURS"})
+    void membre_sans_groupe_rejoint_public(VisibiliteProjet type, StatutProjet statut) {
+        Projet p = projet(42L, statut, null, admin);
+        p.setVisibilite(type);
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        when(projetRepository.findByIdForUpdate(42L)).thenReturn(Optional.of(p));
+        projetService.rejoindrProjet(42L, membre.getEmail());
+        verify(participationRepository).save(any(ParticipationProjet.class));
+        verifyNoInteractions(membreGroupeRepository);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"PUBLIC,BROUILLON", "PUBLIC,SOUMIS", "PUBLIC,VALIDE_REFERENT",
+        "PUBLIC,TERMINE", "PUBLIC,ARCHIVE", "GROUPE,BROUILLON", "GROUPE,TERMINE"})
+    void pas_de_participation_hors_projet_ouvert(VisibiliteProjet type, StatutProjet statut) {
+        Projet p = projet(42L, statut, groupe, membre);
+        p.setVisibilite(type);
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        when(projetRepository.findByIdForUpdate(42L)).thenReturn(Optional.of(p));
+        assertThatThrownBy(() -> projetService.rejoindrProjet(42L, membre.getEmail()))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(participationRepository, never()).save(any());
+    }
+
+    @Test
+    void membre_autre_groupe_voit_catalogue_mais_ne_rejoint_pas() {
+        Projet p = projet(42L, StatutProjet.APPROUVE, autreGroupe, admin);
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        when(projetRepository.findByIdForUpdate(42L)).thenReturn(Optional.of(p));
+        when(membreGroupeRepository.findFirstByUserIdAndStatut(membre.getId(), StatutMembre.ACCEPTE))
+                .thenReturn(Optional.of(adhesion(membre, groupe)));
+        when(projetRepository.findById(42L)).thenReturn(Optional.of(p));
+        assertThat(projetService.getProjet(42L, membre.getEmail()).getId()).isEqualTo(42L);
+        assertThatThrownBy(() -> projetService.rejoindrProjet(42L, membre.getEmail()))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(participationRepository, never()).save(any());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"GROUPE,APPROUVE", "GROUPE,EN_COURS", "GROUPE,TERMINE",
+        "PUBLIC,APPROUVE", "PUBLIC,EN_COURS", "PUBLIC,TERMINE"})
+    void visiteur_consulte_les_deux_types_diffusables(VisibiliteProjet type, StatutProjet statut) {
+        Projet p = projet(42L, statut, groupe, membre);
+        p.setVisibilite(type);
+        when(projetRepository.findById(42L)).thenReturn(Optional.of(p));
+        assertThat(projetService.getProjet(42L).getId()).isEqualTo(42L);
+    }
+
+    @Test
+    void catalogue_ne_revele_pas_discussion_interne_du_groupe() {
+        Projet p = projet(42L, StatutProjet.APPROUVE, groupe, membre);
+        when(projetRepository.findById(42L)).thenReturn(Optional.of(p));
+        assertThatThrownBy(() -> projetService.getCommentaires(42L, null))
+                .isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> projetService.getCommentairesPage(42L, null, 0, 20))
+                .isInstanceOf(AccessDeniedException.class);
+        verifyNoInteractions(commentaireRepository);
+    }
+
+    @Test
+    void participation_publique_ne_peut_pas_etre_dupliquee() {
+        Projet p = projet(42L, StatutProjet.APPROUVE, null, admin);
+        p.setVisibilite(VisibiliteProjet.PUBLIC);
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        when(projetRepository.findByIdForUpdate(42L)).thenReturn(Optional.of(p));
+        when(participationRepository.existsByUserIdAndProjetId(membre.getId(), 42L)).thenReturn(true);
+        assertThatThrownBy(() -> projetService.rejoindrProjet(42L, membre.getEmail()))
+                .hasMessage("Vous participez déjà à ce projet");
+        verify(participationRepository, never()).save(any());
+    }
+
+
+    @ParameterizedTest
+    @CsvSource({"COMMUNAUTE", "PARTENAIRES"})
+    void anciens_types_refuses_pour_les_nouvelles_creations(VisibiliteProjet type) {
+        ProjetRequest request = request();
+        request.setVisibilite(type);
+        when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        assertThatThrownBy(() -> projetService.proposerProjet(request, admin.getEmail()))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(projetRepository, never()).save(any());
+    }
+
+    @Test
+    void membre_sans_adhesion_active_ne_rejoint_pas_groupe() {
+        Projet p = projet(42L, StatutProjet.APPROUVE, groupe, admin);
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        when(projetRepository.findByIdForUpdate(42L)).thenReturn(Optional.of(p));
+        when(membreGroupeRepository.findFirstByUserIdAndStatut(membre.getId(), StatutMembre.ACCEPTE))
+                .thenReturn(Optional.empty());
+        assertThatThrownBy(() -> projetService.rejoindrProjet(42L, membre.getEmail()))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(participationRepository, never()).save(any());
+    }
+
+
+    @Test
+    void paiement_obligatoire_ne_peut_pas_etre_contourne_par_rejoindre() {
+        Projet p = projet(42L, StatutProjet.APPROUVE, null, membre);
+        p.setVisibilite(VisibiliteProjet.PUBLIC);
+        p.setPrixParticipation(new java.math.BigDecimal("5.00"));
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        when(projetRepository.findByIdForUpdate(42L)).thenReturn(Optional.of(p));
+        assertThatThrownBy(() -> projetService.rejoindrProjet(42L, membre.getEmail()))
+                .isInstanceOf(AccessDeniedException.class).hasMessageContaining("paiement");
+        verify(participationRepository, never()).save(any());
+    }
+
     @Mock private ProjetRepository projetRepository;
     @Mock private ParticipationProjetRepository participationRepository;
     @Mock private CommentaireProjetRepository commentaireRepository;
@@ -217,16 +327,17 @@ class ProjetSecurityTest {
     }
 
     @Test
-    @DisplayName("VISITEUR ne liste que les projets PUBLIC diffusables")
-    void visiteur_ne_liste_que_projets_publics() {
+    @DisplayName("VISITEUR liste les projets GROUPE et PUBLIC diffusables")
+    void visiteur_liste_les_deux_types() {
         Projet projetPublic = projet(40L, StatutProjet.APPROUVE, null, admin);
         projetPublic.setVisibilite(VisibiliteProjet.PUBLIC);
-        when(projetRepository.findByStatutInAndVisibilite(
+        Projet projetGroupe = projet(41L, StatutProjet.TERMINE, groupe, membre);
+        when(projetRepository.findByStatutInAndVisibiliteIn(
                 List.of(StatutProjet.APPROUVE, StatutProjet.EN_COURS, StatutProjet.TERMINE),
-                VisibiliteProjet.PUBLIC)).thenReturn(List.of(projetPublic));
+                List.of(VisibiliteProjet.GROUPE, VisibiliteProjet.PUBLIC))).thenReturn(List.of(projetPublic, projetGroupe));
 
         assertThat(projetService.listerProjetsVisibles(null)).extracting(ProjetResponse::getId)
-                .containsExactly(40L);
+                .containsExactly(40L, 41L);
     }
 
     @Test
@@ -234,7 +345,7 @@ class ProjetSecurityTest {
     void referent_cree_uniquement_pour_son_groupe() {
         ProjetRequest request = request();
         request.setGroupeId(groupe.getId());
-        request.setVisibilite(VisibiliteProjet.COMMUNAUTE);
+        request.setVisibilite(VisibiliteProjet.PUBLIC);
 
         when(userRepository.findByEmail(referent.getEmail())).thenReturn(Optional.of(referent));
         when(groupeRepository.findById(groupe.getId())).thenReturn(Optional.of(groupe));
@@ -256,7 +367,7 @@ class ProjetSecurityTest {
         ProjetRequest request = request();
         request.setTitre("Projet modifie");
         request.setGroupeId(groupe.getId());
-        request.setVisibilite(VisibiliteProjet.COMMUNAUTE);
+        request.setVisibilite(VisibiliteProjet.PUBLIC);
 
         when(projetRepository.findById(42L)).thenReturn(Optional.of(projet));
         when(userRepository.findByEmail(referent.getEmail())).thenReturn(Optional.of(referent));
@@ -267,7 +378,7 @@ class ProjetSecurityTest {
 
         assertThat(response.getTitre()).isEqualTo("Projet modifie");
         assertThat(response.getGroupeId()).isEqualTo(groupe.getId());
-        assertThat(response.getVisibilite()).isEqualTo(VisibiliteProjet.COMMUNAUTE);
+        assertThat(response.getVisibilite()).isEqualTo(VisibiliteProjet.PUBLIC);
         verify(auditLogService).logAction(
                 org.mockito.ArgumentMatchers.same(referent),
                 org.mockito.ArgumentMatchers.eq("PROJECT_UPDATED"),
@@ -471,6 +582,57 @@ class ProjetSecurityTest {
     }
 
     @Test
+    void referent_corrige_projet_soumis_du_membre_sans_changer_workflow_ou_porteur() {
+        Projet projet = projet(42L, StatutProjet.SOUMIS, groupe, membre);
+        ProjetRequest request = request(); request.setGroupeId(groupe.getId()); request.setTitre("Titre relu");
+        request.setCapacite(12); request.setDateExecution(java.time.LocalDate.of(2030, 5, 5));
+        when(projetRepository.findById(42L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(referent.getEmail())).thenReturn(Optional.of(referent));
+        when(groupeRepository.findById(groupe.getId())).thenReturn(Optional.of(groupe));
+        when(projetRepository.save(any(Projet.class))).thenAnswer(inv -> inv.getArgument(0));
+        ProjetResponse response = projetService.modifierProjetReferent(42L, request, referent.getEmail());
+        assertThat(response.getTitre()).isEqualTo("Titre relu");
+        assertThat(response.getCapacite()).isEqualTo(12);
+        assertThat(response.getStatut()).isEqualTo(StatutProjet.SOUMIS);
+        assertThat(projet.getPorteur()).isSameAs(membre);
+        verifyNoInteractions(notificationService);
+    }
+
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(value = StatutProjet.class, names = {"BROUILLON", "VALIDE_REFERENT", "APPROUVE", "EN_COURS", "TERMINE", "A_CORRIGER_ADMIN", "A_CORRIGER_REFERENT"})
+    void referent_ne_corrige_pas_le_projet_du_membre_hors_relecture(StatutProjet statut) {
+        Projet projet = projet(42L, statut, groupe, membre);
+        when(projetRepository.findById(42L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(referent.getEmail())).thenReturn(Optional.of(referent));
+        assertThatThrownBy(() -> projetService.modifierProjetReferent(42L, request(), referent.getEmail()))
+            .isInstanceOf(AccessDeniedException.class);
+        verify(projetRepository, never()).save(any());
+    }
+
+    @Test void referent_ne_deplace_pas_le_projet_soumis_vers_un_autre_groupe() {
+        Projet projet = projet(42L, StatutProjet.SOUMIS, groupe, membre);
+        ProjetRequest request = request(); request.setGroupeId(autreGroupe.getId());
+        when(projetRepository.findById(42L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(referent.getEmail())).thenReturn(Optional.of(referent));
+        assertThatThrownBy(() -> projetService.modifierProjetReferent(42L, request, referent.getEmail()))
+            .isInstanceOf(AccessDeniedException.class);
+        verify(projetRepository, never()).save(any());
+    }
+
+    @Test void transmission_admin_change_statut_partout_et_refuse_un_second_envoi() {
+        Projet projet = projet(42L, StatutProjet.SOUMIS, groupe, membre);
+        when(projetRepository.findById(42L)).thenReturn(Optional.of(projet));
+        when(userRepository.findByEmail(referent.getEmail())).thenReturn(Optional.of(referent));
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        when(projetRepository.save(any(Projet.class))).thenAnswer(inv -> inv.getArgument(0));
+        assertThat(projetService.validerProjetReferent(42L, "Relu", referent.getEmail()).getStatut()).isEqualTo(StatutProjet.VALIDE_REFERENT);
+        assertThat(projetService.getProjet(42L, membre.getEmail()).getStatut()).isEqualTo(StatutProjet.VALIDE_REFERENT);
+        assertThatThrownBy(() -> projetService.validerProjetReferent(42L, "Relu", referent.getEmail()))
+            .hasMessageContaining("SOUMIS");
+        verify(projetRepository).save(projet);
+    }
+
+    @Test
     @DisplayName("REFERENT ne peut pas modifier un projet d'un autre groupe")
     void referent_ne_peut_pas_modifier_projet_autre_groupe() {
         Projet projet = projet(42L, StatutProjet.SOUMIS, autreGroupe, membre);
@@ -584,10 +746,10 @@ class ProjetSecurityTest {
         Projet projetPublic = projet(42L, StatutProjet.APPROUVE, null, membre);
         projetPublic.setVisibilite(VisibiliteProjet.PUBLIC);
         when(userRepository.findByEmail(superAdmin.getEmail())).thenReturn(Optional.of(superAdmin));
-        when(projetRepository.findByIdAndStatutInAndVisibilite(
+        when(projetRepository.findByIdAndStatutInAndVisibiliteIn(
                 42L,
                 List.of(StatutProjet.APPROUVE, StatutProjet.EN_COURS, StatutProjet.TERMINE),
-                VisibiliteProjet.PUBLIC)).thenReturn(Optional.of(projetPublic));
+                List.of(VisibiliteProjet.GROUPE, VisibiliteProjet.PUBLIC))).thenReturn(Optional.of(projetPublic));
 
         assertThat(projetService.getProjet(42L, superAdmin.getEmail()).getId()).isEqualTo(42L);
         verify(projetRepository, never()).findById(any());
@@ -597,10 +759,10 @@ class ProjetSecurityTest {
     @DisplayName("SUPER_ADMIN ne peut pas reveler un projet prive par son identifiant")
     void super_admin_ne_peut_pas_consulter_detail_prive() {
         when(userRepository.findByEmail(superAdmin.getEmail())).thenReturn(Optional.of(superAdmin));
-        when(projetRepository.findByIdAndStatutInAndVisibilite(
+        when(projetRepository.findByIdAndStatutInAndVisibiliteIn(
                 43L,
                 List.of(StatutProjet.APPROUVE, StatutProjet.EN_COURS, StatutProjet.TERMINE),
-                VisibiliteProjet.PUBLIC)).thenReturn(Optional.empty());
+                List.of(VisibiliteProjet.GROUPE, VisibiliteProjet.PUBLIC))).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> projetService.getProjet(43L, superAdmin.getEmail()))
                 .isInstanceOf(RuntimeException.class)
@@ -614,9 +776,9 @@ class ProjetSecurityTest {
         Projet projetPublic = projet(42L, StatutProjet.APPROUVE, null, membre);
         projetPublic.setVisibilite(VisibiliteProjet.PUBLIC);
         when(userRepository.findByEmail(superAdmin.getEmail())).thenReturn(Optional.of(superAdmin));
-        when(projetRepository.findByStatutInAndVisibilite(
+        when(projetRepository.findByStatutInAndVisibiliteIn(
                 List.of(StatutProjet.APPROUVE, StatutProjet.EN_COURS, StatutProjet.TERMINE),
-                VisibiliteProjet.PUBLIC)).thenReturn(List.of(projetPublic));
+                List.of(VisibiliteProjet.GROUPE, VisibiliteProjet.PUBLIC))).thenReturn(List.of(projetPublic));
 
         assertThat(projetService.listerProjetsVisibles(superAdmin.getEmail()))
                 .extracting(ProjetResponse::getId)
@@ -630,9 +792,9 @@ class ProjetSecurityTest {
         Projet projetPublic = projet(42L, StatutProjet.TERMINE, null, membre);
         projetPublic.setVisibilite(VisibiliteProjet.PUBLIC);
         when(userRepository.findByEmail(superAdmin.getEmail())).thenReturn(Optional.of(superAdmin));
-        when(projetRepository.findByStatutInAndVisibilite(
+        when(projetRepository.findByStatutInAndVisibiliteIn(
                 org.mockito.ArgumentMatchers.eq(List.of(StatutProjet.APPROUVE, StatutProjet.EN_COURS, StatutProjet.TERMINE)),
-                org.mockito.ArgumentMatchers.eq(VisibiliteProjet.PUBLIC),
+                org.mockito.ArgumentMatchers.eq(List.of(VisibiliteProjet.GROUPE, VisibiliteProjet.PUBLIC)),
                 any(Pageable.class))).thenReturn(new PageImpl<>(List.of(projetPublic)));
 
         assertThat(projetService.listerProjetsVisiblesPage(superAdmin.getEmail(), 0, 20).content())
@@ -682,9 +844,9 @@ class ProjetSecurityTest {
     @Test
     @DisplayName("MEMBRE peut rejoindre uniquement un projet de son groupe actif")
     void membre_peut_rejoindre_projet_groupe_actif() {
-        Projet projet = projet(42L, StatutProjet.SOUMIS, groupe, user(6L, "porteur@test.be", Role.MEMBRE));
+        Projet projet = projet(42L, StatutProjet.APPROUVE, groupe, user(6L, "porteur@test.be", Role.MEMBRE));
 
-        when(projetRepository.findById(42L)).thenReturn(Optional.of(projet));
+        when(projetRepository.findByIdForUpdate(42L)).thenReturn(Optional.of(projet));
         when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
         when(membreGroupeRepository.findFirstByUserIdAndStatut(membre.getId(), StatutMembre.ACCEPTE))
                 .thenReturn(Optional.of(adhesion(membre, groupe)));
@@ -699,7 +861,7 @@ class ProjetSecurityTest {
     void rejoindre_projet_refuse_roles_non_membre_service() {
         Projet projet = projet(42L, StatutProjet.APPROUVE, groupe, membre);
 
-        when(projetRepository.findById(42L)).thenReturn(Optional.of(projet));
+        when(projetRepository.findByIdForUpdate(42L)).thenReturn(Optional.of(projet));
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
 
         assertThatThrownBy(() -> projetService.rejoindrProjet(42L, admin.getEmail()))
