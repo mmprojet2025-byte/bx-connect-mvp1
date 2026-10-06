@@ -21,6 +21,11 @@ public interface GroupeRepository extends JpaRepository<Groupe, Long> {
     @Query("SELECT g FROM Groupe g WHERE g.id = :id")
     Optional<Groupe> findByIdForUpdate(@Param("id") Long id);
 
+    List<Groupe> findByStatutAndActifTrue(StatutGroupe statut);
+    Page<Groupe> findByStatutAndActifTrue(StatutGroupe statut, Pageable pageable);
+    List<Groupe> findByStatutAndActifTrueAndNomContainingIgnoreCase(StatutGroupe statut, String nom);
+    Page<Groupe> findByStatutAndActifTrueAndNomContainingIgnoreCase(StatutGroupe statut, String nom, Pageable pageable);
+
     // Groupes validés (public)
     List<Groupe> findByStatut(StatutGroupe statut);
 

@@ -77,6 +77,7 @@ class MembreDashboardServiceTest {
         Groupe groupe = new Groupe();
         groupe.setId(10L);
         groupe.setNom("Groupe Creatif");
+        groupe.setStatut(com.bxjeunes.bx_connect.entity.StatutGroupe.VALIDE);
         groupe.setReferent(referent);
 
         MembreGroupe adhesion = new MembreGroupe();
@@ -144,6 +145,17 @@ class MembreDashboardServiceTest {
         assertThat(historique.getActiviteTitre()).isEqualTo("Atelier annulé");
         assertThat(historique.getStatut()).isEqualTo(StatutInscription.ANNULEE);
         assertThat(historique.getActiviteStatut()).isEqualTo(com.bxjeunes.bx_connect.entity.StatutActivite.ANNULEE);
+    }
+
+    @Test
+    void archivedMembershipDoesNotReplaceTheCurrentGroupOnDashboard() {
+        Groupe archived = new Groupe(); archived.setId(9L); archived.setStatut(com.bxjeunes.bx_connect.entity.StatutGroupe.ARCHIVE); archived.setActif(false);
+        MembreGroupe old = new MembreGroupe(membre, archived); old.setStatut(StatutMembre.ACCEPTE);
+        Groupe active = new Groupe(); active.setId(10L); active.setNom("Actuel"); active.setReferent(referent); active.setStatut(com.bxjeunes.bx_connect.entity.StatutGroupe.VALIDE);
+        MembreGroupe current = new MembreGroupe(membre, active); current.setStatut(StatutMembre.ACCEPTE);
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        when(membreGroupeRepository.findByUserId(membre.getId())).thenReturn(List.of(old, current));
+        assertThat(membreDashboardService.dashboard(membre.getEmail()).getGroupe().getNom()).isEqualTo("Actuel");
     }
 
     private User user(Long id, String email, Role role) {

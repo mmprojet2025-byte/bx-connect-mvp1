@@ -820,7 +820,7 @@
     "noGroupsCreated": "No groups created",
     "noGroupsCreatedDesc": "Create the association's first groups.",
     "createGroup": "Create a group",
-    "createGroupCompactHint": "Enter the essential information. Advanced location remains available if needed.",
+    "createGroupCompactHint": "Enter the essentials. Details can be completed later in Manage.",
     "errorGroupsLoad": "Unable to load groups.",
     "groupCreated": "Group created successfully.",
     "errorGroupCreate": "Unable to create this group.",
@@ -1315,6 +1315,7 @@
     "noPriorityToday": "No urgent action today"
   },
   "statuses": {
+    "SUSPENDU": "Membership suspended",
     "BROUILLON": "Draft",
     "SOUMIS": "Submitted",
     "APPROUVE": "Approved",
@@ -3159,5 +3160,20 @@
     "GROUP": "You cannot manage this group or activity.",
     "DATES": "Check dates: the end must follow the start, and publication must precede the start.",
     "UNAVAILABLE": "This action is no longer available for this activity."
+  },
+  "groupWorkflow": {
+    "capacity": "Maximum capacity (0 = unlimited)",
+    "archive": "Archive group",
+    "archiveConfirm": "Archive this group? Its history will be preserved. New membership requests will be blocked.",
+    "archived": "Group archived. History preserved.",
+    "error": "Unable to complete this action. Check the group status, capacity and member’s memberships.",
+    "active": "Active",
+    "inactive": "Inactive",
+    "desactiver": "Deactivate",
+    "reactiver": "Reactivate",
+    "desactiverConfirm": "Suspend this membership? The user account will remain active.",
+    "reactiverConfirm": "Reactivate this membership? Capacity and other memberships will be checked.",
+    "membership": "Membership",
+    "suspendedHelp": "Your membership is suspended. Contact your mentor to reactivate it."
   }
 }

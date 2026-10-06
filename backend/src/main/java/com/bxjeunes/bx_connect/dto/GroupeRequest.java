@@ -18,6 +18,7 @@ public class GroupeRequest {
     private String commune;
     private BigDecimal latitude;
     private BigDecimal longitude;
+    @jakarta.validation.constraints.Min(0)
     private int capaciteMax;    // Capacité maximale (0 = illimité)
 
     // ─── Getters & Setters ────────────────────────────────────────────────────

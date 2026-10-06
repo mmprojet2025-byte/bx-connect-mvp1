@@ -820,7 +820,7 @@
     "noGroupsCreated": "Aucun groupe créé",
     "noGroupsCreatedDesc": "Créez les premiers groupes de l'association.",
     "createGroup": "Créer un groupe",
-    "createGroupCompactHint": "Renseignez l'essentiel. La localisation avancée reste disponible si nécessaire.",
+    "createGroupCompactHint": "Renseignez l’essentiel. Les informations détaillées pourront être complétées dans Gérer.",
     "errorGroupsLoad": "Impossible de charger les groupes.",
     "groupCreated": "Groupe créé avec succès.",
     "errorGroupCreate": "Impossible de créer ce groupe.",
@@ -1315,6 +1315,7 @@
     "noPriorityToday": "Aucune action urgente aujourd’hui"
   },
   "statuses": {
+    "SUSPENDU": "Appartenance suspendue",
     "BROUILLON": "Brouillon",
     "SOUMIS": "Soumis",
     "APPROUVE": "Approuvé",
@@ -3159,5 +3160,20 @@
     "GROUP": "Vous ne pouvez pas gérer ce groupe ou cette activité.",
     "DATES": "Vérifiez les dates : la fin doit suivre le début, et la publication doit précéder le début.",
     "UNAVAILABLE": "Cette action n’est plus possible pour cette activité."
+  },
+  "groupWorkflow": {
+    "capacity": "Capacité maximale (0 = illimitée)",
+    "archive": "Archiver le groupe",
+    "archiveConfirm": "Archiver ce groupe ? Son historique sera conservé. Les nouvelles adhésions seront bloquées.",
+    "archived": "Groupe archivé. Historique conservé.",
+    "error": "Impossible de terminer cette opération. Vérifiez le statut du groupe, la capacité et les appartenances du membre.",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "desactiver": "Désactiver",
+    "reactiver": "Réactiver",
+    "desactiverConfirm": "Suspendre cette appartenance ? Le compte utilisateur restera actif.",
+    "reactiverConfirm": "Réactiver cette appartenance ? La capacité et les autres appartenances seront vérifiées.",
+    "membership": "Appartenance",
+    "suspendedHelp": "Votre appartenance est suspendue. Contactez votre référent pour la réactiver."
   }
 }

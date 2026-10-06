@@ -62,9 +62,11 @@ public class MembreDashboardService {
 
         List<MembreGroupe> adhesions = membreGroupeRepository.findByUserId(membre.getId());
         Optional<MembreGroupe> adhesionAcceptee = adhesions.stream()
+                .filter(adhesion -> adhesion.getGroupe().isActif() && adhesion.getGroupe().getStatut() == com.bxjeunes.bx_connect.entity.StatutGroupe.VALIDE)
                 .filter(adhesion -> adhesion.getStatut() == StatutMembre.ACCEPTE)
                 .findFirst();
         Optional<MembreGroupe> adhesionEnAttente = adhesions.stream()
+                .filter(adhesion -> adhesion.getGroupe().isActif() && adhesion.getGroupe().getStatut() == com.bxjeunes.bx_connect.entity.StatutGroupe.VALIDE)
                 .filter(adhesion -> adhesion.getStatut() == StatutMembre.EN_ATTENTE)
                 .findFirst();
 

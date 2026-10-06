@@ -113,7 +113,7 @@ export default function Projets() {
   }, [fetchAdhesions, isAuthenticated, isMembre])
 
   const groupeActif = useMemo(
-    () => adhesions.find(adhesion => adhesion.statut === 'ACCEPTE'),
+    () => adhesions.find(adhesion => adhesion.statut === 'ACCEPTE' && adhesion.groupeActif !== false),
     [adhesions]
   )
 

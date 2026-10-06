@@ -820,7 +820,7 @@
     "noGroupsCreated": "Nog geen groepen aangemaakt",
     "noGroupsCreatedDesc": "Maak de eerste groepen van de vereniging aan.",
     "createGroup": "Groep aanmaken",
-    "createGroupCompactHint": "Vul de belangrijkste informatie in. Geavanceerde locatie blijft beschikbaar indien nodig.",
+    "createGroupCompactHint": "Vul de basisgegevens in. Details kunnen later via Beheren worden aangevuld.",
     "errorGroupsLoad": "Kan groepen niet laden.",
     "groupCreated": "Groep succesvol aangemaakt.",
     "errorGroupCreate": "Kan deze groep niet aanmaken.",
@@ -1315,6 +1315,7 @@
     "noPriorityToday": "Geen dringende actie vandaag"
   },
   "statuses": {
+    "SUSPENDU": "Lidmaatschap opgeschort",
     "BROUILLON": "Concept",
     "SOUMIS": "Ingediend",
     "APPROUVE": "Goedgekeurd",
@@ -3159,5 +3160,20 @@
     "GROUP": "U mag deze groep of activiteit niet beheren.",
     "DATES": "Controleer de datums: het einde moet na de start vallen en publicatie moet vóór de start gebeuren.",
     "UNAVAILABLE": "Deze actie is niet meer beschikbaar voor deze activiteit."
+  },
+  "groupWorkflow": {
+    "capacity": "Maximumcapaciteit (0 = onbeperkt)",
+    "archive": "Groep archiveren",
+    "archiveConfirm": "Deze groep archiveren? De historiek blijft bewaard. Nieuwe lidmaatschapsaanvragen worden geblokkeerd.",
+    "archived": "Groep gearchiveerd. Historiek bewaard.",
+    "error": "Deze actie kan niet worden voltooid. Controleer de groepsstatus, capaciteit en lidmaatschappen.",
+    "active": "Actief",
+    "inactive": "Inactief",
+    "desactiver": "Deactiveren",
+    "reactiver": "Heractiveren",
+    "desactiverConfirm": "Dit lidmaatschap opschorten? Het gebruikersaccount blijft actief.",
+    "reactiverConfirm": "Dit lidmaatschap heractiveren? De capaciteit en andere lidmaatschappen worden gecontroleerd.",
+    "membership": "Lidmaatschap",
+    "suspendedHelp": "Je lidmaatschap is opgeschort. Neem contact op met je begeleider om het te heractiveren."
   }
 }

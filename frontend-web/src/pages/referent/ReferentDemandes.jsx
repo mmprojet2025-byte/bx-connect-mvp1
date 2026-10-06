@@ -25,7 +25,7 @@ export default function ReferentDemandes() {
     setLoading(true)
     try {
       const groupesRes = await api.get('/referent/groupes')
-      const demandesData = await Promise.all(groupesRes.data.map(async (groupe) => {
+      const demandesData = await Promise.all(groupesRes.data.filter(g => g.actif !== false && g.statut === 'VALIDE').map(async (groupe) => {
         const res = await api.get(`/referent/groupes/${groupe.id}/demandes`)
         return res.data.map(demande => ({ ...demande, groupeId: groupe.id, groupeNom: groupe.nom }))
       }))

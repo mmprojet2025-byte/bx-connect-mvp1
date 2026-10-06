@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional
+@Transactional(isolation = Isolation.READ_COMMITTED)
 public class GroupeService {
 
     private static final Logger log = LoggerFactory.getLogger(GroupeService.class);
@@ -49,22 +49,22 @@ public class GroupeService {
     }
 
     public List<GroupeResponse> listerGroupes() {
-        return groupeRepository.findByStatut(StatutGroupe.VALIDE)
+        return groupeRepository.findByStatutAndActifTrue(StatutGroupe.VALIDE)
                 .stream().map(GroupeResponse::fromEntity).collect(Collectors.toList());
     }
 
     public List<GroupePublicResponse> listerGroupesPublics() {
-        return groupeRepository.findByStatut(StatutGroupe.VALIDE)
+        return groupeRepository.findByStatutAndActifTrue(StatutGroupe.VALIDE)
                 .stream().map(GroupePublicResponse::fromEntity).collect(Collectors.toList());
     }
 
     public List<GroupeResponse> rechercherParNom(String nom) {
-        return groupeRepository.findByStatutAndNomContainingIgnoreCase(StatutGroupe.VALIDE, nom)
+        return groupeRepository.findByStatutAndActifTrueAndNomContainingIgnoreCase(StatutGroupe.VALIDE, nom)
                 .stream().map(GroupeResponse::fromEntity).collect(Collectors.toList());
     }
 
     public List<GroupePublicResponse> rechercherPublicsParNom(String nom) {
-        return groupeRepository.findByStatutAndNomContainingIgnoreCase(StatutGroupe.VALIDE, nom)
+        return groupeRepository.findByStatutAndActifTrueAndNomContainingIgnoreCase(StatutGroupe.VALIDE, nom)
                 .stream().map(GroupePublicResponse::fromEntity).collect(Collectors.toList());
     }
 
@@ -72,11 +72,11 @@ public class GroupeService {
         var pageable = PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation"));
         if (nom != null && !nom.isBlank()) {
             return PagedResponse.fromPage(groupeRepository
-                    .findByStatutAndNomContainingIgnoreCase(StatutGroupe.VALIDE, nom, pageable)
+                    .findByStatutAndActifTrueAndNomContainingIgnoreCase(StatutGroupe.VALIDE, nom, pageable)
                     .map(GroupeResponse::fromEntity));
         }
         return PagedResponse.fromPage(groupeRepository
-                .findByStatut(StatutGroupe.VALIDE, pageable)
+                .findByStatutAndActifTrue(StatutGroupe.VALIDE, pageable)
                 .map(GroupeResponse::fromEntity));
     }
 
@@ -84,18 +84,18 @@ public class GroupeService {
         var pageable = PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation"));
         if (nom != null && !nom.isBlank()) {
             return PagedResponse.fromPage(groupeRepository
-                    .findByStatutAndNomContainingIgnoreCase(StatutGroupe.VALIDE, nom, pageable)
+                    .findByStatutAndActifTrueAndNomContainingIgnoreCase(StatutGroupe.VALIDE, nom, pageable)
                     .map(GroupePublicResponse::fromEntity));
         }
         return PagedResponse.fromPage(groupeRepository
-                .findByStatut(StatutGroupe.VALIDE, pageable)
+                .findByStatutAndActifTrue(StatutGroupe.VALIDE, pageable)
                 .map(GroupePublicResponse::fromEntity));
     }
 
     public GroupeResponse getGroupe(Long id) {
         Groupe groupe = groupeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + id));
-        if (groupe.getStatut() != StatutGroupe.VALIDE) {
+        if (groupe.getStatut() != StatutGroupe.VALIDE || !groupe.isActif()) {
             throw new RuntimeException("Groupe introuvable : " + id);
         }
         return GroupeResponse.fromEntity(groupe);
@@ -104,7 +104,7 @@ public class GroupeService {
     public GroupePublicResponse getGroupePublic(Long id) {
         Groupe groupe = groupeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + id));
-        if (groupe.getStatut() != StatutGroupe.VALIDE) {
+        if (groupe.getStatut() != StatutGroupe.VALIDE || !groupe.isActif()) {
             throw new RuntimeException("Groupe introuvable : " + id);
         }
         return GroupePublicResponse.fromEntity(groupe);
@@ -164,7 +164,7 @@ public class GroupeService {
     }
 
     public GroupeResponse assignerReferent(Long groupeId, Long referentId, String emailAdmin) {
-        Groupe groupe = groupeRepository.findById(groupeId)
+        Groupe groupe = groupeRepository.findByIdForUpdate(groupeId)
                 .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + groupeId));
         User admin = chargerUtilisateurOptionnel(emailAdmin);
         User ancienReferent = groupe.getReferent();
@@ -184,7 +184,7 @@ public class GroupeService {
      * SECURITE : Un referent ne peut modifier QUE ses propres groupes.
      */
     public GroupeResponse modifierGroupe(Long id, GroupeRequest request, String emailUser) {
-        Groupe groupe = groupeRepository.findById(id)
+        Groupe groupe = groupeRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + id));
         User user = userRepository.findByEmail(emailUser)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
@@ -212,17 +212,19 @@ public class GroupeService {
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public MembreGroupeResponse accepterAdhesion(Long membreGroupeId, String emailReferent) {
-        MembreGroupe mg = membreGroupeRepository.findById(membreGroupeId)
+        MembreGroupe mg = membreGroupeRepository.findByIdForUpdate(membreGroupeId)
                 .orElseThrow(() -> new RuntimeException("Demande introuvable : " + membreGroupeId));
         User referent = userRepository.findByEmail(emailReferent)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
 
-        if (referent.getRole() == Role.REFERENT &&
-            !mg.getGroupe().getReferent().getId().equals(referent.getId())) {
-            throw new AccessDeniedException("Vous n'etes pas le referent de ce groupe.");
-        }
+        verrouillerMembre(mg.getUser());
         Groupe groupe = groupeRepository.findByIdForUpdate(mg.getGroupe().getId())
                 .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + mg.getGroupe().getId()));
+        if (referent.getRole() == Role.REFERENT &&
+            !groupe.getReferent().getId().equals(referent.getId())) {
+            throw new AccessDeniedException("Vous n'etes pas le referent de ce groupe.");
+        }
+        verifierGroupeDisponible(groupe);
         if (mg.getStatut() != StatutMembre.EN_ATTENTE) {
             throw new RuntimeException("Cette demande d'adhésion n'est plus en attente.");
         }
@@ -255,16 +257,23 @@ public class GroupeService {
      * SECURITE : Un referent ne peut refuser que les adhesions de SES groupes.
      */
     public MembreGroupeResponse refuserAdhesion(Long membreGroupeId, String emailReferent) {
-        MembreGroupe mg = membreGroupeRepository.findById(membreGroupeId)
+        MembreGroupe mg = membreGroupeRepository.findByIdForUpdate(membreGroupeId)
                 .orElseThrow(() -> new RuntimeException("Demande introuvable : " + membreGroupeId));
         User referent = userRepository.findByEmail(emailReferent)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
 
+        verrouillerMembre(mg.getUser());
+        Groupe groupe = groupeRepository.findByIdForUpdate(mg.getGroupe().getId())
+                .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + mg.getGroupe().getId()));
         if (referent.getRole() == Role.REFERENT &&
-            !mg.getGroupe().getReferent().getId().equals(referent.getId())) {
+            !groupe.getReferent().getId().equals(referent.getId())) {
             throw new AccessDeniedException("Vous n'etes pas le referent de ce groupe.");
         }
 
+        verifierGroupeDisponible(groupe);
+        if (mg.getStatut() != StatutMembre.EN_ATTENTE) {
+            throw new IllegalArgumentException("Cette demande d'adhésion n'est plus en attente.");
+        }
         StatutMembre ancienStatut = mg.getStatut();
         mg.setStatut(StatutMembre.REFUSE);
         MembreGroupe saved = membreGroupeRepository.save(mg);
@@ -282,12 +291,14 @@ public class GroupeService {
     }
 
     public GroupeResponse validerGroupe(Long groupeId, String emailAdmin) {
-        Groupe groupe = groupeRepository.findById(groupeId)
+        Groupe groupe = groupeRepository.findByIdForUpdate(groupeId)
                 .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + groupeId));
         User admin = chargerUtilisateurOptionnel(emailAdmin);
         StatutGroupe ancienStatut = groupe.getStatut();
+        verifierGroupeEnAttente(groupe);
         groupe.setStatut(StatutGroupe.VALIDE);
         groupe.setActif(true);
+        groupe.setMotifRefus(null);
         groupe.setDateValidation(LocalDateTime.now());
         Groupe saved = groupeRepository.save(groupe);
         notificationService.creer(groupe.getReferent(), "Groupe valide",
@@ -302,11 +313,13 @@ public class GroupeService {
     }
 
     public GroupeResponse refuserGroupe(Long groupeId, String motif, String emailAdmin) {
-        Groupe groupe = groupeRepository.findById(groupeId)
+        Groupe groupe = groupeRepository.findByIdForUpdate(groupeId)
                 .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + groupeId));
         User admin = chargerUtilisateurOptionnel(emailAdmin);
         StatutGroupe ancienStatut = groupe.getStatut();
+        verifierGroupeEnAttente(groupe);
         groupe.setStatut(StatutGroupe.REFUSE);
+        groupe.setActif(false);
         groupe.setMotifRefus(motif);
         Groupe saved = groupeRepository.save(groupe);
         notificationService.creer(groupe.getReferent(), "Groupe refuse",
@@ -344,12 +357,16 @@ public class GroupeService {
     }
 
     public void supprimerGroupe(Long id, String emailAdmin) {
-        Groupe groupe = groupeRepository.findById(id)
+        Groupe groupe = groupeRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + id));
         User admin = chargerUtilisateurOptionnel(emailAdmin);
-        groupeRepository.deleteById(id);
-        auditerAction(admin, "GROUP_DELETED", groupe, "Groupe supprime.",
-                metadata("ancienStatut", nomStatut(groupe.getStatut())));
+        if (groupe.getStatut() == StatutGroupe.ARCHIVE) return;
+        StatutGroupe ancienStatut = groupe.getStatut();
+        groupe.setStatut(StatutGroupe.ARCHIVE);
+        groupe.setActif(false);
+        groupeRepository.save(groupe);
+        auditerStatut(admin, "GROUP_ARCHIVED", groupe, ancienStatut.name(), "ARCHIVE",
+                "Groupe archive ; historique conserve.", "{}");
     }
 
     public MembreGroupeResponse rejoindreGroupe(Long groupeId, String emailMembre) {
@@ -358,24 +375,27 @@ public class GroupeService {
         if (membre.getRole() != Role.MEMBRE) {
             throw new AccessDeniedException("Seuls les membres peuvent rejoindre un groupe.");
         }
+        verrouillerMembre(membre);
         if (membreGroupeRepository.estDejaMembreActif(membre.getId()))
             throw new RuntimeException("Vous etes deja membre d'un groupe.");
         membreGroupeRepository.findFirstByUserIdAndStatut(membre.getId(), StatutMembre.EN_ATTENTE)
                 .ifPresent(adhesion -> {
                     throw new RuntimeException("Vous avez deja une demande d'adhesion en attente.");
                 });
-        Groupe groupe = groupeRepository.findById(groupeId)
+        Groupe groupe = groupeRepository.findByIdForUpdate(groupeId)
                 .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + groupeId));
-        if (groupe.getStatut() != StatutGroupe.VALIDE)
+        if (groupe.getStatut() != StatutGroupe.VALIDE || !groupe.isActif())
             throw new RuntimeException("Ce groupe n'est pas disponible.");
         if (groupe.getCapaciteMax() > 0) {
             long actifs = membreGroupeRepository.countByGroupeIdAndStatut(groupeId, StatutMembre.ACCEPTE);
             if (actifs >= groupe.getCapaciteMax())
                 throw new RuntimeException("Ce groupe a atteint sa capacite maximale.");
         }
-        membreGroupeRepository.findByUserIdAndGroupeId(membre.getId(), groupeId)
-                .ifPresent(mg -> { throw new RuntimeException("Vous avez deja une demande."); });
-        MembreGroupe mg = new MembreGroupe(membre, groupe);
+        MembreGroupe mg = membreGroupeRepository.findByUserIdAndGroupeId(membre.getId(), groupeId)
+                .orElseGet(() -> new MembreGroupe(membre, groupe));
+        if (mg.getId() != null && mg.getStatut() != StatutMembre.QUITTE && mg.getStatut() != StatutMembre.REFUSE) {
+            throw new IllegalArgumentException("Vous avez déjà une appartenance ou une demande pour ce groupe.");
+        }
         mg.setStatut(StatutMembre.EN_ATTENTE);
         MembreGroupe saved = membreGroupeRepository.save(mg);
         notificationService.creer(groupe.getReferent(), "Nouvelle demande d'adhesion",
@@ -397,7 +417,9 @@ public class GroupeService {
                 .orElseThrow(() -> new RuntimeException("Vous n'etes pas membre de ce groupe."));
         Groupe groupe = mg.getGroupe();
         StatutMembre ancienStatut = mg.getStatut();
-        membreGroupeRepository.delete(mg);
+        if (mg.getStatut() == StatutMembre.QUITTE) return;
+        mg.setStatut(StatutMembre.QUITTE);
+        membreGroupeRepository.save(mg);
         auditerStatut(membre, "GROUP_LEFT", groupe, nomStatut(ancienStatut), "QUITTE",
                 "Membre sorti du groupe.",
                 metadata("adhesionId", mg.getId(), "membreId", membre.getId()));
@@ -470,6 +492,50 @@ public class GroupeService {
                 .orElseThrow(() -> new RuntimeException("Demande introuvable : " + membreGroupeId));
         if (!mg.getGroupe().getId().equals(groupeId)) {
             throw new AccessDeniedException("Cette demande n'appartient pas a ce groupe.");
+        }
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public MembreGroupeResponse changerAppartenance(Long id, String emailReferent, boolean reactiver) {
+        MembreGroupe mg = membreGroupeRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new IllegalArgumentException("Appartenance introuvable."));
+        verrouillerMembre(mg.getUser());
+        Groupe groupe = groupeRepository.findByIdForUpdate(mg.getGroupe().getId()).orElseThrow();
+        User acteur = userRepository.findByEmail(emailReferent).orElseThrow();
+        if (acteur.getRole() != Role.REFERENT || !groupe.getReferent().getId().equals(acteur.getId())) {
+            throw new AccessDeniedException("Vous n'êtes pas le référent de ce groupe.");
+        }
+        verifierGroupeDisponible(groupe);
+        StatutMembre attendu = reactiver ? StatutMembre.SUSPENDU : StatutMembre.ACCEPTE;
+        if (mg.getStatut() != attendu) throw new IllegalArgumentException("Transition d'appartenance invalide.");
+        if (reactiver) {
+            membreGroupeRepository.findFirstByUserIdAndStatut(mg.getUser().getId(), StatutMembre.ACCEPTE)
+                    .filter(autre -> !autre.getGroupe().getId().equals(groupe.getId()))
+                    .ifPresent(autre -> { throw new IllegalArgumentException("Ce membre appartient déjà à un autre groupe actif."); });
+            if (groupe.getCapaciteMax() > 0 && membreGroupeRepository.countByGroupeIdAndStatut(groupe.getId(), StatutMembre.ACCEPTE) >= groupe.getCapaciteMax()) {
+                throw new IllegalArgumentException("Ce groupe a atteint sa capacité maximale.");
+            }
+        }
+        mg.setStatut(reactiver ? StatutMembre.ACCEPTE : StatutMembre.SUSPENDU);
+        MembreGroupe saved = membreGroupeRepository.save(mg);
+        auditerStatut(acteur, reactiver ? "GROUP_MEMBERSHIP_REACTIVATED" : "GROUP_MEMBERSHIP_SUSPENDED",
+                groupe, attendu.name(), saved.getStatut().name(), "Appartenance mise à jour.", metadata("adhesionId", id));
+        return MembreGroupeResponse.fromEntity(saved);
+    }
+
+    private void verrouillerMembre(User membre) {
+        userRepository.findByIdForUpdate(membre.getId()).orElseThrow(() -> new IllegalArgumentException("Membre introuvable."));
+    }
+
+    private void verifierGroupeDisponible(Groupe groupe) {
+        if (!groupe.isActif() || groupe.getStatut() != StatutGroupe.VALIDE) {
+            throw new IllegalArgumentException("Ce groupe n'est pas actif et validé.");
+        }
+    }
+
+    private void verifierGroupeEnAttente(Groupe groupe) {
+        if (groupe.getStatut() != StatutGroupe.EN_ATTENTE) {
+            throw new IllegalArgumentException("Ce groupe n'est plus en attente de validation.");
         }
     }
 
