@@ -146,6 +146,9 @@ export default function ReferentActivites() {
     }
   }
 
+  const currentErrors = validateReferentActivity(form, groups, profile, editingActivity)
+  const visibleFormErrors = formErrors.filter(key => !key.startsWith('date') || currentErrors.includes(key))
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
@@ -191,8 +194,8 @@ export default function ReferentActivites() {
                 {editingActivity ? t('referent.editActivity') : t('referent.newActivity')}
               </h2>
             </div>
-            {formErrors.length > 0 && <ul role="alert" className="md:col-span-2 text-sm text-red-700">
-              {formErrors.map(key => <li key={key}>{t(key === 'referent' ? 'referentActivity.assignmentError' : `adminActivity.errors.${key}`)}</li>)}
+            {visibleFormErrors.length > 0 && <ul role="alert" className="md:col-span-2 text-sm text-red-700">
+              {visibleFormErrors.map(key => <li key={key}>{t(key === 'referent' ? 'referentActivity.assignmentError' : `adminActivity.errors.${key}`)}</li>)}
             </ul>}
             {!groupsReady && <p role="status" className="md:col-span-2">{t('referentActivity.groupsUnavailable')}</p>}
             {groupsReady && !editingActivity && ownGroups.length === 0 && <p role="alert" className="md:col-span-2">{t('referentActivity.noGroups')}</p>}

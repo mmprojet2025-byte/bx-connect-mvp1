@@ -28,6 +28,14 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
       },
     },
+    {
+      name: 'webkit-activity-dates',
+      testMatch: '**/activity-finalization.spec.js',
+      grep: /local date\/time|WebKit native keyboard/,
+      use: {
+        ...devices['Desktop Safari'],
+      },
+    },
   ],
 
   webServer: {

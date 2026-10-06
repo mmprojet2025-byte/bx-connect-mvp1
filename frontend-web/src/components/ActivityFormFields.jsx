@@ -11,8 +11,10 @@ export default function ActivityFormFields({ form, setForm, groups, original, re
   const [preview, setPreview] = useState('')
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview) }, [preview])
   const update = (key, value) => setForm(current => ({ ...current, [key]: value }))
-  const date = form.dateDebut.slice(0, 10)
-  const endDate = form.dateFin.slice(0, 10)
+  // During input, a time can exist before its date (e.g. T12:30).
+  // Split the local value rather than mistaking that time for a date.
+  const date = form.dateDebut.split('T')[0]
+  const endDate = form.dateFin.split('T')[0]
   const startTime = form.dateDebut.split('T')[1] || ''
   const endTime = form.dateFin.split('T')[1] || ''
   const locked = assignmentLocked(original)
@@ -28,10 +30,11 @@ export default function ActivityFormFields({ form, setForm, groups, original, re
     setUploading(true); onUploading(true)
     try {
       const data = new FormData(); data.append('file', file); data.append('type', 'activite')
-      const response = await api.post('/upload', data)
+      // Override the shared JSON default; the browser supplies the multipart boundary.
+      const response = await api.post('/upload', data, { headers: { 'Content-Type': undefined } })
       setForm(current => ({ ...current, imageStorageKey: response.data.storageKey, imageUrl: response.data.url }))
     } catch {
-      setPreview(''); setImageError(t('activityEditor.imageError'))
+      setPreview(''); setImageError(t(form.imageUrl ? 'activityEditor.imageErrorPreserved' : 'activityEditor.imageError'))
     } finally { setUploading(false); onUploading(false) }
   }
   const field = (key, label, options = {}) => <Field key={key} label={t(label)} value={form[key] ?? ''} onChange={value => update(key, value)} {...options} />

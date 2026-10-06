@@ -171,6 +171,9 @@ export default function AdminActivites() {
     return matchRecherche && matchStatut && matchCategorie;
   });
   const categories = [...new Set(activites.map(a => a.categorie).filter(Boolean))];
+  const currentErrors = validateActivityForm(form, groups, referents, original)
+  const visibleFormErrors = formErrors.filter(key => !key.startsWith('date') || currentErrors.includes(key))
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
@@ -215,8 +218,8 @@ export default function AdminActivites() {
                 </button>
               )}
             </div>
-            {formErrors.length > 0 && <ul role="alert" className="md:col-span-2 text-sm text-red-700">
-              {formErrors.map(key => <li key={key}>{t(`adminActivity.errors.${key}`)}</li>)}
+            {visibleFormErrors.length > 0 && <ul role="alert" className="md:col-span-2 text-sm text-red-700">
+              {visibleFormErrors.map(key => <li key={key}>{t(`adminActivity.errors.${key}`)}</li>)}
             </ul>}
             {form.nature === 'GROUPE' && validateActivityForm(form, groups, referents, original).includes('referent') && <p role="alert">{t('adminActivity.errors.referent')}</p>}
             <ActivityFormFields key={editingId || 'new'} form={form} setForm={setForm} groups={eligibleGroups(groups)} original={original} ready={groupsState === 'ready'} onUploading={setUploading} />

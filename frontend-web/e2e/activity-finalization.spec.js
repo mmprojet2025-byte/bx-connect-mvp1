@@ -3,6 +3,7 @@ import { Buffer } from 'node:buffer'
 import { readFileSync } from 'node:fs'
 const token = `header.${Buffer.from(JSON.stringify({ exp: 4102444800 })).toString('base64')}.signature`
 const locales = Object.fromEntries(['fr', 'nl', 'en'].map(lang => [lang, JSON.parse(readFileSync(new URL(`../src/i18n/locales/${lang}.json`, import.meta.url)))]))
+test.use({ timezoneId: 'Europe/Brussels', locale: 'fr-BE' })
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9xsAAAAASUVORK5CYII=', 'base64')
 async function setup(page, role, lang, original) {
   const writes = []
@@ -15,7 +16,16 @@ async function setup(page, role, lang, original) {
   await page.route('**/activity-test.png', route => route.fulfill({ contentType: 'image/png', body: png }))
   await page.route(url => url.pathname.startsWith('/api/'), async route => {
     const req = route.request(), url = new URL(req.url()), path = url.pathname
-    if (path === '/api/upload') return route.fulfill({ json: { storageKey: 'activites/test/new.png', url: '/activity-test.png' } })
+    if (path === '/api/upload') {
+      expect(req.method()).toBe('POST')
+      expect(req.headers()['authorization']).toBe(`Bearer ${token}`)
+      expect(req.headers()['content-type']).toMatch(/^multipart\/form-data; boundary=/)
+      const body = req.postDataBuffer()
+      expect(body.toString()).toContain('name="file"; filename="cover.png"')
+      expect(body.toString()).toContain('name="type"\r\n\r\nactivite')
+      expect(body.includes(png)).toBe(true)
+      return route.fulfill({ json: { storageKey: 'activites/test/new.png', url: '/activity-test.png' } })
+    }
     if (path === '/api/users/me') return route.fulfill({ json: { id: 9, role: 'REFERENT', actif: true } })
     if (path === '/api/admin/groupes' || path === '/api/referent/groupes') return route.fulfill({ json: [group] })
     if (path === '/api/admin/referents') return route.fulfill({ json: [{ id: 9, role: 'REFERENT', actif: true }] })
@@ -71,14 +81,18 @@ test('published edit preserves image/coordinates on upload failure and terminal 
   await page.getByRole('row').filter({ hasText: 'Existing' }).getByRole('button', { name: 'Modifier', exact: true }).click()
   const form = page.getByRole('form')
   await expect(form.getByRole('checkbox')).toBeChecked()
+  await expect(form.locator('input[type="date"]').nth(0)).toHaveValue('2099-01-15')
+  await expect(form.locator('input[type="date"]').nth(1)).toHaveValue('2099-01-16')
+  await expect(form.locator('input[type="time"]').nth(0)).toHaveValue('10:00')
+  await expect(form.locator('input[type="time"]').nth(1)).toHaveValue('12:00')
   await expect(form.getByRole('img')).toHaveAttribute('src', '/activity-test.png')
   await page.route('**/api/upload', route => route.fulfill({ status: 400, json: {} }))
   await form.locator('input[type="file"]').setInputFiles({ name: 'cover.png', mimeType: 'image/png', buffer: png })
-  await expect(form.getByRole('alert')).toContainText('précédente est conservée')
+  await expect(form.getByRole('alert')).toContainText('L’image actuelle est conservée.')
   await expect(form.getByRole('img')).toHaveAttribute('src', '/activity-test.png')
   await form.getByRole('button', { name: 'Enregistrer les modifications' }).click()
   await expect(form).toHaveCount(0)
-  expect(writes[0].body).toMatchObject({ imageStorageKey: original.imageStorageKey, latitude: 50.8, longitude: 4.3 })
+  expect(writes[0].body).toMatchObject({ imageStorageKey: original.imageStorageKey, latitude: 50.8, longitude: 4.3, dateDebut: original.dateDebut, dateFin: original.dateFin })
 })
 
 test('member uses activity payment flow without sending a free registration request', async ({ page }) => {
@@ -117,4 +131,103 @@ for (const lang of ['fr', 'nl', 'en']) test(`payment return never claims success
   paid = true
   await page.getByRole('button', { name: t.activityEditor.checkPayment }).click()
   await expect(page.getByRole('heading', { name: t.activityEditor.paymentConfirmed })).toBeVisible()
+})
+
+for (const role of ['ADMIN', 'REFERENT']) for (const order of ['date-start-end', 'start-end-date', 'date-end-start', 'edit-existing']) {
+  test(`${role} local date/time remains valid with input order=${order}`, async ({ page }) => {
+    const writes = await setup(page, role, 'fr'), t = locales.fr
+    await page.getByRole('button', { name: role === 'ADMIN' ? t.admin.createActivity : t.referent.newActivity, exact: true }).click()
+    const form = page.getByRole('form')
+    await form.locator('textarea').fill('Description')
+    await form.getByLabel(t.activities.form_place, { exact: false }).fill('Bruxelles')
+    await form.getByRole('button', { name: t.adminActivity.saveDraft }).click()
+    await expect(form.getByRole('alert')).toContainText(t.adminActivity.errors.dateDebut)
+    await expect(form.getByRole('alert')).toContainText(t.adminActivity.errors.dateFin)
+    const date = form.locator('input[type="date"]').first()
+    const start = form.locator('input[type="time"]').nth(0)
+    const end = form.locator('input[type="time"]').nth(1)
+    if (order === 'edit-existing') {
+      await date.fill('2026-10-31')
+      await start.fill('11:00')
+      await end.fill('14:00')
+      await date.fill('')
+      await start.fill('12:30')
+      await end.fill('15:30')
+      await date.fill('2026-11-01')
+    } else {
+      for (const field of order.split('-')) {
+        if (field === 'date') await date.fill('2026-11-01')
+        if (field === 'start') await start.fill('12:30')
+        if (field === 'end') await end.fill('15:30')
+      }
+    }
+    await expect(date).toHaveValue('2026-11-01')
+    await expect(form.locator('input[type="time"]').nth(0)).toHaveValue('12:30')
+    await expect(form.locator('input[type="time"]').nth(1)).toHaveValue('15:30')
+    await expect(form.getByText(t.adminActivity.errors.dateDebut, { exact: true })).toHaveCount(0)
+    await expect(form.getByText(t.adminActivity.errors.dateFin, { exact: true })).toHaveCount(0)
+    // Correcting dates must not hide a still-valid error in another field.
+    await expect(form.getByRole('alert')).toContainText(t.adminActivity.errors.titre)
+    await form.getByRole('textbox', { name: /^Titre/ }).fill('Dates locales')
+    await form.locator('input[type="time"]').nth(1).fill('11:30')
+    await form.getByRole('button', { name: t.adminActivity.saveDraft }).click()
+    await expect(form.getByRole('alert')).toContainText(t.adminActivity.errors.dateOrder)
+    expect(writes).toHaveLength(0)
+    await form.locator('input[type="time"]').nth(1).fill('15:30')
+    await expect(form.getByText(t.adminActivity.errors.dateOrder, { exact: true })).toHaveCount(0)
+    await form.getByRole('button', { name: t.adminActivity.saveDraft }).click()
+    await expect(form).toHaveCount(0)
+    expect(writes).toHaveLength(1)
+    expect(writes[0].body).toMatchObject({ dateDebut: '2026-11-01T12:30', dateFin: '2026-11-01T15:30' })
+  })
+}
+
+for (const role of ['ADMIN', 'REFERENT']) test(`${role} WebKit native keyboard date/time clears submitted errors`, async ({ page, browserName }) => {
+  test.skip(browserName !== 'webkit', 'Native WebKit date/time keyboard layout; shared input-order tests also cover Chromium.')
+  const writes = await setup(page, role, 'fr'), t = locales.fr
+  await page.getByRole('button', { name: role === 'ADMIN' ? t.admin.createActivity : t.referent.newActivity, exact: true }).click()
+  const form = page.getByRole('form')
+  await form.getByRole('textbox', { name: /^Titre/ }).fill('Dates Safari')
+  await form.locator('textarea').fill('Description')
+  await form.getByLabel(t.activities.form_place, { exact: false }).fill('Bruxelles')
+  await form.getByRole('button', { name: t.adminActivity.saveDraft }).click()
+  await expect(form.getByRole('alert')).toContainText(t.adminActivity.errors.dateDebut)
+  await expect(form.getByRole('alert')).toContainText(t.adminActivity.errors.dateFin)
+  const inputs = [form.locator('input[type="date"]').first(), ...[0, 1].map(index => form.locator('input[type="time"]').nth(index))]
+  const typed = ['01/11/2026', '12:30', '15:30']
+  const values = ['2026-11-01', '12:30', '15:30']
+  for (const [index, input] of inputs.entries()) {
+    await input.focus()
+    // Use real key events: fill() bypasses native partial date/time editing.
+    await input.pressSequentially(typed[index], { delay: 50 })
+    await input.press('Tab')
+    await expect(input).toHaveValue(values[index])
+    await expect(input).toHaveAttribute('value', values[index])
+    expect(await input.evaluate(element => element.validity.badInput)).toBe(false)
+  }
+  await expect(form.getByText(t.adminActivity.errors.dateDebut, { exact: true })).toHaveCount(0)
+  await expect(form.getByText(t.adminActivity.errors.dateFin, { exact: true })).toHaveCount(0)
+  await form.getByRole('button', { name: t.adminActivity.saveDraft }).click()
+  await expect(form).toHaveCount(0)
+  expect(writes).toHaveLength(1)
+  expect(writes[0].body).toMatchObject({ dateDebut: '2026-11-01T12:30', dateFin: '2026-11-01T15:30' })
+})
+
+for (const lang of ['fr', 'nl', 'en']) test(`new activity upload rejects invalid files and reports failure without claiming an old image ${lang}`, async ({ page }) => {
+  const writes = await setup(page, 'ADMIN', lang), t = locales[lang]
+  await page.getByRole('button', { name: t.admin.createActivity, exact: true }).click()
+  const form = page.getByRole('form')
+  let uploads = 0
+  await page.route('**/api/upload', route => {
+    uploads++
+    return route.fulfill({ status: 500, json: { error: "Erreur lors de l'upload." } })
+  })
+  await form.locator('input[type="file"]').setInputFiles({ name: 'invalid.txt', mimeType: 'text/plain', buffer: Buffer.from('not an image') })
+  await expect(form.getByRole('alert')).toHaveText(t.activityEditor.imageInvalid)
+  expect(uploads).toBe(0)
+  await form.locator('input[type="file"]').setInputFiles({ name: 'cover.png', mimeType: 'image/png', buffer: png })
+  await expect(form.getByRole('alert')).toHaveText(t.activityEditor.imageError)
+  await expect(form.getByRole('img')).toHaveCount(0)
+  expect(uploads).toBe(1)
+  expect(writes).toHaveLength(0)
 })
