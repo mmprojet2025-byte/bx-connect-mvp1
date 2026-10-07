@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { startTransition, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTranslation } from 'react-i18next'
@@ -41,8 +41,11 @@ export default function Login() {
     try {
       const res = await api.post('/auth/login', formData)
       const { token, prenom, nom, email, role } = res.data
-      login(token, { prenom, nom, email, role })
-      navigate(getPostAuthDestination(location.state?.returnTo, role))
+      // Le guard de /login doit voir la nouvelle session et sa destination ensemble.
+      startTransition(() => {
+        login(token, { prenom, nom, email, role })
+        navigate(getPostAuthDestination(location.state?.returnTo, role))
+      })
     } catch (err) {
       setErreur(formatAuthError(err, t('auth.error_login'), t))
     }

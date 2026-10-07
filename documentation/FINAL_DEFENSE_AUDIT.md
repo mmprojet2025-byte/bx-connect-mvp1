@@ -22,12 +22,13 @@ Base originale : aucune reprise autorisée à ce stade. Les tests utilisent des 
 | P2 Google | Bouton future fonctionnalité | Limite visible | 4 | Bouton désactivé avec libellé futur FR/NL/EN | Chromium/WebKit, aucun appel auth | Limite explicitée |
 | P2 Mes factures | Reçus projets uniquement | Limite fonctionnelle | 4 | Titre et description explicitement projets ; navigation conservée | Chromium/WebKit FR/NL/EN, reçu PDF voisin | Limite explicitée |
 | P2 Désinscription/remboursement | Désinscription sans remboursement ; charge.refunded vide | Limite financière | 4 | Message avant désinscription payée, qualification des remboursements externes dans STRIPE_REFUNDS_LIMITS.md | UI FR/NL/EN + lecture code/API Stripe ; aucun remboursement déclenché | Limite explicitée ; rapprochement automatique non réalisé, décision métier nécessaire |
-| P1 Mot de passe oublié | Email désactivé en dev | Configuration | 5 | SMTP contrôlé, tests réception et jeton | Profil dev constaté | Envoi réel non validé |
-| P2 Suppression redirige parfois login | Course logout/route privée | Bug navigation intermittent | 5/6 | Cause + test stable sans retries | Échec global puis réussite isolée | À corriger |
-| Sessions/navigation voisines | Expiration/F5/historique/notification | Risque à vérifier | 5/8 | Tests contrôles session et destinations | Tests existants partiels | À vérifier |
-| API localhost refusée au build | Garde production HTTPS volontaire | Configuration attendue | 5/6 | Conserver garde ; tester env isolé | Build HTTPS réussi | Comportement conforme ; documentation à actualiser |
-| Migrations | V1–V14 appliquées | Risque déploiement | 5 | Base vide + restauration copie, pas repair | Audit Flyway + MySQL tests | À confirmer après lots |
-| Uploads | Stockage local, distant non validé | Risque exploitation | 5/8 | Sauvegarde, restauration, redémarrage isolé | Catalogues réels sans image cassée | Persistance distante non validée |
+| P1 Mot de passe oublié | Email désactivé en dev | Configuration | 5 | SMTP contrôlé, tests réception et jeton | 23 assertions sur API + SMTP local contrôlé, lien Web réel | Validé sur capture SMTP locale ; fournisseur/boîte distante non validés, dev original désactivé |
+| Risque énumération temporelle email | Envoi SMTP synchrone pour compte connu | Risque sécurité préexistant | 5 | Contenu public neutre conservé ; qualifier le délai, pas de refonte auth | Capture locale : réponse identique, latence liée au SMTP pour compte connu | Limite identifiée, pas de garantie temporelle ; production non certifiée |
+| P2 Suppression redirige parfois login | Course logout/route privée | Bug navigation intermittent | 5/6 | Cause + test stable sans retries | Course session/route corrigée ; trois répétitions Chromium et WebKit, F5 et historique | Corrigé, sans retries |
+| Sessions/navigation voisines | Expiration/F5/historique/notification | Risque à vérifier | 5/8 | Tests contrôles session et destinations | 30 tests Chromium/WebKit + 13 voisins + 26 Node, lot 5 | Corrigé/testé avec API simulées ; répétition réelle lot 8 à suivre |
+| API localhost refusée au build | Garde production HTTPS volontaire | Configuration attendue | 5/6 | Conserver garde ; tester env isolé | Build HTTPS réussi ; variables/profils documentés dans DEFENSE_RUNBOOK.md | Conforme ; test isolé à corriger lot 6 |
+| Migrations | V1–V14 appliquées | Risque déploiement | 5 | Base vide + restauration copie, pas repair | Base vide V1–V14, schémas V7/V8→V14, clone restauré validé ; aucun SQL modifié | Validé localement, aucun repair ni migration originale |
+| Uploads | Stockage local, distant non validé | Risque exploitation | 5/8 | Sauvegarde, restauration, redémarrage isolé | 29 assertions réelles API/Chromium/WebKit + SHA256 après restart du clone | Validé localement ; persistance distante non validée |
 | Test apiBaseUrl | .env local contamine cas variable absente | Défaut de test | 6 | Isoler environnement sans affaiblir HTTPS | 133/134 Node | À corriger |
 | 3 tests statistiques | Sous-chaîne Soumis ambiguë | Défaut de test | 6 | Sélecteurs exacts, assertions conservées | Strict mode violation FR/NL/EN | À corriger |
 | Test projet/groupe | Ancien bouton soumettre ; workflow brouillon | Défaut de test | 6 | Brouillon puis vraie soumission | Bouton actuel Enregistrer le brouillon | À corriger |
@@ -38,7 +39,7 @@ Base originale : aucune reprise autorisée à ce stade. Les tests utilisent des 
 | Internet/Stripe interrompu | Dépendance externe | Limite exploitation | 8 | Vérification démarrage + récupération sûre + secours gratuit | Aucun nouveau paiement réel dans audit | À éprouver |
 | Réception authentifiée complète | Audit initial lecture seule et E2E mockés | Risque non vérifié | 8 | Comptes jetables, vrai backend et DB isolée | 886 backend ; 287 E2E pass, 9 fail | À exécuter |
 | Safari | Couverture WebKit ciblée seulement | Limite preuve | 8 | Répétition parcours critiques, limites explicites | 27 WebKit réussis initialement | À compléter |
-| Preuve upload WebKit | Assertion binaire Playwright multipart échoue dans six cas exploratoires | Risque à qualifier | 6/8 | Vérifier les octets reçus par le vrai backend et conserver les assertions utiles | Première configuration WebKit trop large au lot 3 ; log browser.log conservé | À qualifier, pas présenté comme validé |
+| Preuve upload WebKit | Assertion binaire Playwright multipart échoue dans six cas exploratoires | Risque à qualifier | 6/8 | Vérifier les octets reçus par le vrai backend et conserver les assertions utiles | Upload réel WebKit FR réussi avec octets source/aperçu/disque/HTTP identiques au lot 5 | Produit validé sur ce cas réel ; six assertions de tests à qualifier au lot 6 |
 | Secrets / production | Scan motifs limité ; prod non auditée | Risque non vérifié | 5/7/8 | Secrets hors Git, profil/env, scan final | Aucun motif apparent audit initial | Pas certification production |
 | Soutiens vs transactions | Séparation implémentée à conserver | Non-régression | 3/8 | Tests scope DECLARATION, permissions et compteurs | Tests initiaux réussis | À préserver |
 | Notifications / messagerie / profil / PDF CSV | Parcours voisins | Non-régression | 5/8 | Vérifications simulées et réelles distinguées | Couverture initiale existante | À préserver/valider |
@@ -180,3 +181,45 @@ test projet/groupe défaillant est explicitement laissé au lot 6, aucune assert
 supprimée. Maven : `./mvnw '-Dtest=Groupe*Test,Activite*Test,InscriptionLifecycleMySqlTest' test`.
 Logs : `/tmp/bx-lot4-groups-maven.log`, `/tmp/bx-lot4-groups-browser.log`,
 `/tmp/bx-lot4-groups-webkit.log`. Total navigateur ciblé lot 4 : 194 réussis.
+
+
+### Lot 5 — session, navigation et environnement
+
+La mise à jour de session et la navigation sont regroupées dans une transition React
+après login/inscription et après suppression réussie. Une suppression échouée conserve
+la session. Le retour depuis un projet public rejoint la fiche sélectionnée après
+connexion, sans participation automatique. Une notification vers un groupe indisponible
+propose le catalogue de groupes, sans dépendre de la page précédente.
+
+Tests : 30/30 Chromium/WebKit dans `session-navigation.spec.js`, sans retries ;
+13/13 voisins dans `account-deletion.spec.js` et `authenticated-home.spec.js`.
+Les API de ces tests navigateur sont simulées. Trois répétitions de la suppression
+par moteur couvrent F5, historique, session effacée et refus d’une route privée.
+26/26 tests Node : `node --test src/routes/postAuthReturn.test.js src/pages/profil/accountDeletion.test.js src/context/restoreSession.test.js src/context/logoutSession.test.js src/api/sessionPolicy.test.js src/utils/notificationRoute.test.js`.
+ESLint ciblé et `git diff --check` réussis. Journaux privés :
+`bx-lot5-frontend-czc_olqs/frontend-web/lot5-browser.log` et `lot5-neighbours.log`.
+
+Email : deux scénarios réels sur le backend 18081 et un récepteur SMTP local contrôlé
+11025, comptes jetables seulement. 23 assertions réussies (13 succès et usage unique,
+10 expiration). Lien Web 5181 accessible, mot de passe remplacé, ancien mot de passe et
+ancien JWT refusés. Adresse inconnue : même réponse publique, aucun email envoyé.
+Le test de succès utilise un TTL de cinq minutes ; celui d’expiration, vingt secondes.
+Configuration normale de la copie restaurée ensuite : email désactivé, TTL 15 minutes.
+Aucun email vers les comptes originaux, aucune livraison sur une boîte distante validée.
+L’envoi est synchrone : les délais connu/inconnu peuvent différer. La neutralité du
+contenu est prouvée, pas une résistance à l’énumération temporelle. Ce risque résiduel
+est distinct de la configuration SMTP absente du processus original.
+
+Migrations : inventaire V1–V14 unique et inchangé depuis `0f1fc91`. Application sur
+base vide MySQL, montée des fixtures V7/V8 et validation du clone restauré prouvées.
+Le runbook distingue ces preuves d’une migration distante non exécutée. Il documente
+les ports, variables, garde HTTPS, fuseau Europe/Brussels, services et limites SMTP/uploads.
+
+Uploads : 29 assertions réussies sur la copie (API 4, Chromium 8, WebKit 8,
+persistance après redémarrage 9). Trois vrais uploads PNG par ADMIN, sans mocks,
+aperçus décodés et SHA256 identique à la source, au GET HTTP et au fichier stocké.
+Après redémarrage de 18081, les trois URLs renvoient encore exactement les mêmes octets.
+8080 inchangé. Cette preuve couvre le stockage local, pas un hébergement distant.
+Le cas réel WebKit FR ne remplace pas les six assertions exploratoires d’instrumentation
+multipart à qualifier au lot 6. Preuves privées : `lot5-upload-proof-private.json`
+et `lot5-real-browser-upload-private.json`.

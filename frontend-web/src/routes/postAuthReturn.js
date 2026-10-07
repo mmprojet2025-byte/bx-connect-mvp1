@@ -18,7 +18,7 @@ function isAllowedPublicReturnPath(path, role) {
   if (/^\/activites(?:\/[^/?#]+)?(?:[?#].*)?$/.test(path)) {
     return ['MEMBRE', 'REFERENT', 'ADMIN'].includes(role)
   }
-  if (/^\/groupes(?:\/[^/?#]+)?(?:[?#].*)?$/.test(path)) {
+  if (/^\/(?:groupes|projets)(?:\/[^/?#]+)?(?:[?#].*)?$/.test(path)) {
     return role === 'MEMBRE'
   }
   return false

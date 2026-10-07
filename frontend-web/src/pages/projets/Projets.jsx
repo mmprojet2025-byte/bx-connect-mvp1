@@ -842,7 +842,7 @@ function ProjectActions({ projet, expanded, isAuthenticated, isMembre, isPartena
           {t('projects.join')}
         </button>
       ) : (
-        <Link to="/login" className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-black text-white transition hover:bg-blue-500">
+        <Link to="/login" state={{ returnTo: `/projets/${projet.id}` }} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-black text-white transition hover:bg-blue-500">
           <AppIcon name="User" className="h-3.5 w-3.5" />
           {t('projects.join')}
         </Link>
