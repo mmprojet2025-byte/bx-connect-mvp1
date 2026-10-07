@@ -1,4 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
+import ProjectDetailsFields from '../../components/projects/ProjectDetailsFields'
+import ProjectDetailsSummary from '../../components/projects/ProjectDetailsSummary'
+import { projectDetailsForm, projectDetailsPayload } from '../../components/projects/projectDetails'
+import ProjectPayments from '../../components/projects/ProjectPayments'
+import ProjectPriceFields from '../../components/projects/ProjectPriceFields'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
@@ -9,7 +14,6 @@ import AppIcon from '../../components/ui/AppIcons'
 import PageHeader from '../../components/ui/PageHeader'
 import SectionCard from '../../components/ui/SectionCard'
 import ProjectVisibilityBadge from '../../components/ProjectVisibilityBadge'
-import ProjectTypeBadge from '../../components/ProjectTypeBadge'
 import { userFriendlyError } from '../../utils/userFriendlyError'
 import LoadingState from '../../components/ui/LoadingState'
 import ErrorState from '../../components/ui/ErrorState'
@@ -20,7 +24,7 @@ const emptyForm = {
   titre: '',
   description: '',
   objectifs: '',
-  budgetDemande: '',
+  budgetDemande: '', prixParticipation: 0, ...projectDetailsForm(),
   groupeId: '',
   visibilite: 'GROUPE',
 }
@@ -39,12 +43,25 @@ export default function ReferentProjets() {
   const [creating, setCreating] = useState(false)
   const [editingProject, setEditingProject] = useState(null)
   const [message, setMessage] = useState('')
+  const [imageUploading, setImageUploading] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [filtreRelecture, setFiltreRelecture] = useState('A_RELIRE')
   const [decisionProject, setDecisionProject] = useState(null)
   const [decisionAction, setDecisionAction] = useState('')
   const [decisionComment, setDecisionComment] = useState('')
   const [decisionLoading, setDecisionLoading] = useState(false)
+  const decisionInFlight = useRef(false)
+  const decisionRef = useRef(null)
+  const editRef = useRef(null)
+  const detailRef = useRef(null)
+  const [detailId, setDetailId] = useState(null)
+  const detailedProject = projets.find(project => project.id === detailId)
+
+  useEffect(() => {
+    const target = decisionProject ? decisionRef.current : showForm ? editRef.current : detailId ? detailRef.current : null
+    target?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    target?.focus({ preventScroll: true })
+  }, [decisionProject, showForm, editingProject, detailId])
 
   const fetchProjets = useCallback(async () => {
     setLoading(true)
@@ -85,6 +102,7 @@ export default function ReferentProjets() {
   }
 
   const openEditForm = projet => {
+    closeDecision()
     setMessage('')
     setError('')
     setEditingProject(projet)
@@ -92,7 +110,7 @@ export default function ReferentProjets() {
       titre: projet.titre || '',
       description: projet.description || '',
       objectifs: projet.objectifs || '',
-      budgetDemande: projet.budgetDemande ?? '',
+      budgetDemande: projet.budgetDemande ?? '', prixParticipation: projet.prixParticipation ?? 0, ...projectDetailsForm(projet),
       groupeId: projet.groupeId ?? '',
       visibilite: projet.visibilite || 'GROUPE',
     })
@@ -101,6 +119,7 @@ export default function ReferentProjets() {
 
   const enregistrerProjet = async event => {
     event.preventDefault()
+    if (imageUploading) return
     setCreating(true)
     setError('')
     setMessage('')
@@ -108,11 +127,13 @@ export default function ReferentProjets() {
       ...form,
       groupeId: Number(form.groupeId),
       budgetDemande: form.budgetDemande ? Number(form.budgetDemande) : null,
+      prixParticipation: Number(form.prixParticipation),
+        ...projectDetailsPayload(form),
     }
     try {
       if (editingProject) {
         const response = await api.put(`/projets/referent/${editingProject.id}`, payload)
-        setProjets(prev => prev.map(projet => projet.id === editingProject.id ? response.data : projet))
+        setProjets(prev => prev.map(projet => projet.id === editingProject.id ? { ...projet, ...response.data } : projet))
         setMessage(t('referent.projectUpdated', { defaultValue: 'Projet mis à jour.' }))
       } else {
         await api.post('/projets', payload)
@@ -133,6 +154,8 @@ export default function ReferentProjets() {
   }
 
   const openDecision = (projet, action) => {
+    if (decisionInFlight.current || decisionProject || projet.statut !== 'SOUMIS') return
+    resetForm()
     setMessage('')
     setError('')
     setDecisionProject(projet)
@@ -161,11 +184,12 @@ export default function ReferentProjets() {
 
   const submitDecision = async event => {
     event.preventDefault()
-    if (!decisionProject || !decisionAction) return
+    if (!decisionProject || !decisionAction || decisionInFlight.current) return
     if (decisionAction !== 'valider' && !decisionComment.trim()) {
       setError(t('referent.projectDecisionCommentRequired'))
       return
     }
+    decisionInFlight.current = true
     setDecisionLoading(true)
     setError('')
     setMessage('')
@@ -173,18 +197,20 @@ export default function ReferentProjets() {
     try {
       const texte = decisionComment.trim()
       const response = await api.patch(endpoint, texte ? { texte } : undefined)
-      setProjets(current => current.map(projet => projet.id === decisionProject.id ? response.data : projet))
+      setProjets(current => current.map(projet => projet.id === decisionProject.id ? { ...projet, ...response.data } : projet))
       setMessage(decisionAction === 'valider'
         ? t('referent.projectValidatedForAdmin')
         : decisionAction === 'correction'
           ? t('referent.projectCorrectionRequested')
           : t('referent.projectRejectedByReferent'))
+      if (decisionAction === 'valider') { setFiltreRelecture('VALIDES_REFERENT'); setFiltreStatut('') }
       closeDecision()
     } catch (requestError) {
       setError(requestError?.response?.status === 403
         ? t('referent.errorProjectForbidden')
         : userFriendlyError(requestError, t('referent.errorProjectDecision')))
     } finally {
+      decisionInFlight.current = false
       setDecisionLoading(false)
     }
   }
@@ -199,6 +225,8 @@ export default function ReferentProjets() {
   const statuts = [...new Set(projets.map(projet => projet.statut).filter(Boolean))]
   const nombreGroupes = new Set(projets.map(projet => projet.groupeNom).filter(Boolean)).size
   const groupesModifiables = new Set(groupes.map(groupe => Number(groupe.id)))
+  const canEditProject = project => !decisionLoading && !decisionProject && groupesModifiables.has(Number(project.groupeId)) && (
+    project.statut === 'SOUMIS' || (project.estPorteurConnecte && ['BROUILLON', 'A_CORRIGER_REFERENT', 'A_CORRIGER_ADMIN'].includes(project.statut)))
   const reviewCounts = {
     A_RELIRE: projets.filter(projet => projet.statut === 'SOUMIS').length,
     VALIDES_REFERENT: projets.filter(projet => projet.statut === 'VALIDE_REFERENT').length,
@@ -245,7 +273,7 @@ export default function ReferentProjets() {
 
         {showForm && (
           <SectionCard className="mb-6" title={editingProject ? t('referent.editProject', { defaultValue: 'Modifier le projet' }) : t('projects.new_title')}>
-            <form onSubmit={enregistrerProjet} className="grid gap-4 md:grid-cols-2">
+            <form ref={editRef} tabIndex={-1} onSubmit={enregistrerProjet} className="grid gap-4 md:grid-cols-2">
               {editingProject && (
                 <div className="md:col-span-2 flex items-center justify-between gap-3 rounded-2xl bg-teal-50 px-4 py-3 text-sm text-teal-800">
                   <span className="font-semibold">{editingProject.titre}</span>
@@ -256,8 +284,11 @@ export default function ReferentProjets() {
               )}
               <Input label={t('projects.form_title')} value={form.titre} onChange={value => setForm({ ...form, titre: value })} required />
               <Input label={t('projects.form_budget')} value={form.budgetDemande} onChange={value => setForm({ ...form, budgetDemande: value })} type="number" min="0" />
+              <ProjectDetailsFields form={form} setForm={setForm} onUploadingChange={setImageUploading} />
+              <ProjectPriceFields key={editingProject?.id || "new"} value={form.prixParticipation} onChange={value => setForm({ ...form, prixParticipation: value })} />
               <Select
                 label={t('projects.group')}
+                disabled={editingProject?.statut === 'SOUMIS'}
                 value={form.groupeId}
                 onChange={value => setForm({ ...form, groupeId: value })}
                 options={groupes.map(groupe => ({ value: groupe.id, label: groupe.nom }))}
@@ -267,7 +298,7 @@ export default function ReferentProjets() {
                 label={t('projects.visibility')}
                 value={form.visibilite}
                 onChange={value => setForm({ ...form, visibilite: value })}
-                options={['GROUPE', 'COMMUNAUTE'].map(value => ({
+                options={['GROUPE', 'PUBLIC'].map(value => ({
                   value,
                   label: t(`projectVisibility.${value}`),
                 }))}
@@ -282,10 +313,11 @@ export default function ReferentProjets() {
                   className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
                 />
               </label>
+              {!editingProject && <p className="md:col-span-2 text-sm text-slate-500">{t('projects.saveDraftHelp')}</p>}
               <div className="md:col-span-2 flex justify-end">
                 <button
                   type="submit"
-                  disabled={creating || !form.groupeId}
+                  disabled={creating || imageUploading || !form.groupeId}
                   className="inline-flex items-center gap-2 rounded-2xl bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:bg-slate-300"
                 >
                   <AppIcon name={editingProject ? 'Save' : 'PlusCircle'} className="h-4 w-4" />
@@ -293,7 +325,7 @@ export default function ReferentProjets() {
                     ? t('common.saving', { defaultValue: 'Enregistrement...' })
                     : editingProject
                       ? t('common.saveChanges', { defaultValue: 'Enregistrer les modifications' })
-                      : t('projects.submit_project')}
+                      : t('projects.saveDraft')}
                 </button>
               </div>
             </form>
@@ -322,13 +354,32 @@ export default function ReferentProjets() {
           </div>
         </SectionCard>
 
+        {detailedProject && !showForm && (
+          <section ref={detailRef} tabIndex={-1} aria-label={t('referent.projectDetails')} className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-xl font-bold">{detailedProject.titre}</h2>
+              <button type="button" onClick={() => setDetailId(null)}>{t('common.close')}</button>
+            </div>
+            <StatusBadge status={detailedProject.statut}>{projectStatusLabel(detailedProject.statut, t)}</StatusBadge>
+            <ProjectCover imageUrl={detailedProject.imageUrl} title={detailedProject.titre} />
+            <h3 className="font-semibold">{t('projects.form_description')}</h3>
+            <p className="whitespace-pre-wrap">{detailedProject.description}</p>
+            {detailedProject.objectifs && <p className="whitespace-pre-wrap">{detailedProject.objectifs}</p>}
+            <ProjectDetailsSummary project={detailedProject} />
+            <p>{t('projects.form_budget')} : {detailedProject.budgetDemande ?? '—'} €</p>
+            <p>{t('projectPayment.price')} : {Number(detailedProject.prixParticipation) > 0 ? `${Number(detailedProject.prixParticipation).toFixed(2)} €` : t('projectPayment.free')}</p>
+            {canEditProject(detailedProject) && <button type="button" disabled={decisionLoading} onClick={() => openEditForm(detailedProject)} className="rounded-lg bg-teal-700 px-4 py-2 text-white">{t('common.edit')}</button>}
+            {detailedProject.statut === 'SOUMIS' && <button type="button" disabled={decisionLoading || Boolean(decisionProject) || showForm || creating} onClick={() => openDecision(detailedProject, 'valider')} className="ml-2 rounded-lg border border-teal-700 px-4 py-2 text-teal-800">{t('referent.validateForAdmin')}</button>}
+          </section>
+        )}
+
         {decisionProject && (
           <SectionCard
             className="mb-6 border-teal-100"
             title={decisionAction === 'valider' ? t('referent.validateForAdmin') : decisionAction === 'correction' ? t('referent.requestProjectCorrection') : t('referent.refuseWithComment')}
             subtitle={decisionProject.titre}
           >
-            <form onSubmit={submitDecision} className="space-y-4">
+            <form ref={decisionRef} tabIndex={-1} aria-label={t('referent.projectDecision')} onSubmit={submitDecision} className="space-y-4">
               <label className="block">
                 <span className="mb-1 block text-sm font-semibold text-slate-700">{t('referent.referentComment')}</span>
                 <textarea
@@ -343,6 +394,7 @@ export default function ReferentProjets() {
                 <button
                   type="button"
                   onClick={closeDecision}
+                  disabled={decisionLoading}
                   className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                 >
                   {t('common.cancel')}
@@ -418,7 +470,6 @@ export default function ReferentProjets() {
                 <div className="p-5">
                   <div>
                     <div className="mb-2 flex flex-wrap gap-2">
-                      <ProjectTypeBadge groupName={projet.groupeNom} />
                       <ProjectVisibilityBadge visibility={projet.visibilite} />
                     </div>
                     <h2 className="font-bold text-blue-900 text-lg leading-tight">{projet.titre}</h2>
@@ -427,9 +478,14 @@ export default function ReferentProjets() {
                     )}
                   </div>
 
+                  <button type="button" onClick={() => { resetForm(); closeDecision(); setDetailId(projet.id) }}
+                    disabled={decisionLoading} className="mt-3 text-sm font-bold text-teal-700 underline">{t('referent.openProject')}</button>
                   {projet.description && <p className="text-sm text-gray-500 mt-3 line-clamp-3">{projet.description}</p>}
 
+                <ProjectDetailsSummary project={projet} />
+                  <ProjectPayments projectId={projet.id} />
                 <dl className="text-xs text-gray-500 mt-4 grid gap-2">
+                  <InfoLine label={t('projectPayment.price')} value={Number(projet.prixParticipation) > 0 ? `${Number(projet.prixParticipation).toFixed(2)} €` : t('projectPayment.free')} />
                   <InfoLine label={t('referent.projectOwner')} value={formatOwner(projet, t)} />
                   <InfoLine label={t('referent.projectDate')} value={formatDate(projet.dateSoumission || projet.dateCreation, i18n.language)} />
                   {projet.budgetDemande != null && (
@@ -450,6 +506,7 @@ export default function ReferentProjets() {
                     <button
                       type="button"
                       onClick={() => openDecision(projet, 'valider')}
+                      disabled={decisionLoading || Boolean(decisionProject) || showForm || creating}
                       className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-teal-600"
                     >
                       <AppIcon name="CheckCircle" className="h-4 w-4" />
@@ -473,7 +530,7 @@ export default function ReferentProjets() {
                     {t('projects.submit_draft')}
                   </button>
                 )}
-                {['BROUILLON', 'A_CORRIGER_REFERENT', 'A_CORRIGER_ADMIN'].includes(projet.statut) && projet.estPorteurConnecte && (
+                {canEditProject(projet) && (
                   <button
                     type="button"
                     onClick={() => openEditForm(projet)}
@@ -545,11 +602,12 @@ function Input({ label, value, onChange, type = 'text', required = false, min })
   )
 }
 
-function Select({ label, value, onChange, options, required = false }) {
+function Select({ label, value, onChange, options, required = false, disabled = false }) {
   return (
     <label>
       <span className="block text-sm font-semibold text-gray-700 mb-1">{label}</span>
       <select
+        disabled={disabled}
         value={value}
         required={required}
         onChange={event => onChange(event.target.value)}
@@ -580,7 +638,7 @@ function matchesReviewFilter(projet, filter) {
 
 function projectStatusLabel(status, t) {
   if (status === 'SOUMIS') return t('referent.statusSubmittedToReferent')
-  if (status === 'VALIDE_REFERENT') return t('referent.statusValidatedByReferent')
+  if (status === 'VALIDE_REFERENT') return t('statuses.VALIDE_REFERENT')
   if (status === 'REFUSE_REFERENT') return t('referent.statusRejectedByReferent')
   if (status === 'APPROUVE') return t('referent.statusApprovedByAdmin')
   if (status === 'REJETE') return t('referent.statusRejectedByAdmin')

@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+import GroupInformationForm from '../../components/GroupInformationForm'
 import { useCallback, useEffect, useState } from 'react'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
@@ -34,7 +36,7 @@ export default function ReferentGroupes() {
           api.get(`/referent/groupes/${groupe.id}/demandes`),
         ])
         detailsData[groupe.id] = {
-          membres: membresRes.data,
+          membres: membresRes.data.filter(m => ['ACCEPTE', 'SUSPENDU'].includes(m.statut)),
           demandes: demandesRes.data,
         }
       }))
@@ -140,16 +142,21 @@ export default function ReferentGroupes() {
                     </StatusBadge>
                   </div>
 
-                  <div className="grid md:grid-cols-3 gap-4">
+                  <GroupInformationForm key={groupe.id} groupe={groupe} onSaved={fetchGroupes} />
+                  <div className="my-3 flex flex-wrap gap-3 text-sm font-semibold text-blue-700">
+                    <Link to="/referent/demandes">{t('nav.requests')}</Link>
+                    <Link to="/referent/membres">{t('nav.members')}</Link>
+                    <Link to="/referent/activites">{t('nav.activities')}</Link>
+                    <Link to="/referent/projets">{t('nav.projects')}</Link>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4">
                     <InfoPanel title={t('ux.referentDashboard.members')} count={membres.length} icon="Users">
                       <CompactPeopleList items={membres} empty={t('referent.noAcceptedMembers')} />
                     </InfoPanel>
                     <InfoPanel title={t('nav.requests')} count={demandes.length} icon="Clock">
                       <CompactPeopleList items={demandes} empty={t('referent.noPendingRequests')} />
                     </InfoPanel>
-                    <InfoPanel title={t('referent.linkedActivities')} icon="Calendar">
-                      <p className="text-sm text-gray-400">Non disponible.</p>
-                    </InfoPanel>
+
                   </div>
                 </article>
               )

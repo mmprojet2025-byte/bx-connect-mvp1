@@ -111,13 +111,15 @@ public class SearchService {
         } else if (actor.getRole() == Role.REFERENT) {
             activities = Stream.concat(
                             activiteRepository.rechercherMultiChamps(StatutActivite.PUBLIEE, q).stream(),
-                            activiteRepository.findByCreateurId(actor.getId()).stream().filter(activity -> activityMatches(activity, q)))
+                            activiteRepository.findByCreateurIdOrReferentAssigneId(actor.getId(), actor.getId()).stream().filter(activity -> activityMatches(activity, q)))
                     .distinct();
         } else {
             activities = activiteRepository.rechercherMultiChamps(StatutActivite.PUBLIEE, q).stream();
         }
 
-        return activities.map(activity -> result(
+        var lecteur = ActiviteLecture.lecteur(actor, actor.getRole() == Role.MEMBRE
+                ? membreGroupeRepository.findByUserId(actor.getId()) : List.of());
+        return activities.filter(lecteur::detail).map(activity -> result(
                 "ACTIVITE",
                 activity.getId(),
                 activity.getTitre(),

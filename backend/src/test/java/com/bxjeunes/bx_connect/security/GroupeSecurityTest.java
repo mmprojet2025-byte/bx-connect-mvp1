@@ -58,6 +58,8 @@ class GroupeSecurityTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient().when(userRepository.findByIdForUpdate(org.mockito.ArgumentMatchers.anyLong()))
+                .thenAnswer(invocation -> { User user = new User(); user.setId(invocation.getArgument(0)); return Optional.of(user); });
         referent1 = new User();
         referent1.setId(1L);
         referent1.setEmail("referent1@test.be");
@@ -82,7 +84,7 @@ class GroupeSecurityTest {
     @Test
     @DisplayName("Un referent ne peut pas modifier le groupe d'un autre referent")
     void referent_ne_peut_pas_modifier_groupe_dautrui() {
-        when(groupeRepository.findById(10L)).thenReturn(Optional.of(groupeDeReferent1));
+        when(groupeRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(groupeDeReferent1));
         when(userRepository.findByEmail("referent2@test.be")).thenReturn(Optional.of(referent2));
 
         GroupeRequest request = new GroupeRequest();
@@ -162,7 +164,7 @@ class GroupeSecurityTest {
     @Test
     @DisplayName("Un referent peut modifier son propre groupe")
     void referent_peut_modifier_son_propre_groupe() {
-        when(groupeRepository.findById(10L)).thenReturn(Optional.of(groupeDeReferent1));
+        when(groupeRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(groupeDeReferent1));
         when(userRepository.findByEmail("referent1@test.be")).thenReturn(Optional.of(referent1));
         when(groupeRepository.save(groupeDeReferent1)).thenReturn(groupeDeReferent1);
 
@@ -191,7 +193,7 @@ class GroupeSecurityTest {
     @Test
     @DisplayName("Un echec AuditLog ne bloque pas la modification d'un groupe")
     void echec_audit_ne_bloque_pas_modification_groupe() {
-        when(groupeRepository.findById(10L)).thenReturn(Optional.of(groupeDeReferent1));
+        when(groupeRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(groupeDeReferent1));
         when(userRepository.findByEmail("referent1@test.be")).thenReturn(Optional.of(referent1));
         when(groupeRepository.save(groupeDeReferent1)).thenReturn(groupeDeReferent1);
         doThrow(new RuntimeException("Audit indisponible")).when(auditLogService).logAction(
@@ -293,7 +295,7 @@ class GroupeSecurityTest {
     @Test
     @DisplayName("ADMIN peut reassigner un groupe a un autre REFERENT")
     void admin_peut_reassigner_groupe_autre_referent() {
-        when(groupeRepository.findById(10L)).thenReturn(Optional.of(groupeDeReferent1));
+        when(groupeRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(groupeDeReferent1));
         when(userRepository.findById(2L)).thenReturn(Optional.of(referent2));
         when(groupeRepository.save(groupeDeReferent1)).thenReturn(groupeDeReferent1);
 
@@ -317,9 +319,10 @@ class GroupeSecurityTest {
         mg.setUser(membre);
         mg.setStatut(StatutMembre.EN_ATTENTE);
 
-        when(membreGroupeRepository.findById(100L)).thenReturn(Optional.of(mg));
+        when(membreGroupeRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(mg));
         when(userRepository.findByEmail("referent2@test.be")).thenReturn(Optional.of(referent2));
 
+        when(groupeRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(groupeDeReferent1));
         assertThatThrownBy(() ->
             groupeService.accepterAdhesion(100L, "referent2@test.be")
         ).isInstanceOf(AccessDeniedException.class);
@@ -340,7 +343,7 @@ class GroupeSecurityTest {
         demande.setUser(membre);
         demande.setStatut(StatutMembre.EN_ATTENTE);
 
-        when(membreGroupeRepository.findById(100L)).thenReturn(Optional.of(demande));
+        when(membreGroupeRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(demande));
         when(userRepository.findByEmail("referent1@test.be")).thenReturn(Optional.of(referent1));
         when(groupeRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(groupeDeReferent1));
         when(membreGroupeRepository.findFirstByUserIdAndStatut(99L, StatutMembre.ACCEPTE))
@@ -388,7 +391,7 @@ class GroupeSecurityTest {
         adhesionActive.setUser(membre);
         adhesionActive.setStatut(StatutMembre.ACCEPTE);
 
-        when(membreGroupeRepository.findById(100L)).thenReturn(Optional.of(demande));
+        when(membreGroupeRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(demande));
         when(userRepository.findByEmail("referent1@test.be")).thenReturn(Optional.of(referent1));
         when(groupeRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(groupe2));
         when(membreGroupeRepository.findFirstByUserIdAndStatut(99L, StatutMembre.ACCEPTE))
@@ -404,7 +407,7 @@ class GroupeSecurityTest {
     @Test
     @DisplayName("Modifier un groupe inexistant doit lever une RuntimeException")
     void modifier_groupe_inexistant_leve_exception() {
-        when(groupeRepository.findById(999L)).thenReturn(Optional.empty());
+        when(groupeRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
 
         GroupeRequest request = new GroupeRequest();
         request.setNom("Test");

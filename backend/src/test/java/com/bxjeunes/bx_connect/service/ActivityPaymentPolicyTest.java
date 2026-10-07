@@ -44,6 +44,10 @@ class ActivityPaymentPolicyTest {
     @Mock ActiviteRepository activiteRepository;
     @Mock ProjetRepository projetRepository;
     @Mock APIContext apiContext;
+    @Mock com.bxjeunes.bx_connect.repository.InscriptionRepository registrations;
+    @Mock com.bxjeunes.bx_connect.repository.MembreGroupeRepository memberships;
+    private User member;
+    private ActivityPaymentService policy;
 
     private StripeService stripeService;
     private PayPalService payPalService;
@@ -57,7 +61,11 @@ class ActivityPaymentPolicyTest {
         ReflectionTestUtils.setField(payPalService, "returnUrl", "https://api.example.test/return");
         ReflectionTestUtils.setField(payPalService, "cancelUrl", "https://api.example.test/cancel");
 
+        policy = new ActivityPaymentService(activiteRepository, registrations, soutienRepo, memberships);
+        ReflectionTestUtils.setField(stripeService, "activityPayments", policy);
+        ReflectionTestUtils.setField(payPalService, "activityPayments", policy);
         User user = new User();
+        member = user; user.setRole(com.bxjeunes.bx_connect.entity.Role.MEMBRE); user.setActif(true);
         user.setId(1L);
         user.setEmail("membre@example.test");
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
@@ -71,67 +79,66 @@ class ActivityPaymentPolicyTest {
     }
 
     @Test
-    void publishedPaidActivityIsRejectedByStripeBeforeProviderCall() throws Exception {
+    void publishedPaidActivityWithInvalidAmountIsRejectedByStripeBeforeProviderCall() throws Exception {
         PaiementRequest request = activityRequest();
-        when(activiteRepository.findById(10L)).thenReturn(Optional.of(activity(false, StatutActivite.PUBLIEE)));
+        when(activiteRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(activity(false, StatutActivite.PUBLIEE)));
 
         assertThatThrownBy(() -> stripeService.creerSessionCheckout(request))
-                .isInstanceOf(AccessDeniedException.class)
-                .hasMessage("Les paiements d'activité sont indisponibles dans cette version.");
+                .isInstanceOf(IllegalArgumentException.class);
         verify(stripeService, never()).creerSessionExterne(any());
         verify(soutienRepo, never()).save(any());
+        verify(activiteRepository, never()).findById(any());
     }
 
     @Test
-    void publishedPaidActivityIsRejectedByPayPalBeforeProviderCall() throws Exception {
+    void publishedPaidActivityWithInvalidAmountIsRejectedByPayPalBeforeProviderCall() throws Exception {
         PaiementRequest request = activityRequest();
-        when(activiteRepository.findById(10L)).thenReturn(Optional.of(activity(false, StatutActivite.PUBLIEE)));
+        when(activiteRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(activity(false, StatutActivite.PUBLIEE)));
 
         assertThatThrownBy(() -> payPalService.creerPaiement(request))
-                .isInstanceOf(AccessDeniedException.class)
-                .hasMessage("Les paiements d'activité sont indisponibles dans cette version.");
+                .isInstanceOf(IllegalArgumentException.class);
         verify(payPalService, never()).creerPaiementExterne(any());
         verify(soutienRepo, never()).save(any());
+        verify(activiteRepository, never()).findById(any());
     }
 
     @Test
     void unpublishedFreeActivityIsRejectedByBothServices() throws Exception {
         PaiementRequest request = activityRequest();
-        when(activiteRepository.findById(10L)).thenReturn(Optional.of(activity(true, StatutActivite.BROUILLON)));
+        when(activiteRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(activity(true, StatutActivite.BROUILLON)));
 
         assertThatThrownBy(() -> stripeService.creerSessionCheckout(request))
-                .isInstanceOf(AccessDeniedException.class)
-                .hasMessage("Les paiements d'activité sont indisponibles dans cette version.");
+                .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> payPalService.creerPaiement(request))
-                .isInstanceOf(AccessDeniedException.class)
-                .hasMessage("Les paiements d'activité sont indisponibles dans cette version.");
+                .isInstanceOf(IllegalArgumentException.class);
         verify(stripeService, never()).creerSessionExterne(any());
         verify(payPalService, never()).creerPaiementExterne(any());
         verify(soutienRepo, never()).save(any());
+        verify(activiteRepository, never()).findById(any());
     }
 
     @Test
     void publishedFreeActivityIsRejectedByStripeBeforeProviderCall() throws Exception {
         PaiementRequest request = activityRequest();
-        when(activiteRepository.findById(10L)).thenReturn(Optional.of(activity(true, StatutActivite.PUBLIEE)));
+        when(activiteRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(activity(true, StatutActivite.PUBLIEE)));
 
         assertThatThrownBy(() -> stripeService.creerSessionCheckout(request))
-                .isInstanceOf(AccessDeniedException.class)
-                .hasMessage("Les paiements d'activité sont indisponibles dans cette version.");
+                .isInstanceOf(IllegalArgumentException.class);
         verify(stripeService, never()).creerSessionExterne(any());
         verify(soutienRepo, never()).save(any());
+        verify(activiteRepository, never()).findById(any());
     }
 
     @Test
     void publishedFreeActivityIsRejectedByPayPalBeforeProviderCall() throws Exception {
         PaiementRequest request = activityRequest();
-        when(activiteRepository.findById(10L)).thenReturn(Optional.of(activity(true, StatutActivite.PUBLIEE)));
+        when(activiteRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(activity(true, StatutActivite.PUBLIEE)));
 
         assertThatThrownBy(() -> payPalService.creerPaiement(request))
-                .isInstanceOf(AccessDeniedException.class)
-                .hasMessage("Les paiements d'activité sont indisponibles dans cette version.");
+                .isInstanceOf(IllegalArgumentException.class);
         verify(payPalService, never()).creerPaiementExterne(any());
         verify(soutienRepo, never()).save(any());
+        verify(activiteRepository, never()).findById(any());
     }
 
     @Test
@@ -155,6 +162,54 @@ class ActivityPaymentPolicyTest {
         verify(soutienRepo).save(any());
     }
 
+    @Test
+    void privateActivityFinancialReadRejectsAnUnassignedReferentBeforeReturningSupports() {
+        User actor = new User(); actor.setId(1L); actor.setEmail("membre@example.test");
+        actor.setRole(com.bxjeunes.bx_connect.entity.Role.REFERENT);
+        when(userRepository.findByEmail(actor.getEmail())).thenReturn(Optional.of(actor));
+        Activite activity = activity(true, StatutActivite.PUBLIEE);
+        activity.setVisibilite(com.bxjeunes.bx_connect.entity.VisibiliteActivite.PRIVE_GROUPE);
+        activity.setCreateur(actor);
+        when(activiteRepository.findById(10L)).thenReturn(Optional.of(activity));
+        assertThatThrownBy(() -> payPalService.soutiensParActivite(10L)).hasMessage("Activité introuvable");
+        org.mockito.Mockito.verifyNoInteractions(soutienRepo);
+    }
+
+    @Test
+    void adminKeepsAuthorizedFinancialRead() {
+        User actor = new User(); actor.setId(1L); actor.setEmail("membre@example.test");
+        actor.setRole(com.bxjeunes.bx_connect.entity.Role.ADMIN);
+        when(userRepository.findByEmail(actor.getEmail())).thenReturn(Optional.of(actor));
+        when(activiteRepository.findById(10L)).thenReturn(Optional.of(activity(true, StatutActivite.PUBLIEE)));
+        assertThatNoException().isThrownBy(() -> payPalService.soutiensParActivite(10L));
+        verify(soutienRepo).findByActiviteId(10L);
+    }
+
+    @Test
+    void stripeUsesServerPriceAndReservesBeforeConfirmation() throws Exception {
+        var activity = activity(false, StatutActivite.PUBLIEE);
+        when(activiteRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(activity));
+        when(registrations.saveAndFlush(any())).thenAnswer(call -> call.getArgument(0));
+        var stored = new java.util.concurrent.atomic.AtomicReference<com.bxjeunes.bx_connect.entity.SoutienFinancier>();
+        when(soutienRepo.saveAndFlush(any())).thenAnswer(call -> {
+            var p = (com.bxjeunes.bx_connect.entity.SoutienFinancier) call.getArgument(0); p.setId(90L); stored.set(p); return p;
+        });
+        when(soutienRepo.findByIdForUpdate(90L)).thenAnswer(call -> Optional.of(stored.get()));
+        var session = new Session(); session.setId("cs_activity"); session.setUrl("https://checkout.stripe.com/test");
+        org.mockito.Mockito.doReturn(session).when(stripeService).creerSessionActiviteExterne(any(), any());
+        var request = activityRequest(); request.setMontant(BigDecimal.ONE);
+        var result = stripeService.creerSessionCheckout(request);
+        org.assertj.core.api.Assertions.assertThat(result.getMontant()).isEqualByComparingTo(BigDecimal.ONE);
+        verify(registrations).saveAndFlush(org.mockito.ArgumentMatchers.argThat(i ->
+                i.getStatut() == com.bxjeunes.bx_connect.entity.StatutInscription.EN_ATTENTE_PAIEMENT));
+        org.assertj.core.api.Assertions.assertThat(stored.get().getActivityRequestKey()).isNotBlank();
+        org.assertj.core.api.Assertions.assertThat(stored.get().getInscription()).isNotNull();
+        org.assertj.core.api.Assertions.assertThat(stored.get().getStatutPaiement()).isEqualTo(com.bxjeunes.bx_connect.entity.StatutPaiement.EN_ATTENTE);
+        var capture = org.mockito.ArgumentCaptor.forClass(com.stripe.param.checkout.SessionCreateParams.class);
+        verify(stripeService).creerSessionActiviteExterne(capture.capture(), any());
+        org.assertj.core.api.Assertions.assertThat(capture.getValue().getLineItems().get(0).getPriceData().getUnitAmount()).isEqualTo(100L);
+    }
+
     private PaiementRequest activityRequest() {
         PaiementRequest request = new PaiementRequest();
         request.setActiviteId(10L);
@@ -164,6 +219,8 @@ class ActivityPaymentPolicyTest {
 
     private Activite activity(boolean free, StatutActivite status) {
         Activite activity = new Activite();
+        activity.setId(10L); activity.setPrix(BigDecimal.ONE); activity.setCapaciteMax(3);
+        activity.setDateDebut(java.time.LocalDateTime.now().plusDays(2));
         activity.setTitre("Activité historique");
         activity.setGratuite(free);
         activity.setStatut(status);

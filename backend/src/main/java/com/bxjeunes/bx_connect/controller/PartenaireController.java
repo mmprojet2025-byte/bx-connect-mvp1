@@ -12,6 +12,7 @@ import com.bxjeunes.bx_connect.service.PartenaireService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -58,8 +59,10 @@ public class PartenaireController {
 
     // ─── P04 : Activités ouvertes au soutien (public) ────────────────────────
     @GetMapping("/activites-ouvertes")
-    public ResponseEntity<List<Map<String, Object>>> activitesSoutienOuverts() {
-        return ResponseEntity.ok(partenaireService.activitesSoutienOuverts());
+    public ResponseEntity<List<Map<String, Object>>> activitesSoutienOuverts(Authentication auth) {
+        boolean authentifie = auth != null && auth.isAuthenticated()
+                && !(auth instanceof AnonymousAuthenticationToken);
+        return ResponseEntity.ok(partenaireService.activitesSoutienOuverts(authentifie));
     }
 
     // ─── P05 : Soumettre un soutien à un projet ───────────────────────────────

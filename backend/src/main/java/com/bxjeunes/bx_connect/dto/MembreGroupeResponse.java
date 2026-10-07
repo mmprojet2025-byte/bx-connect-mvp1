@@ -11,6 +11,7 @@ public class MembreGroupeResponse {
     private Long userId;
     private Long groupeId;
     private String groupeNom;
+    private boolean groupeActif;
     private String prenom;
     private String nom;
     private String email;
@@ -25,6 +26,7 @@ public class MembreGroupeResponse {
         if (mg.getGroupe() != null) {
             response.groupeId = mg.getGroupe().getId();
             response.groupeNom = mg.getGroupe().getNom();
+            response.groupeActif = mg.getGroupe().isActif() && mg.getGroupe().getStatut() == com.bxjeunes.bx_connect.entity.StatutGroupe.VALIDE;
         }
         if (mg.getUser() != null) {
             response.userId = mg.getUser().getId();
@@ -42,6 +44,7 @@ public class MembreGroupeResponse {
     public Long getId() { return id; }
     public Long getUserId() { return userId; }
     public Long getGroupeId() { return groupeId; }
+    public boolean isGroupeActif() { return groupeActif; }
     public String getGroupeNom() { return groupeNom; }
     public String getPrenom() { return prenom; }
     public String getNom() { return nom; }

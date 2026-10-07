@@ -56,6 +56,7 @@ class ActiviteSecurityTest {
     @Mock private NotificationService notificationService;
     @Mock private AuditLogService auditLogService;
 
+    @Mock private com.bxjeunes.bx_connect.repository.MembreGroupeRepository membreGroupeRepository;
     @InjectMocks private ActiviteService activiteService;
     @InjectMocks private InscriptionService inscriptionService;
     @InjectMocks private PresenceService presenceService;
@@ -88,13 +89,12 @@ class ActiviteSecurityTest {
     }
 
     @Test
-    @DisplayName("Un referent ne peut pas consulter le detail d'une activite d'autrui")
-    void referent_ne_consulte_pas_activite_autrui() {
+    @DisplayName("Un referent peut lire une activite publiee d'autrui sans droit de gestion")
+    void referent_consulte_activite_publiee_autrui() {
         when(activiteRepository.findById(20L)).thenReturn(Optional.of(activiteReferentB));
         when(userRepository.findByEmail(referentA.getEmail())).thenReturn(Optional.of(referentA));
 
-        assertThatThrownBy(() -> activiteService.getById(20L, referentA.getEmail()))
-                .isInstanceOf(AccessDeniedException.class);
+        assertThat(activiteService.getById(20L, referentA.getEmail()).getId()).isEqualTo(20L);
     }
 
     @Test
@@ -125,7 +125,7 @@ class ActiviteSecurityTest {
         Activite activiteReferentA = activite(30L, "Ancien titre", StatutActivite.BROUILLON, referentA);
         ActiviteRequest request = activiteRequest("Nouveau titre");
 
-        when(activiteRepository.findById(30L)).thenReturn(Optional.of(activiteReferentA));
+        when(activiteRepository.findByIdForUpdate(30L)).thenReturn(Optional.of(activiteReferentA));
         when(userRepository.findByEmail(referentA.getEmail())).thenReturn(Optional.of(referentA));
         when(activiteRepository.save(any(Activite.class))).thenAnswer(inv -> inv.getArgument(0));
         when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);
@@ -152,7 +152,7 @@ class ActiviteSecurityTest {
     void referent_ne_modifie_pas_activite_autrui() {
         ActiviteRequest request = activiteRequest("Tentative");
 
-        when(activiteRepository.findById(20L)).thenReturn(Optional.of(activiteReferentB));
+        when(activiteRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(activiteReferentB));
         when(userRepository.findByEmail(referentA.getEmail())).thenReturn(Optional.of(referentA));
 
         assertThatThrownBy(() -> activiteService.modifier(20L, request, referentA.getEmail()))
@@ -187,7 +187,8 @@ class ActiviteSecurityTest {
         PresenceRequest request = presenceRequest(StatutPresence.PRESENT, "Arrive a l'heure");
 
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
-        when(activiteRepository.findById(20L)).thenReturn(Optional.of(activiteReferentB));
+        activiteReferentB.setDateDebut(LocalDateTime.now().minusHours(1));
+        when(activiteRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(activiteReferentB));
         when(inscriptionRepository.findByIdAndActiviteId(70L, 20L)).thenReturn(Optional.of(inscription));
         when(inscriptionRepository.save(inscription)).thenReturn(inscription);
 
@@ -215,7 +216,8 @@ class ActiviteSecurityTest {
         PresenceRequest request = presenceRequest(StatutPresence.ABSENT, null);
 
         when(userRepository.findByEmail(referentB.getEmail())).thenReturn(Optional.of(referentB));
-        when(activiteRepository.findById(20L)).thenReturn(Optional.of(activiteReferentB));
+        activiteReferentB.setDateDebut(LocalDateTime.now().minusHours(1));
+        when(activiteRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(activiteReferentB));
         when(inscriptionRepository.findByIdAndActiviteId(70L, 20L)).thenReturn(Optional.of(inscription));
         when(inscriptionRepository.save(inscription)).thenReturn(inscription);
 
@@ -231,7 +233,8 @@ class ActiviteSecurityTest {
         PresenceRequest request = presenceRequest(StatutPresence.PRESENT, null);
 
         when(userRepository.findByEmail(referentA.getEmail())).thenReturn(Optional.of(referentA));
-        when(activiteRepository.findById(20L)).thenReturn(Optional.of(activiteReferentB));
+        activiteReferentB.setDateDebut(LocalDateTime.now().minusHours(1));
+        when(activiteRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(activiteReferentB));
 
         assertThatThrownBy(() -> presenceService.modifierPresence(20L, 70L, request, referentA.getEmail()))
                 .isInstanceOf(AccessDeniedException.class);
@@ -282,7 +285,8 @@ class ActiviteSecurityTest {
         request.setPresences(List.of(itemA, itemB));
 
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
-        when(activiteRepository.findById(20L)).thenReturn(Optional.of(activiteReferentB));
+        activiteReferentB.setDateDebut(LocalDateTime.now().minusHours(1));
+        when(activiteRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(activiteReferentB));
         when(inscriptionRepository.findByIdAndActiviteId(70L, 20L)).thenReturn(Optional.of(inscriptionA));
         when(inscriptionRepository.findByIdAndActiviteId(71L, 20L)).thenReturn(Optional.of(inscriptionB));
         when(inscriptionRepository.save(any(Inscription.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -299,10 +303,12 @@ class ActiviteSecurityTest {
     void cloture_presence_valide_inscriptions_non_annulees() {
         Inscription inscriptionActive = inscription(70L, activiteReferentB, user(4L, "membre@test.be", Role.MEMBRE));
         Inscription inscriptionAnnulee = inscription(71L, activiteReferentB, user(5L, "membre2@test.be", Role.MEMBRE));
+        inscriptionActive.setStatutPresence(StatutPresence.PRESENT);
         inscriptionAnnulee.setStatut(StatutInscription.ANNULEE);
 
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
-        when(activiteRepository.findById(20L)).thenReturn(Optional.of(activiteReferentB));
+        activiteReferentB.setDateDebut(LocalDateTime.now().minusHours(1));
+        when(activiteRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(activiteReferentB));
         when(inscriptionRepository.findByActiviteId(20L)).thenReturn(List.of(inscriptionActive, inscriptionAnnulee));
         when(inscriptionRepository.save(any(Inscription.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -321,7 +327,7 @@ class ActiviteSecurityTest {
                 org.mockito.ArgumentMatchers.isNull(),
                 org.mockito.ArgumentMatchers.eq("VALIDEE"),
                 org.mockito.ArgumentMatchers.eq("Feuille de presence activite validee."),
-                org.mockito.ArgumentMatchers.contains("\"totalInscriptions\":2"));
+                org.mockito.ArgumentMatchers.contains("\"totalInscriptions\":1"));
     }
 
     @Test
@@ -355,12 +361,12 @@ class ActiviteSecurityTest {
     @DisplayName("Audit publication activite")
     void audit_publication_activite() {
         Activite activite = activite(30L, "Atelier", StatutActivite.BROUILLON, admin);
-        when(activiteRepository.findById(30L)).thenReturn(Optional.of(activite));
+        when(activiteRepository.findByIdForUpdate(30L)).thenReturn(Optional.of(activite));
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
         when(activiteRepository.save(activite)).thenReturn(activite);
         when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);
 
-        var response = activiteService.changerStatut(30L, StatutActivite.PUBLIEE, admin.getEmail());
+        var response = activiteService.changerStatut(30L, StatutActivite.PUBLIEE, com.bxjeunes.bx_connect.entity.VisibiliteActivite.PUBLIC, admin.getEmail());
 
         assertThat(response.getStatut()).isEqualTo(StatutActivite.PUBLIEE);
         verify(auditLogService).logStatusChange(
@@ -379,12 +385,12 @@ class ActiviteSecurityTest {
     @DisplayName("Audit changement statut activite")
     void audit_changement_statut_activite() {
         Activite activite = activite(30L, "Atelier", StatutActivite.PUBLIEE, admin);
-        when(activiteRepository.findById(30L)).thenReturn(Optional.of(activite));
+        when(activiteRepository.findByIdForUpdate(30L)).thenReturn(Optional.of(activite));
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
         when(activiteRepository.save(activite)).thenReturn(activite);
         when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);
 
-        var response = activiteService.changerStatut(30L, StatutActivite.TERMINEE, admin.getEmail());
+        var response = activiteService.changerStatut(30L, StatutActivite.TERMINEE, null, admin.getEmail());
 
         assertThat(response.getStatut()).isEqualTo(StatutActivite.TERMINEE);
         verify(auditLogService).logStatusChange(
@@ -403,7 +409,7 @@ class ActiviteSecurityTest {
     @DisplayName("Audit suppression activite")
     void audit_suppression_activite() {
         Activite activite = activite(30L, "Atelier", StatutActivite.BROUILLON, admin);
-        when(activiteRepository.findById(30L)).thenReturn(Optional.of(activite));
+        when(activiteRepository.findByIdForUpdate(30L)).thenReturn(Optional.of(activite));
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
 
         activiteService.supprimer(30L, admin.getEmail());
@@ -464,7 +470,9 @@ class ActiviteSecurityTest {
         inscription.setActivite(activite);
         inscription.setStatut(StatutInscription.CONFIRMEE);
 
-        when(inscriptionRepository.findById(70L)).thenReturn(Optional.of(inscription));
+        when(inscriptionRepository.findActiviteIdForOwner(70L, membre.getEmail())).thenReturn(Optional.of(30L));
+        when(activiteRepository.findByIdForUpdate(30L)).thenReturn(Optional.of(activite));
+        when(inscriptionRepository.findByIdAndActiviteId(70L, 30L)).thenReturn(Optional.of(inscription));
         when(inscriptionRepository.save(inscription)).thenReturn(inscription);
 
         var response = inscriptionService.annuler(70L, membre.getEmail());
@@ -487,7 +495,7 @@ class ActiviteSecurityTest {
     void echec_audit_ne_bloque_pas_modification_activite() {
         Activite activite = activite(30L, "Ancien titre", StatutActivite.BROUILLON, referentA);
         ActiviteRequest request = activiteRequest("Nouveau titre");
-        when(activiteRepository.findById(30L)).thenReturn(Optional.of(activite));
+        when(activiteRepository.findByIdForUpdate(30L)).thenReturn(Optional.of(activite));
         when(userRepository.findByEmail(referentA.getEmail())).thenReturn(Optional.of(referentA));
         when(activiteRepository.save(any(Activite.class))).thenAnswer(inv -> inv.getArgument(0));
         when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);

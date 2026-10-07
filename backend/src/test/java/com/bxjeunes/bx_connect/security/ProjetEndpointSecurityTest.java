@@ -43,6 +43,20 @@ class ProjetEndpointSecurityTest {
     @MockitoBean private UserDetailsService userDetailsService;
 
     @Test
+    @WithMockUser(username = "owner@example.org", roles = "MEMBRE")
+    void catalogue_connecte_utilise_le_filtrage_public_sans_projets_prives() throws Exception {
+        mockMvc.perform(get("/api/projets").param("catalogue", "true")).andExpect(status().isOk());
+        verify(projetService).listerProjetsVisibles(null);
+    }
+
+    @Test
+    @WithMockUser(username = "admin@example.org", roles = "ADMIN")
+    void catalogue_admin_utilise_aussi_le_filtrage_public() throws Exception {
+        mockMvc.perform(get("/api/projets").param("catalogue", "true")).andExpect(status().isOk());
+        verify(projetService).listerProjetsVisibles(null);
+    }
+
+    @Test
     @DisplayName("Visiteur peut appeler les projets publics pagines")
     void visiteur_peut_appeler_projets_publics_pages() throws Exception {
         mockMvc.perform(get("/api/projets/page"))

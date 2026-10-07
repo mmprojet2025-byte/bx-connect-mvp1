@@ -16,6 +16,7 @@ export default function ReferentMembres() {
   const [membres, setMembres] = useState([])
   const [groupeFiltre, setGroupeFiltre] = useState('')
   const [recherche, setRecherche] = useState('')
+  const [processing, setProcessing] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -26,7 +27,7 @@ export default function ReferentMembres() {
       const groupesData = groupesRes.data
       const membresData = await Promise.all(groupesData.map(async (groupe) => {
         const res = await api.get(`/referent/groupes/${groupe.id}/membres`)
-        return res.data.map(membre => ({ ...membre, groupeId: groupe.id, groupeNom: groupe.nom }))
+        return res.data.filter(m => ['ACCEPTE', 'SUSPENDU'].includes(m.statut)).map(membre => ({ ...membre, groupeId: groupe.id, groupeNom: groupe.nom, groupeActif: groupe.actif !== false && groupe.statut === 'VALIDE' }))
       }))
 
       setGroupes(groupesData)
@@ -40,6 +41,22 @@ export default function ReferentMembres() {
   }, [t])
 
   useEffect(() => { fetchMembres() }, [fetchMembres])
+
+  const changerAppartenance = async membre => {
+    const action = membre.statut === 'ACCEPTE' ? 'desactiver' : 'reactiver'
+    if (!window.confirm(t(`groupWorkflow.${action}Confirm`))) return
+    setProcessing(membre.id)
+    setError('')
+    try {
+      const { data } = await api.patch(`/referent/groupes/${membre.groupeId}/membres/${membre.id}/${action}`)
+      setMembres(current => current.map(m => m.id === membre.id ? { ...m, ...data } : m))
+    } catch { setError(t('groupWorkflow.error')) }
+    finally { setProcessing(null) }
+  }
+  const actionAppartenance = membre => <div className="flex items-center gap-2">
+    <span>{t(membre.statut === 'ACCEPTE' ? 'groupWorkflow.active' : 'groupWorkflow.inactive')}</span>
+    {membre.groupeActif && <button type="button" disabled={processing !== null} onClick={() => changerAppartenance(membre)} className="rounded-lg border border-blue-200 px-3 py-2 text-sm font-semibold text-blue-700 disabled:opacity-50">{t(membre.statut === 'ACCEPTE' ? 'groupWorkflow.desactiver' : 'groupWorkflow.reactiver')}</button>}
+  </div>
 
   const membresFiltres = membres.filter(membre => {
     const matchGroupe = groupeFiltre ? String(membre.groupeId) === groupeFiltre : true
@@ -109,6 +126,7 @@ export default function ReferentMembres() {
                 membre={membre}
                 language={i18n.language}
                 t={t}
+                action={actionAppartenance(membre)}
               />
             ))}
           </div>
@@ -122,6 +140,7 @@ export default function ReferentMembres() {
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.email')}</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('admin.groupName')}</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{t('users.memberSince')}</th>
+                    <th className="px-4 py-3 text-left">{t('groupWorkflow.membership')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -131,6 +150,7 @@ export default function ReferentMembres() {
                       <td className="px-4 py-3 text-sm text-gray-600">{membre.email}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{membre.groupeNom}</td>
                       <td className="px-4 py-3 text-xs text-gray-400">{formatDate(membre.dateAdhesion, i18n.language)}</td>
+                      <td className="px-4 py-3">{actionAppartenance(membre)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -145,7 +165,7 @@ export default function ReferentMembres() {
   )
 }
 
-function MembreCard({ membre, language, t }) {
+function MembreCard({ membre, language, t, action }) {
   const statut = membre.statut || membre.statutAdhesion
 
   return (
@@ -162,6 +182,7 @@ function MembreCard({ membre, language, t }) {
         )}
       </div>
 
+      <div className="mt-3">{action}</div>
       <dl className="mt-4 grid grid-cols-1 gap-3 text-sm">
         <div>
           <dt className="text-xs font-semibold uppercase text-gray-400">{t('admin.groupName')}</dt>

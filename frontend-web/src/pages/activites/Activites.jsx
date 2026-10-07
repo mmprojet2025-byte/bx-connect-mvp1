@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
@@ -10,7 +10,7 @@ import Alert from '../../components/ui/Alert';
 import EmptyState from '../../components/ui/EmptyState';
 import StatusBadge from '../../components/StatusBadge';
 import ActivityCover from '../../components/ActivityCover';
-import { userFriendlyError } from '../../utils/userFriendlyError';
+import { activityError as userFriendlyError } from '../../utils/activityError';
 import PageHeader from '../../components/ui/PageHeader';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
@@ -29,6 +29,7 @@ async function fetchActivites({ t, setActivites, setError, setLoading }) {
 }
 
 export default function Activites() {
+  const navigate = useNavigate();
   const { isAuthenticated, isAdmin, isReferent, isMembre } = useAuth();
   const { t, i18n } = useTranslation();
 
@@ -39,7 +40,7 @@ export default function Activites() {
 
   const [recherche, setRecherche] = useState('');
   const [filtreCategorie, setFiltreCategorie] = useState('');
-  const [filtreGratuite, setFiltreGratuite] = useState('');
+  const [filtersApplied, setFiltersApplied] = useState(false);
   const [options, setOptions] = useState({ categories: [], themes: [], lieux: [] });
   const [actionLoading, setActionLoading] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
@@ -104,10 +105,12 @@ export default function Activites() {
       const params = new URLSearchParams();
       if (recherche)       params.append('q', recherche);
       if (filtreCategorie) params.append('categorie', filtreCategorie);
-      if (filtreGratuite !== '') params.append('gratuite', filtreGratuite);
+
 
       const res = await api.get(`/activites/filtrer?${params.toString()}`);
       setActivites(res.data);
+      setFiltersApplied(Boolean(recherche.trim() || filtreCategorie));
+      setError('');
     } catch {
       setError(t('activities.error_load'));
     } finally {
@@ -117,7 +120,8 @@ export default function Activites() {
 
   const handleReset = () => {
     setRecherche(''); setFiltreCategorie('');
-    setFiltreGratuite('');
+    setFiltersApplied(false);
+    setLoading(true);
     setNearbyMode(false);
     fetchActivites({ t, setActivites, setError, setLoading });
   };
@@ -159,6 +163,7 @@ export default function Activites() {
   };
 
   const handleInscrire = async (activiteId) => {
+    if (activites.find(item => item.id === activiteId)?.gratuite === false) { navigate(`/activites/${activiteId}`); return; }
     setActionLoading(activiteId);
     try {
       const response = await api.post('/inscriptions', { activiteId });
@@ -192,6 +197,7 @@ export default function Activites() {
   };
 
   const handleAnnulerInscription = async (activity) => {
+    if (activity.statutInscription === 'EN_ATTENTE_PAIEMENT') { navigate(`/activites/${activity.id}`); return; }
     if (!activity.inscriptionId) return;
     setActionLoading(activity.id);
     try {
@@ -309,12 +315,14 @@ export default function Activites() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
             <input
               type="text"
+              aria-label={t('activities.search_placeholder')}
               placeholder={t('activities.search_placeholder')}
               value={recherche}
               onChange={e => setRecherche(e.target.value)}
               className="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
             <select
+              aria-label={t('activities.all_categories')}
               value={filtreCategorie}
               onChange={e => setFiltreCategorie(e.target.value)}
               className="border border-gray-300 rounded-lg px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -322,15 +330,7 @@ export default function Activites() {
               <option value="">{t('activities.all_categories')}</option>
               {options.categories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <select
-              value={filtreGratuite}
-              onChange={e => setFiltreGratuite(e.target.value)}
-              className="border border-gray-300 rounded-lg px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-            >
-              <option value="">{t('activities.free_and_paid')}</option>
-              <option value="true">{t('activities.free_only')}</option>
-              <option value="false">{t('activities.paid_only')}</option>
-            </select>
+
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <button
@@ -359,6 +359,14 @@ export default function Activites() {
             description={error || t('common.loadErrorDescription')}
             actionLabel={t('common.retry')}
             action={() => fetchActivites({ t, setActivites, setError, setLoading })}
+          />
+        ) : activites.length === 0 && filtersApplied ? (
+          <EmptyState
+            icon="Search"
+            title={t('activities.noFilteredActivities')}
+            description={t('activities.noFilteredActivitiesDesc')}
+            actionLabel={t('activities.reset_filters')}
+            action={handleReset}
           />
         ) : activites.length === 0 ? (
           <EmptyState
@@ -582,7 +590,7 @@ function renderActivityAction({ isAuthenticated, isMembre, situation, actionLoad
 function getActivitySituation(activity, t) {
   if (activity.inscrit || activity.dejaInscrit || activity.inscriptionId || activity.statutInscription) {
     const label = activity.statutInscription === 'EN_ATTENTE_PAIEMENT'
-      ? t('activities.unavailableReasons.PAYANTE_INDISPONIBLE')
+      ? t('activityEditor.paymentPending')
       : t('activities.already_registered')
     return { key: 'registered', label, dot: '🟡', className: 'bg-amber-50 text-amber-800' }
   }

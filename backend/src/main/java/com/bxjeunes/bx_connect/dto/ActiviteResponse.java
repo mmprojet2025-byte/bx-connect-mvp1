@@ -2,6 +2,7 @@ package com.bxjeunes.bx_connect.dto;
 
 import com.bxjeunes.bx_connect.entity.Activite;
 import com.bxjeunes.bx_connect.entity.StatutActivite;
+import com.bxjeunes.bx_connect.entity.VisibiliteActivite;
 import com.bxjeunes.bx_connect.entity.StatutInscription;
 
 import java.math.BigDecimal;
@@ -10,10 +11,19 @@ import java.time.LocalDateTime;
 public class ActiviteResponse {
 
     private Long id;
+    private String imageUrl;
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String value) { imageUrl = value; }
+    private Long groupeId;
+    private String groupeNom;
+    private Long referentAssigneId;
+    private String referentAssignePrenom;
+    private String referentAssigneNom;
     private String titre;
     private String description;
     private LocalDateTime dateDebut;
     private LocalDateTime dateFin;
+    private LocalDateTime dateLimiteInscription;
     private String lieu;
     private String adresse;
     private String commune;
@@ -23,6 +33,7 @@ public class ActiviteResponse {
     private BigDecimal prix;
     private int capaciteMax;
     private StatutActivite statut;
+    private VisibiliteActivite visibilite;
     private String categorie;
     private String theme;
     private LocalDateTime dateCreation;
@@ -31,6 +42,15 @@ public class ActiviteResponse {
     private int nombreInscrits;
     private int placesRestantes;
     private boolean complete;
+    private boolean tarifModifiable;
+    private boolean supprimable;
+    public boolean isTarifModifiable() { return tarifModifiable; }
+    public void setTarifModifiable(boolean value) { tarifModifiable = value; }
+    public boolean isSupprimable() { return supprimable; }
+    public void setSupprimable(boolean value) { supprimable = value; }
+    public void compterReservations(int count) {
+        if (capaciteMax > 0) { placesRestantes = Math.max(0, capaciteMax - nombreInscrits - count); complete = placesRestantes == 0; }
+    }
     private boolean inscrit;
     private Long inscriptionId;
     private StatutInscription statutInscription;
@@ -46,6 +66,7 @@ public class ActiviteResponse {
         response.description = activite.getDescription();
         response.dateDebut = activite.getDateDebut();
         response.dateFin = activite.getDateFin();
+        response.dateLimiteInscription = activite.getDateLimiteInscription();
         response.lieu = activite.getLieu();
         response.adresse = activite.getAdresse();
         response.commune = activite.getCommune();
@@ -55,12 +76,22 @@ public class ActiviteResponse {
         response.prix = activite.getPrix();
         response.capaciteMax = activite.getCapaciteMax();
         response.statut = activite.getStatut();
+        response.visibilite = activite.getVisibilite();
         response.categorie = activite.getCategorie();
         response.theme = activite.getTheme();
         response.dateCreation = activite.getDateCreation();
         if (activite.getCreateur() != null) {
             response.createurPrenom = activite.getCreateur().getPrenom();
             response.createurNom = activite.getCreateur().getNom();
+        }
+        if (activite.getGroupe() != null) {
+            response.groupeId = activite.getGroupe().getId();
+            response.groupeNom = activite.getGroupe().getNom();
+        }
+        if (activite.getReferentAssigne() != null) {
+            response.referentAssigneId = activite.getReferentAssigne().getId();
+            response.referentAssignePrenom = activite.getReferentAssigne().getPrenom();
+            response.referentAssigneNom = activite.getReferentAssigne().getNom();
         }
         return response;
     }
@@ -80,10 +111,18 @@ public class ActiviteResponse {
 
     // ─── Getters ─────────────────────────────────────────────────────────────
 
+    public Long getGroupeId() { return groupeId; }
+    public String getGroupeNom() { return groupeNom; }
+    public Long getReferentAssigneId() { return referentAssigneId; }
+    public String getReferentAssignePrenom() { return referentAssignePrenom; }
+    public String getReferentAssigneNom() { return referentAssigneNom; }
     public Long getId() { return id; }
     public String getTitre() { return titre; }
     public String getDescription() { return description; }
     public LocalDateTime getDateDebut() { return dateDebut; }
+    public LocalDateTime getDateLimiteInscription() { return dateLimiteInscription; }
+    public void setDateLimiteInscription(LocalDateTime value) { dateLimiteInscription = value; }
+
     public LocalDateTime getDateFin() { return dateFin; }
     public String getLieu() { return lieu; }
     public String getAdresse() { return adresse; }
@@ -94,6 +133,7 @@ public class ActiviteResponse {
     public BigDecimal getPrix() { return prix; }
     public int getCapaciteMax() { return capaciteMax; }
     public StatutActivite getStatut() { return statut; }
+    public VisibiliteActivite getVisibilite() { return visibilite; }
     public String getCategorie() { return categorie; }
     public String getTheme() { return theme; }
     public LocalDateTime getDateCreation() { return dateCreation; }

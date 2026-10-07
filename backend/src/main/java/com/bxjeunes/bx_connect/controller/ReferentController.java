@@ -64,6 +64,20 @@ public class ReferentController {
         return ResponseEntity.ok(groupeService.demandesEnAttenteReferent(groupeId, auth.getName()));
     }
 
+    @PatchMapping("/groupes/{groupeId}/membres/{adhesionId}/desactiver")
+    public ResponseEntity<MembreGroupeResponse> suspendreAppartenance(@PathVariable Long groupeId,
+            @PathVariable Long adhesionId, Authentication auth) {
+        groupeService.verifierDemandeDansGroupe(adhesionId, groupeId);
+        return ResponseEntity.ok(groupeService.changerAppartenance(adhesionId, auth.getName(), false));
+    }
+
+    @PatchMapping("/groupes/{groupeId}/membres/{adhesionId}/reactiver")
+    public ResponseEntity<MembreGroupeResponse> reactiverAppartenance(@PathVariable Long groupeId,
+            @PathVariable Long adhesionId, Authentication auth) {
+        groupeService.verifierDemandeDansGroupe(adhesionId, groupeId);
+        return ResponseEntity.ok(groupeService.changerAppartenance(adhesionId, auth.getName(), true));
+    }
+
     @PatchMapping("/groupes/{groupeId}/demandes/{demandeId}/accepter")
     public ResponseEntity<MembreGroupeResponse> accepterDemande(
             @PathVariable Long groupeId,

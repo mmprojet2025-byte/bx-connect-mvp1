@@ -23,6 +23,7 @@ public class Activite {
 
     @Column(nullable = false)
     private LocalDateTime dateFin;
+    private LocalDateTime dateLimiteInscription;
 
     @Column(length = 200)
     private String lieu;
@@ -52,6 +53,10 @@ public class Activite {
     @Column(nullable = false)
     private StatutActivite statut = StatutActivite.BROUILLON;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private VisibiliteActivite visibilite = VisibiliteActivite.PUBLIC;
+
     @Column(length = 100)
     private String categorie;
 
@@ -64,6 +69,18 @@ public class Activite {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "createur_id", nullable = false)
     private User createur;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "groupe_id")
+    private Groupe groupe;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "referent_assigne_id")
+    private User referentAssigne;
+
+    // Internal storage key, not an arbitrary external image URL.
+    @Column(name = "image_storage_key", length = 255)
+    private String imageStorageKey;
 
     // ─── Constructeurs ───────────────────────────────────────────────────────
 
@@ -82,6 +99,9 @@ public class Activite {
 
     public LocalDateTime getDateDebut() { return dateDebut; }
     public void setDateDebut(LocalDateTime dateDebut) { this.dateDebut = dateDebut; }
+
+    public LocalDateTime getDateLimiteInscription() { return dateLimiteInscription; }
+    public void setDateLimiteInscription(LocalDateTime value) { dateLimiteInscription = value; }
 
     public LocalDateTime getDateFin() { return dateFin; }
     public void setDateFin(LocalDateTime dateFin) { this.dateFin = dateFin; }
@@ -113,6 +133,9 @@ public class Activite {
     public StatutActivite getStatut() { return statut; }
     public void setStatut(StatutActivite statut) { this.statut = statut; }
 
+    public VisibiliteActivite getVisibilite() { return visibilite; }
+    public void setVisibilite(VisibiliteActivite visibilite) { this.visibilite = visibilite; }
+
     public String getCategorie() { return categorie; }
     public void setCategorie(String categorie) { this.categorie = categorie; }
 
@@ -124,4 +147,13 @@ public class Activite {
 
     public User getCreateur() { return createur; }
     public void setCreateur(User createur) { this.createur = createur; }
+
+    public Groupe getGroupe() { return groupe; }
+    public void setGroupe(Groupe groupe) { this.groupe = groupe; }
+
+    public User getReferentAssigne() { return referentAssigne; }
+    public void setReferentAssigne(User referentAssigne) { this.referentAssigne = referentAssigne; }
+
+    public String getImageStorageKey() { return imageStorageKey; }
+    public void setImageStorageKey(String imageStorageKey) { this.imageStorageKey = imageStorageKey; }
 }

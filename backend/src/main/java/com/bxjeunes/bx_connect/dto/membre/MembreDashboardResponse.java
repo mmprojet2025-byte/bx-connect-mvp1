@@ -88,6 +88,10 @@ public class MembreDashboardResponse {
         private String activiteLieu;
         private LocalDateTime activiteDateDebut;
         private StatutInscription statut;
+        private com.bxjeunes.bx_connect.entity.StatutActivite activiteStatut;
+
+        public com.bxjeunes.bx_connect.entity.StatutActivite getActiviteStatut() { return activiteStatut; }
+        public void setActiviteStatut(com.bxjeunes.bx_connect.entity.StatutActivite statut) { this.activiteStatut = statut; }
 
         public Long getId() { return id; }
         public void setId(Long id) { this.id = id; }

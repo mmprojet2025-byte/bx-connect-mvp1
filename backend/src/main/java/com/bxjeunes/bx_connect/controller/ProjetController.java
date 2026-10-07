@@ -25,8 +25,9 @@ public class ProjetController {
     // ─── GET /api/projets — Liste publique (APPROUVE, EN_COURS, TERMINE) ─────
 
     @GetMapping
-    public ResponseEntity<List<ProjetResponse>> listerProjetsVisibles(Authentication authentication) {
-        return ResponseEntity.ok(projetService.listerProjetsVisibles(emailAuthentifie(authentication)));
+    public ResponseEntity<List<ProjetResponse>> listerProjetsVisibles(
+            @RequestParam(defaultValue = "false") boolean catalogue, Authentication authentication) {
+        return ResponseEntity.ok(projetService.listerProjetsVisibles(catalogue ? null : emailAuthentifie(authentication)));
     }
 
     @GetMapping("/page")

@@ -77,6 +77,7 @@ class MembreDashboardServiceTest {
         Groupe groupe = new Groupe();
         groupe.setId(10L);
         groupe.setNom("Groupe Creatif");
+        groupe.setStatut(com.bxjeunes.bx_connect.entity.StatutGroupe.VALIDE);
         groupe.setReferent(referent);
 
         MembreGroupe adhesion = new MembreGroupe();
@@ -86,6 +87,9 @@ class MembreDashboardServiceTest {
 
         Inscription inscription = new Inscription();
         inscription.setId(100L);
+        var activity = new com.bxjeunes.bx_connect.entity.Activite();
+        activity.setStatut(com.bxjeunes.bx_connect.entity.StatutActivite.PUBLIEE);
+        inscription.setActivite(activity);
         inscription.setMembre(membre);
         inscription.setStatut(StatutInscription.CONFIRMEE);
 
@@ -97,7 +101,7 @@ class MembreDashboardServiceTest {
         when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
         when(membreGroupeRepository.findByUserId(membre.getId())).thenReturn(List.of(adhesion));
         when(membreGroupeRepository.countByGroupeIdAndStatut(10L, StatutMembre.ACCEPTE)).thenReturn(1L);
-        when(activiteRepository.findByCreateurIdAndStatut(org.mockito.Mockito.eq(referent.getId()), org.mockito.Mockito.any()))
+        when(activiteRepository.findByGroupeIdAndStatut(org.mockito.Mockito.eq(10L), org.mockito.Mockito.any()))
                 .thenReturn(List.of());
         when(inscriptionRepository.findByMembreId(membre.getId())).thenReturn(List.of(inscription));
         when(projetRepository.findByPorteurId(membre.getId())).thenReturn(List.of(projet));
@@ -118,6 +122,40 @@ class MembreDashboardServiceTest {
 
         assertThatThrownBy(() -> membreDashboardService.dashboard(referent.getEmail()))
                 .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void dashboard_preserve_inscription_et_statut_activite_annulee() {
+        var activite = new com.bxjeunes.bx_connect.entity.Activite();
+        activite.setId(42L);
+        activite.setTitre("Atelier annulé");
+        activite.setStatut(com.bxjeunes.bx_connect.entity.StatutActivite.ANNULEE);
+        Inscription inscription = new Inscription();
+        inscription.setId(100L);
+        inscription.setMembre(membre);
+        inscription.setActivite(activite);
+        inscription.setStatut(StatutInscription.ANNULEE);
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        when(inscriptionRepository.findByMembreId(membre.getId())).thenReturn(List.of(inscription));
+
+        var response = membreDashboardService.dashboard(membre.getEmail());
+
+        assertThat(response.getInscriptions()).hasSize(1);
+        var historique = response.getInscriptions().getFirst();
+        assertThat(historique.getActiviteTitre()).isEqualTo("Atelier annulé");
+        assertThat(historique.getStatut()).isEqualTo(StatutInscription.ANNULEE);
+        assertThat(historique.getActiviteStatut()).isEqualTo(com.bxjeunes.bx_connect.entity.StatutActivite.ANNULEE);
+    }
+
+    @Test
+    void archivedMembershipDoesNotReplaceTheCurrentGroupOnDashboard() {
+        Groupe archived = new Groupe(); archived.setId(9L); archived.setStatut(com.bxjeunes.bx_connect.entity.StatutGroupe.ARCHIVE); archived.setActif(false);
+        MembreGroupe old = new MembreGroupe(membre, archived); old.setStatut(StatutMembre.ACCEPTE);
+        Groupe active = new Groupe(); active.setId(10L); active.setNom("Actuel"); active.setReferent(referent); active.setStatut(com.bxjeunes.bx_connect.entity.StatutGroupe.VALIDE);
+        MembreGroupe current = new MembreGroupe(membre, active); current.setStatut(StatutMembre.ACCEPTE);
+        when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
+        when(membreGroupeRepository.findByUserId(membre.getId())).thenReturn(List.of(old, current));
+        assertThat(membreDashboardService.dashboard(membre.getEmail()).getGroupe().getNom()).isEqualTo("Actuel");
     }
 
     private User user(Long id, String email, Role role) {

@@ -11,6 +11,15 @@ import java.util.Optional;
 @Repository
 public interface InscriptionRepository extends JpaRepository<Inscription, Long> {
 
+    // Scalar lookup avoids loading a stale registration before acquiring the activity lock.
+    @org.springframework.data.jpa.repository.Query(
+            "select i.activite.id from Inscription i where i.id = :id and i.membre.email = :email")
+    Optional<Long> findActiviteIdForOwner(
+            @org.springframework.data.repository.query.Param("id") Long id,
+            @org.springframework.data.repository.query.Param("email") String email);
+
+    boolean existsByActiviteIdAndDateValidationPresenceIsNotNull(Long activiteId);
+
     // Toutes les inscriptions d'un membre (M11 CDC)
     List<Inscription> findByMembreId(Long membreId);
 

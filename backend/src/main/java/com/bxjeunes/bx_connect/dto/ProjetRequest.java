@@ -14,7 +14,20 @@ public class ProjetRequest {
 
     private String objectifs;
 
+
+    @jakarta.validation.constraints.Positive
+    private Integer capacite;
+    private java.time.LocalDate dateExecution;
+    private java.time.LocalDate dateLimiteParticipation;
+    @Size(max = 500)
+    private String imageUrl;
+
     private BigDecimal budgetDemande;
+
+    @jakarta.validation.constraints.NotNull
+    @jakarta.validation.constraints.DecimalMin("0.00")
+    @jakarta.validation.constraints.Digits(integer = 8, fraction = 2)
+    private BigDecimal prixParticipation = BigDecimal.ZERO;
 
     private Long groupeId; // optionnel : rattacher à un groupe
 
@@ -34,6 +47,9 @@ public class ProjetRequest {
     public String getObjectifs() { return objectifs; }
     public void setObjectifs(String objectifs) { this.objectifs = objectifs; }
 
+    public BigDecimal getPrixParticipation() { return prixParticipation; }
+    public void setPrixParticipation(BigDecimal value) { prixParticipation = value; }
+
     public BigDecimal getBudgetDemande() { return budgetDemande; }
     public void setBudgetDemande(BigDecimal budgetDemande) { this.budgetDemande = budgetDemande; }
 
@@ -49,4 +65,13 @@ public class ProjetRequest {
     public void setVisibilite(VisibiliteProjet visibilite) {
         this.visibilite = visibilite == null ? VisibiliteProjet.GROUPE : visibilite;
     }
+
+    public Integer getCapacite() { return capacite; }
+    public void setCapacite(Integer value) { capacite = value; }
+    public java.time.LocalDate getDateExecution() { return dateExecution; }
+    public void setDateExecution(java.time.LocalDate value) { dateExecution = value; }
+    public java.time.LocalDate getDateLimiteParticipation() { return dateLimiteParticipation; }
+    public void setDateLimiteParticipation(java.time.LocalDate value) { dateLimiteParticipation = value; }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String value) { imageUrl = value; }
 }

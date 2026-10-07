@@ -50,7 +50,7 @@ class PushWorkflowNotificationTest {
         User admin = user(1L, "admin@test.be", Role.ADMIN);
         Activite activite = activite(8L, admin, true);
 
-        when(activiteRepository.findById(8L)).thenReturn(Optional.of(activite));
+        when(activiteRepository.findByIdForUpdate(8L)).thenReturn(Optional.of(activite));
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
         when(activiteRepository.save(activite)).thenReturn(activite);
         when(inscriptionRepository.countByActiviteIdAndStatutIn(any(), any())).thenReturn(0L);
@@ -60,8 +60,9 @@ class PushWorkflowNotificationTest {
                 userRepository,
                 inscriptionRepository,
                 notificationService,
-                auditLogService
-        ).changerStatut(8L, StatutActivite.PUBLIEE, admin.getEmail());
+                auditLogService,
+                groupeRepository
+        , org.mockito.Mockito.mock(com.bxjeunes.bx_connect.repository.MembreGroupeRepository.class)).changerStatut(8L, StatutActivite.PUBLIEE, com.bxjeunes.bx_connect.entity.VisibiliteActivite.PUBLIC, admin.getEmail());
 
         verify(notificationService, never()).creer(
                 any(User.class),
@@ -93,7 +94,7 @@ class PushWorkflowNotificationTest {
                 userRepository,
                 notificationService,
                 auditLogService
-        ).inscrire(request, membre.getEmail());
+        , org.mockito.Mockito.mock(com.bxjeunes.bx_connect.repository.MembreGroupeRepository.class)).inscrire(request, membre.getEmail());
 
         verify(notificationService).creer(
                 membre,
@@ -122,7 +123,7 @@ class PushWorkflowNotificationTest {
                 userRepository,
                 notificationService,
                 auditLogService
-        );
+        , org.mockito.Mockito.mock(com.bxjeunes.bx_connect.repository.MembreGroupeRepository.class));
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.inscrire(request, membre.getEmail()))
                 .hasMessageContaining("payantes");

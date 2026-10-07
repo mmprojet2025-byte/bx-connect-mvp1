@@ -265,7 +265,7 @@ class InscriptionLifecycleMySqlTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    void reregistrationPreservesExistingPresence(boolean validated) {
+    void existingPresenceIsPreservedAndValidationPreventsCancellation(boolean validated) {
         InscriptionResponse first = register(member);
         LocalDateTime recordedAt = LocalDateTime.of(2020, 1, 2, 12, 0);
         inTransaction(() -> {
@@ -278,8 +278,13 @@ class InscriptionLifecycleMySqlTest {
             existing.setCommentairePresence("Presence deja verifiee");
             return null;
         });
-        cancel(first.getId(), member);
-        register(member);
+        if (validated) {
+            assertThatThrownBy(() -> cancel(first.getId(), member)).hasMessageContaining("Désinscription indisponible");
+            assertPersistedStatus(first.getId(), StatutInscription.CONFIRMEE);
+        } else {
+            cancel(first.getId(), member);
+            register(member);
+        }
         inTransaction(() -> {
             Inscription existing = registrations.findById(first.getId()).orElseThrow();
             assertThat(existing.getStatutPresence()).isEqualTo(StatutPresence.PRESENT);

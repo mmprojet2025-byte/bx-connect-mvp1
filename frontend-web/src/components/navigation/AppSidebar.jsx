@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { getDefaultRouteForRole } from '../../routes/roleRoutes'
@@ -45,14 +45,11 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
 
   const role = user?.role || 'MEMBRE'
   const routes = ROLE_ROUTES[role] || ROLE_ROUTES.MEMBRE
-  const recentItems = useRecentWorkspaceItems(location, user, role === 'SUPER_ADMIN')
   const mainSections = getMainSections(role, t)
   const spaceSections = getSpaceSections(role, t)
   const workSections = getWorkSections(role, t)
   const sidebarSections = [...mainSections, ...spaceSections, ...workSections]
   const homeRoute = routes.home || getDefaultRouteForRole(role)
-  const showRecentLast = role === 'ADMIN'
-  const showRecentSection = role !== 'PARTENAIRE' && role !== 'SUPER_ADMIN'
 
   useEffect(() => {
     setMobileOpen(false)
@@ -138,7 +135,6 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                   />
                 ))}
 
-                {showRecentSection && !showRecentLast && <RecentSection items={recentItems} location={location} />}
 
                 {spaceSections.map(section => (
                   <ContextSection
@@ -156,7 +152,6 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                   />
                 ))}
 
-                {showRecentSection && showRecentLast && <RecentSection items={recentItems} location={location} />}
               </div>
             </nav>
 
@@ -245,7 +240,6 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                 />
               ))}
 
-              {showRecentSection && !showRecentLast && <RecentSection items={recentItems} location={location} onNavigate={() => setMobileOpen(false)} />}
 
               {spaceSections.map(section => (
                 <ContextSection
@@ -265,7 +259,6 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
                 />
               ))}
 
-              {showRecentSection && showRecentLast && <RecentSection items={recentItems} location={location} onNavigate={() => setMobileOpen(false)} />}
             </div>
           </nav>
 
@@ -295,154 +288,58 @@ export default function AppSidebar({ contextCollapsed = false, onToggleContext }
   )
 }
 
-function useRecentWorkspaceItems(location, user, disabled = false) {
-  const userKey = user?.id || user?.email || user?.role || 'default'
-  const storageKey = `bx-sidebar-recents-${userKey}`
-  const currentItem = useMemo(() => recentItemFromLocation(location), [location])
-  const [items, setItems] = useState(() => disabled ? [] : readRecentItems(storageKey))
-
-  useEffect(() => {
-    setItems(disabled ? [] : readRecentItems(storageKey))
-  }, [disabled, storageKey])
-
-  useEffect(() => {
-    if (disabled || !currentItem) return
-    setItems((current) => {
-      const next = [
-        { ...currentItem, visitedAt: new Date().toISOString() },
-        ...current.filter(item => item.to !== currentItem.to),
-      ].slice(0, 8)
-      window.localStorage.setItem(storageKey, JSON.stringify(next))
-      return next
-    })
-  }, [currentItem, disabled, storageKey])
-
-  return items
-}
-
 function getMainSections(role, t) {
-  if (role === 'ADMIN') {
-    return sections([
-      group(t('sidebar.sections.pilotage'), [
-        link(t('nav.dashboard'), '/admin/dashboard', 'Home'),
-        link(t('nav.conversations'), '/admin/conversations', 'MessagesSquare'),
-        link(t('nav.notifications'), '/notifications', 'Bell'),
-      ]),
-    ])
-  }
-
-  if (role === 'PARTENAIRE') {
-    return sections([
-      group(t('sidebar.sections.overview'), [
-        link(t('nav.dashboard'), '/partenaire?tab=dashboard', 'Home'),
-        link(t('partnerSpace.openProjects', { defaultValue: 'Projets ouverts' }), '/partenaire?tab=projets', 'Rocket'),
-        link(t('partnerSpace.openActivities', { defaultValue: 'Activités ouvertes' }), '/partenaire?tab=activites', 'Calendar'),
-        link(t('partnerSpace.mySupports', { defaultValue: 'Mes soutiens' }), '/partenaire?tab=soutiens', 'Wallet'),
-      ]),
-      group(t('sidebar.sections.communication'), [
-        link(t('nav.conversations'), '/partenaire/conversations', 'MessagesSquare'),
-        link(t('nav.notifications'), '/notifications', 'Bell'),
-      ]),
-    ])
-  }
-
-  if (role === 'REFERENT') {
-    return sections([
-      group(t('sidebar.sections.overview'), [
-        link(t('nav.dashboard'), '/referent/dashboard', 'Home'),
-        link(t('nav.messaging'), '/referent/messagerie', 'MessageCircle'),
-        link(t('nav.conversations'), '/referent/conversations', 'MessagesSquare'),
-      ]),
-      group(t('sidebar.sections.communication'), [
-        link(t('nav.notifications'), '/notifications', 'Bell'),
-      ]),
-    ])
-  }
-
-  if (role === 'SUPER_ADMIN') {
-    return sections([
-      group(t('sidebar.sections.supervision'), [
-        link(t('nav.dashboard'), '/super-admin/dashboard', 'Home'),
-      ]),
-      group(t('sidebar.sections.security'), [
-        link(t('nav.admins'), '/super-admin/admins', 'Lock'),
-        link(t('nav.logs'), '/super-admin/logs', 'ClipboardList'),
-      ]),
-    ])
-  }
-
-  return sections([
-    group(t('sidebar.sections.overview'), [
-      link(t('nav.dashboard'), '/dashboard', 'Home'),
-      link(t('nav.messaging'), '/messagerie', 'MessageCircle'),
-      link(t('nav.notifications'), '/notifications', 'Bell'),
-    ]),
-  ])
+  const home = ROLE_ROUTES[role]?.home || '/dashboard'
+  return [group(t('sidebar.sections.pilotage'), [link(t('nav.dashboard'), home, 'Home')])]
 }
 
 function getSpaceSections(role, t) {
   if (role === 'ADMIN') {
-    return sections([
-      group(t('sidebar.sections.management'), [
-        link(t('nav.users'), '/admin/utilisateurs', 'Users'),
-        link(t('nav.referents'), '/admin/referents', 'User'),
-        link(t('nav.activities'), '/admin/activites', 'Calendar'),
-      ]),
-    ])
+    return [group(t('sidebar.sections.management'), [
+      link(t('nav.users'), '/admin/utilisateurs', 'Users'),
+      link(t('nav.referents'), '/admin/referents', 'User'),
+      link(t('users.partners.title'), '/admin/partenaires', 'Handshake'),
+      link(t('nav.groups'), '/admin/groupes', 'Users'),
+      link(t('nav.activities'), '/admin/activites', 'Calendar'),
+      link(t('nav.projects'), '/admin/projets', 'Rocket'),
+      link(t('nav.supports'), '/admin/soutiens', 'Wallet'),
+    ])]
   }
-
-  if (role === 'PARTENAIRE') {
-    // MVP1.5 / masqué volontairement : opportunités, soutiens et sous-onglets avancés.
-    return []
-  }
-
   if (role === 'REFERENT') {
-    return sections([
-      group(t('sidebar.sections.groupLife'), [
-        link(t('nav.myGroups'), '/referent/groupes', 'Users'),
-        link(t('nav.members'), '/referent/membres', 'User'),
-        link(t('nav.projects'), '/referent/projets', 'Rocket'),
-      ]),
-    ])
+    return [group(t('sidebar.sections.management'), [
+      link(t('nav.myGroups'), '/referent/groupes', 'Users'),
+      link(t('nav.members'), '/referent/membres', 'User'),
+      link(t('nav.activities'), '/referent/activites', 'Calendar'),
+      link(t('nav.projects'), '/referent/projets', 'Rocket'),
+      link(t('sidebar.labels.membershipRequests'), '/referent/demandes', 'ClipboardList'),
+    ])]
   }
-
-  if (role === 'SUPER_ADMIN') return []
-
-  return sections([
-    group(t('sidebar.sections.participation'), [
-      link(t('nav.myGroups'), '/groupes', 'Users'),
-      link(t('sidebar.labels.myActivities'), '/activites', 'Calendar'),
-      link(t('sidebar.labels.myProjects'), '/projets', 'Rocket'),
-    ]),
-  ])
+  if (role === 'PARTENAIRE') {
+    return [group(t('sidebar.sections.management'), [
+      link(t('nav.projects'), '/partenaire?tab=projets', 'Rocket'),
+      link(t('nav.activities'), '/partenaire?tab=activites', 'Calendar'),
+      link(t('nav.supports'), '/partenaire?tab=soutiens', 'Wallet'),
+    ])]
+  }
+  if (role === 'SUPER_ADMIN') {
+    return [group(t('sidebar.sections.security'), [
+      link(t('nav.admins'), '/super-admin/admins', 'Lock'),
+      link(t('nav.logs'), '/super-admin/logs', 'ClipboardList'),
+    ])]
+  }
+  return [group(t('sidebar.sections.management'), [
+    link(t('nav.groups'), '/groupes', 'Users'),
+    link(t('nav.activities'), '/activites', 'Calendar'),
+    link(t('nav.projects'), '/projets', 'Rocket'),
+    link(t('projectPayment.invoices'), '/mes-factures', 'FileText'),
+  ])]
 }
 
 function getWorkSections(role, t) {
-  if (role === 'ADMIN') {
-    return sections([
-      group(t('sidebar.sections.validation'), [
-        link(t('sidebar.labels.pendingGroups'), '/admin/groupes?vue=en-attente', 'ClipboardList'),
-        link(t('admin.projectsToValidate'), '/admin/projets?vue=a-valider', 'Rocket'),
-        link(t('nav.supports'), '/admin/soutiens', 'Wallet'),
-      ]),
-    ])
-  }
-
-  if (role === 'REFERENT') {
-    return sections([
-      group(t('sidebar.sections.priorityActions'), [
-        link(t('sidebar.labels.membershipRequests'), '/referent/demandes', 'ClipboardList'),
-        link(t('sidebar.labels.activitiesToPrepare'), '/referent/activites', 'Calendar'),
-      ]),
-    ])
-  }
-
-  if (role === 'PARTENAIRE') {
-    // MVP1.5 / masqué volontairement : actions de soutien et opportunités partenaires.
-    return []
-  }
-
-  return []
+  if (role !== 'MEMBRE' && role !== 'REFERENT') return []
+  return [group(t('sidebar.sections.communication'), [
+    link(t('nav.messaging'), ROLE_ROUTES[role].messages, 'MessageCircle'),
+  ])]
 }
 
 function link(label, to, icon, badge = null) {
@@ -451,10 +348,6 @@ function link(label, to, icon, badge = null) {
 
 function group(title, items) {
   return { title, items: items.filter(Boolean) }
-}
-
-function sections(groups) {
-  return groups.filter(section => section.items.length > 0)
 }
 
 function CollapsedSidebarLink({ item, location }) {
@@ -480,31 +373,6 @@ function CollapsedSidebarLink({ item, location }) {
   )
 }
 
-function RecentSection({ items, location, onNavigate }) {
-  const { t } = useTranslation()
-
-  return (
-    <section>
-      <p className="mb-1.5 px-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
-        {t('sidebar.recent')}
-      </p>
-      {items.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-3">
-          <p className="text-xs font-semibold leading-relaxed text-slate-500">
-            {t('sidebar.recentEmpty')}
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-0.5">
-          {items.slice(0, 8).map(item => (
-            <ContextLink key={`recent-${item.to}`} item={item} location={location} onNavigate={onNavigate} />
-          ))}
-        </div>
-      )}
-    </section>
-  )
-}
-
 function ContextSection({ section, location, onNavigate }) {
   return (
     <section>
@@ -526,36 +394,6 @@ function roleLabel(role, t) {
 
 function fullName(user) {
   return `${user?.prenom || ''} ${user?.nom || ''}`.trim()
-}
-
-function readRecentItems(storageKey) {
-  if (typeof window === 'undefined') return []
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(storageKey) || '[]')
-    return Array.isArray(parsed) ? parsed.filter(item => item?.to && item?.label).slice(0, 8) : []
-  } catch {
-    return []
-  }
-}
-
-function recentItemFromLocation(location) {
-  const path = location.pathname
-  const groupMatch = path.match(/^\/(?:referent\/)?groupes\/(\d+)$/)
-  if (groupMatch) {
-    return link(`Groupe #${groupMatch[1]}`, path, 'Users')
-  }
-
-  const projectMatch = path.match(/^\/projets\/(\d+)$/)
-  if (projectMatch) {
-    return link(`Projet #${projectMatch[1]}`, path, 'Rocket')
-  }
-
-  const activityMatch = path.match(/^\/activites\/(\d+)$/)
-  if (activityMatch) {
-    return link(`Activité #${activityMatch[1]}`, path, 'Calendar')
-  }
-
-  return null
 }
 
 function ContextLink({ item, location, onNavigate }) {

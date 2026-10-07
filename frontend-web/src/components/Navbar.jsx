@@ -66,7 +66,7 @@ export default function Navbar() {
   const notificationItem = isAuthenticated && !isSuperAdmin
     ? { to: '/notifications', label: t('nav.notifications'), icon: 'Bell' }
     : null
-  const homeRoute = isAuthenticated ? getDefaultRouteForRole(user?.role) : '/'
+  const publicLayout = !isAuthenticated || location.pathname === '/'
   const publicNavigationItems = [
     { to: '/', label: t('nav.home'), icon: 'Home' },
     { to: '/activites', label: t('nav.activities'), icon: 'Calendar' },
@@ -98,22 +98,32 @@ export default function Navbar() {
   return (
     <nav
       ref={navRef}
-      className={`sticky top-0 z-40 border-b border-slate-200 bg-white/95 px-4 text-slate-700 backdrop-blur-xl ${isAuthenticated ? 'pl-16 lg:pl-4' : ''}`}
+      className={`sticky top-0 z-40 border-b border-slate-200 bg-white/95 px-4 text-slate-700 backdrop-blur-xl ${!publicLayout ? 'pl-16 lg:pl-4' : ''}`}
     >
-      <div className={`mx-auto flex max-w-7xl items-center ${isAuthenticated ? 'min-h-14 justify-end' : 'min-h-16 justify-between gap-5'}`}>
-        {!isAuthenticated && (
-          <Link to={homeRoute} className="flex min-w-0 items-center py-2">
+      <div className={`mx-auto flex max-w-7xl items-center ${!publicLayout ? 'min-h-14 justify-end' : 'min-h-16 justify-between gap-2 sm:gap-5'}`}>
+        {isAuthenticated && !publicLayout && (
+          <Link
+            to="/"
+            aria-current={location.pathname === '/' ? 'page' : undefined}
+            className="mr-auto inline-flex h-9 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-950 sm:px-3"
+          >
+            <AppIcon name="Home" className="h-4 w-4" />
+            {t('nav.home')}
+          </Link>
+        )}
+        {publicLayout && (
+          <Link to="/" className="flex min-w-0 items-center py-2">
             <img
               src={logoBxConnect}
               alt="BX-CONNECT"
-              className="w-[150px] max-w-[42vw] shrink-0 object-contain sm:w-[190px]"
+              className={`${isAuthenticated ? 'w-[105px]' : 'w-[150px]'} max-w-[42vw] shrink-0 object-contain sm:w-[190px]`}
             />
             <span className="ml-2 hidden text-[10px] font-semibold tracking-wide text-orange-600 2xl:block">
               {t('nav.tagline')}
             </span>
           </Link>
         )}
-        {!isAuthenticated && (
+        {publicLayout && (
           <div className="hidden items-center lg:flex">
             {publicNavigationItems.map(item => (
               <NavItem key={item.to} item={item} active={isLinkActive(item.to, location)} />
@@ -137,14 +147,17 @@ export default function Navbar() {
               onLanguageChange={changeLanguage}
               t={t}
             />
+            {publicLayout && (
+              <PublicNavigationDropdown
+                open={openDropdown === 'public-navigation'}
+                onToggle={toggleDropdown}
+                items={publicNavigationItems}
+                isAuthenticated={isAuthenticated}
+                t={t}
+              />
+            )}
             {!isAuthenticated && (
               <>
-                <PublicNavigationDropdown
-                  open={openDropdown === 'public-navigation'}
-                  onToggle={toggleDropdown}
-                  items={publicNavigationItems}
-                  t={t}
-                />
                 <Link
                   to="/login"
                   className="hidden h-9 items-center rounded-lg px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-950 lg:inline-flex"
@@ -163,7 +176,6 @@ export default function Navbar() {
               <AccountDropdown
                 open={openDropdown === 'account'}
                 active={location.pathname === '/profil'}
-                notificationsActive={location.pathname === '/notifications'}
                 onToggle={toggleDropdown}
                 isAuthenticated={isAuthenticated}
                 user={user}
@@ -179,7 +191,7 @@ export default function Navbar() {
   )
 }
 
-function PublicNavigationDropdown({ open, onToggle, items, t }) {
+function PublicNavigationDropdown({ open, onToggle, items, isAuthenticated, t }) {
   return (
     <div className="relative lg:hidden">
       <button
@@ -199,9 +211,13 @@ function PublicNavigationDropdown({ open, onToggle, items, t }) {
       {open && (
         <div role="menu" className="absolute right-0 top-full mt-2 w-56 rounded-lg border border-slate-200 bg-white p-1.5 shadow-lg shadow-slate-900/8">
           {items.map(item => <NavItem key={item.to} item={item} dropdown />)}
-          <div className="my-1 border-t border-slate-100" />
-          <NavItem item={{ to: '/login', label: t('nav.login'), icon: 'User' }} dropdown />
-          <NavItem item={{ to: '/register', label: t('nav.register'), icon: 'PlusCircle' }} dropdown />
+          {!isAuthenticated && (
+            <>
+              <div className="my-1 border-t border-slate-100" />
+              <NavItem item={{ to: '/login', label: t('nav.login'), icon: 'User' }} dropdown />
+              <NavItem item={{ to: '/register', label: t('nav.register'), icon: 'PlusCircle' }} dropdown />
+            </>
+          )}
         </div>
       )}
     </div>
@@ -260,7 +276,7 @@ function LanguageDropdown({ open, onToggle, i18n, onLanguageChange, t }) {
   )
 }
 
-function AccountDropdown({ open, active, notificationsActive, onToggle, isAuthenticated, user, onLogout, t }) {
+function AccountDropdown({ open, active, onToggle, isAuthenticated, user, onLogout, t }) {
   return (
     <div className="relative">
       <button
@@ -294,6 +310,10 @@ function AccountDropdown({ open, active, notificationsActive, onToggle, isAuthen
           {isAuthenticated ? (
             <>
               <NavItem
+                item={{ to: getDefaultRouteForRole(user?.role), label: t('nav.mySpace'), icon: 'Home' }}
+                dropdown
+              />
+              <NavItem
                 item={{
                   to: '/profil',
                   label: user?.role === 'SUPER_ADMIN' ? t('profile.securityAccount') : t('nav.profile'),
@@ -302,9 +322,6 @@ function AccountDropdown({ open, active, notificationsActive, onToggle, isAuthen
                 active={active}
                 dropdown
               />
-              {user?.role !== 'SUPER_ADMIN' && (
-                <NavItem item={{ to: '/notifications', label: t('nav.notifications'), icon: 'Bell' }} active={notificationsActive} dropdown />
-              )}
               <div className="my-1 border-t border-slate-100" />
               <button
                 type="button"

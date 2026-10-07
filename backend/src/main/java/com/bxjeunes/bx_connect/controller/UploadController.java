@@ -63,7 +63,7 @@ public class UploadController {
             // Créer le sous-dossier selon le type
             String subFolder = switch (type) {
                 case "photo-profil", "avatar" -> "avatars";
-                case "activite" -> "activites";
+                case "activite" -> com.bxjeunes.bx_connect.service.ActivityImageService.ownerDirectory();
                 case "projet"   -> "projets";
                 default         -> "general";
             };
@@ -82,6 +82,7 @@ public class UploadController {
 
             Map<String, String> response = new HashMap<>();
             response.put("url", imageUrl);
+            if ("activite".equals(type)) response.put("storageKey", subFolder + "/" + newFilename);
             response.put("filename", newFilename);
             response.put("type", type);
 

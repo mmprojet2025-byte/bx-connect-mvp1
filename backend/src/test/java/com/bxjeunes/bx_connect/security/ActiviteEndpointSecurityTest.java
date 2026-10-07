@@ -32,6 +32,32 @@ import static org.mockito.Mockito.verifyNoInteractions;
 @Import(SecurityConfig.class)
 class ActiviteEndpointSecurityTest {
 
+    @Test
+    @WithMockUser(username = "referent@test.invalid", roles = "REFERENT")
+    void publicationTransmetLaVisibiliteExplicite() throws Exception {
+        mockMvc.perform(patch("/api/activites/1/statut")
+                        .param("statut", "PUBLIEE").param("visibilite", "MEMBRES"))
+                .andExpect(status().isOk());
+        org.mockito.Mockito.verify(activiteService).changerStatut(1L,
+                com.bxjeunes.bx_connect.entity.StatutActivite.PUBLIEE,
+                com.bxjeunes.bx_connect.entity.VisibiliteActivite.MEMBRES, "referent@test.invalid");
+    }
+
+    @Test
+    @WithMockUser(roles = "REFERENT")
+    void visibiliteInconnueEstRefuseeAvantLeService() throws Exception {
+        mockMvc.perform(patch("/api/activites/1/statut")
+                        .param("statut", "PUBLIEE").param("visibilite", "PRIVEE"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(activiteService);
+    }
+
+    @Test
+    void optionsVisiteurNeSontPasAuthentifiees() throws Exception {
+        mockMvc.perform(get("/api/activites/options-filtres")).andExpect(status().isOk());
+        org.mockito.Mockito.verify(activiteService).getOptionsFiltre(null);
+    }
+
     @Autowired
     private MockMvc mockMvc;
 

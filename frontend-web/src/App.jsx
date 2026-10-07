@@ -1,3 +1,5 @@
+import MesFactures from './pages/paiement/MesFactures'
+import ActivityPaymentReturn from './pages/paiement/ActivityPaymentReturn'
 import { useEffect, useState } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
@@ -27,7 +29,6 @@ import SuperAdminAccountSecurity from './pages/super-admin/SuperAdminAccountSecu
 import Groupes          from './pages/groupes/Groupes'
 import GroupeEspace     from './pages/groupes/GroupeEspace'
 import Messagerie       from './pages/messagerie/Messagerie'
-import BusinessConversations from './pages/messagerie/BusinessConversations'
 
 // Pages Partenaire
 import PartenaireSpace from './pages/partenaire/PartenaireSpace'
@@ -53,7 +54,7 @@ import SuperAdminRoute      from './routes/SuperAdminRoute'
 import SuperAdminDashboard  from './pages/super-admin/SuperAdminDashboard'
 import SuperAdminAdmins     from './pages/super-admin/SuperAdminAdmins'
 import SuperAdminLogs       from './pages/super-admin/SuperAdminLogs'
-import { getAuthenticatedRootRedirect, getDefaultRouteForRole } from './routes/roleRoutes'
+import { getDefaultRouteForRole } from './routes/roleRoutes'
 import { trackDashboardView } from './monitoring/analytics'
 
 // ─── Guards ───────────────────────────────────────────────────────────────────
@@ -108,14 +109,6 @@ function PublicOrMembreRoute({ children }) {
   return children
 }
 
-function ActivityCatalogRoute({ children }) {
-  const { isAuthenticated, isMembre, isAdmin, isReferent, isSuperAdmin, user } = useAuth()
-  if (isAuthenticated && !isMembre && !isAdmin && !isReferent && !isSuperAdmin) {
-    return <Navigate to={getDefaultRouteForRole(user?.role)} replace />
-  }
-  return children
-}
-
 function PublicOnlyRoute({ children }) {
   const { isAuthenticated, user } = useAuth()
   if (isAuthenticated) return <Navigate to={getDefaultRouteForRole(user?.role)} replace />
@@ -148,7 +141,7 @@ export default function App() {
   const { isAuthenticated, isRestoringSession, user } = useAuth()
   const { t } = useTranslation()
   const location = useLocation()
-  const showAppShell = isAuthenticated && !PUBLIC_ONLY_PATHS.has(location.pathname)
+  const showAppShell = isAuthenticated && location.pathname !== '/' && !PUBLIC_ONLY_PATHS.has(location.pathname)
   const [contextSidebarCollapsed, setContextSidebarCollapsed] = useState(() => {
     if (typeof window === 'undefined') return false
     const stored = window.localStorage.getItem('bx-app-sidebar-collapsed')
@@ -181,13 +174,6 @@ export default function App() {
     return <div role="status" className="grid min-h-screen place-items-center bg-[#f5f7fb] text-slate-600">{t('common.loading', { defaultValue: 'Chargement...' })}</div>
   }
 
-  const authenticatedRootRedirect = getAuthenticatedRootRedirect({
-    isAuthenticated,
-    pathname: location.pathname,
-    role: user?.role,
-  })
-  if (authenticatedRootRedirect) return <Navigate to={authenticatedRootRedirect} replace />
-
   return (
     <>
       {showAppShell && (
@@ -208,8 +194,8 @@ export default function App() {
           <Route path="/mot-de-passe-oublie" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
           <Route path="/forgot-password" element={<Navigate to="/mot-de-passe-oublie" replace />} />
           <Route path="/reinitialiser-mot-de-passe" element={<ResetPassword />} />
-          <Route path="/activites"     element={<SuperAdminExcludedRoute><ActivityCatalogRoute><Activites /></ActivityCatalogRoute></SuperAdminExcludedRoute>} />
-          <Route path="/activites/:id" element={<SuperAdminExcludedRoute><ActivityCatalogRoute><ActiviteDetail /></ActivityCatalogRoute></SuperAdminExcludedRoute>} />
+          <Route path="/activites"     element={<Activites key={user?.email || user?.role || 'visitor'} />} />
+          <Route path="/activites/:id" element={<ActiviteDetail key={user?.email || user?.role || 'visitor'} />} />
           <Route path="/groupes"       element={<SuperAdminExcludedRoute><PublicOrMembreRoute><Groupes /></PublicOrMembreRoute></SuperAdminExcludedRoute>} />
           <Route path="/groupes/:id"   element={<SuperAdminExcludedRoute><GroupeEspace /></SuperAdminExcludedRoute>} />
           <Route path="/projets/:id"   element={<SuperAdminExcludedRoute><Projets /></SuperAdminExcludedRoute>} />
@@ -221,17 +207,20 @@ export default function App() {
 
           {/* ── Pages membres connectés ── */}
           <Route path="/messagerie"    element={<MembreRoute><Messagerie /></MembreRoute>} />
+          <Route path="/mes-factures" element={<MembreRoute><MesFactures /></MembreRoute>} />
           <Route path="/dashboard"     element={<MembreRoute><Dashboard /></MembreRoute>} />
           <Route path="/profil"        element={<PrivateRoute><AccountRoute /></PrivateRoute>} />
           <Route path="/notifications" element={<SuperAdminExcludedRoute><PrivateRoute><Notifications /></PrivateRoute></SuperAdminExcludedRoute>} />
 
           {/* MVP1.5 / masqué volontairement */}
           <Route path="/prestations" element={<MvpHiddenRoute />} />
+          <Route path="/paiement/succes" element={<PrivateRoute><ActivityPaymentReturn /></PrivateRoute>} />
+          <Route path="/paiement/annule" element={<PrivateRoute><ActivityPaymentReturn /></PrivateRoute>} />
           <Route path="/paiement/*" element={<MvpHiddenRoute />} />
 
           {/* ── Pages Partenaire ── */}
           <Route path="/partenaire" element={<PartenaireRoute><PartenaireSpace /></PartenaireRoute>} />
-          <Route path="/partenaire/conversations" element={<PartenaireRoute><BusinessConversations mode="partenaire" /></PartenaireRoute>} />
+          <Route path="/partenaire/conversations/*" element={<PartenaireRoute><Navigate to="/partenaire" replace /></PartenaireRoute>} />
 
           {/* ── Pages Référent ── */}
           <Route path="/referent"             element={<Navigate to="/referent/dashboard" replace />} />
@@ -243,7 +232,7 @@ export default function App() {
           <Route path="/referent/activites/:id/presences" element={<ReferentRoute><PresenceSheet backTo="/referent/activites" tone="teal" /></ReferentRoute>} />
           <Route path="/referent/projets"     element={<ReferentRoute><ReferentProjets /></ReferentRoute>} />
           <Route path="/referent/messagerie"  element={<ReferentRoute><ReferentMessagerie /></ReferentRoute>} />
-          <Route path="/referent/conversations" element={<ReferentRoute><BusinessConversations mode="referent" /></ReferentRoute>} />
+          <Route path="/referent/conversations/*" element={<ReferentRoute><Navigate to="/referent/dashboard" replace /></ReferentRoute>} />
           <Route path="/referent/annonces"    element={<ReferentRoute><Annonces /></ReferentRoute>} />
 
           {/* MVP1.5 / masqué volontairement */}
@@ -255,14 +244,15 @@ export default function App() {
           {/* ── Pages Admin ── */}
           <Route path="/admin"               element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/dashboard"     element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-          <Route path="/admin/utilisateurs"  element={<AdminRoute><AdminUtilisateurs /></AdminRoute>} />
+          <Route path="/admin/utilisateurs"  element={<AdminRoute><AdminUtilisateurs key="users" /></AdminRoute>} />
+          <Route path="/admin/partenaires"   element={<AdminRoute><AdminUtilisateurs key="partners" fixedRole="PARTENAIRE" /></AdminRoute>} />
           <Route path="/admin/referents"     element={<AdminRoute><AdminReferents /></AdminRoute>} />
           <Route path="/admin/activites"     element={<AdminRoute><AdminActivites /></AdminRoute>} />
           <Route path="/admin/activites/:id/presences" element={<AdminRoute><PresenceSheet backTo="/admin/activites" /></AdminRoute>} />
           <Route path="/admin/projets"       element={<AdminRoute><AdminProjets /></AdminRoute>} />
           <Route path="/admin/groupes"       element={<AdminRoute><AdminGroupes /></AdminRoute>} />
           <Route path="/admin/annonces"      element={<AdminRoute><Annonces /></AdminRoute>} />
-          <Route path="/admin/conversations" element={<SuperAdminExcludedRoute><AdminOrSuperAdminRoute><BusinessConversations mode="admin" /></AdminOrSuperAdminRoute></SuperAdminExcludedRoute>} />
+          <Route path="/admin/conversations/*" element={<SuperAdminExcludedRoute><AdminOrSuperAdminRoute><Navigate to="/admin/dashboard" replace /></AdminOrSuperAdminRoute></SuperAdminExcludedRoute>} />
           <Route path="/admin/soutiens"      element={<AdminRoute><AdminSoutiens /></AdminRoute>} />
 
           {/* MVP1.5 / masqué volontairement */}

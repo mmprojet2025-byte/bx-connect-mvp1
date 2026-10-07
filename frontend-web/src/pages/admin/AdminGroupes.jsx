@@ -1,3 +1,5 @@
+import { userFriendlyError } from '../../utils/userFriendlyError'
+import GroupInformationForm from '../../components/GroupInformationForm'
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -7,7 +9,6 @@ import StatusBadge from '../../components/StatusBadge';
 import GroupAvatar from '../../components/GroupAvatar';
 import AppIcon from '../../components/ui/AppIcons';
 import PageHeader from '../../components/ui/PageHeader';
-import LocationPicker from '../../components/location/LocationPicker';
 import EmptyState from '../../components/ui/EmptyState';
 import ErrorState from '../../components/ui/ErrorState';
 import LoadingState from '../../components/ui/LoadingState';
@@ -169,6 +170,16 @@ export default function AdminGroupes() {
     }
   };
 
+  const handleArchiver = async (groupe) => {
+    if (!window.confirm(t('groupWorkflow.archiveConfirm'))) return;
+    try {
+      await api.delete(`/groupes/${groupe.id}`);
+      setSelectedGroup(null);
+      await fetchGroupes();
+      setMessage(t('groupWorkflow.archived'));
+    } catch (err) { setError(userFriendlyError(err, t('groupWorkflow.error'))); }
+  };
+
   const handleAssignerReferent = async (groupeId, referentId) => {
     if (!referentId) return;
     setAssigningId(groupeId);
@@ -302,16 +313,11 @@ export default function AdminGroupes() {
               onChange={value => handleFormChange('theme', value)}
             />
             <Input
-              label={t('admin.maxCapacity')}
+              label={t('groupWorkflow.capacity')}
               value={groupeForm.capaciteMax}
               onChange={value => handleFormChange('capaciteMax', value)}
               type="number"
               min="0"
-            />
-            <Input
-              label={t('admin.meetingAddress')}
-              value={groupeForm.adresseReunion}
-              onChange={value => handleFormChange('adresseReunion', value)}
             />
             <Input
               label={t('admin.commune')}
@@ -321,6 +327,7 @@ export default function AdminGroupes() {
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-1">{t('admin.activeReferent')}</label>
               <select
+                aria-label={t('admin.activeReferent')}
                 value={groupeForm.referentId}
                 onChange={e => handleFormChange('referentId', e.target.value)}
                 required
@@ -335,53 +342,6 @@ export default function AdminGroupes() {
                 <p className="text-xs text-red-600 mt-1">{t('admin.noActiveReferent')}</p>
               )}
             </div>
-            <details className="md:col-span-4 rounded-xl border border-slate-100 bg-slate-50 p-3">
-              <summary className="cursor-pointer text-xs font-black uppercase tracking-wide text-slate-500">
-                {t('admin.advancedLocation')}
-              </summary>
-              <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <LocationPicker
-                  address={groupeForm.adresseReunion}
-                  commune={groupeForm.commune}
-                  latitude={groupeForm.latitude}
-                  longitude={groupeForm.longitude}
-                  onCoordinatesChange={(latitude, longitude) => setGroupeForm(current => ({ ...current, latitude, longitude }))}
-                />
-                <div className="grid gap-3">
-                  <Input
-                    label={t('admin.latitude')}
-                    value={groupeForm.latitude}
-                    onChange={value => handleFormChange('latitude', value)}
-                    type="number"
-                    step="any"
-                  />
-                  <Input
-                    label={t('admin.longitude')}
-                    value={groupeForm.longitude}
-                    onChange={value => handleFormChange('longitude', value)}
-                    type="number"
-                    step="any"
-                  />
-                </div>
-              </div>
-            </details>
-            <details className="md:col-span-4 rounded-xl border border-slate-100 bg-slate-50 p-3">
-              <summary className="cursor-pointer text-xs font-black uppercase tracking-wide text-slate-500">
-                {t('admin.advancedSettings')}
-              </summary>
-              <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <TextArea
-                  label={t('activities.form_description')}
-                  value={groupeForm.description}
-                  onChange={value => handleFormChange('description', value)}
-                />
-                <TextArea
-                  label={t('admin.objective')}
-                  value={groupeForm.objectif}
-                  onChange={value => handleFormChange('objectif', value)}
-                />
-              </div>
-            </details>
             <div className="md:col-span-4 flex justify-end">
               <button
                 type="submit"
@@ -612,6 +572,8 @@ export default function AdminGroupes() {
             assigning={assigningId === selectedGroup.id}
             t={t}
             onClose={() => setSelectedGroup(null)}
+            onSaved={(updated) => { setSelectedGroup(updated); setGroupes(current => current.map(g => g.id === updated.id ? updated : g)); }}
+            onArchive={() => handleArchiver(selectedGroup)}
             onAssign={(referentId) => handleAssignerReferent(selectedGroup.id, referentId)}
             onValidate={() => handleValider(selectedGroup.id)}
             onRefuse={(event) => openRefusalDialog(selectedGroup.id, event.currentTarget)}
@@ -665,6 +627,8 @@ function GroupFollowUpDrawer({
   assigning,
   t,
   onClose,
+  onSaved,
+  onArchive,
   onAssign,
   onValidate,
   onRefuse,
@@ -713,6 +677,8 @@ function GroupFollowUpDrawer({
           )}
 
           <DrawerSection title={t('admin.availableActions')} icon="Settings">
+            <GroupInformationForm key={groupe.id} groupe={groupe} onSaved={onSaved} />
+            {groupe.statut !== 'ARCHIVE' && <button type="button" onClick={onArchive} className="my-3 rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-700">{t('groupWorkflow.archive')}</button>}
             <div className="grid gap-2 sm:grid-cols-2">
               <Link to={`/groupes/${groupe.id}`} className="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                 <AppIcon name="Eye" className="h-4 w-4" />
@@ -890,6 +856,7 @@ function Input({ label, value, onChange, type = 'text', required = false, min, s
     <div>
       <label className="block text-sm font-semibold text-gray-700 mb-1">{label}</label>
       <input
+        aria-label={label}
         type={type}
         min={min}
         step={step}
@@ -897,20 +864,6 @@ function Input({ label, value, onChange, type = 'text', required = false, min, s
         onChange={e => onChange(e.target.value)}
         required={required}
         className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-      />
-    </div>
-  );
-}
-
-function TextArea({ label, value, onChange }) {
-  return (
-    <div>
-      <label className="block text-sm font-semibold text-gray-700 mb-1">{label}</label>
-      <textarea
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        rows={3}
-        className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
       />
     </div>
   );

@@ -23,6 +23,11 @@ public class GlobalExceptionHandler {
         this.environment = environment;
     }
 
+    @ExceptionHandler(com.bxjeunes.bx_connect.exception.ActivityRuleException.class)
+    public ResponseEntity<Map<String, Object>> handleActivityRule(com.bxjeunes.bx_connect.exception.ActivityRuleException ex) {
+        return ResponseEntity.badRequest().body(Map.of("code", ex.getCode(), "message", "Action indisponible pour cette activité."));
+    }
+
     // ─── Ressource introuvable (404) ─────────────────────────────────────────
     // Toute RuntimeException dont le message contient "introuvable" → 404
     @ExceptionHandler(RuntimeException.class)

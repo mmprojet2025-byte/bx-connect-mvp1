@@ -17,6 +17,7 @@ public class AdminGroupeRequest {
     private String commune;
     private BigDecimal latitude;
     private BigDecimal longitude;
+    @jakarta.validation.constraints.Min(0)
     private int capaciteMax;
 
     @NotNull(message = "Le referent est obligatoire")

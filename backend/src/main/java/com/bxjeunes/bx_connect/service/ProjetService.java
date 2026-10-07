@@ -26,6 +26,9 @@ public class ProjetService {
     private static final List<StatutProjet> STATUTS_DIFFUSABLES =
             List.of(StatutProjet.APPROUVE, StatutProjet.EN_COURS, StatutProjet.TERMINE);
 
+    @org.springframework.beans.factory.annotation.Value("${upload.base-url:http://localhost:8080/uploads}")
+    private String uploadBaseUrl = "http://localhost:8080/uploads";
+
     private final ProjetRepository projetRepository;
     private final ParticipationProjetRepository participationRepository;
     private final CommentaireProjetRepository commentaireRepository;
@@ -57,8 +60,8 @@ public class ProjetService {
 
     public List<ProjetResponse> listerProjetsVisibles(String emailUser) {
         if (emailUser == null) {
-            return projetRepository.findByStatutInAndVisibilite(
-                            STATUTS_DIFFUSABLES, VisibiliteProjet.PUBLIC)
+            return projetRepository.findByStatutInAndVisibiliteIn(
+                            STATUTS_DIFFUSABLES, List.of(VisibiliteProjet.GROUPE, VisibiliteProjet.PUBLIC))
                     .stream()
                     .map(ProjetResponse::fromEntity)
                     .collect(Collectors.toList());
@@ -67,8 +70,8 @@ public class ProjetService {
         User user = userRepository.findByEmail(emailUser)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
         if (user.getRole() == Role.SUPER_ADMIN) {
-            return projetRepository.findByStatutInAndVisibilite(
-                            STATUTS_DIFFUSABLES, VisibiliteProjet.PUBLIC)
+            return projetRepository.findByStatutInAndVisibiliteIn(
+                            STATUTS_DIFFUSABLES, List.of(VisibiliteProjet.GROUPE, VisibiliteProjet.PUBLIC))
                     .stream()
                     .map(ProjetResponse::fromEntity)
                     .collect(Collectors.toList());
@@ -84,7 +87,7 @@ public class ProjetService {
         var pageable = PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation"));
         if (emailUser == null) {
             return PagedResponse.fromPage(projetRepository
-                    .findByStatutInAndVisibilite(STATUTS_DIFFUSABLES, VisibiliteProjet.PUBLIC, pageable)
+                    .findByStatutInAndVisibiliteIn(STATUTS_DIFFUSABLES, List.of(VisibiliteProjet.GROUPE, VisibiliteProjet.PUBLIC), pageable)
                     .map(ProjetResponse::fromEntity));
         }
 
@@ -93,7 +96,7 @@ public class ProjetService {
 
         if (user.getRole() == Role.SUPER_ADMIN) {
             return PagedResponse.fromPage(projetRepository
-                    .findByStatutInAndVisibilite(STATUTS_DIFFUSABLES, VisibiliteProjet.PUBLIC, pageable)
+                    .findByStatutInAndVisibiliteIn(STATUTS_DIFFUSABLES, List.of(VisibiliteProjet.GROUPE, VisibiliteProjet.PUBLIC), pageable)
                     .map(ProjetResponse::fromEntity));
         }
 
@@ -115,7 +118,7 @@ public class ProjetService {
                             groupeId,
                             VisibiliteProjet.GROUPE,
                             STATUTS_DIFFUSABLES,
-                            List.of(VisibiliteProjet.COMMUNAUTE, VisibiliteProjet.PARTENAIRES, VisibiliteProjet.PUBLIC),
+                            List.of(VisibiliteProjet.GROUPE, VisibiliteProjet.PUBLIC),
                             pageable)
                     .map(ProjetResponse::fromEntity));
         }
@@ -125,7 +128,7 @@ public class ProjetService {
                     .findVisibleForReferent(
                             user.getId(),
                             STATUTS_DIFFUSABLES,
-                            List.of(VisibiliteProjet.COMMUNAUTE, VisibiliteProjet.PARTENAIRES, VisibiliteProjet.PUBLIC),
+                            List.of(VisibiliteProjet.GROUPE, VisibiliteProjet.PUBLIC),
                             pageable)
                     .map(ProjetResponse::fromEntity));
         }
@@ -135,7 +138,7 @@ public class ProjetService {
                     .findVisibleForPartenaire(
                             user.getId(),
                             STATUTS_DIFFUSABLES,
-                            List.of(VisibiliteProjet.PARTENAIRES, VisibiliteProjet.PUBLIC),
+                            List.of(VisibiliteProjet.GROUPE, VisibiliteProjet.PUBLIC),
                             pageable)
                     .map(ProjetResponse::fromEntity));
         }
@@ -178,8 +181,8 @@ public class ProjetService {
             User user = userRepository.findByEmail(emailUser)
                     .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
             if (user.getRole() == Role.SUPER_ADMIN) {
-                return projetRepository.findByIdAndStatutInAndVisibilite(
-                                id, STATUTS_DIFFUSABLES, VisibiliteProjet.PUBLIC)
+                return projetRepository.findByIdAndStatutInAndVisibiliteIn(
+                                id, STATUTS_DIFFUSABLES, List.of(VisibiliteProjet.GROUPE, VisibiliteProjet.PUBLIC))
                         .map(ProjetResponse::fromEntity)
                         .orElseThrow(() -> new RuntimeException("Projet introuvable"));
             }
@@ -200,7 +203,10 @@ public class ProjetService {
         projet.setTitre(request.getTitre());
         projet.setDescription(request.getDescription());
         projet.setObjectifs(request.getObjectifs());
+        ProjetParticipationRules.apply(projet, request, uploadBaseUrl);
         projet.setBudgetDemande(request.getBudgetDemande());
+        verifierPrixParticipation(request.getPrixParticipation());
+        projet.setPrixParticipation(request.getPrixParticipation());
         projet.setPorteur(porteur);
         projet.setStatut(StatutProjet.BROUILLON);
         projet.setVisibilite(request.getVisibilite());
@@ -313,7 +319,10 @@ public class ProjetService {
         projet.setTitre(request.getTitre());
         projet.setDescription(request.getDescription());
         projet.setObjectifs(request.getObjectifs());
+        ProjetParticipationRules.apply(projet, request, uploadBaseUrl);
         projet.setBudgetDemande(request.getBudgetDemande());
+        verifierPrixParticipation(request.getPrixParticipation());
+        projet.setPrixParticipation(request.getPrixParticipation());
         projet.setVisibilite(request.getVisibilite());
 
         if (user.getRole() == Role.ADMIN) {
@@ -348,15 +357,24 @@ public class ProjetService {
         if (referent.getRole() != Role.REFERENT || !referentEncadreProjet(referent, projet)) {
             throw new AccessDeniedException("Vous ne pouvez modifier que les projets des groupes que vous encadrez.");
         }
-        if (!estPorteur(referent, projet)) {
-            throw new AccessDeniedException("Seul le porteur peut corriger ce projet.");
+        if (projet.getStatut() == StatutProjet.SOUMIS) {
+            if (!java.util.Objects.equals(request.getGroupeId(), projet.getGroupe().getId())) {
+                throw new AccessDeniedException("Le groupe d'un projet soumis ne peut pas être changé lors de sa relecture.");
+            }
+        } else {
+            if (!estPorteur(referent, projet)) {
+                throw new AccessDeniedException("Vous ne pouvez corriger le projet d'un membre que pendant sa relecture.");
+            }
+            verifierStatutModifiable(projet);
         }
-        verifierStatutModifiable(projet);
 
         projet.setTitre(request.getTitre());
         projet.setDescription(request.getDescription());
         projet.setObjectifs(request.getObjectifs());
+        ProjetParticipationRules.apply(projet, request, uploadBaseUrl);
         projet.setBudgetDemande(request.getBudgetDemande());
+        verifierPrixParticipation(request.getPrixParticipation());
+        projet.setPrixParticipation(request.getPrixParticipation());
         projet.setVisibilite(request.getVisibilite());
         projet.setGroupe(chargerGroupeEncadre(request.getGroupeId(), referent));
         verifierGroupeActifEtValide(projet.getGroupe());
@@ -562,23 +580,34 @@ public class ProjetService {
 
     // ─── Rejoindre un projet (M26) ────────────────────────────────────────────
 
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public void rejoindrProjet(Long projetId, String emailUser) {
         User user = userRepository.findByEmail(emailUser)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
-        Projet projet = projetRepository.findById(projetId)
+        Projet projet = projetRepository.findByIdForUpdate(projetId)
                 .orElseThrow(() -> new RuntimeException("Projet introuvable"));
 
         if (user.getRole() != Role.MEMBRE) {
             throw new AccessDeniedException("Seuls les membres peuvent rejoindre un projet.");
         }
         verifierAccesProjet(projet, user, ActionProjet.PARTICIPER);
-        if (projet.getGroupe() == null || !membreAppartientAuGroupeActif(user, projet.getGroupe())) {
+        if (!List.of(StatutProjet.APPROUVE, StatutProjet.EN_COURS).contains(projet.getStatut())) {
+            throw new AccessDeniedException("Seuls les projets approuves ou en cours peuvent etre rejoints.");
+        }
+        if (projet.getVisibilite() != VisibiliteProjet.PUBLIC
+                && (projet.getGroupe() == null || !membreAppartientAuGroupeActif(user, projet.getGroupe()))) {
             throw new AccessDeniedException("Vous ne pouvez rejoindre que les projets de votre groupe actif.");
+        }
+        if (projet.getPrixParticipation().signum() > 0) {
+            throw new AccessDeniedException("Ce projet nécessite un paiement avant de participer.");
         }
         if (participationRepository.existsByUserIdAndProjetId(user.getId(), projetId)) {
             throw new RuntimeException("Vous participez déjà à ce projet");
         }
 
+        ProjetParticipationRules.checkOpen(projet);
+        ProjetParticipationRules.checkCapacity(projet,
+                participationRepository.countByProjetId(projetId) + participationRepository.countPendingPayments(projetId));
         ParticipationProjet participation = new ParticipationProjet(user, projet);
         participationRepository.save(participation);
         if (projet.getPorteur() != null && !projet.getPorteur().getId().equals(user.getId())) {
@@ -604,7 +633,7 @@ public class ProjetService {
         Projet projet = projetRepository.findById(projetId)
                 .orElseThrow(() -> new RuntimeException("Projet introuvable"));
 
-        verifierAccesProjet(projet, user, ActionProjet.LIRE);
+        verifierAccesCommentaires(projet, emailUser);
         CommentaireProjet commentaire = new CommentaireProjet(request.getContenu(), user, projet);
         CommentaireProjet saved = commentaireRepository.save(commentaire);
         if (projet.getPorteur() != null && !projet.getPorteur().getId().equals(user.getId())) {
@@ -630,7 +659,7 @@ public class ProjetService {
         refuserCommentairesSuperAdmin(emailUser);
         Projet projet = projetRepository.findById(projetId)
                 .orElseThrow(() -> new RuntimeException("Projet introuvable"));
-        verifierAccesProjet(projet, emailUser);
+        verifierAccesCommentaires(projet, emailUser);
         return commentaireRepository.findByProjetIdOrderByDateCommentaireAsc(projetId)
                 .stream()
                 .map(CommentaireResponse::fromEntity)
@@ -646,7 +675,7 @@ public class ProjetService {
         refuserCommentairesSuperAdmin(emailUser);
         Projet projet = projetRepository.findById(projetId)
                 .orElseThrow(() -> new RuntimeException("Projet introuvable"));
-        verifierAccesProjet(projet, emailUser);
+        verifierAccesCommentaires(projet, emailUser);
         return PagedResponse.fromPage(commentaireRepository
                 .findByProjetId(
                         projetId,
@@ -698,6 +727,17 @@ public class ProjetService {
                 .collect(Collectors.toList());
     }
 
+    private void verifierAccesCommentaires(Projet projet, String emailUser) {
+        verifierAccesProjet(projet, emailUser);
+        if (projet.getVisibilite() != VisibiliteProjet.GROUPE) return;
+        if (emailUser == null) throw new AccessDeniedException("Discussion reservee au groupe.");
+        User user = userRepository.findByEmail(emailUser).orElseThrow();
+        if (user.getRole() == Role.ADMIN || estPorteur(user, projet)
+                || (user.getRole() == Role.REFERENT && referentEncadreProjet(user, projet))
+                || (user.getRole() == Role.MEMBRE && membreAppartientAuGroupeActif(user, projet.getGroupe()))) return;
+        throw new AccessDeniedException("Discussion reservee au groupe.");
+    }
+
     private void verifierAccesProjet(Projet projet, String emailUser) {
         if (emailUser == null) {
             if (estProjetPublic(projet)) {
@@ -722,12 +762,12 @@ public class ProjetService {
     }
 
     private boolean estProjetPublic(Projet projet) {
-        return projet.getVisibilite() == VisibiliteProjet.PUBLIC
+        return (projet.getVisibilite() == VisibiliteProjet.PUBLIC || projet.getVisibilite() == VisibiliteProjet.GROUPE)
                 && STATUTS_DIFFUSABLES.contains(projet.getStatut());
     }
 
     private boolean peutConsulterProjet(Projet projet, User user) {
-        if (user.getRole() == Role.ADMIN) {
+        if (estProjetPublic(projet) || user.getRole() == Role.ADMIN) {
             return true;
         }
         if (estPorteur(user, projet)) {
@@ -836,13 +876,24 @@ public class ProjetService {
     private void verifierVisibiliteCreateur(User user, VisibiliteProjet visibilite) {
         if ((user.getRole() == Role.MEMBRE || user.getRole() == Role.REFERENT)
                 && visibilite != VisibiliteProjet.GROUPE
-                && visibilite != VisibiliteProjet.COMMUNAUTE) {
+                && visibilite != VisibiliteProjet.PUBLIC) {
             throw new AccessDeniedException(
-                    "Les membres et referents peuvent choisir uniquement GROUPE ou COMMUNAUTE.");
+                    "Les membres et referents peuvent choisir uniquement GROUPE ou PUBLIC.");
+        }
+    }
+
+    private void verifierPrixParticipation(java.math.BigDecimal prix) {
+        if (prix == null || prix.signum() < 0 || prix.scale() > 2
+                || prix.compareTo(new java.math.BigDecimal("999999.99")) > 0
+                || (prix.signum() > 0 && prix.compareTo(new java.math.BigDecimal("0.50")) < 0)) {
+            throw new IllegalArgumentException("Prix invalide : gratuit ou de 0,50 à 999999,99 EUR, deux décimales maximum.");
         }
     }
 
     private void verifierCoherenceGroupeVisibilite(Projet projet) {
+        if (projet.getVisibilite() != VisibiliteProjet.GROUPE && projet.getVisibilite() != VisibiliteProjet.PUBLIC) {
+            throw new AccessDeniedException("Les types de projet autorises sont GROUPE et PUBLIC.");
+        }
         if (projet.getVisibilite() == VisibiliteProjet.GROUPE && projet.getGroupe() == null) {
             throw new RuntimeException("Un projet de visibilite GROUPE doit etre rattache a un groupe.");
         }

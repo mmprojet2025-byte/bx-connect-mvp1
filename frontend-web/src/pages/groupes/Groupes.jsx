@@ -101,8 +101,8 @@ export default function Groupes() {
     }, {})
   }, [adhesions])
 
-  const adhesionActive = adhesions.find((adhesion) => adhesion.statut === 'ACCEPTE')
-  const adhesionEnAttente = adhesions.find((adhesion) => adhesion.statut === 'EN_ATTENTE')
+  const adhesionActive = adhesions.find((adhesion) => adhesion.statut === 'ACCEPTE' && adhesion.groupeActif !== false)
+  const adhesionEnAttente = adhesions.find((adhesion) => adhesion.statut === 'EN_ATTENTE' && adhesion.groupeActif !== false)
   const bloqueNouvelleDemande = !!adhesionActive || !!adhesionEnAttente
 
   const groupesFiltres = groupes.filter((groupe) =>
@@ -273,6 +273,8 @@ function GroupCard({ groupe, adhesion, isAuthenticated, isMembre, bloqueNouvelle
               {t('groups.leave_btn')}
             </button>
           </div>
+        ) : adhesion?.statut === 'SUSPENDU' ? (
+          <div className="text-sm text-amber-800"><p>{t('groupWorkflow.suspendedHelp')}</p><button type="button" onClick={onLeave} disabled={actionLoading} className="mt-2 underline">{t('groups.leave_btn')}</button></div>
         ) : isPending ? (
           <button
             type="button"

@@ -5,6 +5,8 @@ const activity = {
   titre: 'Atelier public',
   categorie: 'Culture',
   statut: 'PUBLIEE',
+  visibilite: 'PUBLIC',
+  dateCreation: '2026-10-01T10:00:00',
   dateDebut: '2027-01-15T10:00:00Z',
   lieu: 'Bruxelles',
 }
@@ -45,6 +47,23 @@ test('affiche les activités lorsque l’API répond avec du contenu', async ({ 
 
   await expect(page.getByRole('heading', { name: 'Atelier public', exact: true })).toBeVisible()
   await expect(page.getByText('Aucune activité récente pour le moment.')).toHaveCount(0)
+})
+
+test('retient trois activités publiques triées par création puis identifiant décroissants', async ({ page }) => {
+  const activities = [
+    { ...activity, id: 9, titre: 'Ancienne', dateCreation: '2026-01-01T10:00:00' },
+    { ...activity, id: 2, titre: 'Deuxième', dateCreation: '2026-10-02T10:00:00' },
+    { ...activity, id: 10, titre: 'Privée', visibilite: 'MEMBRES', dateCreation: '2026-12-01T10:00:00' },
+    { ...activity, id: 3, titre: 'Première', dateCreation: '2026-10-02T10:00:00' },
+    { ...activity, id: 4, titre: 'Troisième', dateCreation: '2026-10-01T10:00:00' },
+    { ...activity, id: 11, titre: 'Brouillon', statut: 'BROUILLON', dateCreation: '2026-12-01T10:00:00' },
+  ]
+  await page.route('**/api/activites', route => route.fulfill({ json: activities }))
+  await page.goto('/')
+  const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Activités récentes', exact: true }) })
+  await expect(section.getByRole('heading', { level: 3 })).toHaveText(['Première', 'Deuxième', 'Troisième'])
+  await expect(section.getByText('Privée', { exact: true })).toHaveCount(0)
+  await expect(section.getByRole('link', { name: /Voir toutes les activités/ })).toBeVisible()
 })
 
 test('affiche un état vide lorsque l’API répond avec une liste vide', async ({ page }) => {

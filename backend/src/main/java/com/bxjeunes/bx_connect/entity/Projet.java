@@ -24,7 +24,17 @@ public class Projet {
     private String objectifs;
 
     @Column(precision = 10, scale = 2)
+
+    private Integer capacite;
+    private java.time.LocalDate dateExecution;
+    private java.time.LocalDate dateLimiteParticipation;
+    @Column(length = 500)
+    private String imageUrl;
+
     private BigDecimal budgetDemande;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal prixParticipation = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -95,6 +105,9 @@ public class Projet {
     public String getObjectifs() { return objectifs; }
     public void setObjectifs(String objectifs) { this.objectifs = objectifs; }
 
+    public BigDecimal getPrixParticipation() { return prixParticipation; }
+    public void setPrixParticipation(BigDecimal value) { prixParticipation = value; }
+
     public BigDecimal getBudgetDemande() { return budgetDemande; }
     public void setBudgetDemande(BigDecimal budgetDemande) { this.budgetDemande = budgetDemande; }
 
@@ -155,4 +168,13 @@ public class Projet {
 
     public List<CommentaireProjet> getCommentaires() { return commentaires; }
     public void setCommentaires(List<CommentaireProjet> commentaires) { this.commentaires = commentaires; }
+
+    public Integer getCapacite() { return capacite; }
+    public void setCapacite(Integer value) { capacite = value; }
+    public java.time.LocalDate getDateExecution() { return dateExecution; }
+    public void setDateExecution(java.time.LocalDate value) { dateExecution = value; }
+    public java.time.LocalDate getDateLimiteParticipation() { return dateLimiteParticipation; }
+    public void setDateLimiteParticipation(java.time.LocalDate value) { dateLimiteParticipation = value; }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String value) { imageUrl = value; }
 }

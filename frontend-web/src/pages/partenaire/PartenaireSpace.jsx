@@ -613,7 +613,7 @@ function PartnerWorkspaceShell({
     activites: {
       eyebrow: t('partnerSpace.openActivities'),
       title: t('partnerSpace.openActivities'),
-      description: t('partnerSpace.openActivitiesHint', { defaultValue: 'Activités actuellement ouvertes au soutien financier.' }),
+      description: t('partnerSpace.openActivitiesHint', { defaultValue: 'Consultez les activités accessibles avec votre compte.' }),
     },
     soutiens: {
       eyebrow: t('partnerSpace.mySupports'),
@@ -885,14 +885,14 @@ function ProjectsActivitiesPanel({
 
       {showActivities && <SectionCard
         title={t('partnerSpace.openActivities')}
-        subtitle={t('partnerSpace.openActivitiesHint', { defaultValue: 'Activités actuellement ouvertes au soutien financier.' })}
+        subtitle={t('partnerSpace.openActivitiesHint', { defaultValue: 'Consultez les activités accessibles avec votre compte.' })}
       >
         {sectionErrors.activites && <SectionLoadError message={sectionErrors.activites} />}
         {activites.length === 0 ? (
           <EmptyState
             icon="Calendar"
             title={t('partnerSpace.noOpenActivities')}
-            description={t('partnerSpace.noOpenActivitiesDesc', { defaultValue: 'Aucune activité n’est ouverte au soutien pour le moment.' })}
+            description={t('partnerSpace.noOpenActivitiesDesc', { defaultValue: 'Aucune activité disponible pour le moment.' })}
           />
         ) : (
           <div className="grid gap-4">
@@ -908,7 +908,7 @@ function ProjectsActivitiesPanel({
                 <div className="p-4">
                   <div className="mb-2 flex items-start justify-between gap-3">
                     <h3 className="min-w-0 truncate font-black text-slate-950">
-                      {safeText(a.titre, t('activities.titleFallback', { defaultValue: 'Activité' }))}
+                      <Link to={`/activites/${a.id}`} className="hover:underline">{safeText(a.titre, t('activities.titleFallback', { defaultValue: 'Activité' }))}</Link>
                     </h3>
                     {a.statut && (
                       <StatusBadge status={a.statut}>
@@ -920,7 +920,7 @@ function ProjectsActivitiesPanel({
                   <div className="mb-3 flex flex-wrap gap-3 text-xs font-semibold text-slate-500">
                     {a.lieu && <InlineIconLabel icon="MapPin">{a.lieu}</InlineIconLabel>}
                     {a.dateDebut && <InlineIconLabel icon="Calendar">{formatDate(a.dateDebut, language)}</InlineIconLabel>}
-                    <InlineIconLabel icon="CheckCircle">{t('partnerSpace.receivedSupports')}: {formatEuros(a.totalSoutiensRecus)}</InlineIconLabel>
+
                   </div>
                 </div>
               </article>
@@ -1301,7 +1301,7 @@ function PartnerActions({ mesSoutiens, onSupport, t }) {
             : t('partnerSpace.noSupports')}
         </p>
         <p className="mt-1 text-sm text-slate-500">
-          {t('partnerSpace.actionHint', { defaultValue: 'Choisissez “Projets ouverts” ou “Activités ouvertes” dans les onglets pour cibler votre soutien.' })}
+          {t('partnerSpace.actionHint', { defaultValue: 'Choisissez « Projets ouverts » pour soutenir un projet.' })}
         </p>
       </div>
     </section>

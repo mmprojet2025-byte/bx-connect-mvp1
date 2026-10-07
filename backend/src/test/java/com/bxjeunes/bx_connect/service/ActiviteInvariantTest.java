@@ -30,8 +30,8 @@ class ActiviteInvariantTest {
 
     @BeforeEach
     void setUp() {
-        activityService = new ActiviteService(activities, users, registrations, notifications, audit);
-        registrationService = new InscriptionService(registrations, activities, users, notifications, audit);
+        activityService = new ActiviteService(activities, users, registrations, notifications, audit, mock(com.bxjeunes.bx_connect.repository.GroupeRepository.class), org.mockito.Mockito.mock(com.bxjeunes.bx_connect.repository.MembreGroupeRepository.class));
+        registrationService = new InscriptionService(registrations, activities, users, notifications, audit, org.mockito.Mockito.mock(com.bxjeunes.bx_connect.repository.MembreGroupeRepository.class));
         admin = new User(); admin.setId(1L); admin.setEmail("admin@test.invalid"); admin.setRole(Role.ADMIN);
     }
 
@@ -46,19 +46,19 @@ class ActiviteInvariantTest {
     }
 
     @Test
-    void creationRejectsIncoherentDatesAndPaidActivity() {
+    void creationRejectsIncoherentDatesAndInvalidPaidPrice() {
         ActiviteRequest invalidDates = validRequest();
         invalidDates.setDateFin(invalidDates.getDateDebut().minusMinutes(1));
         assertThatThrownBy(() -> activityService.creer(invalidDates, admin.getEmail())).hasMessageContaining("date de fin");
-        ActiviteRequest paid = validRequest(); paid.setGratuite(false); paid.setPrix(BigDecimal.TEN);
-        assertThatThrownBy(() -> activityService.creer(paid, admin.getEmail())).hasMessageContaining("payantes");
+        ActiviteRequest paid = validRequest(); paid.setGratuite(false); paid.setPrix(BigDecimal.ZERO);
+        assertThatThrownBy(() -> activityService.creer(paid, admin.getEmail())).hasMessageContaining("strictement positif");
     }
 
     @Test
     void legacyPaidPricingIsImmutableButGeneralFieldsMayChange() {
         Activite paid = activity(false); paid.setPrix(BigDecimal.TEN);
         ActiviteRequest request = validRequest(); request.setGratuite(false); request.setPrix(BigDecimal.TEN);
-        when(activities.findById(3L)).thenReturn(Optional.of(paid));
+        when(activities.findByIdForUpdate(3L)).thenReturn(Optional.of(paid));
         when(users.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
         when(activities.save(paid)).thenReturn(paid);
         activityService.modifier(3L, request, admin.getEmail());
@@ -79,17 +79,28 @@ class ActiviteInvariantTest {
     }
 
     @Test
+    void freeRegistrationRespectsOptionalDeadline() {
+        User member = new User(); member.setId(2L); member.setEmail("member@test.invalid"); member.setRole(Role.MEMBRE); member.setActif(true);
+        InscriptionRequest request = new InscriptionRequest(); request.setActiviteId(3L);
+        Activite activity = activity(true); activity.setDateDebut(LocalDateTime.now().plusDays(1));
+        when(users.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
+        when(activities.findByIdForUpdate(3L)).thenReturn(Optional.of(activity));
+        activity.setDateLimiteInscription(LocalDateTime.now().minusSeconds(1));
+        assertThatThrownBy(() -> registrationService.inscrire(request, member.getEmail())).hasMessageContaining("clôturées");
+    }
+
+    @Test
     void terminalStatusCannotTransition() {
         Activite activity = activity(true); activity.setStatut(StatutActivite.ANNULEE);
-        when(activities.findById(3L)).thenReturn(Optional.of(activity));
+        when(activities.findByIdForUpdate(3L)).thenReturn(Optional.of(activity));
         when(users.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
-        assertThatThrownBy(() -> activityService.changerStatut(3L, StatutActivite.PUBLIEE, admin.getEmail()))
+        assertThatThrownBy(() -> activityService.changerStatut(3L, StatutActivite.PUBLIEE, VisibiliteActivite.PUBLIC, admin.getEmail()))
                 .hasMessageContaining("non autorisée");
     }
 
     private ActiviteRequest validRequest() {
         ActiviteRequest request = new ActiviteRequest();
-        request.setTitre("Atelier"); request.setDateDebut(LocalDateTime.now().plusDays(1));
+        request.setTitre("Atelier"); request.setDescription("Description"); request.setLieu("Bruxelles"); request.setDateDebut(LocalDateTime.now().plusDays(1));
         request.setDateFin(LocalDateTime.now().plusDays(1).plusHours(1));
         request.setCapaciteMax(10); request.setGratuite(true); return request;
     }

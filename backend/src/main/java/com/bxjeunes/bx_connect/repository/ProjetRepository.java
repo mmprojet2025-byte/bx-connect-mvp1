@@ -16,6 +16,10 @@ import java.util.Optional;
 @Repository
 public interface ProjetRepository extends JpaRepository<Projet, Long> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Projet p WHERE p.id = :id")
+    Optional<Projet> findByIdForUpdate(@Param("id") Long id);
+
     // Projets visibles publiquement (approuvés ou en cours)
     List<Projet> findByStatutIn(List<StatutProjet> statuts);
 
@@ -41,6 +45,9 @@ public interface ProjetRepository extends JpaRepository<Projet, Long> {
             List<StatutProjet> statuts,
             List<VisibiliteProjet> visibilites,
             Pageable pageable);
+
+    Optional<Projet> findByIdAndStatutInAndVisibiliteIn(
+            Long id, List<StatutProjet> statuts, List<VisibiliteProjet> visibilites);
 
     // Projets d'un porteur
     List<Projet> findByPorteurId(Long porteurId);
@@ -86,16 +93,16 @@ public interface ProjetRepository extends JpaRepository<Projet, Long> {
     @Query(
             value = """
                     SELECT p
-                    FROM Projet p
+                    FROM Projet p LEFT JOIN p.groupe g
                     WHERE p.porteur.id = :userId
-                       OR (p.groupe.referent.id = :userId)
+                       OR (g.referent.id = :userId)
                        OR (p.statut IN :statutsDiffusables AND p.visibilite IN :visibilitesDiffusables)
                     """,
             countQuery = """
                     SELECT COUNT(p)
-                    FROM Projet p
+                    FROM Projet p LEFT JOIN p.groupe g
                     WHERE p.porteur.id = :userId
-                       OR (p.groupe.referent.id = :userId)
+                       OR (g.referent.id = :userId)
                        OR (p.statut IN :statutsDiffusables AND p.visibilite IN :visibilitesDiffusables)
                     """
     )

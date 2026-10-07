@@ -1,5 +1,8 @@
 package com.bxjeunes.bx_connect.service;
 
+import com.bxjeunes.bx_connect.exception.ActivityRuleException;
+
+import com.bxjeunes.bx_connect.repository.MembreGroupeRepository;
 import com.bxjeunes.bx_connect.dto.InscriptionRequest;
 import com.bxjeunes.bx_connect.dto.InscriptionResponse;
 import com.bxjeunes.bx_connect.entity.*;
@@ -29,17 +32,20 @@ public class InscriptionService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
+    private final MembreGroupeRepository membreGroupeRepository;
 
     public InscriptionService(InscriptionRepository inscriptionRepository,
                                ActiviteRepository activiteRepository,
                                UserRepository userRepository,
                                NotificationService notificationService,
-                               AuditLogService auditLogService) {
+                               AuditLogService auditLogService,
+                               MembreGroupeRepository membreGroupeRepository) {
         this.inscriptionRepository = inscriptionRepository;
         this.activiteRepository = activiteRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
         this.auditLogService = auditLogService;
+        this.membreGroupeRepository = membreGroupeRepository;
     }
 
     // ─── S'inscrire à une activité (M06 CDC) ────────────────────────────────
@@ -51,21 +57,35 @@ public class InscriptionService {
         User membre = userRepository.findByEmail(emailMembre)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + emailMembre));
 
+        if (membre.getRole() != Role.MEMBRE || !membre.isActif()) {
+            throw new AccessDeniedException("Inscription réservée aux membres actifs.");
+        }
+
         // 2. Récupérer l'activité
         Activite activite = activiteRepository.findByIdForUpdate(request.getActiviteId())
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + request.getActiviteId()));
 
+        if (activite.getVisibilite() == VisibiliteActivite.PRIVE_GROUPE
+                && !lecteur(membre).catalogue(activite)) {
+            throw new RuntimeException("Activité introuvable : " + request.getActiviteId());
+        }
+
         // 3. Vérifier que l'activité est publiée
         if (activite.getStatut() != StatutActivite.PUBLIEE) {
-            throw new RuntimeException("Cette activité n'est pas disponible à l'inscription.");
+            throw new ActivityRuleException("Cette activité n'est pas disponible à l'inscription.");
         }
 
         if (!activite.isGratuite()) {
-            throw new RuntimeException("Les inscriptions aux activités payantes sont indisponibles dans cette version.");
+            throw new ActivityRuleException("Les activités payantes nécessitent le parcours de paiement.");
         }
 
-        if (activite.getDateDebut() == null || !activite.getDateDebut().isAfter(LocalDateTime.now())) {
-            throw new RuntimeException("Les inscriptions à cette activité sont clôturées.");
+        if ((activite.getDateLimiteInscription() != null && !activite.getDateLimiteInscription().isAfter(LocalDateTime.now()))
+                || activite.getDateDebut() == null || !activite.getDateDebut().isAfter(LocalDateTime.now())) {
+            throw new ActivityRuleException("Les inscriptions à cette activité sont clôturées.");
+        }
+
+        if (inscriptionRepository.existsByActiviteIdAndDateValidationPresenceIsNotNull(activite.getId())) {
+            throw new ActivityRuleException("Les inscriptions sont clôturées : feuille de présence déjà validée.");
         }
 
         // 4. Vérifier que le membre n'est pas déjà inscrit
@@ -74,7 +94,7 @@ public class InscriptionService {
         boolean dejaInscrit = inscriptionsExistantes.stream()
                 .anyMatch(i -> i.getStatut() != StatutInscription.ANNULEE);
         if (dejaInscrit) {
-            throw new RuntimeException("Vous êtes déjà inscrit à cette activité.");
+            throw new ActivityRuleException("Vous êtes déjà inscrit à cette activité.");
         }
 
         // 5. Vérifier la capacité maximale (si limitée)
@@ -84,7 +104,7 @@ public class InscriptionService {
                     List.of(StatutInscription.CONFIRMEE, StatutInscription.PAYEE)
             );
             if (nbInscrits >= activite.getCapaciteMax()) {
-                throw new RuntimeException("Cette activité est complète (capacité maximale atteinte).");
+                throw new ActivityRuleException("Cette activité est complète (capacité maximale atteinte).");
             }
         }
 
@@ -126,19 +146,31 @@ public class InscriptionService {
 
     // ─── Annuler son inscription (M12 CDC) ──────────────────────────────────
 
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public InscriptionResponse annuler(Long inscriptionId, String emailMembre) {
-        Inscription inscription = inscriptionRepository.findById(inscriptionId)
-                .orElseThrow(() -> new RuntimeException("Inscription introuvable : " + inscriptionId));
-
-        // Vérifier que c'est bien l'inscription du membre connecté
-        if (!inscription.getMembre().getEmail().equals(emailMembre)) {
-            throw new RuntimeException("Vous n'êtes pas autorisé à annuler cette inscription.");
+        Long activiteId = inscriptionRepository.findActiviteIdForOwner(inscriptionId, emailMembre)
+                .orElseThrow(() -> new RuntimeException("Inscription introuvable ou vous n'êtes pas autorisé."));
+        // Same lock and ordering as registration, attendance encoding/validation and activity status changes.
+        Activite activite = activiteRepository.findByIdForUpdate(activiteId)
+                .orElseThrow(() -> new RuntimeException("Inscription introuvable."));
+        Inscription inscription = inscriptionRepository.findByIdAndActiviteId(inscriptionId, activiteId)
+                .orElseThrow(() -> new RuntimeException("Inscription introuvable."));
+        User membre = inscription.getMembre();
+        if (!membre.getEmail().equals(emailMembre) || membre.getRole() != Role.MEMBRE || !membre.isActif()) {
+            throw new AccessDeniedException("Inscription introuvable.");
         }
-
         if (inscription.getStatut() == StatutInscription.ANNULEE) {
-            throw new RuntimeException("Cette inscription est déjà annulée.");
+            throw new ActivityRuleException("Cette inscription est déjà annulée.");
+        }
+        if (activite.getStatut() != StatutActivite.PUBLIEE
+                || activite.getDateDebut() == null || !activite.getDateDebut().isAfter(LocalDateTime.now())
+                || inscriptionRepository.existsByActiviteIdAndDateValidationPresenceIsNotNull(activiteId)) {
+            // The owner may have lost private access: do not disclose status, dates or sheet details.
+            throw new ActivityRuleException("Désinscription indisponible.");
         }
 
+        if (inscription.getStatut() == StatutInscription.EN_ATTENTE_PAIEMENT)
+            throw new ActivityRuleException("Un paiement est en cours. Attendez sa confirmation ou son expiration.");
         StatutInscription ancienStatut = inscription.getStatut();
         inscription.setStatut(StatutInscription.ANNULEE);
         inscription.setDateAnnulation(LocalDateTime.now());
@@ -151,43 +183,47 @@ public class InscriptionService {
                 nomStatut(ancienStatut),
                 nomStatut(inscriptionSauvee.getStatut()),
                 "Inscription activite annulee.");
-        return InscriptionResponse.fromEntity(inscriptionSauvee);
+        return InscriptionResponse.fromEntity(inscriptionSauvee,
+                lecteur(inscriptionSauvee.getMembre()).historique(inscriptionSauvee.getActivite()));
     }
 
     // ─── Consulter ses inscriptions (M11 CDC) ───────────────────────────────
 
+    @Transactional(readOnly = true)
     public List<InscriptionResponse> mesInscriptions(String emailMembre) {
         User membre = userRepository.findByEmail(emailMembre)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + emailMembre));
 
+        var lecteur = lecteur(membre);
         return inscriptionRepository
                 .findByMembreIdAndStatutNot(membre.getId(), StatutInscription.ANNULEE)
-                .stream()
+                .stream().filter(i -> lecteur.historique(i.getActivite()))
                 .map(InscriptionResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
     // ─── Consulter toutes les inscriptions d'une activité (R07 / admin) ─────
 
+    @Transactional(readOnly = true)
     public List<InscriptionResponse> inscriptionsParActivite(Long activiteId, String emailUtilisateur) {
         User utilisateur = userRepository.findByEmail(emailUtilisateur)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable : " + emailUtilisateur));
         Activite activite = activiteRepository.findById(activiteId)
                 .orElseThrow(() -> new RuntimeException("Activité introuvable : " + activiteId));
 
-        if (utilisateur.getRole() == Role.REFERENT &&
-                (activite.getCreateur() == null ||
-                        !activite.getCreateur().getId().equals(utilisateur.getId()))) {
+        if (!ActiviteLecture.gestion(activite, utilisateur)) {
             throw new AccessDeniedException("Vous ne pouvez consulter que les inscriptions de vos propres activites.");
-        }
-        if (utilisateur.getRole() != Role.ADMIN && utilisateur.getRole() != Role.REFERENT) {
-            throw new AccessDeniedException("Acces reserve aux ADMIN et REFERENTS.");
         }
 
         return inscriptionRepository.findByActiviteId(activiteId)
                 .stream()
                 .map(InscriptionResponse::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    private ActiviteLecture.Lecteur lecteur(User user) {
+        return ActiviteLecture.lecteur(user, user.getRole() == Role.MEMBRE
+                ? membreGroupeRepository.findByUserId(user.getId()) : List.of());
     }
 
     private void auditerStatut(

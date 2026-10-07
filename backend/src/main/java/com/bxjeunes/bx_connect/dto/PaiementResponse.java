@@ -1,5 +1,6 @@
 package com.bxjeunes.bx_connect.dto;
 
+import com.bxjeunes.bx_connect.entity.VisibiliteActivite;
 import com.bxjeunes.bx_connect.entity.SoutienFinancier;
 import com.bxjeunes.bx_connect.entity.StatutPaiement;
 
@@ -49,7 +50,7 @@ public class PaiementResponse {
             r.donateurPrenom = s.getDonateur().getPrenom();
             r.donateurNom    = s.getDonateur().getNom();
         }
-        if (s.getActivite() != null) {
+        if (s.getActivite() != null && s.getActivite().getVisibilite() != VisibiliteActivite.PRIVE_GROUPE) {
             r.activiteId    = s.getActivite().getId();
             r.activiteTitre = s.getActivite().getTitre();
         }

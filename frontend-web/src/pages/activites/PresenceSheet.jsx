@@ -19,6 +19,8 @@ export default function PresenceSheet({ backTo = '/admin/activites', tone = 'blu
   const { id } = useParams()
   const { t, i18n } = useTranslation()
   const [presences, setPresences] = useState([])
+  const [activite, setActivite] = useState(null)
+  const [activityStarted, setActivityStarted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -29,7 +31,13 @@ export default function PresenceSheet({ backTo = '/admin/activites', tone = 'blu
   const fetchPresences = useCallback(async () => {
     setLoading(true)
     try {
-      const response = await api.get(`/activites/${id}/presences`)
+      const [response, activityResponse] = await Promise.all([
+        api.get(`/activites/${id}/presences`),
+        api.get(`/activites/${id}`),
+      ])
+      setActivite(activityResponse.data)
+      setActivityStarted(Boolean(activityResponse.data.dateDebut)
+        && new Date(activityResponse.data.dateDebut).getTime() <= Date.now())
       const data = Array.isArray(response.data) ? response.data : []
       setPresences(data)
       setDrafts(buildDrafts(data))
@@ -45,20 +53,25 @@ export default function PresenceSheet({ backTo = '/admin/activites', tone = 'blu
     fetchPresences()
   }, [fetchPresences])
 
-  const activity = useMemo(() => {
-    const first = presences[0]
-    return {
-      title: first?.activiteTitre || t('presence.activityFallback'),
-      date: first?.dateInscription || null,
-    }
-  }, [presences, t])
-
+  const sheetClosed = presences.some(p => p.statutInscription !== 'ANNULEE' && Boolean(p.dateValidationPresence))
   const actionablePresences = presences.filter(p => p.statutInscription !== 'ANNULEE')
-  const sheetClosed = actionablePresences.length > 0
-    && actionablePresences.every(p => Boolean(p.dateValidationPresence))
+  const readOnlyReason = sheetClosed ? 'sheetClosed'
+    : activite?.statut === 'ANNULEE' ? 'cancelled'
+    : activite?.statut === 'TERMINEE' ? 'finished'
+    : activite?.statut !== 'PUBLIEE' ? 'draft'
+    : !activityStarted ? 'notStarted'
+    : null
+  const readOnly = Boolean(readOnlyReason)
+  const changedPresences = actionablePresences.filter(p => {
+    const draft = drafts[p.inscriptionId]
+    return draft && (draft.statutPresence !== (p.statutPresence || 'NON_RENSEIGNEE')
+      || draft.commentairePresence !== (p.commentairePresence || ''))
+  })
+  const hasChanges = changedPresences.length > 0
+  const incomplete = actionablePresences.some(p => !p.statutPresence || p.statutPresence === 'NON_RENSEIGNEE')
 
   const stats = useMemo(() => PRESENCE_STATUSES.reduce((acc, status) => {
-    acc[status] = presences.filter(p => (p.statutPresence || 'NON_RENSEIGNEE') === status).length
+    acc[status] = presences.filter(p => p.statutInscription !== 'ANNULEE' && (p.statutPresence || 'NON_RENSEIGNEE') === status).length
     return acc
   }, {}), [presences])
   const attendanceRate = useMemo(() => {
@@ -81,54 +94,17 @@ export default function PresenceSheet({ backTo = '/admin/activites', tone = 'blu
     setMessage('')
   }
 
-  const markOne = async (presence, statutPresence) => {
-    const draft = drafts[presence.inscriptionId] || {}
-    await saveOne(presence.inscriptionId, {
-      statutPresence,
-      commentairePresence: draft.commentairePresence || '',
-    })
-  }
-
-  const saveOne = async (inscriptionId, payload) => {
-    setSaving(true)
-    setError('')
-    setMessage('')
-    try {
-      const response = await api.patch(`/activites/${id}/presences/${inscriptionId}`, payload)
-      setPresences(current => current.map(p => p.inscriptionId === inscriptionId ? response.data : p))
-      setDrafts(current => ({
-        ...current,
-        [inscriptionId]: {
-          statutPresence: response.data.statutPresence || 'NON_RENSEIGNEE',
-          commentairePresence: response.data.commentairePresence || '',
-        },
-      }))
-      setMessage(t('presence.messages.saved'))
-    } catch (err) {
-      setError(userFriendlyError(err, t('presence.errors.save')))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const saveDraft = async (presence) => {
-    const draft = drafts[presence.inscriptionId] || {}
-    await saveOne(presence.inscriptionId, {
-      statutPresence: draft.statutPresence || 'NON_RENSEIGNEE',
-      commentairePresence: draft.commentairePresence || '',
-    })
-  }
-
-  const bulkUpdate = async (statutPresence) => {
+  const saveChanges = async () => {
+    if (readOnly || !hasChanges || saving) return
     setSaving(true)
     setError('')
     setMessage('')
     try {
       const payload = {
-        presences: actionablePresences.map(p => ({
+        presences: changedPresences.map(p => ({
           inscriptionId: p.inscriptionId,
-          statutPresence,
-          commentairePresence: drafts[p.inscriptionId]?.commentairePresence || p.commentairePresence || '',
+          statutPresence: drafts[p.inscriptionId].statutPresence,
+          commentairePresence: drafts[p.inscriptionId].commentairePresence,
         })),
       }
       const response = await api.patch(`/activites/${id}/presences/bulk`, payload)
@@ -144,6 +120,7 @@ export default function PresenceSheet({ backTo = '/admin/activites', tone = 'blu
   }
 
   const closeSheet = async () => {
+    if (readOnly || hasChanges || incomplete || saving || actionablePresences.length === 0) return
     setSaving(true)
     setError('')
     setMessage('')
@@ -168,7 +145,7 @@ export default function PresenceSheet({ backTo = '/admin/activites', tone = 'blu
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
         <PageHeader
           eyebrow={t('presence.eyebrow')}
-          title={activity.title}
+          title={activite?.titre || t('presence.activityFallback')}
           description={t('presence.description')}
           action={(
             <Link
@@ -218,26 +195,25 @@ export default function PresenceSheet({ backTo = '/admin/activites', tone = 'blu
                 {error}
               </div>
             )}
-            {sheetClosed && (
+            {readOnlyReason && (
               <div className="mb-4 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-                {t('presence.sheetClosed')}
+                {t(`presence.${readOnlyReason}`)}
               </div>
             )}
 
+            {!readOnly && (hasChanges || incomplete) && (
+              <p role="status" className="mb-4 text-sm text-amber-800">
+                {t(hasChanges ? 'presence.unsaved' : 'presence.incomplete')}
+              </p>
+            )}
             <SectionCard className="mb-6" title={t('presence.bulkActions')}>
               <div className="flex flex-wrap gap-2">
-                <ActionButton disabled={saving || sheetClosed || actionablePresences.length === 0} onClick={() => bulkUpdate('PRESENT')}>
-                  {t('presence.actions.markAllPresent')}
-                </ActionButton>
-                <ActionButton disabled={saving || sheetClosed || actionablePresences.length === 0} onClick={() => bulkUpdate('ABSENT')}>
-                  {t('presence.actions.markAllAbsent')}
-                </ActionButton>
-                <ActionButton disabled={saving || sheetClosed || actionablePresences.length === 0} onClick={() => bulkUpdate('NON_RENSEIGNEE')}>
-                  {t('presence.actions.resetAll')}
+                <ActionButton disabled={saving || readOnly || !hasChanges} onClick={saveChanges}>
+                  {t('common.save')}
                 </ActionButton>
                 <button
                   type="button"
-                  disabled={saving || sheetClosed || actionablePresences.length === 0}
+                  disabled={saving || readOnly || hasChanges || incomplete || actionablePresences.length === 0}
                   onClick={closeSheet}
                   className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:bg-slate-300 ${buttonTone}`}
                 >
@@ -270,11 +246,9 @@ export default function PresenceSheet({ backTo = '/admin/activites', tone = 'blu
                   key={presence.inscriptionId}
                   presence={presence}
                   draft={drafts[presence.inscriptionId] || {}}
-                  disabled={saving || sheetClosed || presence.statutInscription === 'ANNULEE'}
+                  disabled={saving || readOnly || presence.statutInscription === 'ANNULEE'}
                   language={i18n.language}
                   onDraft={patch => updateDraft(presence.inscriptionId, patch)}
-                  onMark={status => markOne(presence, status)}
-                  onSave={() => saveDraft(presence)}
                   t={t}
                 />
               ))}
@@ -289,13 +263,13 @@ export default function PresenceSheet({ backTo = '/admin/activites', tone = 'blu
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">{t('presence.table.registration')}</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">{t('presence.table.presence')}</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">{t('presence.table.comment')}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">{t('users.actions')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">{t('presence.validation')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredPresences.map(presence => {
                       const draft = drafts[presence.inscriptionId] || {}
-                      const disabled = saving || sheetClosed || presence.statutInscription === 'ANNULEE'
+                      const disabled = saving || readOnly || presence.statutInscription === 'ANNULEE'
                       return (
                         <tr key={presence.inscriptionId} className="border-b border-slate-50 transition hover:bg-blue-50/40">
                           <td className="px-4 py-3">
@@ -312,6 +286,7 @@ export default function PresenceSheet({ backTo = '/admin/activites', tone = 'blu
                           </td>
                           <td className="px-4 py-3">
                             <select
+                              aria-label={t('presence.table.presence')}
                               value={draft.statutPresence || 'NON_RENSEIGNEE'}
                               disabled={disabled}
                               onChange={e => updateDraft(presence.inscriptionId, { statutPresence: e.target.value })}
@@ -327,26 +302,12 @@ export default function PresenceSheet({ backTo = '/admin/activites', tone = 'blu
                               value={draft.commentairePresence || ''}
                               disabled={disabled}
                               onChange={e => updateDraft(presence.inscriptionId, { commentairePresence: e.target.value })}
+                              aria-label={t('presence.table.comment')}
                               placeholder={t('presence.commentPlaceholder')}
                               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-slate-100"
                             />
                           </td>
                           <td className="px-4 py-3">
-                            <div className="flex flex-wrap gap-2">
-                              {['PRESENT', 'ABSENT', 'EXCUSE'].map(status => (
-                                <ActionButton key={status} disabled={disabled} onClick={() => markOne(presence, status)}>
-                                  {t(`presence.quick.${status}`)}
-                                </ActionButton>
-                              ))}
-                              <button
-                                type="button"
-                                disabled={disabled}
-                                onClick={() => saveDraft(presence)}
-                                className="inline-flex items-center rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-                              >
-                                {t('common.save')}
-                              </button>
-                            </div>
                             {presence.dateValidationPresence && (
                               <p className="mt-2 text-xs text-slate-400">
                                 {t('presence.validatedAt', { date: formatDate(presence.dateValidationPresence, i18n.language) })}
@@ -368,7 +329,7 @@ export default function PresenceSheet({ backTo = '/admin/activites', tone = 'blu
   )
 }
 
-function PresenceCard({ presence, draft, disabled, language, onDraft, onMark, onSave, t }) {
+function PresenceCard({ presence, draft, disabled, language, onDraft, t }) {
   return (
     <article className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
       <div className="mb-3 flex items-start justify-between gap-3">
@@ -382,6 +343,7 @@ function PresenceCard({ presence, draft, disabled, language, onDraft, onMark, on
       </div>
       <div className="grid gap-3">
         <select
+          aria-label={t('presence.table.presence')}
           value={draft.statutPresence || 'NON_RENSEIGNEE'}
           disabled={disabled}
           onChange={e => onDraft({ statutPresence: e.target.value })}
@@ -395,25 +357,11 @@ function PresenceCard({ presence, draft, disabled, language, onDraft, onMark, on
           value={draft.commentairePresence || ''}
           disabled={disabled}
           onChange={e => onDraft({ commentairePresence: e.target.value })}
+          aria-label={t('presence.table.comment')}
           rows={2}
           placeholder={t('presence.commentPlaceholder')}
           className="rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:bg-slate-100"
         />
-        <div className="flex flex-wrap gap-2">
-          {['PRESENT', 'ABSENT', 'EXCUSE'].map(status => (
-            <ActionButton key={status} disabled={disabled} onClick={() => onMark(status)}>
-              {t(`presence.quick.${status}`)}
-            </ActionButton>
-          ))}
-          <button
-            type="button"
-            disabled={disabled}
-            onClick={onSave}
-            className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white disabled:bg-slate-300"
-          >
-            {t('common.save')}
-          </button>
-        </div>
         {presence.dateValidationPresence && (
           <p className="text-xs text-slate-400">
             {t('presence.validatedAt', { date: formatDate(presence.dateValidationPresence, language) })}
@@ -433,7 +381,7 @@ function PresenceStat({ label, value, icon, tone }) {
     slate: 'bg-slate-50 text-slate-700 ring-slate-100',
   }
   return (
-    <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
+    <div role="group" aria-label={label} className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
       <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg ring-1 ${tones[tone] || tones.slate}`}>
         <AppIcon name={icon} className="h-5 w-5" />
       </div>

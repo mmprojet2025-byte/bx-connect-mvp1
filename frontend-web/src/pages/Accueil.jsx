@@ -28,7 +28,10 @@ export default function Accueil() {
     setLoadingActivites(true)
     setActivitesError(false)
     api.get('/activites')
-      .then(res => setActivites(Array.isArray(res.data) ? res.data.slice(0, 3) : []))
+      .then(res => setActivites(Array.isArray(res.data) ? res.data
+        .filter(activity => activity.statut === 'PUBLIEE' && activity.visibilite === 'PUBLIC' && Date.parse(activity.dateDebut) > Date.now())
+        .sort((a, b) => Date.parse(a.dateDebut) - Date.parse(b.dateDebut) || Number(a.id) - Number(b.id))
+        .slice(0, 3) : []))
       .catch(() => { setActivites([]); setActivitesError(true) })
       .finally(() => setLoadingActivites(false))
   }, [])
@@ -47,8 +50,8 @@ export default function Accueil() {
   useEffect(() => { fetchGroupes() }, [])
 
   useEffect(() => {
-    api.get('/projets')
-      .then(res => setProjets(Array.isArray(res.data) ? res.data.slice(0, 3) : []))
+    api.get('/projets?catalogue=true')
+      .then(res => setProjets(Array.isArray(res.data) ? res.data.filter(project => ['APPROUVE', 'EN_COURS', 'TERMINE'].includes(project.statut)).slice(0, 3) : []))
       .catch(() => { setProjets([]); setProjetsError(true) })
       .finally(() => setLoadingProjets(false))
   }, [])

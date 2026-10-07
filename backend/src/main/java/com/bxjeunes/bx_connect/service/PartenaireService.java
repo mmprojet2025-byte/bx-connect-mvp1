@@ -131,9 +131,6 @@ public class PartenaireService {
             throw new RuntimeException("L'identifiant de l'activité est obligatoire.");
         }
 
-        activiteRepository.findById(request.getActiviteId())
-                .orElseThrow(() -> new RuntimeException("Activité introuvable : " + request.getActiviteId()));
-
         throw new org.springframework.security.access.AccessDeniedException(
                 "Les soutiens financiers aux activités sont indisponibles dans cette version.");
     }
@@ -246,8 +243,9 @@ public class PartenaireService {
     }
 
     // ─── P04 : Activités ouvertes au soutien ─────────────────────────────────
-    public List<Map<String, Object>> activitesSoutienOuverts() {
+    public List<Map<String, Object>> activitesSoutienOuverts(boolean authentifie) {
         return activiteRepository.findByStatut(StatutActivite.PUBLIEE).stream()
+                .filter(a -> ActiviteLecture.sansAppartenance(a, authentifie))
                 .map(a -> {
                     Map<String, Object> m = new HashMap<>();
                     m.put("id",          a.getId());
@@ -326,20 +324,15 @@ public class PartenaireService {
 
     // ─── Admin : Tous les soutiens ────────────────────────────────────────────
     public List<SoutienResponse> tousLesSoutiens() {
-        return soutienRepository.findAll().stream()
+        return soutienRepository.findAdminDeclarations(null).stream()
                 .map(SoutienResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
     public PagedResponse<SoutienResponse> tousLesSoutiensPage(StatutPaiement statut, int page, int size) {
         var pageable = PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation"));
-        if (statut != null) {
-            return PagedResponse.fromPage(soutienRepository
-                    .findByStatutPaiement(statut, pageable)
-                    .map(SoutienResponse::fromEntity));
-        }
         return PagedResponse.fromPage(soutienRepository
-                .findAll(pageable)
+                .findAdminDeclarations(statut, pageable)
                 .map(SoutienResponse::fromEntity));
     }
 
