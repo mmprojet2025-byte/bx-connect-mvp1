@@ -11,7 +11,7 @@ Base originale : aucune reprise autorisée à ce stade. Les tests utilisent des 
 | P0 Paiements projets 100/60 EUR | Sessions paid/complete, état local EN_ATTENTE | Données / livraison historique non attribuée | 1 | Récupération serveur existante sur copie ; reprise originale préparée | Audit Stripe GET + SELECT ; deux participations/reçus absents | Validé sur copie : PAYE, une participation et un reçu par projet ; original en attente d’autorisation |
 | P0 Cinq paiements activités bloqués | Webhooks manqués/non appliqués ; absence de récupération activités | Données + robustesse | 1 | Confirmation partagée avec webhook, vérification serveur sûre | Audit sessions paid/complete et inscriptions en attente | Corrigé/testé : 117 tests et récupération réelle des cinq sessions sur copie |
 | P0 Livraison locale Stripe | Listener absent pendant audit, cause historique non prouvée | Configuration | 1/8 | Identifier compte/mode/backend/secret/base ; vérifier livraison et effets | Audit processus uniquement, pas historique HTTP | Non validé |
-| P1 Changement référent | Deux responsabilités persistées désalignées | Bug produit + données | 2 | Cohérence atomique, auteur préservé, droits API | Activités 2/3 groupe 1 ; accès contradictoires | À corriger ; reprise originale distincte |
+| P1 Changement référent | Deux responsabilités persistées désalignées | Bug produit + données | 2 | Cohérence atomique, auteur préservé, droits API | Activités 2/3 groupe 1 ; accès contradictoires | Corrigé : 235 tests ciblés ; reprise des deux activités validée sur copie ; original non repris |
 | P1 PAYE sans checkoutUrl | Frontend exige encore URL | Bug produit | 3 | Reconnaître confirmation sans nouveau Checkout | Lecture handler catalogue | À corriger |
 | P1 Clôture Stripe 31 min | Backend et UI non alignés | Bug produit | 3 | Horloge contrôlée, disponibilité et message explicites | ActivityPaymentService | À corriger |
 | Risque ancienne URL activité | URL réutilisée sans vérifier session | Bug produit | 3 | Vérification serveur avant reprise | StripeService | À corriger |
@@ -82,3 +82,20 @@ du paiement activité 1 conservée ANNULEE. Aucun Checkout ni débit créé.
 Livraison Stripe CLI réelle encore à vérifier au lot 8. L'absence du listener pendant
 l'audit n'est pas une preuve de la cause historique de chaque incident.
 Reprise originale : PRÉPARÉE, NON EXÉCUTÉE ; voir STRIPE_RECOVERY_RUNBOOK.md.
+
+### Lot 2 — responsabilité groupe / activités
+
+Réaffectation ADMIN du groupe et de toutes ses activités dans une transaction.
+Auteur historique et statuts inchangés. Verrous ordonnés groupe puis activité,
+contrôle d’un changement concurrent et refus de réaffecter un groupe archivé.
+235 tests ciblés réussis dans les derniers rapports des classes : 226 tests voisins
+plus neuf nouveaux cas API/MySQL (droits, historique, rollback, concurrence).
+La première passe a révélé une fixture du nouveau test qui envoyait explicitement
+une désaffectation `referentAssigneId:null` ; corrigée pour reproduire le payload Web.
+Relance des neuf cas : zéro échec/erreur/ignoré. Logs hors Git :
+`/tmp/bx-lot2-tests.log`, `/tmp/bx-lot2-recheck.log`.
+
+Réception sur copie réelle : connexion ADMIN puis deux appels PATCH de réaffectation
+du groupe 1 au référent 8. Activités 2/3 réalignées, auteurs et états conservés,
+zéro désalignement restant et zéro duplication. Base originale inchangée.
+Procédure de reprise soumise à autorisation : `GROUP_REFERENT_REPAIR.md`.

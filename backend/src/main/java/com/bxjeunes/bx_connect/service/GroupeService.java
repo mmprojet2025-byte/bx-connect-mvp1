@@ -8,6 +8,7 @@ import com.bxjeunes.bx_connect.dto.PagedResponse;
 import com.bxjeunes.bx_connect.dto.admin.AdminGroupeRequest;
 import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.GroupeRepository;
+import com.bxjeunes.bx_connect.repository.ActiviteRepository;
 import com.bxjeunes.bx_connect.repository.MembreGroupeRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
 import com.bxjeunes.bx_connect.util.PaginationUtils;
@@ -35,17 +36,20 @@ public class GroupeService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
+    private final ActiviteRepository activiteRepository;
 
     public GroupeService(GroupeRepository groupeRepository,
                          MembreGroupeRepository membreGroupeRepository,
                          UserRepository userRepository,
                          NotificationService notificationService,
-                         AuditLogService auditLogService) {
+                         AuditLogService auditLogService,
+                         ActiviteRepository activiteRepository) {
         this.groupeRepository = groupeRepository;
         this.membreGroupeRepository = membreGroupeRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
         this.auditLogService = auditLogService;
+        this.activiteRepository = activiteRepository;
     }
 
     public List<GroupeResponse> listerGroupes() {
@@ -166,12 +170,17 @@ public class GroupeService {
     public GroupeResponse assignerReferent(Long groupeId, Long referentId, String emailAdmin) {
         Groupe groupe = groupeRepository.findByIdForUpdate(groupeId)
                 .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + groupeId));
+        if (groupe.getStatut() == StatutGroupe.ARCHIVE) {
+            throw new IllegalArgumentException("Un groupe archivé ne peut plus changer de référent.");
+        }
         User admin = chargerUtilisateurOptionnel(emailAdmin);
         User ancienReferent = groupe.getReferent();
         User referent = getReferent(referentId);
 
         groupe.setReferent(referent);
         Groupe saved = groupeRepository.save(groupe);
+        // Same transaction, including historical activities: responsible person is not the author.
+        activiteRepository.assignerReferentDuGroupe(groupeId, referent);
         auditerAction(admin, "GROUP_REFERENT_ASSIGNED", saved,
                 "Referent assigne au groupe.",
                 metadata(

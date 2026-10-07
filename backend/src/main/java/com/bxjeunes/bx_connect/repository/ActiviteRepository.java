@@ -9,6 +9,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
+import com.bxjeunes.bx_connect.entity.User;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -23,6 +25,14 @@ public interface ActiviteRepository extends JpaRepository<Activite, Long>, JpaSp
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT a FROM Activite a WHERE a.id = :id")
     Optional<Activite> findByIdForUpdate(@Param("id") Long id);
+
+    @Query("SELECT a.groupe.id FROM Activite a WHERE a.id = :id")
+    Optional<Long> findGroupeIdById(@Param("id") Long id);
+
+    /** Caller holds the group lock. Historical authors and activity states are unchanged. */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE Activite a SET a.referentAssigne = :referent WHERE a.groupe.id = :groupeId")
+    int assignerReferentDuGroupe(@Param("groupeId") Long groupeId, @Param("referent") User referent);
 
     // ─── Lister par statut ────────────────────────────────────────────────────
     List<Activite> findByStatut(StatutActivite statut);

@@ -217,8 +217,7 @@ public class ActiviteService {
     // ─── Modifier une activité ────────────────────────────────────────────────
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public ActiviteResponse modifier(Long id, ActiviteRequest request, String emailUser) {
-        Activite activite = activiteRepository.findByIdForUpdate(id)
-                .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
+        Activite activite = verrouillerPourGestion(id, request.isGroupeFourni() ? request.getGroupeId() : null);
         User acteur = verifierDroitGestion(activite, emailUser);
         validerDonneesActivite(request);
         if (activite.getStatut() == StatutActivite.ANNULEE || activite.getStatut() == StatutActivite.TERMINEE)
@@ -262,8 +261,7 @@ public class ActiviteService {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public ActiviteResponse changerStatut(Long id, StatutActivite nouveauStatut,
                                          VisibiliteActivite visibilite, String emailUser) {
-        Activite activite = activiteRepository.findByIdForUpdate(id)
-                .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
+        Activite activite = verrouillerPourGestion(id, null);
         User acteur = verifierDroitGestion(activite, emailUser);
         StatutActivite ancienStatut = activite.getStatut();
         validerTransition(activite, nouveauStatut);
@@ -308,10 +306,9 @@ public class ActiviteService {
     }
 
     // ─── Supprimer une activité ───────────────────────────────────────────────
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void supprimer(Long id, String emailUser) {
-        Activite activite = activiteRepository.findByIdForUpdate(id)
-                .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
+        Activite activite = verrouillerPourGestion(id, null);
         User acteur = verifierDroitGestion(activite, emailUser);
         if (activite.getStatut() != StatutActivite.BROUILLON
                 || !inscriptionRepository.findByActiviteId(id).isEmpty()
@@ -319,6 +316,22 @@ public class ActiviteService {
             throw new ActivityRuleException("Cette activité possède un historique. Utilisez l'annulation.");
         activiteRepository.delete(activite);
         auditerAction(acteur, "ACTIVITY_DELETED", activite, "Activite supprimee.");
+    }
+
+    private Activite verrouillerPourGestion(Long id, Long nouveauGroupeId) {
+        // Match group reassignment/creation: groups (ordered), then activity. A scalar read
+        // avoids caching an activity with the previous assignee before waiting for the locks.
+        Long groupeId = activiteRepository.findGroupeIdById(id).orElse(null);
+        java.util.stream.Stream.of(groupeId, nouveauGroupeId).filter(Objects::nonNull)
+                .distinct().sorted().forEach(groupId -> groupeRepository.findByIdForUpdate(groupId)
+                    .orElseThrow(() -> new IllegalArgumentException("Groupe introuvable : " + groupId)));
+        Activite activite = activiteRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
+        Long groupeActuel = activite.getGroupe() == null ? null : activite.getGroupe().getId();
+        if (!Objects.equals(groupeId, groupeActuel)) {
+            throw new ActivityRuleException("Le groupe de cette activité a changé. Rechargez la fiche avant de réessayer.");
+        }
+        return activite;
     }
 
     private User verifierDroitGestion(Activite activite, String emailUser) {
@@ -412,7 +425,7 @@ public class ActiviteService {
             if (request.isReferentFourni() && !Objects.equals(request.getReferentAssigneId(), referent.getId())) {
                 throw new ActivityRuleException("Le référent assigné doit être le référent réel du groupe.");
             }
-            // No reassignment endpoint in this lot, including when the group's referent changed.
+            // A group reassignment synchronizes this relationship atomically in GroupeService.
             if (!creation && !changementGroupe && !Objects.equals(ancienReferent, referent.getId())) {
                 throw new AccessDeniedException("L'affectation ne correspond plus au référent actuel du groupe.");
             }
