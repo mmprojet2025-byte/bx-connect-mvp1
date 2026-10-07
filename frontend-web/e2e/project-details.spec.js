@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test'
 import { Buffer } from 'node:buffer'
 const token = `header.${Buffer.from(JSON.stringify({ exp: 4102444800 })).toString('base64')}.signature`
-const image = 'http://localhost:8080/uploads/projets/12345678-1234-1234-1234-123456789012.png'
+// Une URL relative reste valide avec une API de test isolée, sans imposer le backend local 8080.
+const image = '/uploads/projets/12345678-1234-1234-1234-123456789012.png'
 const project = { id: 2, titre: 'Projet avec calendrier', description: 'Description', visibilite: 'PUBLIC', statut: 'APPROUVE', prixParticipation: 5,
   budgetDemande: 2500, groupeId: 10, groupeNom: 'Collectif', nombreParticipants: 2, capacite: 12,
   dateExecution: '2030-05-05', dateLimiteParticipation: '2030-05-04', imageUrl: image }
@@ -37,6 +38,7 @@ for (const role of ['MEMBRE', 'REFERENT', 'ADMIN']) {
     })
     const writes = await setup(page, role)
     await page.goto(role === 'MEMBRE' ? '/projets' : role === 'REFERENT' ? '/referent/projets' : '/admin/projets')
+    const uploadedImage = new URL(image, page.url()).href
     await page.getByRole('button', { name: role === 'MEMBRE' ? 'Proposer un projet' : role === 'REFERENT' ? '+ Nouveau projet' : 'Créer un projet', exact: true }).first().click()
     const form = page.locator('form').first()
     await form.locator('input[type=text]').first().fill('Projet complet')
@@ -46,12 +48,12 @@ for (const role of ['MEMBRE', 'REFERENT', 'ADMIN']) {
     await form.getByLabel('Date d’exécution').fill('2030-05-05')
     await form.getByLabel('Date limite de participation').fill('2030-05-04')
     await form.locator('input[type=file]').setInputFiles({ name: 'cover.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a1XkAAAAASUVORK5CYII=', 'base64') })
-    await expect(form.locator('img')).toHaveAttribute('src', image)
+    await expect(form.locator('img')).toHaveAttribute('src', uploadedImage)
     await form.getByRole('button', { name: 'Enregistrer le brouillon', exact: true }).click()
     await expect.poll(() => writes.length).toBe(1)
     expect(submissions).toHaveLength(0)
     await expect(page.getByText('Brouillon enregistré. Soumettez-le lorsque vous êtes prêt.', { exact: true }).first()).toBeVisible()
-    expect(writes[0]).toMatchObject({ capacite: 12, dateExecution: '2030-05-05', dateLimiteParticipation: '2030-05-04', imageUrl: image })
+    expect(writes[0]).toMatchObject({ capacite: 12, dateExecution: '2030-05-05', dateLimiteParticipation: '2030-05-04', imageUrl: uploadedImage })
   })
 }
 test('catalogue card displays schedule capacity price and cover for visitors', async ({ page }) => {

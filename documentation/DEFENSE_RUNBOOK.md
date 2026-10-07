@@ -1,8 +1,9 @@
 # Procédure de démonstration Web — BX-Connect
 
-État documentaire : 7 octobre 2026, lot 5 de la finalisation. Les preuves techniques
-ci-dessous ne remplacent pas la réception réelle du lot 8. Aucun mot de passe,
-jeton, secret Stripe ni lien de réinitialisation ne doit figurer dans ce document.
+État documentaire : 7 octobre 2026, après la réception réelle du lot 8 sur la copie
+isolée. Les preuves locales ne valent pas validation de l'environnement original
+ou d'un déploiement distant. Aucun mot de passe, jeton, secret Stripe ni lien de
+réinitialisation ne doit figurer dans ce document.
 
 ## 1. Choisir explicitement l’environnement
 
@@ -127,6 +128,14 @@ L’URL commune par défaut vise MySQL 3306 ; le `compose.yml` du dépôt publie
 par défaut. Les variables `SPRING_DATASOURCE_*` doivent résoudre cette différence.
 Ne pas lancer `docker compose up` pour « réparer » le clone déjà disponible sur 13316.
 
+Les corrections et le lockfile sont versionnés, mais l'installation `node_modules`
+originale n'a pas été remplacée par celle validée sur la copie. Le serveur habituel
+5173 et son installation ne prouvent donc pas l'exécution des dépendances finales.
+Prévoir une installation du lockfile par `npm ci` avant son prochain démarrage,
+après arrêt du serveur concerné et accord sur cet environnement ; ne pas lancer
+cette opération pendant la démonstration. Les anciennes données de paiement et
+d'affectation référent de la base originale n'ont pas été reprises par cet audit.
+
 ### Build de déploiement
 
 Depuis une copie `frontend-web`, avec l’URL réelle de déploiement approuvée :
@@ -175,6 +184,14 @@ Pour un paiement ancien réellement payé, utiliser la vérification serveur dé
 dans le runbook de reprise, jamais un nouveau Checkout, `stripe trigger` ni un
 `UPDATE ... PAYE`. Démarrer le listener ne renvoie pas les anciens événements.
 Avant « Reprendre », laisser le serveur vérifier la session réutilisable.
+
+À la fin du lot 8, le listener TEST vers 18081 a été **arrêté volontairement** pour
+éviter toute confusion avec un listener destiné à 8080. Le Web 5181 et le backend
+18081 restent actifs, mais cela ne suffit plus à confirmer automatiquement un
+nouveau Checkout. Avant de répéter un paiement : relancer le listener ci-dessus,
+injecter son secret de signature dans le backend isolé et redémarrer uniquement
+ce backend si nécessaire. Vérifier à nouveau la cible 18081 et les retours 5181.
+Ne pas réutiliser aveuglément le secret d'une ancienne session de listener.
 
 ## 5. Migrations : preuves et limites
 
@@ -264,14 +281,17 @@ séparés par rôle ; ne pas alterner les rôles dans un même localStorage.
 | ADMIN | `admin-2@defense.invalid` | Création du groupe, affectation du référent, validation finale projet |
 | RÉFÉRENT | `referent-8@defense.invalid` | Adhésions, membres, activités et projets de son groupe |
 | RÉFÉRENT extérieur | `referent-3@defense.invalid` | Refus API des données/actions d’un autre groupe |
-| MEMBRE | Comptes jetables créés par navigateur ; adresses dans le manifeste privé de recette | Demande, participation gratuite, Stripe TEST, reçu de projet |
-| SUPER_ADMIN | Compte existant de la copie, à identifier dans le manifeste privé avant recette | Gestion des ADMIN, périmètre transversal autorisé |
+| MEMBRE | Compte 25 pour Chromium, 27 pour WebKit ; adresses dans `real-groups-projects-<navigateur>.json`, hors Git | Demande acceptée, participation gratuite, Stripe TEST, reçu de projet |
+| SUPER_ADMIN | `super_admin-1@defense.invalid`, compte 1 de la copie | Gestion des ADMIN, périmètre transversal autorisé |
 | PARTENAIRE | Décisions documentaires contradictoires ; arbitrage requis | Espace existant inchangé ; aucun masquage global appliqué par cet audit |
 
 Les identifiants ci-dessus désignent seulement la copie de préparation. Ne pas
-les réutiliser pour sélectionner des lignes dans la base originale. Les nouveaux
-membres/projets de réception auront des identifiants enregistrés dans les fichiers
-privés `real-groups-projects-<navigateur>.json`.
+les réutiliser pour sélectionner des lignes dans la base originale. Les comptes
+MEMBRE refusés 26 et 28 ont ensuite été supprimés dans la recette réelle de
+suppression de compte ; ne pas les employer pour une nouvelle connexion.
+Les ADMIN 29 et 30 sont des comptes jetables créés, désactivés puis réactivés
+pendant la recette SUPER_ADMIN. Leurs adresses restent dans les manifestes privés
+`real-account-tools-<navigateur>.json`. Aucun mot de passe n'est publié ici.
 
 Avant le jury :
 
@@ -294,3 +314,105 @@ Avant le jury :
 7. Relever les preuves réelles Chromium et WebKit séparément des tests avec mocks.
    Le verdict final dépend de cette réception ; ne pas appeler « testé » un chemin
    seulement lu ou simulé.
+
+## 8. Réception réelle du 7 octobre 2026
+
+La recette a utilisé les vrais Web 5181, backend 18081 et MySQL 13316, sans réponse
+API simulée, dans des contextes séparés par rôle. Chromium et WebKit ont validé les
+parcours suivants en français sur écran desktop :
+
+| Parcours | Preuve constatée |
+| --- | --- |
+| Visiteur et connexion | Sept pages, images décodées, retour au projet choisi après login, F5 ; aucun Checkout automatique |
+| Groupes | Création ADMIN et affectation, adhésion acceptée/refusée, suspension/réactivation sans désactiver le compte ; API non autorisées refusées |
+| Projets gratuits | Brouillon, soumission, commentaire de correction conservé après F5, correction/resoumission, validation RÉFÉRENT puis ADMIN, participation unique |
+| Activités gratuites | Création avec image, publication, inscription confirmée et F5 |
+| Présences | Saisie après la vraie heure de début, sauvegarde, clôture immuable et refus API hors périmètre |
+| Stripe TEST | Une activité et un projet par moteur : quatre paiements de 1 EUR, quatre sessions distinctes `complete/paid`, webhooks HTTP 200 et états métier persistés après F5 |
+| Reçus de projet | Reçus PDF téléchargés pour les projets payants 10 et 12 ; participation et paiement uniques |
+| Notifications et messagerie | Notifications réelles d'adhésion/projet, lecture/destination/F5 ; messages MEMBRE ↔ RÉFÉRENT enregistrés et relus, tiers refusés |
+| Profil | Modification et upload d'avatar, image décodée, octets identiques après relecture, rôle/email conservés |
+| Rapports ADMIN | Vrais PDF/CSV téléchargés, cinq indicateurs écran/CSV identiques sur chaque moteur ; aucune adresse des comptes de recette présente |
+| SUPER_ADMIN | Confirmation des mots de passe, création/désactivation/réactivation ADMIN, ancien JWT rejeté, permissions et journal |
+| Suppression de compte | Deux comptes jetables sans paiement supprimés, session effacée, retour accueil, F5/historique et protection du profil |
+
+Granularité des preuves : 24 étapes Groupes/Projets, dix scénarios complémentaires,
+quatre scénarios Stripe avec 26 contrôles, huit contrôles de présence, 16 étapes
+visiteur/connexion et six contrôles de suppression. Ces nombres décrivent des
+étapes de recette, pas des tests unitaires ni des assertions de même granularité.
+Le backend complet a également passé 983 tests dans une copie indépendante avec
+Docker/MySQL Testcontainers, zéro échec, erreur ou ignoré. Les résultats de la suite
+navigateur globale et les incidents intermédiaires sont consignés dans
+[FINAL_DEFENSE_AUDIT.md](FINAL_DEFENSE_AUDIT.md).
+
+Les manipulations interrompues ont été reprises sur les mêmes données : corrections
+du harnais de test, aucune validation forcée ni nouveau paiement pour contourner un
+échec. Une navigation WebKit a été interrompue, puis le même parcours a été validé
+à la reprise. La limite de connexion 10/minute/IP a produit HTTP 429 sous la charge
+de recette ; l'attente normale a été respectée sans modifier les seuils.
+Espacer les connexions rapprochées pendant la démonstration.
+
+Preuves privées dans `/private/tmp/bx-defense-final-20261007` :
+
+- `lot8-groups-projects-account-summary.json` et manifestes
+  `real-groups-projects-*.json` / `real-account-tools-*.json` ;
+- `lot8-stripe-acceptance-summary.json` et `lot8-stripe-closure.json` ;
+- `real-visitor-*.json`, `real-presence-*.json`, `real-deletion-*.json` ;
+- exports `real-dashboard-*.pdf` / `real-dashboard-*.csv`, conservés hors Git.
+
+État de clôture : Web 5181 et backend 18081 actifs ; listener Stripe TEST et capture
+SMTP arrêtés ; aucun redémarrage du backend original 8080 commandé par cet audit.
+Relancer/configurer les services de
+test requis avant une nouvelle recette payante ou un reset email. La recette ne
+prouve ni une livraison email externe, ni tous les appareils Safari, ni un réseau
+de production, ni la réparation des données originales. PARTENAIRE reste inchangé
+en attente de l'arbitrage explicite décrit plus haut.
+
+
+## 9. Refaire une démonstration complète sans réutiliser des états terminés
+
+Les comptes 25/27 servent à consulter les preuves et reçus existants. Ils sont déjà
+membres d'un groupe et participants : ils ne constituent pas un scénario « membre
+sans groupe » neuf. Pour une nouvelle répétition intégrale sur la copie, créer un
+nouveau compte MEMBRE jetable via l'inscription publique et un nouveau groupe au
+nom unique. Conserver les anciens enregistrements ; ne pas réinitialiser leurs
+statuts par SQL. Choisir soi-même un mot de passe de démonstration conforme et le
+conserver hors du rapport.
+
+1. **Préparer** : environnement identifié, sauvegarde disponible, API saine,
+   navigateur en Europe/Brussels, listener Stripe TEST configuré et vrai Web ciblé.
+   Garder des fenêtres/profils séparés pour ADMIN, RÉFÉRENT, MEMBRE et VISITEUR.
+2. **Structurer** : ADMIN crée le nouveau groupe avec une capacité disponible et
+   lui attribue le référent actif. Le nouveau MEMBRE demande à rejoindre ce groupe ;
+   le RÉFÉRENT accepte. Une seconde demande jetable permet de montrer le refus.
+   Montrer suspension/réactivation sans désactiver le compte global.
+3. **Préparer les activités** : le RÉFÉRENT crée une activité gratuite avec une vraie
+   image PNG et une heure de début quelques minutes dans le futur, puis la publie.
+   Le MEMBRE s'inscrit avant cette heure. Créer séparément l'activité payante TEST,
+   avec début et clôture suffisamment éloignés pour respecter les 31 minutes.
+4. **Montrer le projet** : le MEMBRE du groupe enregistre un brouillon avec budget,
+   prix de participation distinct si payant, capacité et dates futures cohérentes.
+   Soumission, demande de correction avec commentaire, rechargement pour montrer
+   sa persistance, correction/resoumission, validation RÉFÉRENT puis ADMIN.
+   Avant l'approbation ADMIN, vérifier l'absence du catalogue visiteur.
+5. **Participer** : un projet gratuit confirme la participation sans paiement.
+   Pour le projet ou l'activité payante, utiliser exclusivement une carte Stripe
+   TEST. Attendre le webhook et l'état confirmé après F5 ; télécharger le reçu du
+   projet. Si une tentative est incertaine, vérifier la session existante côté
+   serveur avant toute reprise, sans payer une deuxième fois.
+6. **Clôturer l'opérationnel** : lorsque la vraie heure de l'activité gratuite est
+   passée, renseigner la présence et clôturer la feuille. Montrer son état en
+   lecture seule ; ne pas changer artificiellement l'horloge ou la date en base.
+7. **Montrer le suivi** : cloche/notifications et destinations, échange
+   MEMBRE–RÉFÉRENT, profil/image, puis dashboard ADMIN et téléchargements PDF/CSV.
+   Les transactions Stripe et les déclarations de soutien restent distinctes.
+8. **Finir sans perte de données** : conserver les reçus et enregistrements de
+   démonstration. Réserver la suppression de compte à un compte jetable sans
+   paiement, comme dans la recette validée. Espacer les changements de rôle pour
+   respecter la limite de connexion ; aucune désactivation de protection.
+
+Si Stripe ou Internet est indisponible, présenter le parcours gratuit et signaler
+clairement que le parcours payant n'est pas validé dans ces conditions. Ne pas
+transformer un retour navigateur en confirmation. Le module PARTENAIRE et l'email
+externe restent soumis aux limites/arbitrages du rapport, pas réputés corrigés en
+évitant leur écran.

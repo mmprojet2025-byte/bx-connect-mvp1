@@ -4,13 +4,37 @@ Référence : `test-final-defense-2026`, `0f1fc91`, tag `backup-before-final-aud
 Travail progressif en huit lots avec commits locaux uniquement. Aucun push/merge ni mobile.
 Base originale : aucune reprise autorisée à ce stade. Les tests utilisent des bases isolées.
 
+
+## Verdict final
+
+**PAS ENCORE PRÊT pour une défense lancée sans préparation sur l’environnement habituel.**
+Les corrections de code et les principaux parcours sont validés sur la copie isolée,
+y compris quatre paiements Stripe TEST réellement confirmés par webhook. Les données
+originales ne sont pas reprises sans autorisation ; le backend et les dépendances
+habituels doivent être remis au code/configuration validés. PARTENAIRE reste à arbitrer
+et la livraison email externe n’est pas validée. Ces réserves ne sont pas masquées par
+les suites vertes. Pour la copie de réception, les parcours documentés ont passé sur
+Chromium et WebKit.
+
+| Contrôle final | Résultat |
+|---|---|
+| Backend complet `./mvnw test`, Docker/MySQL | **983/983**, 92 classes, 0 échec/erreur/ignoré |
+| JavaScript `npm test` | **138/138**, 0 échec/ignoré |
+| Playwright complet | **396 réussis / 398 cas**, 0 échec, 0 retry ; deux cas clavier réservés à WebKit exclus de Chromium |
+| Répartition navigateur | Chromium 314 réussis + 2 exclus ; WebKit 82 réussis |
+| Traces de stabilité navigation | 12 exécutions ciblées réussies, délais inchangés |
+| ESLint global / build HTTPS | Réussis ; avertissements de bundle/import documentés |
+| npm audit après installation du lockfile | **0 alerte**, aucune montée majeure |
+| Migrations / données | V1–V14 inchangées, bases isolées uniquement |
+| Git / secrets | Diff-check réussi ; aucun secret réel ajouté identifié, aucun fichier mobile/migration modifié |
+
 ## Suivi exhaustif de l’audit
 
 | Point | Cause | Nature | Lot | Correction / traitement prévu | Preuve | Statut |
 |---|---|---|---|---|---|---|
 | P0 Paiements projets 100/60 EUR | Sessions paid/complete, état local EN_ATTENTE | Données / livraison historique non attribuée | 1 | Récupération serveur existante sur copie ; reprise originale préparée | Audit Stripe GET + SELECT ; deux participations/reçus absents | Validé sur copie : PAYE, une participation et un reçu par projet ; original en attente d’autorisation |
 | P0 Cinq paiements activités bloqués | Webhooks manqués/non appliqués ; absence de récupération activités | Données + robustesse | 1 | Confirmation partagée avec webhook, vérification serveur sûre | Audit sessions paid/complete et inscriptions en attente | Corrigé/testé : 117 tests et récupération réelle des cinq sessions sur copie |
-| P0 Livraison locale Stripe | Listener absent pendant audit, cause historique non prouvée | Configuration | 1/8 | Identifier compte/mode/backend/secret/base ; vérifier livraison et effets | Audit processus uniquement, pas historique HTTP | Non validé |
+| P0 Livraison locale Stripe | Listener absent pendant audit, cause historique non prouvée | Configuration | 1/8 | Identifier compte/mode/backend/secret/base ; vérifier livraison et effets | Quatre nouveaux Checkout TEST réels Chromium/WebKit, événements CLI HTTP 200 et effets DB uniques | Validé sur copie ; cause historique de chaque incident non attribuée |
 | P1 Changement référent | Deux responsabilités persistées désalignées | Bug produit + données | 2 | Cohérence atomique, auteur préservé, droits API | Activités 2/3 groupe 1 ; accès contradictoires | Corrigé : 235 tests ciblés ; reprise des deux activités validée sur copie ; original non repris |
 | P1 PAYE sans checkoutUrl | Frontend exige encore URL | Bug produit | 3 | Confirmation backend reconnue, compteurs rechargés | Tests Chromium/WebKit et sept reprises API sur copie | Corrigé |
 | P1 Clôture Stripe 31 min | Backend et UI non alignés | Bug produit | 3 | Horloge serveur, échéance UTC fournie au Web, Europe/Brussels | Bornes 1859/1860/1861 secondes et +1 ms, hiver/été/DST, Web Bruxelles/New York | Corrigé, délai inchangé |
@@ -25,8 +49,8 @@ Base originale : aucune reprise autorisée à ce stade. Les tests utilisent des 
 | P1 Mot de passe oublié | Email désactivé en dev | Configuration | 5 | SMTP contrôlé, tests réception et jeton | 23 assertions sur API + SMTP local contrôlé, lien Web réel | Validé sur capture SMTP locale ; fournisseur/boîte distante non validés, dev original désactivé |
 | Risque énumération temporelle email | Envoi SMTP synchrone pour compte connu | Risque sécurité préexistant | 5 | Contenu public neutre conservé ; qualifier le délai, pas de refonte auth | Capture locale : réponse identique, latence liée au SMTP pour compte connu | Limite identifiée, pas de garantie temporelle ; production non certifiée |
 | P2 Suppression redirige parfois login | Course logout/route privée | Bug navigation intermittent | 5/6 | Cause + test stable sans retries | Course session/route corrigée ; trois répétitions Chromium et WebKit, F5 et historique | Corrigé, sans retries |
-| Sessions/navigation voisines | Expiration/F5/historique/notification | Risque à vérifier | 5/8 | Tests contrôles session et destinations | 30 tests Chromium/WebKit + 13 voisins + 26 Node, lot 5 | Corrigé/testé avec API simulées ; répétition réelle lot 8 à suivre |
-| API localhost refusée au build | Garde production HTTPS volontaire | Configuration attendue | 5/6 | Conserver garde ; tester env isolé | Build HTTPS réussi ; variables/profils documentés dans DEFENSE_RUNBOOK.md | Conforme ; test isolé à corriger lot 6 |
+| Sessions/navigation voisines | Expiration/F5/historique/notification | Risque à vérifier | 5/8 | Tests contrôles session et destinations | 30 tests Chromium/WebKit + 13 voisins + 26 Node, lot 5 | Validé aussi sur backend réel : login/retour/F5/historique et suppressions jetables Chromium/WebKit |
+| API localhost refusée au build | Garde production HTTPS volontaire | Configuration attendue | 5/6 | Conserver garde ; tester env isolé | Build HTTPS réussi ; variables/profils documentés dans DEFENSE_RUNBOOK.md | Conforme ; test isolé corrigé au lot 6 |
 | Migrations | V1–V14 appliquées | Risque déploiement | 5 | Base vide + restauration copie, pas repair | Base vide V1–V14, schémas V7/V8→V14, clone restauré validé ; aucun SQL modifié | Validé localement, aucun repair ni migration originale |
 | Uploads | Stockage local, distant non validé | Risque exploitation | 5/8 | Sauvegarde, restauration, redémarrage isolé | 29 assertions réelles API/Chromium/WebKit + SHA256 après restart du clone | Validé localement ; persistance distante non validée |
 | Test apiBaseUrl | .env local contamine cas variable absente | Défaut de test | 6 | Isoler environnement sans affaiblir HTTPS | 138/138 Node après isolation explicite de VITE_API_BASE_URL | Corrigé |
@@ -36,13 +60,13 @@ Base originale : aucune reprise autorisée à ce stade. Les tests utilisent des 
 | 3 tests retour login | Mock intercepte /src/api/axios.js | Défaut de test | 6 | Cibler URL backend, session valide | Interception API précise, JWT valide, destination et F5 vérifiés | Corrigé |
 | 8 alertes npm | Dépendances vulnérables selon avis | Sécurité à qualifier | 7 | Avis officiels, exposition, versions compatibles | Huit chemins/avis qualifiés ; 17 versions compatibles ; npm audit 0 après npm ci | Corrigé ; node_modules original à réinstaller au prochain démarrage |
 | P2 Bundle 2,51 Mo | Imports lourds | Performance | 7 | Mesurer premier chargement, optimisation seulement justifiée | FCP médian local 173–492 ms selon parcours/moteur ; ~706 Ko JS preview initial | Limite expliquée : poids élevé, pas de blocage local mesuré ; distant non validé |
-| Internet/Stripe interrompu | Dépendance externe | Limite exploitation | 8 | Vérification démarrage + récupération sûre + secours gratuit | Aucun nouveau paiement réel dans audit | À éprouver |
-| Réception authentifiée complète | Audit initial lecture seule et E2E mockés | Risque non vérifié | 8 | Comptes jetables, vrai backend et DB isolée | 886 backend ; 287 E2E pass, 9 fail | À exécuter |
-| Safari | Couverture WebKit ciblée seulement | Limite preuve | 8 | Répétition parcours critiques, limites explicites | 27 WebKit réussis initialement | À compléter |
+| Internet/Stripe interrompu | Dépendance externe | Limite exploitation | 8 | Vérification démarrage + récupération sûre + secours gratuit | Quatre paiements TEST et récupération de sept sessions existantes ; tests erreurs fournisseur | Parcours TEST validé ; panne réseau extérieure réelle non provoquée |
+| Réception authentifiée complète | Audit initial lecture seule et E2E mockés | Risque non vérifié | 8 | Comptes jetables, vrai backend et DB isolée | 983/983 backend ; répétition sans mocks Chromium/WebKit détaillée ci-dessous | Validé sur copie : backend 983/983 et UI complète 396 réussis, 0 échec, 2 exclusions justifiées |
+| Safari | Couverture WebKit ciblée seulement | Limite preuve | 8 | Répétition parcours critiques, limites explicites | Groupes/projets/activités/Stripe/présences/profil/notifications/messagerie/exports/session réels WebKit | Validé WebKit desktop FR ; Safari matériel et appareils mobiles non testés |
 | Preuve upload WebKit | Assertion binaire Playwright multipart échoue dans six cas exploratoires | Risque à qualifier | 6/8 | Vérifier les octets reçus par le vrai backend et conserver les assertions utiles | Upload réel WebKit FR réussi avec octets source/aperçu/disque/HTTP identiques au lot 5 | Corrigé : six tests WebKit vérifient les octets réellement reçus, sans supprimer les assertions |
-| Secrets / production | Scan motifs limité ; prod non auditée | Risque non vérifié | 5/7/8 | Secrets hors Git, profil/env, scan final | Aucun motif apparent audit initial | Pas certification production |
-| Soutiens vs transactions | Séparation implémentée à conserver | Non-régression | 3/8 | Tests scope DECLARATION, permissions et compteurs | Tests initiaux réussis | À préserver |
-| Notifications / messagerie / profil / PDF CSV | Parcours voisins | Non-régression | 5/8 | Vérifications simulées et réelles distinguées | Couverture initiale existante | À préserver/valider |
+| Secrets / production | Scan motifs limité ; prod non auditée | Risque non vérifié | 5/7/8 | Secrets hors Git, profil/env, scan final | Diff des lots, secrets et sauvegardes hors Git ; profils documentés | Aucun secret réel ajouté identifié ; pas de certification production |
+| Soutiens vs transactions | Séparation implémentée à conserver | Non-régression | 3/8 | Tests scope DECLARATION, permissions et compteurs | Tests paiements/soutiens/backend/UI et exports réels après nouveaux paiements | Non-régression validée |
+| Notifications / messagerie / profil / PDF CSV | Parcours voisins | Non-régression | 5/8 | Vérifications simulées et réelles distinguées | Dix scénarios réels sur les deux moteurs, exports binaires et cinq KPI comparés | Validé desktop FR sans mocks ; FR/NL/EN couvert aussi par tests simulés |
 
 ## Lots, commits et preuves
 
@@ -81,7 +105,7 @@ reçus BX-PROJET-1/2. Activités 2/3/4/7/8 : PAYE et inscriptions PAYEE.
 Nombre de paiements inchangé (2 projets, 8 soutiens/transactions). Inscription déjà annulée
 du paiement activité 1 conservée ANNULEE. Aucun Checkout ni débit créé.
 
-Livraison Stripe CLI réelle encore à vérifier au lot 8. L'absence du listener pendant
+Livraison Stripe CLI réelle non encore validée à la fin du lot 1, puis prouvée au lot 8. L'absence du listener pendant
 l'audit n'est pas une preuve de la cause historique de chaque incident.
 Reprise originale : PRÉPARÉE, NON EXÉCUTÉE ; voir STRIPE_RECOVERY_RUNBOOK.md.
 
@@ -125,8 +149,8 @@ exclus de Chromium par condition préexistante), plus trois tests JS du helper.
 Nouveaux cas Chromium/WebKit avec API simulées : 34/34 ; voisins : 52 réussis.
 ESLint ciblé et diff-check réussis. Preuves hors Git dans
 `bx-lot3-frontend-9nrp9722/browser-safety-final.log` et `browser-neighbours-final.log`.
-Six assertions d’upload dans une première sélection WebKit trop large restent
-à qualifier au lot 6/8 ; aucune assertion utile supprimée et aucun succès inventé.
+Six assertions d’upload d’une première sélection WebKit trop large ont été qualifiées
+puis corrigées au lot 6 ; aucune assertion utile supprimée et aucun succès inventé.
 
 Réception API réelle sur copie après recompilation : les sept récupérations retournent
 PAYE sans checkoutUrl ; inscriptions activités PAYEE. Le paiement activité 1 conserve
@@ -276,3 +300,276 @@ locales de 173 à 492 ms suivant le contexte. Build final : chunk principal 2520
 715,14 Ko gzip. Limite expliquée, aucune refonte du chargement ; réseau distant lent
 non validé. Les mesures initiales ne sont pas une comparaison avant/après des patches.
 Lot 6 enregistré localement dans `8d05ec4`.
+
+
+### Lot 8 — réception finale sur backend réel
+
+Backend : `./mvnw test` dans une copie indépendante du backend, avec Docker/MySQL
+Testcontainers, sans réutiliser la base d’origine ni son `target` DevTools.
+**983 tests, 92 classes, zéro échec, erreur ou ignoré**, BUILD SUCCESS en 4 min 18 s.
+Les sources backend sont identiques au code servi par la copie 18081 ; aucun changement
+backend après cette exécution. Preuve privée :
+`/private/var/folders/_p/7bs2y87d7yj3x37r5vwjnzgc0000gp/T/bx-final-backend-dxq8hxro/maven-full.log` et rapports XML Surefire correspondants.
+
+La répétition suivante utilise le vrai Web 5181, Spring 18081 et MySQL `defense_copy`
+sur 13316. **Aucun mock API sur ces parcours.** Chaque rôle utilise son propre contexte
+navigateur. Langue réelle FR, desktop, fuseau Europe/Brussels ; les tests automatisés
+simulés couvrent également FR/NL/EN et plusieurs largeurs. WebKit n’est pas une preuve
+sur tous les Safari installés ou appareils physiques.
+
+| Parcours réel | Chromium | WebKit | Preuve métier |
+|---|---|---|---|
+| Visiteur, catalogues et retour connexion | Réussi | Réussi | Sept pages, images visibles décodées, retour au projet choisi, F5, aucun Checkout automatique, aucune erreur JS observée |
+| ADMIN crée groupe et attribue RÉFÉRENT | Groupe 7 | Groupe 8 | Référent 8, groupe VALIDE, création UI réelle |
+| Adhésions et gestion membres | Membres jetables 25/26 | Membres jetables 27/28 | Acceptation/refus, suspension/réactivation, compte actif préservé ; appels non autorisés refusés |
+| Projet gratuit | Projet 9 | Projet 11 | Brouillon, soumission, commentaire de correction persisté après F5, correction, resoumission, validation référent puis ADMIN, participation unique |
+| Activité gratuite et image | Activité 14, inscription 15 | Activité 16, inscription 17 | Création UI, upload réel, publication, inscription CONFIRMEE et F5 |
+| Présence | Activité 14 | Activité 16 | Attente de la vraie date de début, PRESENT enregistré, feuille clôturée et immuable après F5, API hors périmètre refusée |
+| Activité payante Stripe TEST | Activité 15, paiement 9 | Activité 17, paiement 10 | Checkout 1 EUR, événement livré HTTP 200, PAYE/PAYEE, retour automatique et F5, aucune reprise manuelle ni doublon |
+| Projet payant Stripe TEST | Projet 10, paiement 3 | Projet 12, paiement 4 | Checkout 1 EUR, événement livré HTTP 200, PAYE, participation unique, reçus BX-PROJET-3/4 téléchargés en PDF |
+| Notifications | Réussi | Réussi | Adhésion/projet, liens cohérents, lecture persistée et destinataire extérieur refusé sans mutation |
+| Messagerie MEMBRE ↔ RÉFÉRENT | Réussi | Réussi | Messages réellement enregistrés/relus, tiers et ADMIN refusés selon le périmètre existant |
+| Profil et avatar | Réussi | Réussi | Modification, upload, image décodée, octets identiques, F5, rôle/email inchangés |
+| Rapports ADMIN | Réussi | Réussi | PDF/CSV effectivement téléchargés ; cinq indicateurs identiques à l’écran, aucune adresse des comptes de recette dans le rapport |
+| SUPER_ADMIN | ADMIN jetable 29 | ADMIN jetable 30 | Confirmation de mot de passe, création, désactivation/réactivation, ancien JWT refusé, droits/API et journal |
+| Suppression compte jetable sans paiement | Membre refusé 26 | Membre refusé 28 | DELETE 204, accueil, session effacée, F5/historique stables, profil protégé redirigé vers connexion |
+
+Granularité des preuves, sans les mélanger avec les tests unitaires : 24 étapes de recette
+Groupes/Projets et dix scénarios complémentaires ; quatre paiements TEST avec 26 contrôles
+synthétiques ; huit contrôles de présence, 16 étapes visiteur/connexion et six contrôles
+de suppression réelle. Les manipulations initialement interrompues ont été reprises
+sur les mêmes données, sans créer de nouveaux paiements pour contourner un échec.
+
+Les scripts privés ont nécessité des corrections de harnais : propriété Fetch.status,
+confirmation native ADMIN, capture de réponse WebKit après navigation, reprise de
+sessions déjà ouvertes, contrat 404 d’une notification étrangère et 201 de Checkout
+activité. Aucun code métier n’a été modifié pour ces différences. Une navigation WebKit
+a été interrompue pendant le harnais, puis le même parcours a été validé à la reprise ;
+cela ne prouve pas l’absence de toute instabilité sur tous les Safari.
+La protection de connexion 10/minute/IP a répondu 429 sous les logins de recette ;
+la fenêtre normale a été respectée et les seuils sont inchangés.
+
+Stripe : exactement quatre nouvelles sessions TEST distinctes à 1 EUR, aucun LIVE,
+aucun remboursement, aucun POST de récupération `/verifier` durant ces quatre flux.
+Le contrôle final a relu les quatre sessions complete/paid et les lignes locales uniques.
+Les deux reçus PDF ont une vraie signature PDF. La source de confirmation est le webhook,
+jamais l’URL de retour. Le listener temporaire vers 18081 a été arrêté après les preuves,
+pour éviter de le confondre avec un listener destiné à la base originale.
+
+Preuves privées : `lot8-stripe-acceptance-summary.json`, `lot8-stripe-closure.json`,
+`lot8-groups-projects-account-summary.json`, `real-visitor-*.json`, `real-presence-*.json`,
+`real-deletion-*.json` dans `/private/tmp/bx-defense-final-20261007`. Les logs, jetons,
+URLs de session, reçus et sauvegardes ne sont pas ajoutés au dépôt.
+
+#### Incidents de la suite navigateur complète
+
+Première globale : 390 réussis, six échecs, deux ignorés. Les six échecs étaient les
+fixtures d’image projet imposant `localhost:8080` alors que l’API de test est 18081.
+Le contrôle d’origine du produit refusait correctement cette réponse. Seul le fichier
+`e2e/project-details.spec.js` est corrigé : URL relative et assertions sur sa normalisation,
+aucun assouplissement de sécurité. Dix-huit tests ciblés Chromium/WebKit et trois tests
+unitaires de sécurité image passent ensuite ; ESLint ciblé et diff-check passent.
+
+Deuxième globale concurrente à la recette réelle : 394 réussis, deux dépassements de délai,
+deux ignorés. Charge mesurée 25,44/20,83/15,51 pour huit CPU logiques. Une suppression
+habituellement terminée en 5–6 s prend 28,5 s, la répétition suivante atteint le budget
+30 s lors de la dernière navigation ; un retour Checkout WebKit dépasse son attente URL.
+Les étapes métier précédentes passent. Les traces ciblées et la suite au calme ci-dessous confirment cette qualification
+sur le poste testé ; aucun timeout ni retry n’est augmenté pour cacher ces résultats.
+Les preuves intermédiaires sont conservées, pas remplacées par la dernière exécution.
+
+
+### Conditions encore nécessaires avant une défense sur l’environnement habituel
+
+1. **Base originale : validation séparée nécessaire.** Les sept reprises financières et
+   les deux affectations historiques ont été prouvées sur copie, pas appliquées à
+   `bxconnect_mvp1`. Les runbooks de reprise identifient les contrôles et opérations
+   métier idempotentes. Aucune mise à jour SQL forcée, aucun nouveau paiement nécessaire.
+2. **Environnement habituel à remettre au code/configuration validés.** Aucun redémarrage du processus
+   Spring sur 8080 n’a été commandé par cet audit ; sa version en mémoire ne constitue
+   pas la preuve de réception. Son `node_modules` n’a pas été
+   remplacé. Installer le lockfile et démarrer le code validé avec le profil, la base,
+   les uploads et le listener volontairement choisis. Les preuves réelles sont celles
+   de 5181/18081/13316, pas une validation implicite du service 5173/8080 resté ouvert.
+3. **PARTENAIRE : arbitrage de périmètre en attente.** Les documents MVP1 et la décision
+   de report MVP2 se contredisent. Espace/comptes/backend inchangés ; ne pas présenter
+   le module comme masqué ni son arbitrage comme résolu.
+4. **Email distant non validé.** SMTP contrôlé fonctionnel, mais l’envoi du processus
+   local habituel est désactivé et aucun fournisseur/boîte externe n’a été validé.
+   Configurer et tester une adresse contrôlée avant de promettre un vrai email au jury.
+5. **Remboursements externes : limite explicite.** `charge.refunded` ne rapproche pas
+   les états locaux. Aucune gestion automatique ajoutée sans décision totale/partielle ;
+   ne pas présenter un remboursement Stripe externe comme automatiquement synchronisé.
+
+Autres limites : persistance sur hébergement distant et build déployé non validés,
+réseau lent non mesuré, réponse email neutre mais délai SMTP non constant, données
+sans session Stripe exploitable bloquées par sécurité. L’archivage et les erreurs de
+fournisseur sont couverts par les tests API/MySQL/simulés ; aucune panne Stripe réelle
+ni suppression de groupe de démonstration originale n’a été provoquée.
+
+La recette de secours gratuite n’efface pas ces limites. La checklist détaillée, les
+services, ports, commandes, rôles et dates figurent dans `DEFENSE_RUNBOOK.md`.
+
+### Fichiers par commit local
+
+Aucun push, merge, changement de branche ou modification mobile. Le tag de sauvegarde
+et `main` restent sur `0f1fc91d2ee1272b2e1b6cbfa7ee5e29303f2668`.
+
+Lot 1 — `3a39eb4` — fix(payments): recover confirmed Stripe activity payments safely (10 fichiers) :
+
+- `backend/src/main/java/com/bxjeunes/bx_connect/controller/StripeController.java`
+- `backend/src/main/java/com/bxjeunes/bx_connect/dto/PaiementResponse.java`
+- `backend/src/main/java/com/bxjeunes/bx_connect/service/ActivityPaymentService.java`
+- `backend/src/main/java/com/bxjeunes/bx_connect/service/StripeService.java`
+- `backend/src/test/java/com/bxjeunes/bx_connect/integration/ActivityStripeRecoveryMySqlTest.java`
+- `backend/src/test/java/com/bxjeunes/bx_connect/security/ActivityRecoveryEndpointTest.java`
+- `backend/src/test/java/com/bxjeunes/bx_connect/security/StripeSessionSecurityTest.java`
+- `backend/src/test/java/com/bxjeunes/bx_connect/service/ActivityProviderConfirmationTest.java`
+- `documentation/FINAL_DEFENSE_AUDIT.md`
+- `documentation/STRIPE_RECOVERY_RUNBOOK.md`
+
+Lot 2 — `a87c8b2` — fix(groups): synchronize activity responsibility on reassignment (8 fichiers) :
+
+- `backend/src/main/java/com/bxjeunes/bx_connect/repository/ActiviteRepository.java`
+- `backend/src/main/java/com/bxjeunes/bx_connect/service/ActiviteService.java`
+- `backend/src/main/java/com/bxjeunes/bx_connect/service/GroupeService.java`
+- `backend/src/test/java/com/bxjeunes/bx_connect/integration/GroupeReferentActivitiesMySqlTest.java`
+- `backend/src/test/java/com/bxjeunes/bx_connect/security/GroupeSecurityTest.java`
+- `backend/src/test/java/com/bxjeunes/bx_connect/service/ActiviteWriteRulesTest.java`
+- `documentation/FINAL_DEFENSE_AUDIT.md`
+- `documentation/GROUP_REFERENT_REPAIR.md`
+
+Lot 3 — `832d7d1` — fix(payments): verify checkout recovery and registration deadlines (28 fichiers) :
+
+- `backend/src/main/java/com/bxjeunes/bx_connect/dto/ActiviteResponse.java`
+- `backend/src/main/java/com/bxjeunes/bx_connect/dto/PaiementResponse.java`
+- `backend/src/main/java/com/bxjeunes/bx_connect/exception/ActivityRuleException.java`
+- `backend/src/main/java/com/bxjeunes/bx_connect/service/ActiviteService.java`
+- `backend/src/main/java/com/bxjeunes/bx_connect/service/ActivityCheckoutWindow.java`
+- `backend/src/main/java/com/bxjeunes/bx_connect/service/ActivityPaymentService.java`
+- `backend/src/main/java/com/bxjeunes/bx_connect/service/ProjetParticipationPaiementService.java`
+- `backend/src/main/java/com/bxjeunes/bx_connect/service/ProjetStripeCheckoutService.java`
+- `backend/src/main/java/com/bxjeunes/bx_connect/service/StripeService.java`
+- `backend/src/test/java/com/bxjeunes/bx_connect/integration/ActivityStripeRecoveryMySqlTest.java`
+- `backend/src/test/java/com/bxjeunes/bx_connect/service/ActivityCheckoutOrchestrationTest.java`
+- `backend/src/test/java/com/bxjeunes/bx_connect/service/ActivityCheckoutWindowTest.java`
+- `backend/src/test/java/com/bxjeunes/bx_connect/service/ActivityPaymentPolicyTest.java`
+- `backend/src/test/java/com/bxjeunes/bx_connect/service/ActivityProviderConfirmationTest.java`
+- `backend/src/test/java/com/bxjeunes/bx_connect/service/ProjetParticipationPaiementTest.java`
+- `backend/src/test/java/com/bxjeunes/bx_connect/service/ProjetStripeCheckoutTest.java`
+- `documentation/FINAL_DEFENSE_AUDIT.md`
+- `frontend-web/e2e/activity-finalization.spec.js`
+- `frontend-web/e2e/payment-checkout-safety.spec.js`
+- `frontend-web/playwright.config.js`
+- `frontend-web/src/i18n/locales/en.json`
+- `frontend-web/src/i18n/locales/fr.json`
+- `frontend-web/src/i18n/locales/nl.json`
+- `frontend-web/src/pages/activites/ActiviteDetail.jsx`
+- `frontend-web/src/pages/paiement/ActivityPaymentReturn.jsx`
+- `frontend-web/src/pages/projets/Projets.jsx`
+- `frontend-web/src/utils/stripeCheckout.js`
+- `frontend-web/src/utils/stripeCheckout.test.js`
+
+Lot 4 — `ce35c65` — fix(web): enforce group permissions and clarify MVP limits (16 fichiers) :
+
+- `backend/src/main/java/com/bxjeunes/bx_connect/controller/GroupeController.java`
+- `backend/src/main/java/com/bxjeunes/bx_connect/service/GroupeService.java`
+- `backend/src/test/java/com/bxjeunes/bx_connect/integration/GroupePermissionsMySqlTest.java`
+- `backend/src/test/java/com/bxjeunes/bx_connect/security/GroupeMembershipEndpointTest.java`
+- `backend/src/test/java/com/bxjeunes/bx_connect/service/GroupeWorkflowTest.java`
+- `documentation/FINAL_DEFENSE_AUDIT.md`
+- `documentation/STRIPE_REFUNDS_LIMITS.md`
+- `frontend-web/e2e/group-workflow.spec.js`
+- `frontend-web/e2e/mvp-boundaries.spec.js`
+- `frontend-web/src/i18n/locales/en.json`
+- `frontend-web/src/i18n/locales/fr.json`
+- `frontend-web/src/i18n/locales/nl.json`
+- `frontend-web/src/pages/activites/ActiviteDetail.jsx`
+- `frontend-web/src/pages/admin/AdminGroupes.jsx`
+- `frontend-web/src/pages/auth/Login.jsx`
+- `frontend-web/src/pages/paiement/MesFactures.jsx`
+
+Lot 5 — `fa2bb45` — fix(web): stabilize sessions and document demo configuration (11 fichiers) :
+
+- `documentation/DEFENSE_RUNBOOK.md`
+- `documentation/FINAL_DEFENSE_AUDIT.md`
+- `frontend-web/e2e/session-navigation.spec.js`
+- `frontend-web/playwright.config.js`
+- `frontend-web/src/pages/auth/Login.jsx`
+- `frontend-web/src/pages/auth/Register.jsx`
+- `frontend-web/src/pages/groupes/GroupeEspace.jsx`
+- `frontend-web/src/pages/profil/accountDeletion.js`
+- `frontend-web/src/pages/projets/Projets.jsx`
+- `frontend-web/src/routes/postAuthReturn.js`
+- `frontend-web/src/routes/postAuthReturn.test.js`
+
+Lot 6 — `8d05ec4` — test(web): restore reliable frontend regression coverage (11 fichiers) :
+
+- `documentation/FINAL_DEFENSE_AUDIT.md`
+- `frontend-web/e2e/activity-finalization.spec.js`
+- `frontend-web/e2e/admin-dashboard.spec.js`
+- `frontend-web/e2e/group-workflow.spec.js`
+- `frontend-web/e2e/home-activities-state.spec.js`
+- `frontend-web/e2e/post-auth-return.spec.js`
+- `frontend-web/playwright.config.js`
+- `frontend-web/src/api/apiBaseUrl.test.js`
+- `frontend-web/src/i18n/locales/en.json`
+- `frontend-web/src/i18n/locales/fr.json`
+- `frontend-web/src/i18n/locales/nl.json`
+
+Lot 7 — `906d517` — chore(web): patch audited frontend dependencies (3 fichiers) :
+
+- `documentation/FINAL_DEFENSE_AUDIT.md`
+- `documentation/SECURITY_DEPENDENCY_REVIEW.md`
+- `frontend-web/package-lock.json`
+
+Lot 8 — commit de réception courant : preuve finale et runbook actualisés,
+`frontend-web/e2e/project-details.spec.js` (fixture d’image indépendante du port API).
+Aucune autre correction applicative ajoutée pendant la réception réelle.
+
+
+Les douze répétitions ciblées avec traces passent ensuite sans retry ni changement de
+délai. Chromium rejoint `/login` depuis la dernière navigation `/profil` en 1,05–1,17 s ;
+WebKit atteint le Checkout en 0,33–0,53 s. Les suppressions de comptes ont aussi été
+validées avec le vrai backend sur les deux moteurs. Ces observations étayent la
+contention du poste pour les deux timeouts ; elles ne constituent pas une garantie
+contre toute instabilité sous charge. La dernière suite globale limite les workers
+à deux et s’exécute sans recette navigateur concurrente, avec les mêmes assertions.
+
+
+### Résultat global définitif et clôture
+
+Une exécution au calme a été interrompue avec le tour après 241 cas : elle n’est
+pas présentée comme une suite complète. Son journal `lot8-interrupted-browser.log`
+est conservé. Le serveur temporaire 5192 a été identifié puis arrêté avant relance,
+sans toucher à 5173, 5181 ni aux backends.
+
+Dernière exécution complète : **396 réussis, zéro échec, zéro retry, deux ignorés**
+en 6,2 minutes. Les 398 cas se répartissent en 314 réussis + deux exclusions Chromium,
+et 82 réussis WebKit. Les exclusions sont les deux tests clavier natif réservés à
+WebKit, effectivement exécutés dans ce moteur. Aucun test défaillant n’a été ignoré.
+
+Commande dans `/private/tmp/bx-final-frontend-nb32ghns/frontend-web` :
+`BX_TEST_REPORT=lot8-final-browser.json npx playwright test --config=playwright.final.config.js`.
+La configuration temporaire reprend tous les projets du dépôt, port 5192, API 18081,
+workers 2, retries 0 et délais inchangés. Sources/tests/configuration/lockfile vérifiés
+identiques au dépôt. Journaux définitifs : `lot8-final-browser.log` et JSON homonyme.
+Les journaux initial/concurrent/interrompu restent disponibles distinctement.
+
+Les commandes `npm test`, `npm run lint`, le build HTTPS et `npm audit --json` sont
+celles consignées au lot 7, exécutées sur les mêmes sources applicatives et le même
+lockfile que cette réception. Seule la fixture E2E d’image a changé ensuite, avec
+18 tests ciblés, trois tests de sécurité image et ESLint ciblé également réussis.
+Aucun changement applicatif n’est intervenu après les 983 tests backend.
+
+État final des données : copie enrichie des comptes/groupes/activités/projets de
+recette et de quatre transactions Stripe TEST ; anciennes sept sessions récupérées
+sur copie seulement. Deux comptes MEMBRE jetables sans paiement supprimés dans la
+recette. Aucun remboursement, aucune opération Stripe LIVE, aucune reprise originale.
+Sauvegardes MySQL/uploads vérifiées et protégées hors Git ; aucune archive/log/reçu
+ni configuration secrète ajoutés au dépôt.
+
+Les services de copie 5181/18081 restent disponibles pour consultation. Le listener
+Stripe de recette et le SMTP de capture sont arrêtés : les reconfigurer explicitement
+avant tout nouveau test payant/email. Le service original 8080 n’a pas été arrêté
+par nos commandes. Aucun push, aucun merge, aucun changement de branche.
