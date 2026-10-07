@@ -34,8 +34,8 @@ Base originale : aucune reprise autorisée à ce stade. Les tests utilisent des 
 | Test projet/groupe | Ancien bouton soumettre ; workflow brouillon | Défaut de test | 6 | Brouillon puis vraie soumission | POST BROUILLON, groupe actif, puis PATCH SOUMIS et disparition du bouton vérifiés | Corrigé |
 | Test accueil/tri | Récentes vs date début | Incohérence vocabulaire/test | 6 | Prochaines activités, tri métier documenté | Horloge fixe, filtre PUBLIC/PUBLIEE/futur, tri début/id et limite 3 FR/NL/EN | Corrigé : Activités à venir, tri inchangé |
 | 3 tests retour login | Mock intercepte /src/api/axios.js | Défaut de test | 6 | Cibler URL backend, session valide | Interception API précise, JWT valide, destination et F5 vérifiés | Corrigé |
-| 8 alertes npm | Dépendances vulnérables selon avis | Sécurité à qualifier | 7 | Avis officiels, exposition, versions compatibles | npm audit : 6 high, 2 moderate | Analyse en cours |
-| P2 Bundle 2,51 Mo | Imports lourds | Performance | 7 | Mesurer premier chargement, optimisation seulement justifiée | Build initial | À mesurer |
+| 8 alertes npm | Dépendances vulnérables selon avis | Sécurité à qualifier | 7 | Avis officiels, exposition, versions compatibles | Huit chemins/avis qualifiés ; 17 versions compatibles ; npm audit 0 après npm ci | Corrigé ; node_modules original à réinstaller au prochain démarrage |
+| P2 Bundle 2,51 Mo | Imports lourds | Performance | 7 | Mesurer premier chargement, optimisation seulement justifiée | FCP médian local 173–492 ms selon parcours/moteur ; ~706 Ko JS preview initial | Limite expliquée : poids élevé, pas de blocage local mesuré ; distant non validé |
 | Internet/Stripe interrompu | Dépendance externe | Limite exploitation | 8 | Vérification démarrage + récupération sûre + secours gratuit | Aucun nouveau paiement réel dans audit | À éprouver |
 | Réception authentifiée complète | Audit initial lecture seule et E2E mockés | Risque non vérifié | 8 | Comptes jetables, vrai backend et DB isolée | 886 backend ; 287 E2E pass, 9 fail | À exécuter |
 | Safari | Couverture WebKit ciblée seulement | Limite preuve | 8 | Répétition parcours critiques, limites explicites | 27 WebKit réussis initialement | À compléter |
@@ -254,3 +254,25 @@ Logs privés : `bx-lot6-frontend-p0t_9noz/frontend-web/lot6-browser.log`,
 aucune assertion métier affaiblie. `git diff --check` réussi.
 
 Commits locaux supplémentaires : lot 4 `ce35c65`, lot 5 `fa2bb45`.
+
+
+### Lot 7 — dépendances et poids du chargement
+
+Huit dépendances alertées analysées dans `SECURITY_DEPENDENCY_REVIEW.md` : version,
+chemin, avis officiels et exposition navigateur/outillage. Mise à jour ciblée de
+17 versions dans les plages existantes, aucun ajout/suppression ni changement majeur.
+`package.json` inchangé. Installation indépendante via `npm ci --ignore-scripts`.
+`npm audit --json` : zéro alerte ; `npm ls` : arbre cohérent. 138/138 tests Node,
+lint et build réussis, 45/45 tests navigateur ciblés sans échec/ignoré/retry
+(sessions, uploads Chromium/WebKit, PDF/CSV FR/NL/EN). Diff-check réussi.
+
+Preuves privées : `/private/tmp/bx-final-frontend-nb32ghns/frontend-web/lot7-*.log`
+et `lot7-audit.json`. Cette copie sera utilisée pour la suite complète, port 5192,
+API explicitement 18081. L’installation originale et le serveur 5173 restent inchangés ;
+installer le lockfile validé avant leur prochain démarrage.
+
+Poids : mesure initiale sur cinq contextes neufs par moteur/parcours ; médianes FCP
+locales de 173 à 492 ms suivant le contexte. Build final : chunk principal 2520,12 Ko,
+715,14 Ko gzip. Limite expliquée, aucune refonte du chargement ; réseau distant lent
+non validé. Les mesures initiales ne sont pas une comparaison avant/après des patches.
+Lot 6 enregistré localement dans `8d05ec4`.
