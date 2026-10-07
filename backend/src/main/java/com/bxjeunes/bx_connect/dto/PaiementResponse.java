@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 
 public class PaiementResponse {
 
+    private Long id;
     private BigDecimal montant;
     private StatutPaiement statutPaiement;
     private String fournisseur;
@@ -36,6 +37,7 @@ public class PaiementResponse {
     // ─── Factory depuis entité ────────────────────────────────────────────────
     public static PaiementResponse fromEntity(SoutienFinancier s) {
         PaiementResponse r = new PaiementResponse();
+        r.id                    = s.getId();
         r.montant               = s.getMontant();
         r.statutPaiement        = s.getStatutPaiement();
         r.fournisseur           = s.getFournisseur();
@@ -62,6 +64,7 @@ public class PaiementResponse {
     }
 
     // ─── Getters ──────────────────────────────────────────────────────────────
+    public Long getId()                       { return id; }
     public BigDecimal getMontant()             { return montant; }
     public StatutPaiement getStatutPaiement()  { return statutPaiement; }
     public String getFournisseur()             { return fournisseur; }

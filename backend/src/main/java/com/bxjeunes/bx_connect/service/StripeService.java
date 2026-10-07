@@ -187,8 +187,16 @@ public class StripeService {
             throw new AccessDeniedException("Cette session Stripe ne vous appartient pas.");
         }
 
-        // Seul le webhook Stripe signé est autorisé à modifier le statut du paiement.
+        // This GET remains read-only. Recovery uses a separate authenticated POST and Stripe's API.
         return PaiementResponse.fromEntity(soutien);
+    }
+
+    public PaiementResponse recupererPaiementActivite(Long paymentId, String email) throws StripeException {
+        var snapshot = activityPayments.recoverySnapshot(paymentId, email);
+        if (snapshot.payment().getStatutPaiement() == StatutPaiement.PAYE) return snapshot.payment();
+        if (snapshot.sessionId() == null || !snapshot.sessionId().startsWith("cs_"))
+            throw new IllegalArgumentException("Aucune session Stripe exploitable. Ne payez pas à nouveau.");
+        return activityPayments.recover(paymentId, email, lireSessionExterne(snapshot.sessionId()));
     }
 
     // ─── Webhook Stripe (mise à jour automatique du statut) ──────────────────
@@ -209,20 +217,13 @@ public class StripeService {
                         projectParticipationPayments.handle(session, true);
                         break;
                     }
-                    trouverPaiementSession(session).ifPresent(s -> {
+                    if (session.getMetadata() != null && session.getMetadata().containsKey("activity_payment_id")) {
+                        activityPayments.handleStripe(session, true);
+                        break;
+                    }
+                    soutienRepo.findByStripeSessionId(session.getId()).ifPresent(s -> {
                         if (s.getActivite() != null) {
-                            s = activityPayments.lockedPayment(s);
-                            if (!s.getId().toString().equals(session.getMetadata() == null ? null
-                                    : session.getMetadata().get("activity_payment_id")))
-                                throw new IllegalArgumentException("Référence du paiement d'activité invalide.");
-                            if (!"paid".equals(session.getPaymentStatus()) || !"eur".equalsIgnoreCase(session.getCurrency())
-                                    || session.getAmountTotal() == null
-                                    || session.getAmountTotal() != s.getMontant().movePointRight(2).longValueExact())
-                                throw new IllegalArgumentException("Paiement non confirmé ou montant invalide.");
-                            if (s.getStatutPaiement() == StatutPaiement.PAYE) return;
-                            activityPayments.complete(s, true);
-                            s.setStripePaymentIntentId(session.getPaymentIntent());
-                            soutienRepo.save(s);
+                            activityPayments.handleStripe(session, true);
                             return;
                         }
                         s.setStatutPaiement(StatutPaiement.PAYE);
@@ -237,10 +238,13 @@ public class StripeService {
                         projectParticipationPayments.handle(session, false);
                         break;
                     }
-                    trouverPaiementSession(session).ifPresent(s -> {
+                    if (session.getMetadata() != null && session.getMetadata().containsKey("activity_payment_id")) {
+                        activityPayments.handleStripe(session, false);
+                        break;
+                    }
+                    soutienRepo.findByStripeSessionId(session.getId()).ifPresent(s -> {
                         if (s.getActivite() != null) {
-                            s = activityPayments.lockedPayment(s);
-                            activityPayments.complete(s, false);
+                            activityPayments.handleStripe(session, false);
                         } else if (s.getStatutPaiement() != StatutPaiement.PAYE) {
                             s.setStatutPaiement(StatutPaiement.ANNULE);
                             soutienRepo.save(s);
@@ -289,22 +293,6 @@ public class StripeService {
                 || !paymentId.equals(session.getMetadata().get(metadataKey)))
             throw new IllegalArgumentException("Session Stripe incohérente.");
         return session;
-    }
-
-    private java.util.Optional<SoutienFinancier> trouverPaiementSession(Session session) {
-        var found = soutienRepo.findByStripeSessionId(session.getId());
-        if (found.isPresent()) return found;
-        String id = session.getMetadata() == null ? null : session.getMetadata().get("activity_payment_id");
-        if (id == null) return java.util.Optional.empty();
-        var payment = soutienRepo.findById(Long.valueOf(id)).orElseThrow();
-        if (payment.getInscription() == null || !"STRIPE".equals(payment.getFournisseur()))
-            throw new IllegalArgumentException("Paiement invalide.");
-        payment = activityPayments.lockedPayment(payment);
-        if (payment.getStripeSessionId() != null && !payment.getStripeSessionId().equals(session.getId()))
-            throw new IllegalArgumentException("Session invalide.");
-        payment.setStripeSessionId(session.getId());
-        soutienRepo.saveAndFlush(payment);
-        return java.util.Optional.of(payment);
     }
 
     // ─── Historique des paiements Stripe de l'utilisateur connecté ───────────

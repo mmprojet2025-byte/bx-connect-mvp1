@@ -1,6 +1,8 @@
 package com.bxjeunes.bx_connect.service;
 
 import com.bxjeunes.bx_connect.exception.ActivityRuleException;
+import com.bxjeunes.bx_connect.dto.PaiementResponse;
+import com.stripe.model.checkout.Session;
 
 import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.*;
@@ -125,6 +127,87 @@ public class ActivityPaymentService {
         if(auth==null || !p.getDonateur().getEmail().equals(auth.getName()))
             throw new AccessDeniedException("Ce paiement ne vous appartient pas.");
     }
+
+    public record RecoverySnapshot(PaiementResponse payment, String sessionId) {}
+
+    @Transactional(readOnly = true)
+    public RecoverySnapshot recoverySnapshot(Long paymentId, String email) {
+        var p = payments.findById(paymentId).orElseThrow();
+        requireRecoveryOwner(p, email);
+        requireActivityPayment(p);
+        return new RecoverySnapshot(PaiementResponse.fromEntity(p), p.getStripeSessionId());
+    }
+
+    private void requireRecoveryOwner(SoutienFinancier p, String email) {
+        var member = p.getDonateur();
+        if (member == null || !member.isActif() || member.getRole() != Role.MEMBRE
+                || !member.getEmail().equals(email))
+            throw new AccessDeniedException("Ce paiement ne vous appartient pas.");
+    }
+
+    private void requireActivityPayment(SoutienFinancier p) {
+        if (!"STRIPE".equals(p.getFournisseur()) || p.getActivite() == null || p.getProjet() != null
+                || p.getInscription() == null || p.getDonateur() == null
+                || !p.getActivite().getId().equals(p.getInscription().getActivite().getId())
+                || !p.getDonateur().getId().equals(p.getInscription().getMembre().getId()))
+            throw new IllegalArgumentException("Paiement d'activité incohérent.");
+    }
+
+    /** The supplied session comes only from Stripe's server API, never from the browser. */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public PaiementResponse recover(Long paymentId, String email, Session session) {
+        var snapshot = payments.findById(paymentId).orElseThrow();
+        requireRecoveryOwner(snapshot, email);
+        requireActivityPayment(snapshot);
+        var p = lockedPayment(snapshot);
+        requireRecoveryOwner(p, email);
+        if (p.getStripeSessionId() == null) throw new IllegalArgumentException("Session Stripe absente.");
+        verifyStripeSession(p, session);
+        if ("complete".equals(session.getStatus()) && "paid".equals(session.getPaymentStatus()))
+            applyStripeSession(p, session, true);
+        return PaiementResponse.fromEntity(p);
+    }
+
+    /** Shared confirmation for signed webhooks and server-side recovery, with the same locks. */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void handleStripe(Session session, boolean completed) {
+        String reference = session.getMetadata() == null ? null : session.getMetadata().get("activity_payment_id");
+        if (reference == null || !reference.matches("[1-9][0-9]*"))
+            throw new IllegalArgumentException("Référence du paiement d'activité invalide.");
+        var p = payments.findByStripeSessionId(session.getId())
+                .orElseGet(() -> payments.findById(Long.valueOf(reference)).orElseThrow());
+        requireActivityPayment(p);
+        p = lockedPayment(p);
+        verifyStripeSession(p, session);
+        applyStripeSession(p, session, completed);
+    }
+
+    private void verifyStripeSession(SoutienFinancier p, Session session) {
+        requireActivityPayment(p);
+        if (session == null || session.getId() == null || !session.getId().startsWith("cs_")
+                || (p.getStripeSessionId() != null && !p.getStripeSessionId().equals(session.getId()))
+                || session.getMetadata() == null
+                || !p.getId().toString().equals(session.getMetadata().get("activity_payment_id"))
+                || session.getMetadata().containsKey("project_participation_payment_id")
+                || !"payment".equals(session.getMode()) || !"eur".equalsIgnoreCase(session.getCurrency())
+                || session.getAmountTotal() == null || p.getMontant() == null
+                || session.getAmountTotal() != p.getMontant().movePointRight(2).longValueExact())
+            throw new IllegalArgumentException("Session de paiement d'activité incohérente.");
+    }
+
+    private void applyStripeSession(SoutienFinancier p, Session session, boolean completed) {
+        if (completed && (!"complete".equals(session.getStatus()) || !"paid".equals(session.getPaymentStatus())
+                || session.getPaymentIntent() == null || session.getPaymentIntent().isBlank()))
+            throw new IllegalArgumentException("Paiement non confirmé.");
+        if (!completed && (!"expired".equals(session.getStatus()) || "paid".equals(session.getPaymentStatus())))
+            throw new IllegalArgumentException("Session non expirée.");
+        if (p.getStatutPaiement() == StatutPaiement.PAYE || p.getStatutPaiement() == StatutPaiement.REMBOURSE) return;
+        p.setStripeSessionId(session.getId());
+        if (completed) p.setStripePaymentIntentId(session.getPaymentIntent());
+        p.setCheckoutUrl(null);
+        complete(p, completed);
+    }
+
     public void complete(SoutienFinancier p, boolean paid) {
         // A successful provider event must never be overwritten by a delayed expiration/failure.
         if (p.getStatutPaiement()==StatutPaiement.PAYE || (!paid && p.getStatutPaiement()!=StatutPaiement.EN_ATTENTE)) return;
