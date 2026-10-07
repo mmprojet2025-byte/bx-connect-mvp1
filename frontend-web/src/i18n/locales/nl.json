@@ -3128,6 +3128,7 @@
     "legacyGroup": "Historische activiteit zonder groep"
   },
   "activityEditor": {
+    "noAutomaticRefund": "Het annuleren van uw inschrijving leidt niet tot een automatische terugbetaling. Neem voor vragen over terugbetaling contact op met de organisator.",
     "information": "Informatie",
     "datePlace": "Datum en locatie",
     "date": "Datum",
@@ -3200,7 +3201,8 @@
     "budgetHelp": "Het aangevraagde budget dient voor de projectbeoordeling. Elke deelnemer betaalt de deelnameprijs.",
     "payJoin": "Betalen en deelnemen",
     "invoices": "Mijn facturen",
-    "invoiceHelp": "Betalingsbewijzen voor projectdeelname. Terugkeren van Stripe bevestigt de betaling niet: vernieuw om de bevestiging te controleren.",
+    "invoiceTitle": "Mijn facturen — projecten",
+    "invoiceHelp": "Alleen betalingsbewijzen voor projectdeelnames. Betalingen voor activiteiten staan niet op dit scherm. De betalingsbevestiging wordt bij de server gecontroleerd.",
     "transactions": "Transacties en betalingsbewijzen",
     "empty": "Nog geen transacties.",
     "unavailable": "Gegevens niet beschikbaar.",

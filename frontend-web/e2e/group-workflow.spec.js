@@ -100,6 +100,31 @@ test('archived membership does not block requesting a current group', async ({ p
   await expect.poll(() => writes.some(w => w.path === '/api/groupes/10/rejoindre')).toBe(true)
 })
 
+test('ADMIN keeps archived groups read-only in the card and management drawer', async ({ page }) => {
+  const { group, writes } = await setup(page)
+  group.statut = 'ARCHIVE'; group.actif = false
+  await page.goto('/admin/groupes')
+  await expect(page.locator('details select')).toBeDisabled()
+  await page.getByRole('button', { name: 'Gérer', exact: true }).click()
+  await expect(page.locator('aside select')).toBeDisabled()
+  await expect(page.locator('aside').getByRole('button', { name: 'Modifier', exact: true })).toHaveCount(0)
+  await expect(page.locator('aside').getByRole('button', { name: 'Archiver le groupe', exact: true })).toHaveCount(0)
+  expect(writes).toEqual([])
+})
+
+test('REFERENT can read archived memberships without changing them or their group', async ({ page }) => {
+  const { group, writes } = await setup(page, 'REFERENT')
+  group.statut = 'ARCHIVE'; group.actif = false
+  await page.goto('/referent/membres')
+  await expect(page.getByText('alice@example.org').filter({ visible: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Désactiver', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Réactiver', exact: true })).toHaveCount(0)
+  await page.goto('/referent/groupes')
+  await expect(page.getByRole('heading', { name: group.nom, exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Modifier', exact: true })).toHaveCount(0)
+  expect(writes).toEqual([])
+})
+
 test('project creation selects the current membership instead of an archived historical group', async ({ page }) => {
   const { writes } = await setup(page, 'MEMBRE')
   await page.route('**/api/groupes/mes-adhesions', route => route.fulfill({ json: [

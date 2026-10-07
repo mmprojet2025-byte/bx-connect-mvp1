@@ -3128,6 +3128,7 @@
     "legacyGroup": "Activité historique sans groupe"
   },
   "activityEditor": {
+    "noAutomaticRefund": "Annuler votre inscription ne déclenche pas de remboursement automatique. Contactez l’organisateur pour toute question de remboursement.",
     "information": "Informations",
     "datePlace": "Date et lieu",
     "date": "Date",
@@ -3200,7 +3201,8 @@
     "budgetHelp": "Le budget demandé sert à l’analyse du projet. Le prix de participation est payé par chaque participant.",
     "payJoin": "Payer et participer",
     "invoices": "Mes factures",
-    "invoiceHelp": "Reçus des participations aux projets. Le retour de Stripe ne confirme pas le paiement : actualisez pour consulter la confirmation.",
+    "invoiceTitle": "Mes factures — projets",
+    "invoiceHelp": "Reçus de paiement des participations aux projets uniquement. Les paiements d’activités ne figurent pas dans cet écran. La confirmation du paiement est vérifiée auprès du serveur.",
     "transactions": "Transactions et reçus",
     "empty": "Aucune transaction pour le moment.",
     "unavailable": "Données indisponibles.",

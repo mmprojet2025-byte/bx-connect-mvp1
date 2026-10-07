@@ -3128,6 +3128,7 @@
     "legacyGroup": "Historical activity without a group"
   },
   "activityEditor": {
+    "noAutomaticRefund": "Cancelling your registration does not issue an automatic refund. Contact the organiser with any refund questions.",
     "information": "Information",
     "datePlace": "Date and location",
     "date": "Date",
@@ -3200,7 +3201,8 @@
     "budgetHelp": "The requested budget is for project review. The participation price is paid by each participant.",
     "payJoin": "Pay and join",
     "invoices": "My invoices",
-    "invoiceHelp": "Project participation receipts. Returning from Stripe does not confirm payment: refresh to check confirmation.",
+    "invoiceTitle": "My invoices — projects",
+    "invoiceHelp": "Payment receipts for project participation only. Activity payments are not listed here. Payment confirmation is checked with the server.",
     "transactions": "Transactions and receipts",
     "empty": "No transactions yet.",
     "unavailable": "Data unavailable.",

@@ -16,12 +16,12 @@ Base originale : aucune reprise autorisée à ce stade. Les tests utilisent des 
 | P1 Clôture Stripe 31 min | Backend et UI non alignés | Bug produit | 3 | Horloge serveur, échéance UTC fournie au Web, Europe/Brussels | Bornes 1859/1860/1861 secondes et +1 ms, hiver/été/DST, Web Bruxelles/New York | Corrigé, délai inchangé |
 | Risque ancienne URL activité | URL réutilisée sans vérifier session | Bug produit | 3 | URL seulement pour session open/unpaid vérifiée ; recontrôle avant reprise | Tests reprise/expiration/erreur/double clic | Corrigé |
 | Risque réservations bloquées | Expiration non reçue / tentative sans session | Robustesse | 3 | Récupération propriétaire + réconciliation bornée avant Checkout, preuve Stripe obligatoire | Tests MySQL expiration/capacité/concurrence et idempotence réseau | Corrigé pour sessions identifiées ; absence de session reste bloquée par sécurité ; pas de scheduler implicite |
-| P1 PARTENAIRE visible | Report MVP2 annoncé, documents MVP1 différents | Décision de périmètre | 4 | Arbitrage demandé ; conserver backend/comptes | README et matrice recette | Décision utilisateur en attente |
-| P2 Anciens endpoints groupes | ADMIN traite adhésions, REFERENT crée | Permissions métier | 4 | ADMIN structure, REFERENT seul membres de son groupe | Controller/services | À corriger |
-| Ressources archivées | Certaines mutations ne vérifient pas ARCHIVE | Bug produit | 4 | Refus API même accès direct | GroupeService | À corriger |
-| P2 Google | Bouton future fonctionnalité | Limite visible | 4 | Présentation non opérationnelle explicite | Login | À clarifier |
-| P2 Mes factures | Reçus projets uniquement | Limite fonctionnelle | 4 | Libellés précis, aucun historique unifié | MesFactures | À clarifier |
-| P2 Désinscription/remboursement | Désinscription sans remboursement ; charge.refunded vide | Limite financière | 4 | Expliquer et qualifier rapprochement externe ; pas remboursement automatique | InscriptionService/StripeService | Décision nécessaire si automatisation souhaitée |
+| P1 PARTENAIRE visible | Report MVP2 annoncé, documents MVP1 différents | Décision de périmètre | 4 | Arbitrage demandé ; conserver backend/comptes | README et matrice recette | Bloqué sur arbitrage utilisateur ; aucune modification PARTENAIRE |
+| P2 Anciens endpoints groupes | ADMIN traite adhésions, REFERENT crée | Permissions métier | 4 | Création legacy alias ADMIN du service canonique ; décisions REFERENT propre groupe en API et service | Matrice API/MySQL, suites voisines | Corrigé |
+| Ressources archivées | Certaines mutations ne vérifient pas ARCHIVE | Bug produit | 4 | PUT, réaffectation et changement d’adhésion refusés ; historique conservé | Tests permissions/MySQL et contrôles UI | Corrigé |
+| P2 Google | Bouton future fonctionnalité | Limite visible | 4 | Bouton désactivé avec libellé futur FR/NL/EN | Chromium/WebKit, aucun appel auth | Limite explicitée |
+| P2 Mes factures | Reçus projets uniquement | Limite fonctionnelle | 4 | Titre et description explicitement projets ; navigation conservée | Chromium/WebKit FR/NL/EN, reçu PDF voisin | Limite explicitée |
+| P2 Désinscription/remboursement | Désinscription sans remboursement ; charge.refunded vide | Limite financière | 4 | Message avant désinscription payée, qualification des remboursements externes dans STRIPE_REFUNDS_LIMITS.md | UI FR/NL/EN + lecture code/API Stripe ; aucun remboursement déclenché | Limite explicitée ; rapprochement automatique non réalisé, décision métier nécessaire |
 | P1 Mot de passe oublié | Email désactivé en dev | Configuration | 5 | SMTP contrôlé, tests réception et jeton | Profil dev constaté | Envoi réel non validé |
 | P2 Suppression redirige parfois login | Course logout/route privée | Bug navigation intermittent | 5/6 | Cause + test stable sans retries | Échec global puis réussite isolée | À corriger |
 | Sessions/navigation voisines | Expiration/F5/historique/notification | Risque à vérifier | 5/8 | Tests contrôles session et destinations | Tests existants partiels | À vérifier |
@@ -143,3 +143,40 @@ Journaux hors Git : `bx-lot3-payments-psvmbn10/lot3-tests.log`,
 
 Préparation de réception Stripe : aucun listener actif et aucun endpoint webhook
 TEST enregistré lors du contrôle. La future livraison sera limitée au backend isolé.
+
+### Lot 4 — permissions et périmètre visible
+
+POST `/api/groupes` réutilise désormais la création ADMIN canonique (même DTO
+avec référent actif obligatoire, même service). Les anciennes décisions d’adhésion
+sont réservées au référent du groupe, contrôlé aussi dans le service. Les ressources
+archivées restent consultables mais ne peuvent être modifiées/réaffectées ; leur
+historique d’adhésion est conservé. Les sélecteurs ADMIN reflètent ce refus.
+
+Google : contrôle désactivé et futur annoncé avant clic. Factures : titre et contenu
+explicitement limités aux projets ; aucun nouvel historique ajouté. Désinscription
+payée : absence de remboursement automatique annoncée avant action. Tous en FR/NL/EN.
+
+Tests backend : 351 réussis, zéro échec/erreur/ignoré, avec matrice de permissions
+API/MySQL et suites Groupes/Activités voisines. Tests UI limites/paiements/navigation :
+172/172 Chromium et WebKit, API simulées, zéro ignoré. ESLint ciblé réussi.
+Commande UI dans copie temporaire :
+`npx playwright test --config playwright.audit.config.js mvp-boundaries.spec.js project-payments.spec.js admin-navigation.spec.js`.
+Journal : `/private/tmp/bx-lot4-web-tests.log`.
+
+PARTENAIRE : aucune modification, arbitrage demandé. README et matrice de recette
+incluent encore le module dans MVP1, décision de conversation contraire ; les mécanismes
+de masquage ne sont pas appliqués sans résolution de cette contradiction.
+
+Remboursements : `charge.refunded` reste sans traitement, HTTP 200 ne prouve pas le
+rapprochement. La garde REMBOURSE protège seulement un état déjà connu localement.
+Le document `STRIPE_REFUNDS_LIMITS.md` détaille les contrôles en lecture seule et les
+décisions nécessaires pour les remboursements partiels/totaux, la participation et le
+reçu. Aucun remboursement ni rapprochement automatique inventé.
+
+Commits locaux déjà créés : lot 1 `3a39eb4`, lot 2 `a87c8b2`, lot 3 `832d7d1`.
+
+Complément lot 4 Groupes : 11 tests Chromium et 11 WebKit réussis ; le seul ancien
+test projet/groupe défaillant est explicitement laissé au lot 6, aucune assertion
+supprimée. Maven : `./mvnw '-Dtest=Groupe*Test,Activite*Test,InscriptionLifecycleMySqlTest' test`.
+Logs : `/tmp/bx-lot4-groups-maven.log`, `/tmp/bx-lot4-groups-browser.log`,
+`/tmp/bx-lot4-groups-webkit.log`. Total navigateur ciblé lot 4 : 194 réussis.

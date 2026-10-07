@@ -114,6 +114,27 @@ class GroupeWorkflowTest {
         assertThatThrownBy(() -> service.accepterAdhesion(20L, referent.getEmail())).hasMessageContaining("pas actif");
         assertThatThrownBy(() -> service.refuserAdhesion(20L, referent.getEmail())).hasMessageContaining("pas actif");
         assertThatThrownBy(() -> service.changerAppartenance(20L, referent.getEmail(), true)).hasMessageContaining("pas actif");
+        assertThatThrownBy(() -> service.quitterGroupe(10L, member.getEmail())).hasMessageContaining("lecture seule");
+        var request = new com.bxjeunes.bx_connect.dto.GroupeRequest(); request.setNom("Modification interdite");
+        assertThatThrownBy(() -> service.modifierGroupe(10L, request, referent.getEmail())).hasMessageContaining("lecture seule");
+        verify(memberships, never()).save(any());
+        verify(groups, never()).save(any());
+    }
+    @ParameterizedTest @EnumSource(value=Role.class, names={"REFERENT"}, mode=EnumSource.Mode.EXCLUDE)
+    void membershipDecisionsRejectEveryOtherRoleEvenAtServiceLevel(Role role) {
+        User actor = new User(); actor.setId(3L); actor.setRole(role); actor.setActif(true);
+        when(users.findByEmail("actor@test.invalid")).thenReturn(Optional.of(actor));
+        assertThatThrownBy(() -> service.accepterAdhesion(20L, "actor@test.invalid")).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> service.refuserAdhesion(20L, "actor@test.invalid")).isInstanceOf(AccessDeniedException.class);
+        assertThat(membership.getStatut()).isEqualTo(StatutMembre.EN_ATTENTE);
+        verify(memberships, never()).save(any());
+    }
+    @Test void administrativeServiceRejectsNonAdminActor() {
+        var request = new com.bxjeunes.bx_connect.dto.admin.AdminGroupeRequest(); request.setNom("Interdit"); request.setReferentId(1L);
+        assertThatThrownBy(() -> service.creerGroupeParAdmin(request, referent.getEmail())).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> service.assignerReferent(10L, 1L, referent.getEmail())).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> service.supprimerGroupe(10L, referent.getEmail())).isInstanceOf(AccessDeniedException.class);
+        verify(groups, never()).save(any());
     }
     @Test void leavingPreservesMembershipAndAllowsNewRequestWithSameId() {
         membership.setStatut(StatutMembre.ACCEPTE);

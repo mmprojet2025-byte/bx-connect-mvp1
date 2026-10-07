@@ -17,7 +17,6 @@ export default function Login() {
   const { t } = useTranslation()
 
   const [erreur, setErreur] = useState(null)
-  const [googleNotice, setGoogleNotice] = useState(null)
   const [showPassword, setShowPassword] = useState(false)
   const loginSchema = z.object({
     email: z
@@ -39,7 +38,6 @@ export default function Login() {
 
   const onSubmit = async (formData) => {
     setErreur(null)
-    setGoogleNotice(null)
     try {
       const res = await api.post('/auth/login', formData)
       const { token, prenom, nom, email, role } = res.data
@@ -178,17 +176,11 @@ export default function Login() {
 
             <button
               type="button"
-              onClick={() => setGoogleNotice(t('auth.googleSoon'))}
-              className="flex h-12 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-base font-semibold text-slate-800 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100"
+              disabled
+              className="flex min-h-12 w-full cursor-not-allowed items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-500"
             >
-              Google
+              {t('auth.googleSoon')}
             </button>
-
-            {googleNotice && (
-              <p className="mt-3 text-center text-sm font-medium text-blue-700" role="status">
-                {googleNotice}
-              </p>
-            )}
 
             <p className="mt-7 text-center text-sm text-slate-600">
               {t('auth.no_account')}{' '}

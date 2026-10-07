@@ -424,6 +424,9 @@ function DetailActivityAction({ activite, isAuthenticated, isMembre, loading, on
         >
           {t('activities.cancel_registration')}
         </button>
+        {activite.statutInscription === 'PAYEE' && (
+          <p className="text-sm text-slate-600">{t('activityEditor.noAutomaticRefund')}</p>
+        )}
       </div>
     );
   }
