@@ -171,7 +171,8 @@ for (const lang of ['fr', 'nl', 'en']) {
     await expect(activities.getByRole('heading')).toHaveText(t.admin.dashboardStatistics.activities)
     await expect(projects.locator('table tbody tr')).toHaveCount(12)
     for (const status of ['SOUMIS', 'VALIDE_REFERENT']) {
-      await expect(projects.locator('table tbody tr').filter({ hasText: t.statuses[status] }).locator('td')).toHaveText('1')
+      const row = projects.getByRole('row').filter({ has: page.getByRole('rowheader', { name: t.statuses[status], exact: true }) })
+      await expect(row.getByRole('cell')).toHaveText('1')
     }
     await expect(activities.locator('table tbody tr')).toHaveText(['Activité publiée7'])
     await expect(activities.locator('.recharts-surface')).toBeVisible()

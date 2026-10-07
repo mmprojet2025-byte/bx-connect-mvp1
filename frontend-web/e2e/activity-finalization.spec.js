@@ -1,11 +1,36 @@
-import { test, expect } from '@playwright/test'
+import { test as base, expect } from '@playwright/test'
 import { Buffer } from 'node:buffer'
 import { readFileSync } from 'node:fs'
+import { createServer } from 'node:http'
+
+const test = base.extend({
+  uploadReceiver: async ({ baseURL }, provide) => {
+    const uploads = []
+    const server = createServer(async (request, response) => {
+      response.setHeader('Access-Control-Allow-Origin', new URL(baseURL).origin)
+      response.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type')
+      response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+      if (request.method === 'OPTIONS') { response.writeHead(204); response.end(); return }
+      const chunks = []
+      for await (const chunk of request) chunks.push(chunk)
+      uploads.push({ method: request.method, path: request.url, headers: request.headers, body: Buffer.concat(chunks) })
+      response.writeHead(200, { 'Content-Type': 'application/json' })
+      response.end(JSON.stringify({ storageKey: 'activites/test/new.png', url: '/activity-test.png' }))
+    })
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+    try {
+      await provide({ uploads, url: `http://127.0.0.1:${server.address().port}/api/upload` })
+    } finally {
+      server.closeAllConnections()
+      await new Promise(resolve => server.close(resolve))
+    }
+  },
+})
 const token = `header.${Buffer.from(JSON.stringify({ exp: 4102444800 })).toString('base64')}.signature`
 const locales = Object.fromEntries(['fr', 'nl', 'en'].map(lang => [lang, JSON.parse(readFileSync(new URL(`../src/i18n/locales/${lang}.json`, import.meta.url)))]))
 test.use({ timezoneId: 'Europe/Brussels', locale: 'fr-BE' })
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9xsAAAAASUVORK5CYII=', 'base64')
-async function setup(page, role, lang, original) {
+async function setup(page, role, lang, original, uploadReceiver) {
   const writes = []
   let current = original
   const group = { id: 5, nom: 'Sport', actif: true, statut: 'VALIDE', referentId: 9 }
@@ -17,14 +42,10 @@ async function setup(page, role, lang, original) {
   await page.route(url => url.pathname.startsWith('/api/'), async route => {
     const req = route.request(), url = new URL(req.url()), path = url.pathname
     if (path === '/api/upload') {
-      expect(req.method()).toBe('POST')
-      expect(req.headers()['authorization']).toBe(`Bearer ${token}`)
-      expect(req.headers()['content-type']).toMatch(/^multipart\/form-data; boundary=/)
-      const body = req.postDataBuffer()
-      expect(body.toString()).toContain('name="file"; filename="cover.png"')
-      expect(body.toString()).toContain('name="type"\r\n\r\nactivite')
-      expect(body.includes(png)).toBe(true)
-      return route.fulfill({ json: { storageKey: 'activites/test/new.png', url: '/activity-test.png' } })
+      // Le corps exposé par l'interception WebKit ne contient pas toujours le fichier.
+      // Le récepteur vérifie les vrais octets envoyés, sans remplacer le corps de la requête.
+      if (!uploadReceiver) throw new Error('An upload must use the binary receiver or an explicit failure mock')
+      return route.continue({ url: uploadReceiver.url })
     }
     if (path === '/api/users/me') return route.fulfill({ json: { id: 9, role: 'REFERENT', actif: true } })
     if (path === '/api/admin/groupes' || path === '/api/referent/groupes') return route.fulfill({ json: [group] })
@@ -42,9 +63,9 @@ async function setup(page, role, lang, original) {
   return writes
 }
 for (const role of ['ADMIN', 'REFERENT']) for (const [lang, width] of [['fr', 1440], ['nl', 768], ['en', 390]]) {
-  test(`${role} paid multi-day activity with deadline/image ${lang} ${width}`, async ({ page }) => {
+  test(`${role} paid multi-day activity with deadline/image ${lang} ${width}`, async ({ page, uploadReceiver }) => {
     await page.setViewportSize({ width, height: 900 })
-    const writes = await setup(page, role, lang), t = locales[lang]
+    const writes = await setup(page, role, lang, undefined, uploadReceiver), t = locales[lang]
     await page.getByRole('button', { name: role === 'ADMIN' ? t.admin.createActivity : t.referent.newActivity, exact: true }).click()
     const form = page.getByRole('form')
     await form.getByRole('textbox', { name: /^(Titre|Title|Titel)/ }).fill('Activity image test')
@@ -66,6 +87,15 @@ for (const role of ['ADMIN', 'REFERENT']) for (const [lang, width] of [['fr', 14
     await form.locator('input[type="file"]').setInputFiles({ name: 'cover.png', mimeType: 'image/png', buffer: png })
     await expect(form.getByRole('img', { name: t.activityEditor.preview })).toBeVisible()
     await expect(form.getByRole('button', { name: t.adminActivity.saveDraft })).toBeEnabled()
+    expect(uploadReceiver.uploads).toHaveLength(1)
+    const upload = uploadReceiver.uploads[0]
+    expect(upload.method).toBe('POST')
+    expect(upload.path).toBe('/api/upload')
+    expect(upload.headers.authorization).toBe(`Bearer ${token}`)
+    expect(upload.headers['content-type']).toMatch(/^multipart\/form-data; boundary=/)
+    expect(upload.body.toString()).toContain('name="file"; filename="cover.png"')
+    expect(upload.body.toString()).toContain('name="type"\r\n\r\nactivite')
+    expect(upload.body.includes(png)).toBe(true)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     await page.screenshot({ path: test.info().outputPath('activity-form.png'), fullPage: true })
     await form.getByRole('button', { name: t.adminActivity.saveDraft }).click()

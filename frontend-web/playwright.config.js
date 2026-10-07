@@ -37,6 +37,14 @@ export default defineConfig({
       },
     },
     {
+      name: 'webkit-activity-uploads',
+      testMatch: '**/activity-finalization.spec.js',
+      grep: /paid multi-day activity with deadline\/image/,
+      use: {
+        ...devices['Desktop Safari'],
+      },
+    },
+    {
       name: 'webkit-payments',
       testMatch: ['**/payment-checkout-safety.spec.js', '**/project-payments.spec.js', '**/activity-finalization.spec.js'],
       grep: /payment-checkout-safety\.spec\.js|project-payments\.spec\.js|payment return|member uses activity payment flow/,

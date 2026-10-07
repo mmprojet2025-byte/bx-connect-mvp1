@@ -29,17 +29,17 @@ Base originale : aucune reprise autorisée à ce stade. Les tests utilisent des 
 | API localhost refusée au build | Garde production HTTPS volontaire | Configuration attendue | 5/6 | Conserver garde ; tester env isolé | Build HTTPS réussi ; variables/profils documentés dans DEFENSE_RUNBOOK.md | Conforme ; test isolé à corriger lot 6 |
 | Migrations | V1–V14 appliquées | Risque déploiement | 5 | Base vide + restauration copie, pas repair | Base vide V1–V14, schémas V7/V8→V14, clone restauré validé ; aucun SQL modifié | Validé localement, aucun repair ni migration originale |
 | Uploads | Stockage local, distant non validé | Risque exploitation | 5/8 | Sauvegarde, restauration, redémarrage isolé | 29 assertions réelles API/Chromium/WebKit + SHA256 après restart du clone | Validé localement ; persistance distante non validée |
-| Test apiBaseUrl | .env local contamine cas variable absente | Défaut de test | 6 | Isoler environnement sans affaiblir HTTPS | 133/134 Node | À corriger |
-| 3 tests statistiques | Sous-chaîne Soumis ambiguë | Défaut de test | 6 | Sélecteurs exacts, assertions conservées | Strict mode violation FR/NL/EN | À corriger |
-| Test projet/groupe | Ancien bouton soumettre ; workflow brouillon | Défaut de test | 6 | Brouillon puis vraie soumission | Bouton actuel Enregistrer le brouillon | À corriger |
-| Test accueil/tri | Récentes vs date début | Incohérence vocabulaire/test | 6 | Prochaines activités, tri métier documenté | Audit attendu/reçu | À aligner |
-| 3 tests retour login | Mock intercepte /src/api/axios.js | Défaut de test | 6 | Cibler URL backend, session valide | Reproduction interception | À corriger |
+| Test apiBaseUrl | .env local contamine cas variable absente | Défaut de test | 6 | Isoler environnement sans affaiblir HTTPS | 138/138 Node après isolation explicite de VITE_API_BASE_URL | Corrigé |
+| 3 tests statistiques | Sous-chaîne Soumis ambiguë | Défaut de test | 6 | Sélecteurs exacts, assertions conservées | Sélecteurs rowheader exacts FR/NL/EN ; toutes les valeurs/statuts conservés | Corrigé |
+| Test projet/groupe | Ancien bouton soumettre ; workflow brouillon | Défaut de test | 6 | Brouillon puis vraie soumission | POST BROUILLON, groupe actif, puis PATCH SOUMIS et disparition du bouton vérifiés | Corrigé |
+| Test accueil/tri | Récentes vs date début | Incohérence vocabulaire/test | 6 | Prochaines activités, tri métier documenté | Horloge fixe, filtre PUBLIC/PUBLIEE/futur, tri début/id et limite 3 FR/NL/EN | Corrigé : Activités à venir, tri inchangé |
+| 3 tests retour login | Mock intercepte /src/api/axios.js | Défaut de test | 6 | Cibler URL backend, session valide | Interception API précise, JWT valide, destination et F5 vérifiés | Corrigé |
 | 8 alertes npm | Dépendances vulnérables selon avis | Sécurité à qualifier | 7 | Avis officiels, exposition, versions compatibles | npm audit : 6 high, 2 moderate | Analyse en cours |
 | P2 Bundle 2,51 Mo | Imports lourds | Performance | 7 | Mesurer premier chargement, optimisation seulement justifiée | Build initial | À mesurer |
 | Internet/Stripe interrompu | Dépendance externe | Limite exploitation | 8 | Vérification démarrage + récupération sûre + secours gratuit | Aucun nouveau paiement réel dans audit | À éprouver |
 | Réception authentifiée complète | Audit initial lecture seule et E2E mockés | Risque non vérifié | 8 | Comptes jetables, vrai backend et DB isolée | 886 backend ; 287 E2E pass, 9 fail | À exécuter |
 | Safari | Couverture WebKit ciblée seulement | Limite preuve | 8 | Répétition parcours critiques, limites explicites | 27 WebKit réussis initialement | À compléter |
-| Preuve upload WebKit | Assertion binaire Playwright multipart échoue dans six cas exploratoires | Risque à qualifier | 6/8 | Vérifier les octets reçus par le vrai backend et conserver les assertions utiles | Upload réel WebKit FR réussi avec octets source/aperçu/disque/HTTP identiques au lot 5 | Produit validé sur ce cas réel ; six assertions de tests à qualifier au lot 6 |
+| Preuve upload WebKit | Assertion binaire Playwright multipart échoue dans six cas exploratoires | Risque à qualifier | 6/8 | Vérifier les octets reçus par le vrai backend et conserver les assertions utiles | Upload réel WebKit FR réussi avec octets source/aperçu/disque/HTTP identiques au lot 5 | Corrigé : six tests WebKit vérifient les octets réellement reçus, sans supprimer les assertions |
 | Secrets / production | Scan motifs limité ; prod non auditée | Risque non vérifié | 5/7/8 | Secrets hors Git, profil/env, scan final | Aucun motif apparent audit initial | Pas certification production |
 | Soutiens vs transactions | Séparation implémentée à conserver | Non-régression | 3/8 | Tests scope DECLARATION, permissions et compteurs | Tests initiaux réussis | À préserver |
 | Notifications / messagerie / profil / PDF CSV | Parcours voisins | Non-régression | 5/8 | Vérifications simulées et réelles distinguées | Couverture initiale existante | À préserver/valider |
@@ -223,3 +223,34 @@ Après redémarrage de 18081, les trois URLs renvoient encore exactement les mê
 Le cas réel WebKit FR ne remplace pas les six assertions exploratoires d’instrumentation
 multipart à qualifier au lot 6. Preuves privées : `lot5-upload-proof-private.json`
 et `lot5-real-browser-upload-private.json`.
+
+
+### Lot 6 — tests frontend fiables
+
+79 tests navigateur réussis, zéro échec et deux ignorés préexistants : les deux cas
+clavier natif WebKit ne s’exécutent pas dans Chromium. Les six uploads multilingues
+ADMIN/RÉFÉRENT WebKit passent avec un récepteur HTTP local qui vérifie les octets
+réellement envoyés. La réponse métier de ces tests reste simulée ; la preuve backend
+réelle distincte figure au lot 5. La couverture WebKit est ajoutée au projet Playwright
+permanent. Aucune augmentation de retries, aucune assertion binaire supprimée.
+
+Les neuf échecs navigateur initiaux sont traités : course de suppression corrigée
+au lot 5 ; trois sélecteurs de statistiques exacts ; brouillon puis soumission depuis
+le groupe actif ; tri des prochaines activités et FR/NL/EN cohérents ; trois mocks
+de retour connexion limités à l’API, sans bloquer les modules Vite.
+
+`npm test` : 138/138, zéro échec/ignoré. ESLint global et build réussis. La valeur
+VITE_API_BASE_URL vide est explicite dans le test d’absence de configuration, pour
+empêcher le chargement du .env local. Les contrôles HTTPS/non-localhost sont conservés.
+Sentry est désactivé uniquement dans les sous-processus de build des tests.
+Le build utilise une URL HTTPS de préproduction : preuve de compilation seulement,
+pas preuve de déploiement ni de disponibilité du service distant.
+
+Commande navigateur :
+`npx playwright test e2e/account-deletion.spec.js e2e/admin-dashboard.spec.js e2e/group-workflow.spec.js e2e/home-activities-state.spec.js e2e/post-auth-return.spec.js e2e/activity-finalization.spec.js --config=playwright.lot6.config.js --project=chromium --project=webkit-activity-uploads`.
+Configuration temporaire : copie et serveur local 5191, arrêté après les tests.
+Logs privés : `bx-lot6-frontend-p0t_9noz/frontend-web/lot6-browser.log`,
+`lot6-node.log`, `lot6-lint.log`, `lot6-build.log`. Relecture indépendante du diff :
+aucune assertion métier affaiblie. `git diff --check` réussi.
+
+Commits locaux supplémentaires : lot 4 `ce35c65`, lot 5 `fa2bb45`.
