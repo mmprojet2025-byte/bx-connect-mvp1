@@ -326,6 +326,7 @@
     "done": "Terminé",
     "full": "Complet",
     "unavailableReasons": {
+      "PAYMENT_WINDOW_CLOSED": "Il est trop tard pour ouvrir un nouveau paiement Stripe : un délai de 31 minutes avant la clôture des inscriptions est nécessaire.",
       "COMPLETE": "Activité complète",
       "PASSEE": "Activité déjà passée",
       "ANNULEE": "Activité annulée",
@@ -2274,8 +2275,8 @@
     "amount": "Montant",
     "paid": "Payé",
     "viewHistory": "Voir l’historique des paiements",
-    "cancelTitle": "Paiement annulé",
-    "cancelMessage": "Vous avez annulé le paiement. Aucun montant n’a été débité. Vous pouvez réessayer à tout moment.",
+    "cancelTitle": "Retour du paiement",
+    "cancelMessage": "Vous avez quitté le paiement. Ce retour ne permet pas de connaître son état : vérifiez le paiement avant toute nouvelle tentative.",
     "checkoutUrlMissing": "URL de paiement non reçue.",
     "stripeTitle": "Soutenir via Stripe",
     "chooseAmount": "Choisir un montant",
@@ -3160,6 +3161,7 @@
     "paymentPending": "Paiement en attente de confirmation",
     "paymentConfirmed": "Paiement confirmé",
     "paymentError": "Le paiement est indisponible. Réessayez ou contactez l’organisateur.",
+    "paymentWindowClosed": "Il est trop tard pour ouvrir un nouveau paiement Stripe : un délai de 31 minutes avant la clôture des inscriptions est nécessaire.",
     "checkPayment": "Vérifier le paiement",
     "backActivities": "Retour aux activités"
   },
@@ -3227,6 +3229,8 @@
     "full": "Complet"
   },
   "paymentReturnUX": {
+  "activityCancelled": "Votre paiement est confirmé, mais votre inscription reste annulée. Contactez l’organisateur pour toute question.",
+  "closed": "La session de paiement est expirée ou clôturée. Consultez la fiche avant de réessayer.",
   "pending": "Paiement en cours de confirmation",
   "wait": "La confirmation Stripe peut prendre quelques secondes. Vérification automatique pendant 30 secondes ; vous pouvez ensuite vérifier manuellement.",
   "check": "Vérifier maintenant",

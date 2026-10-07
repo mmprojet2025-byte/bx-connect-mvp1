@@ -258,7 +258,8 @@ class ActivityProviderConfirmationTest {
         assertThat(recovered.getStatutPaiement()).isEqualTo(StatutPaiement.PAYE);
         assertThat(recovered.getCheckoutUrl()).isNull();
         assertThat(payment.getInscription().getStatut()).isEqualTo(StatutInscription.PAYEE);
-        stripe.recupererPaiementActivite(3L, "owner@test.invalid");
+        assertThat(stripe.recupererPaiementActivite(3L, "owner@test.invalid").getStatutInscription())
+                .isEqualTo(StatutInscription.PAYEE);
         webhook("checkout.session.completed", "paid", 1000);
         webhook("checkout.session.expired", "unpaid", 1000);
         assertThat(payment.getDatePaiement()).isEqualTo(paidAt);
@@ -277,7 +278,8 @@ class ActivityProviderConfirmationTest {
     @Test void duplicateSuccessNeverReactivatesACancelledPaidRegistration() throws Exception {
         payment.setStatutPaiement(StatutPaiement.PAYE);
         payment.getInscription().setStatut(StatutInscription.ANNULEE);
-        stripe.recupererPaiementActivite(3L, "owner@test.invalid");
+        assertThat(stripe.recupererPaiementActivite(3L, "owner@test.invalid").getStatutInscription())
+                .isEqualTo(StatutInscription.ANNULEE);
         webhook("checkout.session.completed", "paid", 1000);
         assertThat(payment.getStatutPaiement()).isEqualTo(StatutPaiement.PAYE);
         assertThat(payment.getInscription().getStatut()).isEqualTo(StatutInscription.ANNULEE);
@@ -304,6 +306,69 @@ class ActivityProviderConfirmationTest {
         verify(registrations, never()).save(any());
         verify(payments, never()).save(any());
         verify(stripe, never()).creerSessionActiviteExterne(any(), any());
+    }
+
+    @Test void readingLocalStateNeverExposesAStaleCheckoutUrl() throws Exception {
+        payment.setCheckoutUrl("https://checkout.stripe.com/stored");
+        assertThat(stripe.verifierSession("cs_test_activity", "owner@test.invalid").getCheckoutUrl()).isNull();
+        verify(stripe, never()).lireSessionExterne(any());
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"open", "complete", "expired", "past"})
+    void resumeIsOfferedOnlyForAServerVerifiedOpenUnpaidFutureSession(String state) throws Exception {
+        var remote = stripeSession(); remote.setStatus("past".equals(state) ? "open" : state);
+        remote.setPaymentStatus("complete".equals(state) ? "paid" : "unpaid");
+        remote.setExpiresAt(System.currentTimeMillis()/1000 + ("past".equals(state) ? -1 : 3600));
+        remote.setUrl("https://checkout.stripe.com/verified");
+        payment.setCheckoutUrl("https://checkout.stripe.com/stale");
+        doReturn(remote).when(stripe).lireSessionExterne("cs_test_activity");
+        var response = stripe.recupererPaiementActivite(3L, "owner@test.invalid");
+        assertThat(response.getCheckoutUrl()).isEqualTo("open".equals(state) ? remote.getUrl() : null);
+        assertThat(response.getStatutPaiement()).isEqualTo("complete".equals(state) ? StatutPaiement.PAYE
+                : "expired".equals(state) ? StatutPaiement.ANNULE : StatutPaiement.EN_ATTENTE);
+        verify(stripe, never()).creerSessionActiviteExterne(any(), any());
+    }
+
+    @Test void existingPaidCheckoutIsRecoveredEvenAfterTheRegistrationDeadline() throws Exception {
+        activity.setDateLimiteInscription(LocalDateTime.now().minusDays(1));
+        when(payments.findByActiviteId(2L)).thenReturn(List.of(payment));
+        var users = (UserRepository) ReflectionTestUtils.getField(stripe, "userRepository");
+        when(users.findByEmail("owner@test.invalid")).thenReturn(Optional.of(payment.getDonateur()));
+        doReturn(stripeSession()).when(stripe).lireSessionExterne("cs_test_activity");
+        var request = new com.bxjeunes.bx_connect.dto.PaiementRequest(); request.setActiviteId(2L); request.setMontant(BigDecimal.TEN);
+        assertThat(stripe.creerSessionCheckout(request).getStatutPaiement()).isEqualTo(StatutPaiement.PAYE);
+        verify(stripe, never()).creerSessionActiviteExterne(any(), any());
+    }
+
+    @Test void unknownOldAttemptDoesNotCreateAnotherCheckout() throws Exception {
+        payment.setStripeSessionId(null); payment.setCheckoutExpiresAt(System.currentTimeMillis()/1000 - 1);
+        when(payments.findByActiviteId(2L)).thenReturn(List.of(payment));
+        var users = (UserRepository) ReflectionTestUtils.getField(stripe, "userRepository");
+        when(users.findByEmail("owner@test.invalid")).thenReturn(Optional.of(payment.getDonateur()));
+        var request = new com.bxjeunes.bx_connect.dto.PaiementRequest(); request.setActiviteId(2L); request.setMontant(BigDecimal.TEN);
+        assertThatThrownBy(() -> stripe.creerSessionCheckout(request)).isInstanceOf(com.bxjeunes.bx_connect.exception.ActivityRuleException.class)
+                .extracting(e -> ((com.bxjeunes.bx_connect.exception.ActivityRuleException)e).getCode()).isEqualTo("PAYMENT_UNCERTAIN");
+        verify(stripe, never()).creerSessionActiviteExterne(any(), any());
+        assertThat(payment.getStatutPaiement()).isEqualTo(StatutPaiement.EN_ATTENTE);
+    }
+
+    @Test void cancellationCannotUndoAPaymentThatStripeAlreadyConfirmed() throws Exception {
+        doReturn(stripeSession()).when(stripe).lireSessionExterne("cs_test_activity");
+        stripe.annulerPaiementActivite(3L);
+        assertThat(payment.getStatutPaiement()).isEqualTo(StatutPaiement.PAYE);
+        assertThat(payment.getInscription().getStatut()).isEqualTo(StatutInscription.PAYEE);
+        verify(stripe, never()).expirerSessionExterne(any());
+    }
+
+    @Test void checkoutCompletingDuringCancellationIsReconciledInsteadOfReleased() throws Exception {
+        var open = stripeSession(); open.setStatus("open"); open.setPaymentStatus("unpaid");
+        doReturn(open, stripeSession()).when(stripe).lireSessionExterne("cs_test_activity");
+        doThrow(new com.stripe.exception.ApiConnectionException("Concurrent Checkout completion"))
+                .when(stripe).expirerSessionExterne(open);
+        stripe.annulerPaiementActivite(3L);
+        assertThat(payment.getStatutPaiement()).isEqualTo(StatutPaiement.PAYE);
+        assertThat(payment.getInscription().getStatut()).isEqualTo(StatutInscription.PAYEE);
     }
 
     @Test void recoveryWithoutSessionFailsBeforeCallingStripe() throws Exception {

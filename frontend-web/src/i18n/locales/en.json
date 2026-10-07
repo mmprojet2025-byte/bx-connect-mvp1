@@ -326,6 +326,7 @@
     "done": "Finished",
     "full": "Full",
     "unavailableReasons": {
+      "PAYMENT_WINDOW_CLOSED": "It is too late to start a new Stripe payment: at least 31 minutes are needed before registrations close.",
       "COMPLETE": "Activity full",
       "PASSEE": "Activity already passed",
       "ANNULEE": "Activity cancelled",
@@ -2274,8 +2275,8 @@
     "amount": "Amount",
     "paid": "Paid",
     "viewHistory": "View payment history",
-    "cancelTitle": "Payment cancelled",
-    "cancelMessage": "You cancelled the payment. No amount was charged. You can try again at any time.",
+    "cancelTitle": "Return from payment",
+    "cancelMessage": "You left the payment page. Returning here does not confirm its status: check the payment before trying again.",
     "checkoutUrlMissing": "Payment URL not received.",
     "stripeTitle": "Support via Stripe",
     "chooseAmount": "Choose an amount",
@@ -3160,6 +3161,7 @@
     "paymentPending": "Payment awaiting confirmation",
     "paymentConfirmed": "Payment confirmed",
     "paymentError": "Payment is unavailable. Retry or contact the organiser.",
+    "paymentWindowClosed": "It is too late to start a new Stripe payment: at least 31 minutes are needed before registrations close.",
     "checkPayment": "Check payment",
     "backActivities": "Back to activities"
   },
@@ -3227,6 +3229,8 @@
     "full": "Full"
   },
   "paymentReturnUX": {
+  "activityCancelled": "Your payment is confirmed, but your registration remains cancelled. Contact the organiser if you have questions.",
+  "closed": "The payment session has expired or closed. Check the details page before trying again.",
   "pending": "Payment confirmation in progress",
   "wait": "Stripe confirmation may take a few seconds. Automatic checks run for 30 seconds; you can then check manually.",
   "check": "Check now",

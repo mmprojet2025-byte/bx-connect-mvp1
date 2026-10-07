@@ -40,6 +40,12 @@ import java.util.stream.Collectors;
 @Service
 @Transactional(readOnly = true)
 public class ActiviteService {
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private java.time.Clock clock = java.time.Clock.systemUTC();
+    @org.springframework.beans.factory.annotation.Value("${features.payments.stripe.enabled:false}")
+    private boolean stripeEnabled;
+    @org.springframework.beans.factory.annotation.Value("${features.payments.paypal.enabled:false}")
+    private boolean paypalEnabled;
 
     private static final Logger log = LoggerFactory.getLogger(ActiviteService.class);
     @org.springframework.beans.factory.annotation.Autowired
@@ -612,6 +618,9 @@ public class ActiviteService {
                 && (paiements == null || paiements.findByActiviteId(activite.getId()).isEmpty());
         response.setTarifModifiable(editablePrice);
         response.setSupprimable(editablePrice);
+        response.setStripeCheckoutDisponible(!activite.isGratuite()
+                && activite.getStatut() == StatutActivite.PUBLIEE && ActivityCheckoutWindow.canOpen(activite, clock));
+        if (!activite.isGratuite()) response.setStripeCheckoutDateLimite(ActivityCheckoutWindow.checkoutDeadline(activite));
         return response;
     }
 
@@ -643,6 +652,13 @@ public class ActiviteService {
             response.setStatutInscription(inscriptionActive.getStatut());
             response.setPeutSInscrire(false);
             response.setRaisonIndisponible("DEJA_INSCRIT");
+            if (inscriptionActive.getStatut() == StatutInscription.EN_ATTENTE_PAIEMENT && paiements != null) {
+                final Long memberId = utilisateur.getId();
+                response.setPaiementActiviteId(paiements.findByActiviteId(activite.getId()).stream()
+                        .filter(p -> p.getDonateur().getId().equals(memberId) && "STRIPE".equals(p.getFournisseur())
+                                && p.getStatutPaiement() == com.bxjeunes.bx_connect.entity.StatutPaiement.EN_ATTENTE)
+                        .map(com.bxjeunes.bx_connect.entity.SoutienFinancier::getId).findFirst().orElse(null));
+            }
             return;
         }
 
@@ -665,16 +681,18 @@ public class ActiviteService {
         if (activite.getStatut() != StatutActivite.PUBLIEE) {
             return "NON_PUBLIEE";
         }
-        if (activite.getDateLimiteInscription() != null && !activite.getDateLimiteInscription().isAfter(LocalDateTime.now())) {
+        LocalDateTime now = ActivityCheckoutWindow.now(clock);
+        if (activite.getDateLimiteInscription() != null && !activite.getDateLimiteInscription().isAfter(now)) {
             return "DATE_LIMITE";
         }
-        LocalDateTime now = LocalDateTime.now();
         if (activite.getDateDebut() == null || !activite.getDateDebut().isAfter(now)) {
             return "PASSEE";
         }
         if (activite.getCapaciteMax() > 0 && responseComplete(activite)) {
             return "COMPLETE";
         }
+        if (!activite.isGratuite() && stripeEnabled && !paypalEnabled && !ActivityCheckoutWindow.canOpen(activite, clock))
+            return "PAYMENT_WINDOW_CLOSED";
         return null;
     }
 

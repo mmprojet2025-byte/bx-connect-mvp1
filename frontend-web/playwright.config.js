@@ -37,6 +37,14 @@ export default defineConfig({
       },
     },
     {
+      name: 'webkit-payments',
+      testMatch: ['**/payment-checkout-safety.spec.js', '**/project-payments.spec.js', '**/activity-finalization.spec.js'],
+      grep: /payment-checkout-safety\.spec\.js|project-payments\.spec\.js|payment return|member uses activity payment flow/,
+      use: {
+        ...devices['Desktop Safari'],
+      },
+    },
+    {
       name: 'webkit-project-details',
       testMatch: ['**/project-details.spec.js', '**/project-referent-review.spec.js', '**/project-catalogue.spec.js'],
       use: {

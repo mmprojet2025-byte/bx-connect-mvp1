@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Isolation;
  */
 @Service
 public class ActivityPaymentService {
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private java.time.Clock clock = java.time.Clock.systemUTC();
     @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager entityManager;
     private final ActiviteRepository activities;
     private final InscriptionRepository registrations;
@@ -42,11 +44,9 @@ public class ActivityPaymentService {
             existing.getActivite().getTitre(); existing.getDonateur().getPrenom();
             return existing;
         }
-        long expires = Math.min(System.currentTimeMillis() / 1000 + 3600,
-                (activity.getDateLimiteInscription() == null ? activity.getDateDebut() : activity.getDateLimiteInscription())
-                        .atZone(java.time.ZoneId.systemDefault()).toEpochSecond());
-        if ("STRIPE".equals(provider) && expires < System.currentTimeMillis() / 1000 + 1860)
-            throw new ActivityRuleException("Le délai restant est trop court pour ouvrir un paiement Stripe.");
+        long expires = ActivityCheckoutWindow.expiresAt(activity, clock);
+        if ("STRIPE".equals(provider) && !ActivityCheckoutWindow.canOpen(activity, clock))
+            throw new ActivityRuleException("PAYMENT_WINDOW_CLOSED", "Le délai restant est trop court pour ouvrir un paiement Stripe.");
         var payment = new SoutienFinancier();
         payment.setActivite(activity);
         payment.setDonateur(user);
@@ -66,7 +66,8 @@ public class ActivityPaymentService {
         if ("STRIPE".equals(provider)) {
             if (payment.getStripeSessionId() != null && !payment.getStripeSessionId().equals(externalId))
                 throw new ActivityRuleException("Une autre session est déjà associée.");
-            payment.setStripeSessionId(externalId); payment.setCheckoutUrl(url);
+            payment.setStripeSessionId(externalId);
+            if (payment.getStatutPaiement() == StatutPaiement.EN_ATTENTE) payment.setCheckoutUrl(url);
         } else {
             if (payment.getPaypalPaymentId() != null && !payment.getPaypalPaymentId().equals(externalId))
                 throw new ActivityRuleException("Un autre paiement est déjà associé.");
@@ -84,7 +85,7 @@ public class ActivityPaymentService {
         if (user.getRole()!=Role.MEMBRE || !user.isActif()
                 || !ActiviteLecture.lecteur(user, memberships.findByUserId(user.getId())).contenu(a))
             throw new AccessDeniedException("Inscription réservée aux membres autorisés.");
-        LocalDateTime now=LocalDateTime.now();
+        LocalDateTime now=ActivityCheckoutWindow.now(clock);
         if (a.getStatut()!=StatutActivite.PUBLIEE || a.getDateDebut()==null || !a.getDateDebut().isAfter(now)
                 || (a.getDateLimiteInscription()!=null && !a.getDateLimiteInscription().isAfter(now))
                 || registrations.existsByActiviteIdAndDateValidationPresenceIsNotNull(a.getId()))
@@ -129,6 +130,31 @@ public class ActivityPaymentService {
     }
 
     public record RecoverySnapshot(PaiementResponse payment, String sessionId) {}
+    public record StripeAttempt(Long id, String sessionId, Long expiresAt) {}
+
+    @Transactional(readOnly = true)
+    public StripeAttempt currentStripeAttempt(Long activityId, User user) {
+        if (!user.isActif() || user.getRole() != Role.MEMBRE)
+            throw new AccessDeniedException("Paiement réservé aux membres actifs.");
+        return payments.findByActiviteId(activityId).stream()
+                .filter(p -> p.getDonateur().getId().equals(user.getId()) && "STRIPE".equals(p.getFournisseur())
+                        && p.getStatutPaiement() == StatutPaiement.EN_ATTENTE)
+                .findFirst().map(p -> new StripeAttempt(p.getId(), p.getStripeSessionId(), p.getCheckoutExpiresAt())).orElse(null);
+    }
+
+    /** Called only before a new authenticated Checkout, never from a GET or a default scheduler. */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public List<StripeAttempt> expiredStripeAttempts(Long activityId, User user, BigDecimal amount) {
+        var activity = lock(activityId);
+        check(activity, user);
+        if (amount == null || activity.getPrix().compareTo(amount) != 0)
+            throw new ActivityRuleException("Le montant ne correspond pas au prix de l'activité.");
+        return payments.findByActiviteId(activityId).stream()
+                .filter(p -> "STRIPE".equals(p.getFournisseur()) && p.getStatutPaiement() == StatutPaiement.EN_ATTENTE
+                        && p.getStripeSessionId() != null && p.getCheckoutExpiresAt() != null
+                        && p.getCheckoutExpiresAt() <= clock.instant().getEpochSecond())
+                .limit(20).map(p -> new StripeAttempt(p.getId(), p.getStripeSessionId(), p.getCheckoutExpiresAt())).toList();
+    }
 
     @Transactional(readOnly = true)
     public RecoverySnapshot recoverySnapshot(Long paymentId, String email) {
@@ -163,9 +189,44 @@ public class ActivityPaymentService {
         requireRecoveryOwner(p, email);
         if (p.getStripeSessionId() == null) throw new IllegalArgumentException("Session Stripe absente.");
         verifyStripeSession(p, session);
+        reconcileStripeState(p, session);
+        return verifiedResponse(p, session);
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void reconcileStripe(Long paymentId, Session session) {
+        var p = payments.findById(paymentId).orElseThrow();
+        requireActivityPayment(p);
+        p = lockedPayment(p);
+        verifyStripeSession(p, session);
+        reconcileStripeState(p, session);
+    }
+
+    private void reconcileStripeState(SoutienFinancier p, Session session) {
         if ("complete".equals(session.getStatus()) && "paid".equals(session.getPaymentStatus()))
             applyStripeSession(p, session, true);
-        return PaiementResponse.fromEntity(p);
+        else if ("expired".equals(session.getStatus()) && "unpaid".equals(session.getPaymentStatus()))
+            applyStripeSession(p, session, false);
+    }
+
+    private PaiementResponse verifiedResponse(SoutienFinancier p, Session session) {
+        boolean resumable = p.getStatutPaiement() == StatutPaiement.EN_ATTENTE
+                && "open".equals(session.getStatus()) && "unpaid".equals(session.getPaymentStatus())
+                && session.getExpiresAt() != null && session.getExpiresAt() > clock.instant().getEpochSecond();
+        return PaiementResponse.fromEntity(p).withVerifiedCheckoutUrl(resumable ? session.getUrl() : null);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_COMMITTED)
+    public PaiementResponse attachVerifiedStripe(Long paymentId, Session session) {
+        var p = payments.findById(paymentId).orElseThrow();
+        requireActivityPayment(p);
+        p = lockedPayment(p);
+        verifyStripeSession(p, session);
+        p.setStripeSessionId(session.getId());
+        if (p.getStatutPaiement() == StatutPaiement.EN_ATTENTE) p.setCheckoutUrl(session.getUrl());
+        reconcileStripeState(p, session);
+        payments.saveAndFlush(p);
+        return verifiedResponse(p, session);
     }
 
     /** Shared confirmation for signed webhooks and server-side recovery, with the same locks. */

@@ -13,6 +13,7 @@ public class PaiementResponse {
     private BigDecimal montant;
     private StatutPaiement statutPaiement;
     private String fournisseur;
+    private com.bxjeunes.bx_connect.entity.StatutInscription statutInscription;
 
     // URLs de redirection client uniquement.
     private String approvalUrl;
@@ -41,8 +42,11 @@ public class PaiementResponse {
         r.montant               = s.getMontant();
         r.statutPaiement        = s.getStatutPaiement();
         r.fournisseur           = s.getFournisseur();
+        r.statutInscription     = s.getInscription() == null ? null : s.getInscription().getStatut();
         r.approvalUrl           = s.getApprovalUrl();
-        r.checkoutUrl           = s.getCheckoutUrl();
+        // An activity Checkout can only be resumed after a fresh server-side Stripe check.
+        r.checkoutUrl           = "STRIPE".equals(s.getFournisseur()) && s.getActivite() != null
+                ? null : s.getCheckoutUrl();
         r.message               = s.getMessage();
         r.dateCreation          = s.getDateCreation();
         r.datePaiement          = s.getDatePaiement();
@@ -63,11 +67,17 @@ public class PaiementResponse {
         return r;
     }
 
+    public PaiementResponse withVerifiedCheckoutUrl(String value) {
+        this.checkoutUrl = value;
+        return this;
+    }
+
     // ─── Getters ──────────────────────────────────────────────────────────────
     public Long getId()                       { return id; }
     public BigDecimal getMontant()             { return montant; }
     public StatutPaiement getStatutPaiement()  { return statutPaiement; }
     public String getFournisseur()             { return fournisseur; }
+    public com.bxjeunes.bx_connect.entity.StatutInscription getStatutInscription() { return statutInscription; }
     public String getApprovalUrl()             { return approvalUrl; }
     public String getCheckoutUrl()             { return checkoutUrl; }
     public String getMessage()                 { return message; }

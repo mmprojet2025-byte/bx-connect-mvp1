@@ -52,14 +52,22 @@ class ProjetParticipationPaiementTest {
         verify(participants,times(1)).save(any());
         verify(notifications,times(1)).creer(any(),anyString(),anyString(),eq("RECU_PROJET"),anyString());
     }
-    @Test void unpaidOpenCanResumeOnlyTheExistingSessionAndExpiredStaysPending() {
+    @Test void replayDoesNotReplaceAnAlreadyRecordedRefund() {
+        payment.setStripeSessionId("cs_project_test"); payment.setStatut(StatutPaiement.REMBOURSE);
+        assertThat(service.recover(3L, member.getEmail(), session()).statut()).isEqualTo(StatutPaiement.REMBOURSE);
+        service.handle(session(), true);
+        assertThat(payment.getStatut()).isEqualTo(StatutPaiement.REMBOURSE);
+        verify(participants, never()).save(any());
+        verify(notifications, never()).creer(any(), anyString(), anyString(), anyString(), anyString());
+    }
+    @Test void unpaidOpenCanResumeOnlyTheExistingSessionAndVerifiedExpirationReleasesIt() {
         payment.setStripeSessionId("cs_project_test");
         var s=session();s.setStatus("open");s.setPaymentStatus("unpaid");
         s.setExpiresAt(System.currentTimeMillis()/1000+600);s.setUrl("https://checkout.stripe.com/existing");
         assertThat(service.recover(3L,member.getEmail(),s).checkoutUrl()).isEqualTo(s.getUrl());
         s.setStatus("expired");
         assertThat(service.recover(3L,member.getEmail(),s).checkoutUrl()).isNull();
-        assertThat(payment.getStatut()).isEqualTo(StatutPaiement.EN_ATTENTE);
+        assertThat(payment.getStatut()).isEqualTo(StatutPaiement.ANNULE);
         verify(participants,never()).save(any());
     }
     @Test void recoveryRejectsOtherOwnerAndMismatchedSessionAmountCurrencyOrReference() {

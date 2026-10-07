@@ -106,7 +106,7 @@ test('member uses activity payment flow without sending a free registration requ
     const path = new URL(route.request().url()).pathname
     if (path === '/api/activites/42') return route.fulfill({ json: { id: 42, titre: 'Paid activity', description: 'Description', gratuite: false, prix: 12.5, statut: 'PUBLIEE', peutSInscrire: true, dateDebut: '2099-01-15T10:00' } })
     if (path === '/api/activites/paiement-options') return route.fulfill({ json: { STRIPE: true, PAYPAL: false } })
-    if (path === '/api/stripe/checkout') { checkout = route.request().postDataJSON(); return route.fulfill({ json: { checkoutUrl: 'https://checkout.stripe.com/test' } }) }
+    if (path === '/api/stripe/checkout') { checkout = route.request().postDataJSON(); return route.fulfill({ json: { statutPaiement: 'EN_ATTENTE', checkoutUrl: 'https://checkout.stripe.com/test' } }) }
     if (path === '/api/inscriptions') freeRegistration = true
     return route.fulfill({ json: [] })
   })

@@ -15,6 +15,7 @@ import ActivityCover from '../../components/ActivityCover';
 import AppIcon from '../../components/ui/AppIcons';
 import LoadingState from '../../components/ui/LoadingState';
 import ErrorState from '../../components/ui/ErrorState';
+import { activityStripeCheckoutAvailable, readStripeCheckout } from '../../utils/stripeCheckout';
 
 async function fetchActivite({ id, t, setActivite, setError, setLoading }) {
   setLoading(true);
@@ -46,6 +47,16 @@ export default function ActiviteDetail() {
   const [paymentOptions, setPaymentOptions] = useState(null);
   useEffect(() => { api.get('/activites/paiement-options').then(response => setPaymentOptions(response.data)).catch(() => setPaymentOptions({})); }, []);
   const [actionLoading, setActionLoading] = useState(false);
+  const [verifiedCheckout, setVerifiedCheckout] = useState(false);
+  const [deadlineTick, setDeadlineTick] = useState(0);
+  const stripeCheckoutAvailable = activityStripeCheckoutAvailable(activite);
+
+  useEffect(() => {
+    const deadline = Date.parse(activite?.stripeCheckoutDateLimite);
+    if (!Number.isFinite(deadline) || deadline < Date.now()) return undefined;
+    const timer = window.setTimeout(() => setDeadlineTick(value => value + 1), Math.min(deadline - Date.now() + 1, 2147483647));
+    return () => window.clearTimeout(timer);
+  }, [activite?.stripeCheckoutDateLimite, deadlineTick]);
 
   useEffect(() => {
     fetchActivite({ id, t, setActivite, setError, setLoading });
@@ -106,14 +117,50 @@ export default function ActiviteDetail() {
     }
   };
 
+  const observeStripePayment = async (data, resume = false) => {
+    const checkout = readStripeCheckout(data);
+    setVerifiedCheckout(checkout.state === 'open');
+    if (checkout.state === 'confirmed') {
+      await fetchActivite({ id, t, setActivite, setError, setLoading });
+      setMessage(t('paymentReturnUX.confirmed'));
+    } else if (checkout.state === 'open' && resume) {
+      window.location.assign(checkout.url);
+    } else if (['closed', 'failed'].includes(checkout.state)) {
+      await fetchActivite({ id, t, setActivite, setError, setLoading });
+      setMessage(t(`paymentReturnUX.${checkout.state}`));
+    } else {
+      if (activite.statutInscription !== 'EN_ATTENTE_PAIEMENT') {
+        await fetchActivite({ id, t, setActivite, setError, setLoading });
+      }
+      setMessage(t('paymentReturnUX.pending'));
+    }
+  };
+
+  const handleVerifyPayment = async (resume = false) => {
+    if (!activite.paiementActiviteId) { setError(t('projectPayment.recoveryError')); return; }
+    setActionLoading(true); setError(''); setMessage(''); setVerifiedCheckout(false);
+    try {
+      const { data } = await api.post(`/stripe/activites/paiements/${activite.paiementActiviteId}/verifier`);
+      await observeStripePayment(data, resume);
+    } catch { setError(t('projectPayment.recoveryError')); }
+    finally { setActionLoading(false); }
+  };
+
   const handlePayment = async provider => {
-    setActionLoading(true); setError('');
+    if (provider === 'STRIPE' && !stripeCheckoutAvailable) return;
+    setActionLoading(true); setError(''); setMessage(''); setVerifiedCheckout(false);
     try {
       const response = await api.post(provider === 'STRIPE' ? '/stripe/checkout' : '/paiements/creer', { activiteId: Number(id), montant: activite.prix });
+      if (provider === 'STRIPE') { await observeStripePayment(response.data, true); return; }
       const url = response.data.checkoutUrl || response.data.approvalUrl;
       if (!url || !url.startsWith('https://')) throw new Error('Invalid payment redirect');
       window.location.assign(url);
-    } catch { setError(t('activityEditor.paymentError')); }
+    } catch (err) {
+      if (provider === 'STRIPE') await fetchActivite({ id, t, setActivite, setError, setLoading });
+      const code = err?.response?.data?.code;
+      setError(code === 'PAYMENT_WINDOW_CLOSED' ? t('activityEditor.paymentWindowClosed')
+        : code === 'PAYMENT_UNCERTAIN' ? t('projectPayment.recoveryError') : t('activityEditor.paymentError'));
+    }
     finally { setActionLoading(false); }
   };
 
@@ -314,12 +361,17 @@ export default function ActiviteDetail() {
               )}
 
               <div className="flex flex-col gap-3 mt-5">
-              {!activite.gratuite && isMembre && (activite.peutSInscrire || activite.statutInscription === 'EN_ATTENTE_PAIEMENT') ? <>
+              {!activite.gratuite && isMembre && (activite.peutSInscrire || activite.statutInscription === 'EN_ATTENTE_PAIEMENT' || activite.raisonIndisponible === 'PAYMENT_WINDOW_CLOSED') ? <>
                 {activite.statutInscription === 'EN_ATTENTE_PAIEMENT' && <p>{t('activityEditor.paymentPending')}</p>}
                 {paymentOptions && !paymentOptions.STRIPE && !paymentOptions.PAYPAL && <p>{t('activityEditor.paymentError')}</p>}
-                {['STRIPE', 'PAYPAL'].filter(provider => paymentOptions?.[provider]).map(provider => <button key={provider} type="button" disabled={actionLoading} onClick={() => handlePayment(provider)} className="rounded-xl bg-blue-700 px-4 py-3 font-semibold text-white disabled:opacity-50">{t(`activityEditor.${provider.toLowerCase()}`)}</button>)}
+                {paymentOptions?.STRIPE && (activite.statutInscription === 'EN_ATTENTE_PAIEMENT' ? <>
+                  <button type="button" disabled={actionLoading} onClick={() => handleVerifyPayment()} className="rounded-xl border border-blue-700 px-4 py-3 font-semibold text-blue-700 disabled:opacity-50">{t('projectPayment.verifyStripe')}</button>
+                  {verifiedCheckout && <button type="button" disabled={actionLoading} onClick={() => handleVerifyPayment(true)} className="rounded-xl bg-blue-700 px-4 py-3 font-semibold text-white disabled:opacity-50">{t('projectPayment.resume')}</button>}
+                </> : stripeCheckoutAvailable ? <button type="button" disabled={actionLoading} onClick={() => handlePayment('STRIPE')} className="rounded-xl bg-blue-700 px-4 py-3 font-semibold text-white disabled:opacity-50">{t('activityEditor.stripe')}</button>
+                  : <p role="status">{t('activityEditor.paymentWindowClosed')}</p>)}
+                {paymentOptions?.PAYPAL && <button type="button" disabled={actionLoading} onClick={() => handlePayment('PAYPAL')} className="rounded-xl bg-blue-700 px-4 py-3 font-semibold text-white disabled:opacity-50">{t('activityEditor.paypal')}</button>}
                 {activite.statutInscription === 'EN_ATTENTE_PAIEMENT' && <button type="button" disabled={actionLoading} onClick={async () => {
-                  setActionLoading(true);
+                  setActionLoading(true); setVerifiedCheckout(false);
                   try { await api.post(`/activites/${id}/paiement/annuler`); await fetchActivite({ id, t, setActivite, setError, setLoading }); }
                   catch { setError(t('activityEditor.paymentPending')); } finally { setActionLoading(false); }
                 }} className="rounded-xl border px-4 py-3">{t('activities.cancel_registration')}</button>}

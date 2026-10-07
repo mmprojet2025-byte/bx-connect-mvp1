@@ -28,6 +28,8 @@ import java.util.stream.Collectors;
         matchIfMissing = false
 )
 public class StripeService {
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private java.time.Clock clock = java.time.Clock.systemUTC();
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(StripeService.class);
     @org.springframework.beans.factory.annotation.Autowired
     private ActivityPaymentService activityPayments;
@@ -59,7 +61,7 @@ public class StripeService {
     }
 
     // ─── Créer une session Stripe Checkout ───────────────────────────────────
-    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    @org.springframework.transaction.annotation.Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     public PaiementResponse creerSessionCheckout(PaiementRequest request) throws StripeException {
 
         // Récupérer l'utilisateur connecté
@@ -144,17 +146,46 @@ public class StripeService {
         if (p.getStripeSessionId() == null)
             throw new IllegalArgumentException("Le paiement est encore en cours de vérification.");
         var remote = lireSessionExterne(p.getStripeSessionId());
-        if ("open".equals(remote.getStatus())) remote = expirerSessionExterne(remote);
+        var verified = activityPayments.recover(p.getId(), p.getDonateur().getEmail(), remote);
+        if (verified.getStatutPaiement() != StatutPaiement.EN_ATTENTE) return;
+        if ("open".equals(remote.getStatus())) {
+            try { remote = expirerSessionExterne(remote); }
+            catch (StripeException failure) {
+                // Checkout may have completed between our read and the expiration request.
+                remote = lireSessionExterne(p.getStripeSessionId());
+                var latest = activityPayments.recover(p.getId(), p.getDonateur().getEmail(), remote);
+                if (latest.getStatutPaiement() != StatutPaiement.EN_ATTENTE) return;
+                throw failure;
+            }
+        }
         if (!"expired".equals(remote.getStatus()))
             throw new IllegalArgumentException("Le paiement est encore en cours de confirmation.");
-        activityPayments.complete(p, false);
+        activityPayments.recover(p.getId(), p.getDonateur().getEmail(), remote);
     }
     Session lireSessionExterne(String id) throws StripeException { return Session.retrieve(id); }
     Session expirerSessionExterne(Session session) throws StripeException { return session.expire(); }
 
     private PaiementResponse creerPaiementActivite(PaiementRequest request, User user) throws StripeException {
+        var existing = activityPayments.currentStripeAttempt(request.getActiviteId(), user);
+        if (existing != null && existing.sessionId() != null) {
+            var verified = recupererPaiementActivite(existing.id(), user.getEmail());
+            if (verified.getStatutPaiement() != StatutPaiement.ANNULE) return verified;
+        }
+        // Reconcile abandoned reservations using Stripe before evaluating the remaining capacity.
+        for (var expired : activityPayments.expiredStripeAttempts(request.getActiviteId(), user, request.getMontant())) {
+            try { activityPayments.reconcileStripe(expired.id(), lireSessionExterne(expired.sessionId())); }
+            catch (StripeException | IllegalArgumentException failure) {
+                log.warn("Stripe activity reservation could not be verified: payment={}, error={}",
+                        expired.id(), failure.getClass().getSimpleName());
+                // An uncertain reservation still occupies its seat. Never free it by local time alone.
+            }
+        }
         var attempt = activityPayments.prepare(request.getActiviteId(), user, request.getMontant(), "STRIPE");
-        if (attempt.getCheckoutUrl() != null) return PaiementResponse.fromEntity(attempt);
+        // A concurrent caller may already have attached a Checkout to the same attempt.
+        if (attempt.getStripeSessionId() != null) return recupererPaiementActivite(attempt.getId(), user.getEmail());
+        if (attempt.getCheckoutExpiresAt() == null || attempt.getCheckoutExpiresAt() <= clock.instant().getEpochSecond() + 1800)
+            throw new com.bxjeunes.bx_connect.exception.ActivityRuleException("PAYMENT_UNCERTAIN",
+                    "Ce paiement doit être vérifié avant toute nouvelle tentative. Ne payez pas à nouveau.");
         var params = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.PAYMENT)
                 .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
@@ -169,8 +200,7 @@ public class StripeService {
                             .setName("BX-Connect — Activité " + request.getActiviteId()).build()).build()).build())
                 .build();
         Session session = creerSessionActiviteExterne(params, attempt.getActivityRequestKey());
-        return PaiementResponse.fromEntity(activityPayments.attach(request.getActiviteId(), attempt.getId(),
-                session.getId(), session.getUrl(), "STRIPE"));
+        return activityPayments.attachVerifiedStripe(attempt.getId(), session);
     }
 
     Session creerSessionActiviteExterne(SessionCreateParams params, String key) throws StripeException {

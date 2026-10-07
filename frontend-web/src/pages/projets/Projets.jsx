@@ -20,6 +20,7 @@ import ProjectVisibilityBadge from '../../components/ProjectVisibilityBadge'
 import LoadingState from '../../components/ui/LoadingState'
 import ErrorState from '../../components/ui/ErrorState'
 import AppIcon from '../../components/ui/AppIcons'
+import { readStripeCheckout } from '../../utils/stripeCheckout'
 
 const MEMBER_VISIBILITIES = ['GROUPE', 'PUBLIC']
 const PROJECT_VISIBILITIES = ['GROUPE', 'PUBLIC']
@@ -255,10 +256,16 @@ export default function Projets() {
     try {
       if (Number(projet.prixParticipation) > 0) {
         const { data } = await api.post(`/projets-paiements/projets/${projet.id}/checkout`)
-        if (!data.checkoutUrl) throw new Error(t('projectPayment.pending'))
-        const checkout = new URL(data.checkoutUrl)
-        if (checkout.protocol !== 'https:' || checkout.hostname !== 'checkout.stripe.com') throw new Error(t('projectPayment.error'))
-        window.location.assign(checkout.href)
+        const checkout = readStripeCheckout(data)
+        if (checkout.state === 'confirmed') {
+          setParticipationIds(current => current.includes(projet.id) ? current : [...current, projet.id])
+          await fetchProjets()
+          setMessage(`${t('paymentReturnUX.confirmed')} — ${t('paymentReturnUX.project')}`)
+        } else if (checkout.state === 'open') {
+          window.location.assign(checkout.url)
+        } else {
+          setMessage(t(`paymentReturnUX.${checkout.state}`))
+        }
         return
       }
       await api.post(`/projets/${projet.id}/rejoindre`)

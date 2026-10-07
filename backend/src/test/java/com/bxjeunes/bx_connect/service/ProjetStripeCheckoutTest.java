@@ -28,6 +28,7 @@ class ProjetStripeCheckoutTest {
         var session=new Session();session.setId("cs_fixture");
         doReturn(session).when(checkout).create(any(),anyString());
         when(payments.attach(3L,session)).thenReturn(ProjetPaiementResponse.from(payment));
+        when(payments.recover(3L,"member",session)).thenReturn(ProjetPaiementResponse.from(payment));
         checkout.checkout(2L,"member");
         var params=ArgumentCaptor.forClass(SessionCreateParams.class);
         verify(checkout).create(params.capture(),eq("stable-fixture-key"));
@@ -65,5 +66,31 @@ class ProjetStripeCheckoutTest {
         payment.setExpiresAt(System.currentTimeMillis()/1000-10);
         assertThatThrownBy(()->checkout.checkout(2L,"member")).isInstanceOf(IllegalArgumentException.class);
         verify(checkout,never()).create(any(),anyString());
+    }
+
+    @Test void pendingAttemptIsRecoveredBeforeCheckingChangedProjectEligibility() throws Exception {
+        when(payments.currentAttempt(2L,"member")).thenReturn(new ProjetParticipationPaiementService.StripeAttempt(3L,"cs_fixture"));
+        payment.setStripeSessionId("cs_fixture");
+        when(payments.recoverySnapshot(3L,"member")).thenReturn(
+                new ProjetParticipationPaiementService.RecoverySnapshot(ProjetPaiementResponse.from(payment),"cs_fixture"));
+        var remote = new Session(); remote.setId("cs_fixture");
+        doReturn(remote).when(checkout).retrieve("cs_fixture");
+        payment.setStatut(StatutPaiement.PAYE);
+        when(payments.recover(3L,"member",remote)).thenReturn(ProjetPaiementResponse.from(payment));
+        assertThat(checkout.checkout(2L,"member").statut()).isEqualTo(StatutPaiement.PAYE);
+        verify(payments,never()).prepare(any(),any());
+        verify(checkout,never()).create(any(),anyString());
+    }
+
+    @Test void abandonedReservationsAreVerifiedBeforeCreatingTheNextAttempt() throws Exception {
+        when(payments.expiredStripeAttempts(2L,"member"))
+                .thenReturn(java.util.List.of(new ProjetParticipationPaiementService.StripeAttempt(8L,"cs_expired")));
+        var expired = new Session(); expired.setId("cs_expired"); expired.setStatus("expired");
+        doReturn(expired).when(checkout).retrieve("cs_expired");
+        doThrow(new IllegalStateException("stop before external creation")).when(checkout).create(any(),any());
+        assertThatThrownBy(() -> checkout.checkout(2L,"member")).isInstanceOf(IllegalStateException.class);
+        var order = inOrder(payments);
+        order.verify(payments).reconcile(8L,expired);
+        order.verify(payments).prepare(2L,"member");
     }
 }

@@ -12,10 +12,10 @@ Base originale : aucune reprise autorisée à ce stade. Les tests utilisent des 
 | P0 Cinq paiements activités bloqués | Webhooks manqués/non appliqués ; absence de récupération activités | Données + robustesse | 1 | Confirmation partagée avec webhook, vérification serveur sûre | Audit sessions paid/complete et inscriptions en attente | Corrigé/testé : 117 tests et récupération réelle des cinq sessions sur copie |
 | P0 Livraison locale Stripe | Listener absent pendant audit, cause historique non prouvée | Configuration | 1/8 | Identifier compte/mode/backend/secret/base ; vérifier livraison et effets | Audit processus uniquement, pas historique HTTP | Non validé |
 | P1 Changement référent | Deux responsabilités persistées désalignées | Bug produit + données | 2 | Cohérence atomique, auteur préservé, droits API | Activités 2/3 groupe 1 ; accès contradictoires | Corrigé : 235 tests ciblés ; reprise des deux activités validée sur copie ; original non repris |
-| P1 PAYE sans checkoutUrl | Frontend exige encore URL | Bug produit | 3 | Reconnaître confirmation sans nouveau Checkout | Lecture handler catalogue | À corriger |
-| P1 Clôture Stripe 31 min | Backend et UI non alignés | Bug produit | 3 | Horloge contrôlée, disponibilité et message explicites | ActivityPaymentService | À corriger |
-| Risque ancienne URL activité | URL réutilisée sans vérifier session | Bug produit | 3 | Vérification serveur avant reprise | StripeService | À corriger |
-| Risque réservations bloquées | Expiration non reçue / tentative sans session | Robustesse | 3 | Libérer seulement sur preuve sûre, préserver payé/capacité | Requêtes de comptage + services | À tester/corriger |
+| P1 PAYE sans checkoutUrl | Frontend exige encore URL | Bug produit | 3 | Confirmation backend reconnue, compteurs rechargés | Tests Chromium/WebKit et sept reprises API sur copie | Corrigé |
+| P1 Clôture Stripe 31 min | Backend et UI non alignés | Bug produit | 3 | Horloge serveur, échéance UTC fournie au Web, Europe/Brussels | Bornes 1859/1860/1861 secondes et +1 ms, hiver/été/DST, Web Bruxelles/New York | Corrigé, délai inchangé |
+| Risque ancienne URL activité | URL réutilisée sans vérifier session | Bug produit | 3 | URL seulement pour session open/unpaid vérifiée ; recontrôle avant reprise | Tests reprise/expiration/erreur/double clic | Corrigé |
+| Risque réservations bloquées | Expiration non reçue / tentative sans session | Robustesse | 3 | Récupération propriétaire + réconciliation bornée avant Checkout, preuve Stripe obligatoire | Tests MySQL expiration/capacité/concurrence et idempotence réseau | Corrigé pour sessions identifiées ; absence de session reste bloquée par sécurité ; pas de scheduler implicite |
 | P1 PARTENAIRE visible | Report MVP2 annoncé, documents MVP1 différents | Décision de périmètre | 4 | Arbitrage demandé ; conserver backend/comptes | README et matrice recette | Décision utilisateur en attente |
 | P2 Anciens endpoints groupes | ADMIN traite adhésions, REFERENT crée | Permissions métier | 4 | ADMIN structure, REFERENT seul membres de son groupe | Controller/services | À corriger |
 | Ressources archivées | Certaines mutations ne vérifient pas ARCHIVE | Bug produit | 4 | Refus API même accès direct | GroupeService | À corriger |
@@ -38,6 +38,7 @@ Base originale : aucune reprise autorisée à ce stade. Les tests utilisent des 
 | Internet/Stripe interrompu | Dépendance externe | Limite exploitation | 8 | Vérification démarrage + récupération sûre + secours gratuit | Aucun nouveau paiement réel dans audit | À éprouver |
 | Réception authentifiée complète | Audit initial lecture seule et E2E mockés | Risque non vérifié | 8 | Comptes jetables, vrai backend et DB isolée | 886 backend ; 287 E2E pass, 9 fail | À exécuter |
 | Safari | Couverture WebKit ciblée seulement | Limite preuve | 8 | Répétition parcours critiques, limites explicites | 27 WebKit réussis initialement | À compléter |
+| Preuve upload WebKit | Assertion binaire Playwright multipart échoue dans six cas exploratoires | Risque à qualifier | 6/8 | Vérifier les octets reçus par le vrai backend et conserver les assertions utiles | Première configuration WebKit trop large au lot 3 ; log browser.log conservé | À qualifier, pas présenté comme validé |
 | Secrets / production | Scan motifs limité ; prod non auditée | Risque non vérifié | 5/7/8 | Secrets hors Git, profil/env, scan final | Aucun motif apparent audit initial | Pas certification production |
 | Soutiens vs transactions | Séparation implémentée à conserver | Non-régression | 3/8 | Tests scope DECLARATION, permissions et compteurs | Tests initiaux réussis | À préserver |
 | Notifications / messagerie / profil / PDF CSV | Parcours voisins | Non-régression | 5/8 | Vérifications simulées et réelles distinguées | Couverture initiale existante | À préserver/valider |
@@ -99,3 +100,46 @@ Réception sur copie réelle : connexion ADMIN puis deux appels PATCH de réaffe
 du groupe 1 au référent 8. Activités 2/3 réalignées, auteurs et états conservés,
 zéro désalignement restant et zéro duplication. Base originale inchangée.
 Procédure de reprise soumise à autorisation : `GROUP_REFERENT_REPAIR.md`.
+
+### Lot 3 — états, reprise et bornes des paiements
+
+PAYE sans URL confirme l’état depuis le serveur. Une URL de reprise n’est fournie
+qu’après vérification de la session Stripe open/unpaid/non expirée. Le bouton
+Vérifier peut récupérer une confirmation perdue ; le polling GET ne confirme rien.
+Paiement confirmé et inscription annulée restent deux états distincts dans l’interface.
+Le retour « annulation » du navigateur n’affirme plus l’absence de débit.
+
+Fenêtre activités : 31 minutes conservées, Clock injectable et dates Europe/Brussels,
+instant de clôture partagé avec le Web. Expiration prouvée par Stripe libère la place ;
+incertitude ou absence de session ne la libère jamais arbitrairement. Les tentatives
+réseau réutilisent la clé d’idempotence et les paramètres existants. Reprise bornée
+à 20 sessions anciennes avant un Checkout ; aucun job activé sur la base originale.
+Sans livraison des expirations et sans action de récupération, une réservation peut
+encore attendre une vérification : laisser le listener actif pendant la démonstration.
+Une tentative trop ancienne sans identifiant Stripe nécessite un rapprochement
+contrôlé ; le produit interdit de la remplacer aveuglément par un nouveau débit.
+
+Tests frontend : 86 réussis, zéro échec, deux ignorés (cas clavier natif WebKit
+exclus de Chromium par condition préexistante), plus trois tests JS du helper.
+Nouveaux cas Chromium/WebKit avec API simulées : 34/34 ; voisins : 52 réussis.
+ESLint ciblé et diff-check réussis. Preuves hors Git dans
+`bx-lot3-frontend-9nrp9722/browser-safety-final.log` et `browser-neighbours-final.log`.
+Six assertions d’upload dans une première sélection WebKit trop large restent
+à qualifier au lot 6/8 ; aucune assertion utile supprimée et aucun succès inventé.
+
+Réception API réelle sur copie après recompilation : les sept récupérations retournent
+PAYE sans checkoutUrl ; inscriptions activités PAYEE. Le paiement activité 1 conserve
+son inscription ANNULEE. Nombres de paiements, inscriptions et participations inchangés.
+Lecture Stripe supplémentaire : PaymentIntents succeeded, débits payés, aucun
+remboursement parmi ces sept paiements. Aucun nouveau Checkout ou débit.
+
+Tests backend du lot 3 : 325 cas distincts réussis, zéro échec/erreur/ignoré
+(321 paiements et voisins, trois cas d’orchestration supplémentaires et un cas
+projet REMBOURSE). Commande principale :
+`./mvnw -Dtest=ActivityCheckoutWindowTest,ActivityProviderConfirmationTest,ActivityPaymentStateTest,ActivityPaymentPolicyTest,StripeSessionSecurityTest,ActivityRecoveryEndpointTest,ActivityStripeRecoveryMySqlTest,ProjetParticipationPaiementTest,ProjetStripeCheckoutTest,ProjetPaiementMySqlTest,ActiviteWriteRulesTest,ActiviteInvariantTest,ActiviteVisibilityTest,ActiviteSecurityTest,ActiviteEndpointSecurityTest,ActiviteWriteRulesMySqlTest,ActiviteParticipationMySqlTest test`.
+Compléments : `./mvnw -Dtest=ActivityCheckoutOrchestrationTest,ActivityProviderConfirmationTest,StripeSessionSecurityTest test`, puis `./mvnw -Dtest=ProjetParticipationPaiementTest test`.
+Journaux hors Git : `bx-lot3-payments-psvmbn10/lot3-tests.log`,
+`lot3-orchestration.log`, `lot3-project-regression-final.log`.
+
+Préparation de réception Stripe : aucun listener actif et aucun endpoint webhook
+TEST enregistré lors du contrôle. La future livraison sera limitée au backend isolé.

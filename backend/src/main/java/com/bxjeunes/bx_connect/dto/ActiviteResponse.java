@@ -56,6 +56,16 @@ public class ActiviteResponse {
     private StatutInscription statutInscription;
     private boolean peutSInscrire;
     private String raisonIndisponible;
+    private Long paiementActiviteId;
+    private boolean stripeCheckoutDisponible;
+    private java.time.Instant stripeCheckoutDateLimite;
+
+    public Long getPaiementActiviteId() { return paiementActiviteId; }
+    public void setPaiementActiviteId(Long value) { paiementActiviteId = value; }
+    public boolean isStripeCheckoutDisponible() { return stripeCheckoutDisponible; }
+    public void setStripeCheckoutDisponible(boolean value) { stripeCheckoutDisponible = value; }
+    public java.time.Instant getStripeCheckoutDateLimite() { return stripeCheckoutDateLimite; }
+    public void setStripeCheckoutDateLimite(java.time.Instant value) { stripeCheckoutDateLimite = value; }
 
     // ─── Constructeur depuis entité ──────────────────────────────────────────
 

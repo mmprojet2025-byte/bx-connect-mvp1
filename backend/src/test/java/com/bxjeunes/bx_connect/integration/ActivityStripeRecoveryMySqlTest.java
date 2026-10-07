@@ -94,4 +94,35 @@ class ActivityStripeRecoveryMySqlTest {
         assertThat(payments.findById(a.payment().getId()).orElseThrow().getStatutPaiement()).isEqualTo(StatutPaiement.EN_ATTENTE);
         assertThat(registrations.countByActiviteIdAndStatutIn(a.payment().getActivite().getId(), List.of(StatutInscription.EN_ATTENTE_PAIEMENT))).isEqualTo(1);
     }
+
+    @Test void verifiedExpirationReleasesExactlyOneSeatAndCannotCancelTheNextAttempt() {
+        var a = attempt();
+        a.session().setStatus("open"); a.session().setPaymentStatus("unpaid");
+        a.session().setExpiresAt(System.currentTimeMillis()/1000 - 1);
+        service.recover(a.payment().getId(), a.member().getEmail(), a.session());
+        assertThat(registrations.countByActiviteIdAndStatutIn(a.payment().getActivite().getId(), List.of(StatutInscription.EN_ATTENTE_PAIEMENT))).isEqualTo(1);
+        a.session().setStatus("expired");
+        assertThat(service.recover(a.payment().getId(), a.member().getEmail(), a.session()).getStatutPaiement()).isEqualTo(StatutPaiement.ANNULE);
+        var next = service.prepare(a.payment().getActivite().getId(), a.member(), BigDecimal.TEN, "STRIPE");
+        service.handleStripe(a.session(), false);
+        assertThat(next.getId()).isNotEqualTo(a.payment().getId());
+        assertThat(payments.findByActiviteId(a.payment().getActivite().getId())).hasSize(2);
+        assertThat(registrations.countByActiviteIdAndStatutIn(a.payment().getActivite().getId(), List.of(StatutInscription.EN_ATTENTE_PAIEMENT))).isEqualTo(1);
+    }
+
+    @Test void concurrentDoubleClickReusesOneCommittedAttemptAndOneIdempotencyKey() throws Exception {
+        var a = attempt();
+        try (var pool = Executors.newFixedThreadPool(2)) {
+            var start = new CountDownLatch(1);
+            Callable<SoutienFinancier> retry = () -> {
+                start.await(); return service.prepare(a.payment().getActivite().getId(), a.member(), BigDecimal.TEN, "STRIPE");
+            };
+            var first = pool.submit(retry); var second = pool.submit(retry); start.countDown();
+            var left = first.get(20, TimeUnit.SECONDS); var right = second.get(20, TimeUnit.SECONDS);
+            assertThat(left.getId()).isEqualTo(right.getId()).isEqualTo(a.payment().getId());
+            assertThat(left.getActivityRequestKey()).isEqualTo(right.getActivityRequestKey());
+        }
+        assertThat(payments.findByActiviteId(a.payment().getActivite().getId())).hasSize(1);
+        assertThat(registrations.countByActiviteIdAndStatutIn(a.payment().getActivite().getId(), List.of(StatutInscription.EN_ATTENTE_PAIEMENT))).isEqualTo(1);
+    }
 }

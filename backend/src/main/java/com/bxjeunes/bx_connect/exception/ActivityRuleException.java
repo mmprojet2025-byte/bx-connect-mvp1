@@ -3,6 +3,10 @@ package com.bxjeunes.bx_connect.exception;
 /** Business failures only. Clients receive a stable code, never Java exception details. */
 public class ActivityRuleException extends IllegalArgumentException {
     private final String code;
+    public ActivityRuleException(String code, String message) {
+        super(message);
+        this.code = code;
+    }
     public ActivityRuleException(String message) {
         super(message);
         String text = message.toLowerCase(java.util.Locale.ROOT);
