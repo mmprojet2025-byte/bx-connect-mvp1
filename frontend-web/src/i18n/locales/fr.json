@@ -3189,6 +3189,8 @@
     "suspendedHelp": "Votre appartenance est suspendue. Contactez votre référent pour la réactiver."
   },
   "projectPayment": {
+    "verifyStripe": "Vérifier auprès de Stripe",
+    "recoveryError": "Vérification impossible ou session Stripe introuvable. Ne payez pas à nouveau ; réessayez ou contactez l’organisateur.",
     "participation": "Participation",
     "free": "Gratuite",
     "paid": "Payante",
@@ -3223,5 +3225,16 @@
     "unlimited": "Sans limite",
     "closed": "Participations clôturées",
     "full": "Complet"
-  }
+  },
+  "paymentReturnUX": {
+  "pending": "Paiement en cours de confirmation",
+  "wait": "La confirmation Stripe peut prendre quelques secondes. Vérification automatique pendant 30 secondes ; vous pouvez ensuite vérifier manuellement.",
+  "check": "Vérifier maintenant",
+  "confirmed": "Paiement confirmé",
+  "activity": "Votre inscription à l’activité est confirmée.",
+  "project": "Votre participation au projet est confirmée.",
+  "continueProject": "Voir le projet",
+  "failed": "Ce paiement n’a pas abouti ou a été annulé/remboursé. Retournez à la fiche pour vérifier les possibilités de paiement.",
+  "error": "Impossible de vérifier le paiement. Réessayez avec « Vérifier maintenant »."
+}
 }

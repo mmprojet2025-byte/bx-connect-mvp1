@@ -1,3 +1,4 @@
+import { isSupportDeclaration, canDecideSupport } from './adminSupports'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -34,7 +35,7 @@ export default function AdminSoutiens() {
     setError('')
     try {
       const response = await api.get('/partenaire/admin/tous')
-      setSoutiens(Array.isArray(response.data) ? response.data : [])
+      setSoutiens(Array.isArray(response.data) ? response.data.filter(isSupportDeclaration) : [])
     } catch (err) {
       setError(userFriendlyError(err, t('partnerSupport.admin.loadError')))
     } finally {
@@ -55,6 +56,7 @@ export default function AdminSoutiens() {
   }, [focusedSupportId, soutiens])
 
   const traiterSoutien = async (soutien, action, commentaireAdmin = '') => {
+    if (!canDecideSupport(soutien)) return
     const confirmationKey = action === 'valider' ? 'confirmApprove' : 'confirmReject'
     if (!confirmSensitiveAction(t(`partnerSupport.admin.${confirmationKey}`, {
       name: `${soutien.partenairePrenom || ''} ${soutien.partenaireNom || ''}`.trim(),
@@ -278,7 +280,7 @@ function SupportCard({ soutien, language, processing, focused, onOpen, onReply, 
   const targetType = soutien.projetTitre
     ? t('partnerSupport.project')
     : t('partnerSupport.activity')
-  const pending = soutien.statutPaiement === 'EN_ATTENTE'
+  const pending = canDecideSupport(soutien)
 
   return (
     <article className={`rounded-2xl border bg-slate-50/70 p-5 transition hover:border-blue-200 hover:bg-white hover:shadow-md ${
@@ -366,7 +368,7 @@ function SupportCard({ soutien, language, processing, focused, onOpen, onReply, 
 function SupportDetailModal({ soutien, language, decision, adminReply, processing, onReplyChange, onClose, onStartDecision, onSubmitDecision, t }) {
   const partnerName = `${soutien.partenairePrenom || ''} ${soutien.partenaireNom || ''}`.trim()
   const target = soutien.projetTitre || soutien.activiteTitre || t('partnerSupport.admin.unknownTarget')
-  const pending = soutien.statutPaiement === 'EN_ATTENTE'
+  const pending = canDecideSupport(soutien)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">

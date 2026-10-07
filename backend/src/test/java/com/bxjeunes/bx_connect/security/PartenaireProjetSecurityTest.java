@@ -84,7 +84,7 @@ class PartenaireProjetSecurityTest {
     @DisplayName("Liste admin paginee des soutiens utilise Pageable et pas findAll complet")
     void soutiens_admin_pages_utilisent_pageable() {
         SoutienFinancier soutien = soutien(100L, partenaire, StatutPaiement.EN_ATTENTE);
-        when(soutienRepository.findAll(any(Pageable.class)))
+        when(soutienRepository.findAdminDeclarations(org.mockito.ArgumentMatchers.isNull(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(soutien)));
 
         var response = partenaireService.tousLesSoutiensPage(null, -2, 500);
@@ -92,7 +92,7 @@ class PartenaireProjetSecurityTest {
         assertThat(response.content()).hasSize(1);
         verify(soutienRepository, never()).findAll();
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-        verify(soutienRepository).findAll(captor.capture());
+        verify(soutienRepository).findAdminDeclarations(org.mockito.ArgumentMatchers.isNull(), captor.capture());
         assertThat(captor.getValue().getPageNumber()).isZero();
         assertThat(captor.getValue().getPageSize()).isEqualTo(100);
         assertThat(captor.getValue().getSort().getOrderFor("dateCreation").isDescending()).isTrue();
@@ -102,7 +102,7 @@ class PartenaireProjetSecurityTest {
     @DisplayName("Liste admin paginee des soutiens conserve le filtre statut")
     void soutiens_admin_pages_filtrent_par_statut() {
         SoutienFinancier soutien = soutien(100L, partenaire, StatutPaiement.EN_ATTENTE);
-        when(soutienRepository.findByStatutPaiement(
+        when(soutienRepository.findAdminDeclarations(
                 org.mockito.ArgumentMatchers.eq(StatutPaiement.EN_ATTENTE),
                 any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(soutien)));
@@ -111,7 +111,7 @@ class PartenaireProjetSecurityTest {
 
         assertThat(response.content()).hasSize(1);
         verify(soutienRepository, never()).findAll(any(Pageable.class));
-        verify(soutienRepository).findByStatutPaiement(
+        verify(soutienRepository).findAdminDeclarations(
                 org.mockito.ArgumentMatchers.eq(StatutPaiement.EN_ATTENTE),
                 any(Pageable.class));
     }
@@ -499,6 +499,27 @@ class PartenaireProjetSecurityTest {
         activite.setStatut(statut);
         activite.setCreateur(partenaire);
         return activite;
+    }
+
+    @Test
+    void ordinaryStripePaymentCannotBeApprovedOrRejectedAsSupport() {
+        var payment = soutien(100L, partenaire, StatutPaiement.EN_ATTENTE);
+        payment.setTypeSource("STRIPE");
+        when(soutienRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(payment));
+        assertThatThrownBy(() -> partenaireService.validerSoutien(100L, "ok", null))
+                .isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> partenaireService.refuserSoutien(100L, "non", null))
+                .isInstanceOf(AccessDeniedException.class);
+        assertThat(payment.getStatutPaiement()).isEqualTo(StatutPaiement.EN_ATTENTE);
+        verify(soutienRepository, never()).save(any());
+    }
+
+    @Test
+    void unpagedAdminListUsesDeclarationScope() {
+        when(soutienRepository.findAdminDeclarations(null)).thenReturn(List.of(
+                soutien(100L, partenaire, StatutPaiement.EN_ATTENTE)));
+        assertThat(partenaireService.tousLesSoutiens()).hasSize(1);
+        verify(soutienRepository, never()).findAll();
     }
 
     private SoutienFinancier soutien(Long id, User donateur, StatutPaiement statut) {

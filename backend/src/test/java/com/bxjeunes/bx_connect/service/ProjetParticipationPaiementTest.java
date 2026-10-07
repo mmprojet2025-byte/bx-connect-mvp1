@@ -41,6 +41,46 @@ class ProjetParticipationPaiementTest {
         s.setPaymentStatus("paid"); s.setCurrency("eur"); s.setAmountTotal(500L); s.setPaymentIntent("pi_project_test");
         s.setMetadata(Map.of("project_participation_payment_id", "3")); return s;
     }
+    @Test void recoveryAndWebhookShareOneParticipationReceiptAndNotification() {
+        payment.setStripeSessionId("cs_project_test");
+        var recovered=service.recover(3L,member.getEmail(),session());
+        assertThat(recovered.statut()).isEqualTo(StatutPaiement.PAYE);
+        assertThat(recovered.numeroRecu()).isEqualTo("BX-PROJET-3");
+        assertThat(recovered.checkoutUrl()).isNull();
+        service.handle(session(),true);
+        service.recover(3L,member.getEmail(),session());
+        verify(participants,times(1)).save(any());
+        verify(notifications,times(1)).creer(any(),anyString(),anyString(),eq("RECU_PROJET"),anyString());
+    }
+    @Test void unpaidOpenCanResumeOnlyTheExistingSessionAndExpiredStaysPending() {
+        payment.setStripeSessionId("cs_project_test");
+        var s=session();s.setStatus("open");s.setPaymentStatus("unpaid");
+        s.setExpiresAt(System.currentTimeMillis()/1000+600);s.setUrl("https://checkout.stripe.com/existing");
+        assertThat(service.recover(3L,member.getEmail(),s).checkoutUrl()).isEqualTo(s.getUrl());
+        s.setStatus("expired");
+        assertThat(service.recover(3L,member.getEmail(),s).checkoutUrl()).isNull();
+        assertThat(payment.getStatut()).isEqualTo(StatutPaiement.EN_ATTENTE);
+        verify(participants,never()).save(any());
+    }
+    @Test void recoveryRejectsOtherOwnerAndMismatchedSessionAmountCurrencyOrReference() {
+        payment.setStripeSessionId("cs_project_test");
+        var stranger=new User();stranger.setId(99L);stranger.setRole(Role.MEMBRE);stranger.setActif(true);
+        when(users.findByEmail("other")).thenReturn(Optional.of(stranger));
+        assertThatThrownBy(()->service.recoverySnapshot(3L,"other")).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        for (String field : List.of("id","amount","currency","reference","project")) {
+            var s=session();
+            switch(field) {
+                case "id" -> s.setId("cs_other");
+                case "amount" -> s.setAmountTotal(1L);
+                case "currency" -> s.setCurrency("usd");
+                case "project" -> s.setMetadata(Map.of("project_participation_payment_id","3","project_id","99"));
+                default -> s.setMetadata(Map.of("project_participation_payment_id","99"));
+            }
+            assertThatThrownBy(()->service.recover(3L,member.getEmail(),s)).isInstanceOf(IllegalArgumentException.class);
+        }
+        assertThat(payment.getStatut()).isEqualTo(StatutPaiement.EN_ATTENTE);
+        verify(participants,never()).save(any());
+    }
     @Test void priceIsServerOwnedAndPendingRetryReusesSameAttempt() {
         when(payments.findByProjetIdOrderByDateCreationDesc(2L)).thenReturn(List.of(payment));
         assertThat(service.prepare(2L, member.getEmail())).isSameAs(payment);

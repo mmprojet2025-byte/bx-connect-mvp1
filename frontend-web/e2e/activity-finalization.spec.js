@@ -125,12 +125,35 @@ for (const lang of ['fr', 'nl', 'en']) test(`payment return never claims success
   let paid = false
   await page.route(url => url.pathname.startsWith('/api/'), route => route.fulfill({ json: new URL(route.request().url()).pathname.startsWith('/api/stripe/session/') ? { statutPaiement: paid ? 'PAYE' : 'EN_ATTENTE' } : [] }))
   await page.goto('/paiement/succes?session_id=cs_test')
-  await expect(page.getByRole('heading', { name: t.activityEditor.paymentPending })).toBeVisible()
-  await page.getByRole('button', { name: t.activityEditor.checkPayment }).click()
-  await expect(page.getByRole('heading', { name: t.activityEditor.paymentConfirmed })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: t.paymentReturnUX.pending })).toBeVisible()
+  await page.getByRole('button', { name: t.paymentReturnUX.check }).click()
+  await expect(page.getByRole('heading', { name: t.paymentReturnUX.confirmed })).toHaveCount(0)
   paid = true
-  await page.getByRole('button', { name: t.activityEditor.checkPayment }).click()
-  await expect(page.getByRole('heading', { name: t.activityEditor.paymentConfirmed })).toBeVisible()
+  await expect(page.getByRole('heading', { name: t.paymentReturnUX.confirmed })).toBeVisible()
+})
+
+test('payment return stops automatic checks and allows manual recovery from an API error', async ({ page }) => {
+  const t = locales.fr
+  await setup(page, 'MEMBRE', 'fr')
+  await page.clock.install()
+  let reads = 0, failing = false, paid = false
+  await page.route('**/api/stripe/session/*', route => {
+    reads++
+    return route.fulfill({ status: failing ? 503 : 200, json: { statutPaiement: paid ? 'PAYE' : 'EN_ATTENTE' } })
+  })
+  await page.goto('/paiement/succes?session_id=cs_test')
+  await expect.poll(() => reads).toBe(1)
+  await page.clock.fastForward(31000)
+  const stopped = reads
+  await page.clock.fastForward(10000)
+  expect(reads).toBe(stopped)
+  failing = true
+  await page.getByRole('button', { name: t.paymentReturnUX.check }).click()
+  await expect(page.getByRole('heading', { name: t.paymentReturnUX.error })).toBeVisible()
+  failing = false; paid = true
+  await page.getByRole('button', { name: t.paymentReturnUX.check }).click()
+  await expect(page.getByText(t.paymentReturnUX.activity)).toBeVisible()
+  await expect(page.getByRole('button', { name: t.paymentReturnUX.check })).toHaveCount(0)
 })
 
 for (const role of ['ADMIN', 'REFERENT']) for (const order of ['date-start-end', 'start-end-date', 'date-end-start', 'edit-existing']) {

@@ -27,6 +27,13 @@ public class ProjetPaiementController {
     @GetMapping("/mes-factures")
     @PreAuthorize("hasRole('MEMBRE')")
     public List<ProjetPaiementResponse> mine(Authentication auth) { return payments.mine(auth.getName()); }
+    @PostMapping("/{id}/verifier")
+    @PreAuthorize("hasRole('MEMBRE')")
+    public ProjetPaiementResponse recover(@PathVariable Long id, Authentication auth) throws Exception {
+        var service = stripe.getIfAvailable();
+        if (service == null) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Vérification Stripe indisponible.");
+        return service.recover(id, auth.getName());
+    }
     @GetMapping("/{id}/recu")
     @PreAuthorize("hasAnyRole('MEMBRE','ADMIN','REFERENT')")
     public ProjetPaiementResponse receipt(@PathVariable Long id, Authentication auth) { return payments.receipt(id, auth.getName()); }

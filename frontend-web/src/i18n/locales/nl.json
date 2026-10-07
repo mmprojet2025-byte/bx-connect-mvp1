@@ -3189,6 +3189,8 @@
     "suspendedHelp": "Je lidmaatschap is opgeschort. Neem contact op met je begeleider om het te heractiveren."
   },
   "projectPayment": {
+    "verifyStripe": "Controleren bij Stripe",
+    "recoveryError": "Controle niet beschikbaar of Stripe-sessie niet gevonden. Betaal niet opnieuw; probeer opnieuw of neem contact op met de organisator.",
     "participation": "Deelname",
     "free": "Gratis",
     "paid": "Betalend",
@@ -3223,5 +3225,16 @@
     "unlimited": "Onbeperkt",
     "closed": "Inschrijvingen gesloten",
     "full": "Volzet"
-  }
+  },
+  "paymentReturnUX": {
+  "pending": "Betaling wordt bevestigd",
+  "wait": "De bevestiging door Stripe kan enkele seconden duren. Automatische controles duren 30 seconden; daarna kunt u handmatig controleren.",
+  "check": "Nu controleren",
+  "confirmed": "Betaling bevestigd",
+  "activity": "Uw inschrijving voor de activiteit is bevestigd.",
+  "project": "Uw deelname aan het project is bevestigd.",
+  "continueProject": "Project bekijken",
+  "failed": "Deze betaling is mislukt of geannuleerd/terugbetaald. Ga terug naar de detailpagina om de betaalmogelijkheden te bekijken.",
+  "error": "De betaling kan niet worden gecontroleerd. Probeer opnieuw met “Nu controleren”."
+}
 }

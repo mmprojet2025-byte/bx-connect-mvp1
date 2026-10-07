@@ -324,20 +324,15 @@ public class PartenaireService {
 
     // ─── Admin : Tous les soutiens ────────────────────────────────────────────
     public List<SoutienResponse> tousLesSoutiens() {
-        return soutienRepository.findAll().stream()
+        return soutienRepository.findAdminDeclarations(null).stream()
                 .map(SoutienResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
     public PagedResponse<SoutienResponse> tousLesSoutiensPage(StatutPaiement statut, int page, int size) {
         var pageable = PaginationUtils.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "dateCreation"));
-        if (statut != null) {
-            return PagedResponse.fromPage(soutienRepository
-                    .findByStatutPaiement(statut, pageable)
-                    .map(SoutienResponse::fromEntity));
-        }
         return PagedResponse.fromPage(soutienRepository
-                .findAll(pageable)
+                .findAdminDeclarations(statut, pageable)
                 .map(SoutienResponse::fromEntity));
     }
 

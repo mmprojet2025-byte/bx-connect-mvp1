@@ -47,6 +47,17 @@ public interface SoutienFinancierRepository extends JpaRepository<SoutienFinanci
 
     Page<SoutienFinancier> findByStatutPaiement(StatutPaiement statut, Pageable pageable);
 
+    // Same scope as administrative decisions; payment histories keep their own queries.
+    String ADMIN_DECLARATIONS = "SELECT s FROM SoutienFinancier s WHERE s.typeSource = 'DECLARATION' "
+            + "AND s.projet IS NOT NULL AND s.activite IS NULL "
+            + "AND (:statut IS NULL OR s.statutPaiement = :statut)";
+
+    @Query(ADMIN_DECLARATIONS)
+    List<SoutienFinancier> findAdminDeclarations(@Param("statut") StatutPaiement statut);
+
+    @Query(ADMIN_DECLARATIONS)
+    Page<SoutienFinancier> findAdminDeclarations(@Param("statut") StatutPaiement statut, Pageable pageable);
+
     // ─── Par projet ───────────────────────────────────────────────────────────
     List<SoutienFinancier> findByProjetId(Long projetId);
 

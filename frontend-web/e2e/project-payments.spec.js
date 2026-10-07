@@ -44,11 +44,61 @@ test('member finds paid receipt in Mes factures and downloads PDF', async ({ pag
   await page.getByRole('button', { name: /Télécharger le reçu PDF/ }).click()
   expect((await download).suggestedFilename()).toBe('BX-PROJET-3.pdf')
 })
+test('old paid session is recovered without opening another Checkout', async ({ page }) => {
+  const writes = await setup(page, 'MEMBRE', [{ ...paid, statut: 'EN_ATTENTE', numeroRecu: null }])
+  let recoveries = 0
+  await page.route('**/api/projets-paiements/3/verifier', route => {
+    recoveries++
+    return route.fulfill({ json: paid })
+  })
+  await page.goto('/mes-factures')
+  await expect(page.getByRole('button', { name: 'Reprendre le paiement', exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Vérifier auprès de Stripe', exact: true }).click()
+  await expect(page.getByRole('button', { name: /Télécharger le reçu PDF/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Reprendre le paiement', exact: true })).toHaveCount(0)
+  expect(recoveries).toBe(1)
+  expect(writes).toHaveLength(0)
+})
+test('missing session shows a safe error and cannot start another payment', async ({ page }) => {
+  await setup(page, 'MEMBRE', [{ ...paid, statut: 'EN_ATTENTE', numeroRecu: null }])
+  await page.route('**/api/projets-paiements/3/verifier', route => route.fulfill({ status: 409, json: {} }))
+  await page.goto('/mes-factures')
+  await page.getByRole('button', { name: 'Vérifier auprès de Stripe', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('Ne payez pas à nouveau')
+  await expect(page.getByRole('button', { name: 'Reprendre le paiement', exact: true })).toHaveCount(0)
+})
 test('pending checkout does not expose a receipt or claim payment success', async ({ page }) => {
   await setup(page, 'MEMBRE', [{ ...paid, statut: 'EN_ATTENTE', numeroRecu: null, datePaiement: null }])
   await page.goto('/mes-factures?recu=3')
-  await expect(page.getByText(/Paiement en attente de confirmation/)).toBeVisible()
+  await expect(page.getByText(/Paiement en cours de confirmation/)).toBeVisible()
   await expect(page.getByRole('button', { name: /Télécharger le reçu/ })).toHaveCount(0)
+})
+
+test('Checkout return updates automatically after webhook confirmation and exposes the receipt', async ({ page }) => {
+  const writes = await setup(page)
+  let confirmed = false
+  let reads = 0
+  await page.route('https://checkout.stripe.com/**', route => route.fulfill({ contentType: 'text/html', body: '<h1>Checkout mock</h1>' }))
+  await page.route('**/api/projets-paiements/mes-factures', route => {
+    reads++
+    return route.fulfill({ json: [confirmed ? paid : { ...paid, statut: 'EN_ATTENTE', numeroRecu: null, datePaiement: null }] })
+  })
+  await page.goto('/projets')
+  await page.getByRole('button', { name: 'Participer', exact: true }).click()
+  await expect(page).toHaveURL('https://checkout.stripe.com/c/pay/test')
+  await page.goto('/mes-factures?recu=3')
+  await expect(page.getByText(/Paiement en cours de confirmation/)).toBeVisible()
+  await expect.poll(() => reads).toBeGreaterThan(1)
+  await expect(page.getByRole('button', { name: /Télécharger le reçu/ })).toHaveCount(0)
+  // Simulate the API state committed by the webhook, independently of the return URL.
+  confirmed = true
+  await expect(page.getByRole('button', { name: /Télécharger le reçu PDF/ })).toBeVisible({ timeout: 8000 })
+  await expect(page.getByText(/Paiement en cours de confirmation/)).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /Reprendre le paiement/ })).toHaveCount(0)
+  const download = page.waitForEvent('download')
+  await page.getByRole('button', { name: /Télécharger le reçu PDF/ }).click()
+  expect((await download).suggestedFilename()).toBe('BX-PROJET-3.pdf')
+  expect(writes.map(write => write.path)).toEqual(['/api/projets-paiements/projets/2/checkout'])
 })
 test('referent opens transactions in the project and downloads a receipt', async ({ page }) => {
   await setup(page, 'REFERENT')

@@ -69,12 +69,17 @@ class ProjetPaiementMySqlTest {
         assertThat(payments.findByProjetIdOrderByDateCreationDesc(project.getId())).hasSize(1);
         assertThat(participations.findByProjetId(project.getId())).isEmpty();
     }
-    @Test void concurrentWebhookReplayCreatesOneReceiptParticipationAndNotification() throws Exception {
+    @Test void concurrentRecoveryAndWebhookCreateOneReceiptParticipationAndNotification() throws Exception {
         var user=member();var project=project(user);var p=service.prepare(project.getId(),user.getEmail());
         var session=remote(p);
+        service.attach(p.getId(), session);
+        var calls=new java.util.concurrent.atomic.AtomicInteger();
         try (var pool=Executors.newFixedThreadPool(2)) {
             var start=new CountDownLatch(1);
-            Callable<Void> run=()->{start.await();service.handle(session,true);return null;};
+            Callable<Void> run=()->{start.await();
+                if (calls.getAndIncrement()==0) service.recover(p.getId(),user.getEmail(),session);
+                else service.handle(session,true);
+                return null;};
             var a=pool.submit(run);var b=pool.submit(run);start.countDown();a.get(15,TimeUnit.SECONDS);b.get(15,TimeUnit.SECONDS);
         }
         assertThat(participations.findByProjetId(project.getId())).hasSize(1);

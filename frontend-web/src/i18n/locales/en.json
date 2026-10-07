@@ -3189,6 +3189,8 @@
     "suspendedHelp": "Your membership is suspended. Contact your mentor to reactivate it."
   },
   "projectPayment": {
+    "verifyStripe": "Check with Stripe",
+    "recoveryError": "Verification unavailable or Stripe session not found. Do not pay again; retry or contact the organiser.",
     "participation": "Participation",
     "free": "Free",
     "paid": "Paid",
@@ -3223,5 +3225,16 @@
     "unlimited": "Unlimited",
     "closed": "Registration closed",
     "full": "Full"
-  }
+  },
+  "paymentReturnUX": {
+  "pending": "Payment confirmation in progress",
+  "wait": "Stripe confirmation may take a few seconds. Automatic checks run for 30 seconds; you can then check manually.",
+  "check": "Check now",
+  "confirmed": "Payment confirmed",
+  "activity": "Your activity registration is confirmed.",
+  "project": "Your project participation is confirmed.",
+  "continueProject": "View project",
+  "failed": "This payment failed or was cancelled/refunded. Return to the details page to check payment options.",
+  "error": "Unable to check payment. Try again using “Check now”."
+}
 }

@@ -43,13 +43,23 @@ class ProjetStripeCheckoutTest {
         verify(checkout,times(2)).create(any(),eq("stable-fixture-key"));
         verify(payments,never()).handle(any(),eq(true));
     }
-    @Test void existingSessionIsReusedAndReturnDoesNotConfirmPayment() throws Exception {
-        payment.setStripeSessionId("cs_fixture");payment.setCheckoutUrl("https://checkout.stripe.com/c/pay/fixture");
-        var remote=new Session();remote.setStatus("complete");remote.setPaymentStatus("paid");
+    @Test void existingPaidSessionIsRecoveredWithoutAnotherCheckout() throws Exception {
+        payment.setStripeSessionId("cs_fixture");
+        when(payments.recoverySnapshot(3L,"member")).thenReturn(
+            new ProjetParticipationPaiementService.RecoverySnapshot(ProjetPaiementResponse.from(payment),"cs_fixture"));
+        var remote=new Session(); remote.setId("cs_fixture"); remote.setStatus("complete"); remote.setPaymentStatus("paid");
         doReturn(remote).when(checkout).retrieve("cs_fixture");
-        assertThat(checkout.checkout(2L,"member").statut()).isEqualTo(StatutPaiement.EN_ATTENTE);
+        payment.setStatut(StatutPaiement.PAYE);
+        when(payments.recover(3L,"member",remote)).thenReturn(ProjetPaiementResponse.from(payment));
+        assertThat(checkout.checkout(2L,"member").statut()).isEqualTo(StatutPaiement.PAYE);
         verify(checkout,never()).create(any(),anyString());
-        verify(payments,never()).handle(any(),eq(true));
+        verify(payments).recover(3L,"member",remote);
+    }
+    @Test void missingSessionNeverCreatesCheckoutDuringRecovery() {
+        when(payments.recoverySnapshot(3L,"member")).thenReturn(
+            new ProjetParticipationPaiementService.RecoverySnapshot(ProjetPaiementResponse.from(payment),null));
+        assertThatThrownBy(()->checkout.recover(3L,"member")).isInstanceOf(IllegalArgumentException.class);
+        verify(payments,never()).recover(any(),anyString(),any());
     }
     @Test void unknownOldAttemptNeverCreatesAnotherCharge() throws Exception {
         payment.setExpiresAt(System.currentTimeMillis()/1000-10);

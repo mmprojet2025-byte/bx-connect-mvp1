@@ -1,3 +1,5 @@
+import { canDecideSupport } from './adminSupports.js'
+
 const BUSINESS_ROLES = new Set(['MEMBRE', 'REFERENT', 'PARTENAIRE'])
 
 // null/undefined sources are unknown, never a known zero.
@@ -6,10 +8,7 @@ export function buildAdminDashboard({ users, groups, pendingGroups, projects, ac
   const actions = {
     groups: count(pendingGroups, group => group.statut === 'EN_ATTENTE'),
     projects: count(projects, project => project.statut === 'VALIDE_REFERENT'),
-    supports: count(supports, support => support.projetId != null
-      && support.activiteId == null
-      && support.typeSource === 'DECLARATION'
-      && support.statutPaiement === 'EN_ATTENTE'),
+    supports: count(supports, canDecideSupport),
   }
   return {
     users: count(users, user => BUSINESS_ROLES.has(user.role) && user.actif === true),

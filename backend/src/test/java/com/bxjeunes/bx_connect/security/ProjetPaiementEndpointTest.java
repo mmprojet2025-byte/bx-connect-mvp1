@@ -34,7 +34,12 @@ class ProjetPaiementEndpointTest {
     void checkoutAndPersonalInvoicesAreMemberOnly(String role) throws Exception {
         mvc.perform(post("/api/projets-paiements/projets/2/checkout").with(user("actor").roles(role))).andExpect(status().isForbidden());
         mvc.perform(get("/api/projets-paiements/mes-factures").with(user("actor").roles(role))).andExpect(status().isForbidden());
+        mvc.perform(post("/api/projets-paiements/3/verifier").with(user("actor").roles(role))).andExpect(status().isForbidden());
         verifyNoInteractions(payments,stripe);
+    }
+    @Test void memberRecoversOnlyWithAuthenticatedIdentity() throws Exception {
+        mvc.perform(post("/api/projets-paiements/3/verifier").with(user("member").roles("MEMBRE"))).andExpect(status().isOk());
+        verify(stripe).recover(3L,"member");
     }
     @Test void memberCannotReadProjectLedger() throws Exception {
         mvc.perform(get("/api/projets-paiements/projets/2").with(user("member").roles("MEMBRE"))).andExpect(status().isForbidden());

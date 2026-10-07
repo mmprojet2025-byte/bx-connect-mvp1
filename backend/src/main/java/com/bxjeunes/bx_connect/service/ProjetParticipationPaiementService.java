@@ -80,6 +80,8 @@ public class ProjetParticipationPaiementService {
     private void verifySession(ProjetParticipationPaiement p, Session session) {
         if (session.getId() == null || !session.getId().startsWith("cs_")
                 || session.getMetadata() == null || !p.getId().toString().equals(session.getMetadata().get("project_participation_payment_id"))
+                || (session.getMetadata().containsKey("project_id")
+                    && !p.getProjet().getId().toString().equals(session.getMetadata().get("project_id")))
                 || (p.getStripeSessionId() != null && !p.getStripeSessionId().equals(session.getId()))
                 || !"payment".equals(session.getMode())
                 || !p.getDevise().equalsIgnoreCase(session.getCurrency())
@@ -88,7 +90,40 @@ public class ProjetParticipationPaiementService {
             throw new IllegalArgumentException("Session de participation incohérente.");
     }
 
-    /** Called only by the existing signature-verified webhook. No confirmation from a success URL. */
+    public record RecoverySnapshot(ProjetPaiementResponse payment, String sessionId) {}
+
+    @Transactional(readOnly = true)
+    public RecoverySnapshot recoverySnapshot(Long id, String email) {
+        var p = payments.findById(id).orElseThrow();
+        requireOwner(p, email);
+        return new RecoverySnapshot(ProjetPaiementResponse.from(p), p.getStripeSessionId());
+    }
+
+    private void requireOwner(ProjetParticipationPaiement p, String email) {
+        var u = user(email);
+        if (u.getRole() != Role.MEMBRE || !u.isActif() || !p.getMembre().getId().equals(u.getId()))
+            throw new AccessDeniedException("Ce paiement ne vous appartient pas.");
+    }
+
+    // Session supplied only by the server's Stripe retrieval, never by the client.
+    public ProjetPaiementResponse recover(Long id, String email, Session session) {
+        var p = lock(id);
+        requireOwner(p, email);
+        if (p.getStripeSessionId() == null) throw new IllegalArgumentException("Session Stripe absente.");
+        verifySession(p, session);
+        if ("complete".equals(session.getStatus()) && "paid".equals(session.getPaymentStatus())) {
+            handle(session, true);
+        }
+        var dto = ProjetPaiementResponse.from(p);
+        boolean resumable = p.getStatut() == StatutPaiement.EN_ATTENTE
+                && "open".equals(session.getStatus()) && "unpaid".equals(session.getPaymentStatus())
+                && session.getExpiresAt() != null && session.getExpiresAt() > System.currentTimeMillis() / 1000;
+        return new ProjetPaiementResponse(dto.id(), dto.projetId(), dto.titreProjet(), dto.participant(),
+                dto.montant(), dto.devise(), dto.statut(), dto.dateCreation(), dto.datePaiement(),
+                dto.numeroRecu(), resumable ? session.getUrl() : null);
+    }
+
+    /** Used by the signed webhook and server-to-server Stripe recovery. Never a success URL. */
     public void handle(Session session, boolean completed) {
         String reference = session.getMetadata() == null ? null : session.getMetadata().get("project_participation_payment_id");
         if (reference == null || !reference.matches("[1-9][0-9]*")) throw new IllegalArgumentException("Référence de paiement invalide.");
