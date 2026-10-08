@@ -57,10 +57,17 @@ class ActivityPaymentStateTest {
         assertThat(p.getInscription().getStatut()).isEqualTo(StatutInscription.ANNULEE);
         verify(payments,never()).delete(any()); verify(registrations,never()).delete(any());
     }
-    @Test void paidHistoryPreventsSecondCharge() {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(value = StatutInscription.class, names = {"PAYEE", "ANNULEE", "EN_ATTENTE_PAIEMENT"})
+    void paidHistoryPreventsSecondCharge(StatutInscription status) {
         var p = payment(); p.setStatutPaiement(StatutPaiement.PAYE);
+        p.getInscription().setStatut(status);
         when(payments.findByActiviteId(2L)).thenReturn(List.of(p));
         assertThatThrownBy(() -> service.prepare(2L,user,BigDecimal.TEN,"STRIPE")).hasMessageContaining("déjà été payée");
+        assertThat(p.getStatutPaiement()).isEqualTo(StatutPaiement.PAYE);
+        assertThat(p.getInscription().getStatut()).isEqualTo(status);
+        verify(payments, never()).save(any());
+        verify(registrations, never()).saveAndFlush(any());
     }
     SoutienFinancier payment() {
         var i = new Inscription(); i.setActivite(activity); i.setMembre(user); i.setStatut(StatutInscription.EN_ATTENTE_PAIEMENT);

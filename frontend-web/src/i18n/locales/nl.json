@@ -326,6 +326,7 @@
     "done": "Afgelopen",
     "full": "Volzet",
     "unavailableReasons": {
+      "PAID_REGISTRATION_CANCELLED": "Betaling uitgevoerd — inschrijving geannuleerd",
       "PAYMENT_WINDOW_CLOSED": "Het is te laat om een nieuwe Stripe-betaling te starten: er moeten nog minstens 31 minuten zijn voordat de inschrijvingen sluiten.",
       "COMPLETE": "Activiteit volzet",
       "PASSEE": "Activiteit is al voorbij",

@@ -24,6 +24,7 @@ async function fetchActivite({ id, t, setActivite, setError, setLoading }) {
   try {
     const res = await api.get(`/activites/${id}`);
     setActivite(res.data);
+    return res.data;
   } catch {
     setActivite(null);
     setError(t('activities.not_found'));
@@ -174,7 +175,10 @@ export default function ActiviteDetail() {
       if (!url || !url.startsWith('https://')) throw new Error('Invalid payment redirect');
       window.location.assign(url);
     } catch (err) {
-      if (provider === 'STRIPE') await fetchActivite({ id, t, setActivite, setError, setLoading });
+      if (provider === 'STRIPE') {
+        const current = await fetchActivite({ id, t, setActivite, setError, setLoading });
+        if (current?.raisonIndisponible === 'PAID_REGISTRATION_CANCELLED' || current?.statutInscription === 'PAYEE') return;
+      }
       const code = err?.response?.data?.code;
       setError(code === 'PAYMENT_WINDOW_CLOSED' ? t('activityEditor.paymentWindowClosed')
         : code === 'PAYMENT_UNCERTAIN' ? t('projectPayment.recoveryError') : t('activityEditor.paymentError'));

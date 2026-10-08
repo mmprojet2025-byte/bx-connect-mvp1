@@ -326,6 +326,7 @@
     "done": "Terminé",
     "full": "Complet",
     "unavailableReasons": {
+      "PAID_REGISTRATION_CANCELLED": "Paiement effectué — inscription annulée",
       "PAYMENT_WINDOW_CLOSED": "Il est trop tard pour ouvrir un nouveau paiement Stripe : un délai de 31 minutes avant la clôture des inscriptions est nécessaire.",
       "COMPLETE": "Activité complète",
       "PASSEE": "Activité déjà passée",

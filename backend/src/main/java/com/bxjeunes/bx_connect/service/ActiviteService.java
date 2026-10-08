@@ -662,6 +662,21 @@ public class ActiviteService {
             return;
         }
 
+        if (utilisateur != null && utilisateur.getRole() == Role.MEMBRE && paiements != null) {
+            final Long memberId = utilisateur.getId();
+            boolean paidRegistrationCancelled = paiements.findByActiviteId(activite.getId()).stream()
+                    .anyMatch(p -> p.getDonateur().getId().equals(memberId)
+                            && p.getStatutPaiement() == com.bxjeunes.bx_connect.entity.StatutPaiement.PAYE
+                            && p.getInscription() != null
+                            && p.getInscription().getStatut() == StatutInscription.ANNULEE);
+            if (paidRegistrationCancelled) {
+                response.setInscrit(false);
+                response.setPeutSInscrire(false);
+                response.setRaisonIndisponible("PAID_REGISTRATION_CANCELLED");
+                return;
+            }
+        }
+
         String raison = raisonInscriptionIndisponible(activite, utilisateur);
         response.setInscrit(false);
         response.setPeutSInscrire(raison == null);

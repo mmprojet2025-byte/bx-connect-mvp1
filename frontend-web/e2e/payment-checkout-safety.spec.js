@@ -211,6 +211,67 @@ test('confirmed activity payment does not claim a historically cancelled registr
   expect(state.writes).toHaveLength(0)
 })
 
+for (const lang of ['fr', 'nl', 'en']) test(`paid cancelled activity registration stays explicit without repayment in ${lang}`, async ({ page }) => {
+  const state = await setup(page, { lang })
+  state.activity = { ...activity, inscrit: false, peutSInscrire: false,
+    inscriptionId: null, statutInscription: null, paiementActiviteId: null,
+    raisonIndisponible: 'PAID_REGISTRATION_CANCELLED' }
+  const labels = translations[lang]
+  const cancelled = labels.activities.unavailableReasons.PAID_REGISTRATION_CANCELLED
+  await page.goto('/activites/42')
+  await expect(page.getByText(cancelled, { exact: true })).toBeVisible()
+  await page.reload()
+  await expect(page.getByText(cancelled, { exact: true })).toBeVisible()
+  for (const label of [labels.activityEditor.stripe, labels.projectPayment.resume, labels.activities.cancel_registration]) {
+    await expect(page.getByRole('button', { name: label, exact: true })).toHaveCount(0)
+  }
+  for (const label of [labels.activityEditor.paymentError, labels.activityEditor.paymentPending, labels.activities.already_registered]) {
+    await expect(page.getByText(label, { exact: true })).toHaveCount(0)
+  }
+  await page.goto('/activites')
+  await expect(page.locator('article').getByRole('button', { name: cancelled, exact: true })).toBeDisabled()
+  await expect(page.locator('article').getByRole('button', { name: labels.activities.register_btn, exact: true })).toHaveCount(0)
+  await expect(page.getByText(labels.activities.registrationOpen, { exact: true }).locator('..')).toContainText('0')
+  expect(state.writes).toHaveLength(0)
+})
+
+for (const cancelled of [true, false]) test(`stale activity Checkout refusal rereads ${cancelled ? 'paid cancelled' : 'paid active'} state without a generic payment error`, async ({ page }) => {
+  const state = await setup(page)
+  let checkoutCalls = 0
+  await page.route('**/api/stripe/checkout', route => {
+    checkoutCalls++
+    // The backend refuses a second charge, then its activity read exposes the actual registration state.
+    if (cancelled) state.activity = { ...activity, inscrit: false, peutSInscrire: false,
+      raisonIndisponible: 'PAID_REGISTRATION_CANCELLED' }
+    else state.paid = true
+    return route.fulfill({ status: 400, json: { code: 'UNAVAILABLE', message: 'Action indisponible pour cette activité.' } })
+  })
+  await page.goto('/activites/42')
+  await page.getByRole('button', { name: translations.fr.activityEditor.stripe, exact: true }).click()
+  await expect(page.getByText(cancelled ? translations.fr.activities.unavailableReasons.PAID_REGISTRATION_CANCELLED
+    : translations.fr.activities.already_registered, { exact: true })).toBeVisible()
+  await expect(page.getByText(translations.fr.activityEditor.paymentError, { exact: true })).toHaveCount(0)
+  await expect(page.getByText(translations.fr.activityEditor.paymentPending, { exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: translations.fr.activityEditor.stripe, exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: translations.fr.projectPayment.resume, exact: true })).toHaveCount(0)
+  expect(checkoutCalls).toBe(1)
+  expect(state.writes).toHaveLength(0)
+})
+
+test('pending activity observes a paid cancelled registration without claiming it is active or pending', async ({ page }) => {
+  const state = await setup(page, { pending: true })
+  await page.clock.install()
+  await page.goto('/activites/42')
+  await expect(page.getByText(translations.fr.activityEditor.paymentPending, { exact: true })).toBeVisible()
+  state.activity = { ...activity, inscrit: false, peutSInscrire: false, raisonIndisponible: 'PAID_REGISTRATION_CANCELLED' }
+  await page.clock.fastForward(2000)
+  await expect(page.getByText(translations.fr.activities.unavailableReasons.PAID_REGISTRATION_CANCELLED, { exact: true })).toBeVisible()
+  await expect(page.getByText(translations.fr.activityEditor.paymentPending, { exact: true })).toHaveCount(0)
+  await expect(page.getByText(translations.fr.activities.already_registered, { exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: translations.fr.projectPayment.resume, exact: true })).toHaveCount(0)
+  expect(state.writes).toHaveLength(0)
+})
+
 for (const trigger of ['poll', 'focus', 'visibility', 'reload']) test(`pending activity registration observes backend confirmation on ${trigger}`, async ({ page }) => {
   const state = await setup(page, { pending: true })
   await page.clock.install()

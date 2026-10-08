@@ -326,6 +326,7 @@
     "done": "Finished",
     "full": "Full",
     "unavailableReasons": {
+      "PAID_REGISTRATION_CANCELLED": "Payment completed — registration cancelled",
       "PAYMENT_WINDOW_CLOSED": "It is too late to start a new Stripe payment: at least 31 minutes are needed before registrations close.",
       "COMPLETE": "Activity full",
       "PASSEE": "Activity already passed",
