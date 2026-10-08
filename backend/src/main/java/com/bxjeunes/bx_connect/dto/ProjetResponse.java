@@ -68,7 +68,7 @@ public class ProjetResponse {
             r.groupeId = projet.getGroupe().getId();
             r.groupeNom = projet.getGroupe().getNom();
         }
-        r.nombreParticipants = projet.getParticipants() != null ? projet.getParticipants().size() : 0;
+        r.nombreParticipants = projet.getParticipants() != null ? (int) projet.getParticipants().stream().filter(com.bxjeunes.bx_connect.entity.ParticipationProjet::isActive).count() : 0;
         r.nombreCommentaires = projet.getCommentaires() != null ? projet.getCommentaires().size() : 0;
     }
 

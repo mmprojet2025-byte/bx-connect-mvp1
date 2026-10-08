@@ -22,9 +22,10 @@ public class ProjetParticipationPaiementService {
     private final ParticipationProjetRepository participations;
     private final ProjetParticipationPaiementRepository payments;
     private final NotificationService notifications;
+    private final AuditLogService auditLog;
     public ProjetParticipationPaiementService(ProjetRepository p, UserRepository u, MembreGroupeRepository m,
-            ParticipationProjetRepository r, ProjetParticipationPaiementRepository pay, NotificationService n) {
-        projects=p; users=u; memberships=m; participations=r; payments=pay; notifications=n;
+            ParticipationProjetRepository r, ProjetParticipationPaiementRepository pay, NotificationService n, AuditLogService audit) {
+        projects=p; users=u; memberships=m; participations=r; payments=pay; notifications=n; auditLog=audit;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_COMMITTED)
@@ -39,17 +40,29 @@ public class ProjetParticipationPaiementService {
                     .map(m -> m.getGroupe().getId().equals(project.getGroupe().getId())).orElse(false) == false))
             throw new AccessDeniedException("Une adhésion active au groupe concerné est requise.");
         if (project.getPrixParticipation().signum() <= 0) throw new IllegalArgumentException("Ce projet est gratuit.");
-        if (participations.existsByUserIdAndProjetId(user.getId(), projectId))
+        if (participations.existsByUserIdAndProjetIdAndDateRetraitIsNull(user.getId(), projectId))
             throw new IllegalArgumentException("Vous participez déjà à ce projet.");
         ProjetParticipationRules.checkOpen(project);
         var existing = payments.findByProjetIdOrderByDateCreationDesc(projectId).stream()
                 .filter(p -> p.getMembre().getId().equals(user.getId())).toList();
-        if (existing.stream().anyMatch(p -> p.getStatut() == StatutPaiement.PAYE))
-            throw new IllegalArgumentException("Cette participation a déjà été payée.");
+        var paid = existing.stream().filter(p -> p.getStatut() == StatutPaiement.PAYE).findFirst();
+        if (paid.isPresent()) {
+            // Rejoining consumes a seat, but never changes the already confirmed payment or receipt.
+            ProjetParticipationRules.checkCapacity(project,
+                    participations.countByProjetIdAndDateRetraitIsNull(projectId) + participations.countPendingPayments(projectId));
+            var previous = participations.findByUserIdAndProjetId(user.getId(), projectId)
+                    .filter(p -> !p.isActive())
+                    .orElseThrow(() -> new IllegalArgumentException("Cette participation a déjà été payée."));
+            previous.setDateRetrait(null);
+            participations.save(previous);
+            auditLog.logAction(user, "PROJECT_REJOINED", "PROJECT", projectId, project.getTitre(), null,
+                    "Participation reactivee avec le paiement deja confirme, sans nouveau debit.");
+            return paid.get();
+        }
         var pending = existing.stream().filter(p -> p.getStatut() == StatutPaiement.EN_ATTENTE).findFirst();
         if (pending.isPresent()) return pending.get();
         ProjetParticipationRules.checkCapacity(project,
-                participations.countByProjetId(projectId) + participations.countPendingPayments(projectId));
+                participations.countByProjetIdAndDateRetraitIsNull(projectId) + participations.countPendingPayments(projectId));
         var payment = new ProjetParticipationPaiement();
         payment.setProjet(project); payment.setMembre(user);
         payment.setMontant(project.getPrixParticipation()); payment.setDevise("EUR");
@@ -181,8 +194,12 @@ public class ProjetParticipationPaiementService {
         p.setNumeroRecu("BX-PROJET-" + p.getId());
         p.setStripePaymentIntentId(session.getPaymentIntent());
         p.setCheckoutUrl(null);
-        if (!participations.existsByUserIdAndProjetId(p.getMembre().getId(), p.getProjet().getId()))
-            participations.save(new ParticipationProjet(p.getMembre(), p.getProjet()));
+        if (!participations.existsByUserIdAndProjetIdAndDateRetraitIsNull(p.getMembre().getId(), p.getProjet().getId())) {
+            var participation = participations.findByUserIdAndProjetId(p.getMembre().getId(), p.getProjet().getId())
+                    .orElseGet(() -> new ParticipationProjet(p.getMembre(), p.getProjet()));
+            participation.setDateRetrait(null);
+            participations.save(participation);
+        }
         payments.save(p);
         notifications.creer(p.getMembre(), "Reçu de paiement disponible",
                 "Votre participation au projet « " + p.getTitreProjet() + " » est payée. Votre reçu est disponible dans Mes factures.",

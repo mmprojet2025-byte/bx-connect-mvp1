@@ -159,3 +159,82 @@ test('taking the last free place immediately disables the participation button',
   await expect(card.getByRole('button', { name: 'Participant', exact: true })).toBeDisabled()
   expect(writes.map(write => write.path)).toEqual(['/api/projets/2/rejoindre'])
 })
+
+for (const language of ['fr', 'nl', 'en']) test(`member leaves own paid project without touching payment or receipt ${language}`, async ({ page }) => {
+  await setup(page)
+  const translations = (await import(`../src/i18n/locales/${language}.json`, { with: { type: 'json' } })).default
+  await page.addInitScript(lang => localStorage.setItem('bxconnect_lang', lang), language)
+  let participating = true
+  const changes = []
+  await page.route(url => url.pathname === '/api/projets', route => route.fulfill({ json: [{ ...project, capacite: 1, nombreParticipants: participating ? 1 : 0 }] }))
+  await page.route('**/api/projets/mes-participations', route => route.fulfill({ json: participating ? [project] : [] }))
+  await page.route('**/api/projets/2/participation', route => {
+    changes.push({ method: route.request().method(), body: route.request().postData() })
+    participating = false
+    return route.fulfill({ status: 204 })
+  })
+  await page.route('**/api/projets-paiements/projets/2/checkout', route => {
+    participating = true
+    changes.push({ method: 'REJOIN' })
+    return route.fulfill({ json: paid })
+  })
+  await page.goto('/projets')
+  const card = page.locator('article').first()
+  await expect(card).toContainText('1 / 1')
+  await expect(card.getByRole('button', { name: translations.projects.leave, exact: true })).toBeEnabled()
+  await expect(card.getByText(translations.projects.leaveNoRefund, { exact: true })).toBeVisible()
+  page.once('dialog', async dialog => {
+    expect(dialog.message()).toContain(translations.projects.leaveNoRefund)
+    await dialog.accept()
+  })
+  await card.getByRole('button', { name: translations.projects.leave, exact: true }).click()
+  await expect(card).toContainText('0 / 1')
+  await expect(card.getByRole('button', { name: translations.projects.leave, exact: true })).toHaveCount(0)
+  expect(changes).toEqual([{ method: 'DELETE', body: null }])
+  await page.reload()
+  await expect(card.getByRole('button', { name: translations.projects.join, exact: true })).toBeEnabled()
+  await card.getByRole('button', { name: translations.projects.join, exact: true }).click()
+  await expect(card.getByRole('button', { name: translations.projects.leave, exact: true })).toBeVisible()
+  await expect(card).toContainText('1 / 1')
+  await expect(page).toHaveURL(/\/projets$/)
+  expect(changes).toHaveLength(2)
+  await page.goto('/mes-factures')
+  await expect(page.getByRole('button', { name: `${translations.projectPayment.download} — BX-PROJET-3`, exact: true })).toBeVisible()
+})
+
+test('free project withdrawal can be cancelled and an API refusal keeps participation', async ({ page }) => {
+  await setup(page)
+  let requests = 0
+  await page.route(url => url.pathname === '/api/projets', route => route.fulfill({ json: [{ ...project, prixParticipation: 0, nombreParticipants: 1 }] }))
+  await page.route('**/api/projets/mes-participations', route => route.fulfill({ json: [project] }))
+  await page.route('**/api/projets/2/participation', route => { requests++; return route.fulfill({ status: 403, json: {} }) })
+  await page.goto('/projets')
+  const button = page.getByRole('button', { name: 'Quitter le projet', exact: true })
+  page.once('dialog', dialog => dialog.dismiss())
+  await button.click()
+  expect(requests).toBe(0)
+  page.once('dialog', dialog => dialog.accept())
+  await button.click()
+  await expect(page.getByText('Accès refusé.', { exact: true })).toBeVisible()
+  await expect(button).toBeVisible()
+  expect(requests).toBe(1)
+})
+
+for (const role of ['MEMBRE', 'REFERENT', 'ADMIN', 'SUPER_ADMIN']) test(`nonparticipant ${role} has no leave project action`, async ({ page }) => {
+  await setup(page, role)
+  await page.goto('/projets')
+  await expect(page.getByRole('button', { name: 'Quitter le projet', exact: true })).toHaveCount(0)
+})
+
+test('invoice polling keeps observing backend confirmation in a background tab', async ({ page }) => {
+  await setup(page)
+  let confirmed = false
+  await page.route('**/api/projets-paiements/mes-factures', route => route.fulfill({ json: [confirmed ? paid : { ...paid, statut: 'EN_ATTENTE', numeroRecu: null }] }))
+  await page.clock.install()
+  await page.goto('/mes-factures')
+  await expect(page.getByText(/Paiement en cours de confirmation/)).toBeVisible()
+  await page.evaluate(() => Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' }))
+  confirmed = true
+  await page.clock.fastForward(2000)
+  await expect(page.getByRole('button', { name: /Télécharger le reçu PDF/ })).toBeVisible()
+})

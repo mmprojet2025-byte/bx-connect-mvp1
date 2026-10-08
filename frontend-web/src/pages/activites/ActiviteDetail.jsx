@@ -1,5 +1,6 @@
+import usePaymentPolling from '../../hooks/usePaymentPolling'
 import { activityError as userFriendlyError } from '../../utils/activityError'
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import L from 'leaflet';
@@ -61,6 +62,23 @@ export default function ActiviteDetail() {
   useEffect(() => {
     fetchActivite({ id, t, setActivite, setError, setLoading });
   }, [id, t]);
+
+  const refreshPendingRegistration = useCallback(async signal => {
+    try {
+      const { data } = await api.get(`/activites/${id}`, { signal });
+      if (signal?.aborted) return;
+      setActivite(data);
+      setError('');
+      if (data.statutInscription !== 'EN_ATTENTE_PAIEMENT') {
+        setVerifiedCheckout(false);
+        setMessage(data.statutInscription === 'PAYEE' ? t('paymentReturnUX.confirmed') : '');
+      }
+    } catch {
+      if (!signal?.aborted) setError(t('paymentReturnUX.error'));
+    }
+  }, [id, t]);
+  usePaymentPolling(isMembre && activite?.statutInscription === 'EN_ATTENTE_PAIEMENT',
+    refreshPendingRegistration, { recheckOnFocus: true });
 
   const locationDetails = useMemo(() => buildLocationDetails(activite), [activite]);
 

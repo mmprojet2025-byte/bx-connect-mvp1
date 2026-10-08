@@ -342,6 +342,11 @@
     "locationMapAria": "Activity location map"
   },
   "projects": {
+    "leave": "Leave project",
+    "leaveConfirm": "Do you want to leave this project?",
+    "leaveNoRefund": "If you have paid, leaving the project does not trigger an automatic refund. Your receipt remains available.",
+    "left": "You have left the project.",
+    "leaveError": "Unable to leave the project. Please try again.",
     "view": "View",
     "catalogue": "Catalogue",
     "myProjects": "My projects",

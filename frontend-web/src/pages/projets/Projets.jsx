@@ -249,6 +249,21 @@ export default function Projets() {
     }
   }
 
+  const handleLeaveProject = async projet => {
+    if (!window.confirm(`${t('projects.leaveConfirm')}\n${t('projects.leaveNoRefund')}`)) return
+    setActionLoading(`${projet.id}-LEAVE`)
+    setError(''); setMessage('')
+    try {
+      await api.delete(`/projets/${projet.id}/participation`)
+      setParticipationIds(current => current.filter(id => id !== projet.id))
+      await fetchProjets()
+      setMessage(t('projects.left'))
+      toast.success(t('projects.left'))
+    } catch (err) {
+      setError(userFriendlyError(err, t('projects.leaveError')))
+    } finally { setActionLoading(null) }
+  }
+
   const handleJoinProject = async (projet) => {
     setActionLoading(`${projet.id}-JOIN`)
     setError('')
@@ -527,6 +542,7 @@ export default function Projets() {
                 commentDraft={commentDrafts[projet.id] || ''}
                 onToggleDetails={() => setExpandedProjectId(current => current === projet.id ? null : projet.id)}
                 onFollow={() => handleFollow(projet)}
+                onLeave={() => handleLeaveProject(projet)}
                 onJoin={() => handleJoinProject(projet)}
                 canSubmit={['BROUILLON', 'A_CORRIGER_REFERENT', 'A_CORRIGER_ADMIN'].includes(projet.statut) && projet.estPorteurConnecte}
                 onSubmit={() => handleSubmitDraft(projet)}
@@ -614,6 +630,7 @@ function ProjectCard({
   commentDraft,
   onToggleDetails,
   onFollow,
+  onLeave,
   onJoin,
   canSubmit,
   onSubmit,
@@ -711,6 +728,7 @@ function ProjectCard({
           expanded={expanded}
           onToggleDetails={onToggleDetails}
           onFollow={onFollow}
+          onLeave={onLeave}
           onJoin={onJoin}
           canSubmit={canSubmit}
           onSubmit={onSubmit}
@@ -798,7 +816,7 @@ function ProjectAlivePanel({ projet, nextStep, comments, commentsLoading, commen
   )
 }
 
-function ProjectActions({ projet, expanded, isAuthenticated, isMembre, isPartenaire, isParticipant, canJoin, actionLoading, onToggleDetails, onFollow, onJoin, canSubmit, onSubmit, canEdit, onEdit, t }) {
+function ProjectActions({ projet, expanded, isAuthenticated, isMembre, isPartenaire, isParticipant, canJoin, actionLoading, onToggleDetails, onFollow, onLeave, onJoin, canSubmit, onSubmit, canEdit, onEdit, t }) {
   return (
     <div className="mt-auto flex flex-wrap gap-2 pt-4">
       <button type="button" aria-expanded={expanded} aria-controls={`project-details-${projet.id}`} onClick={onToggleDetails} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-200">
@@ -831,6 +849,13 @@ function ProjectActions({ projet, expanded, isAuthenticated, isMembre, isPartena
           {isParticipant ? t('projects.joinedLabel', { defaultValue: 'Participant' }) : t('projects.join')}
         </button>
       )}
+      {isMembre && isParticipant && <>
+        <button type="button" onClick={onLeave} disabled={actionLoading === `${projet.id}-LEAVE`}
+          className="inline-flex flex-1 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black text-amber-800 disabled:opacity-60">
+          {t('projects.leave')}
+        </button>
+        <p className="w-full text-xs text-slate-600">{t('projects.leaveNoRefund')}</p>
+      </>}
       {isPartenaire && projet.statut === 'APPROUVE' && (
         <Link to="/partenaire?tab=projets-activites" className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-orange-600 px-3 py-2 text-xs font-black text-white transition hover:bg-orange-500">
           <AppIcon name="Handshake" className="h-3.5 w-3.5" />

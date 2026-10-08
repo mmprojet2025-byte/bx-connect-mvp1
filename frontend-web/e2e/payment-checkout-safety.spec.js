@@ -210,3 +210,81 @@ test('confirmed activity payment does not claim a historically cancelled registr
   await expect(page.getByText(translations.fr.paymentReturnUX.activity, { exact: true })).toHaveCount(0)
   expect(state.writes).toHaveLength(0)
 })
+
+for (const trigger of ['poll', 'focus', 'visibility', 'reload']) test(`pending activity registration observes backend confirmation on ${trigger}`, async ({ page }) => {
+  const state = await setup(page, { pending: true })
+  await page.clock.install()
+  await page.goto('/activites/42')
+  await expect(page.getByText(translations.fr.activityEditor.paymentPending, { exact: true })).toBeVisible()
+  if (trigger !== 'poll') await page.clock.fastForward(31000)
+  state.paid = true // only the backend response changes; the browser never confirms payment
+  if (trigger === 'poll') await page.clock.fastForward(2000)
+  if (trigger === 'focus') await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  if (trigger === 'visibility') await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
+  if (trigger === 'reload') await page.reload()
+  await expect(page.getByText(translations.fr.activities.already_registered, { exact: true })).toBeVisible()
+  await expect(page.getByText(translations.fr.activityEditor.paymentPending, { exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Reprendre le paiement', exact: true })).toHaveCount(0)
+  expect(state.writes).toEqual([])
+})
+
+test('activity polling is bounded, survives read errors, and keeps manual server verification', async ({ page }) => {
+  const state = await setup(page, { pending: true })
+  let reads = 0, fail = false
+  await page.route('**/api/activites/42', route => {
+    reads++
+    return route.fulfill({ status: fail ? 503 : 200, json: state.activity })
+  })
+  await page.clock.install()
+  await page.goto('/activites/42')
+  // React StrictMode can perform the initial read twice; the bounded window is tested below.
+  await expect(page.getByText(translations.fr.activityEditor.paymentPending, { exact: true })).toBeVisible()
+  await expect.poll(() => reads).toBeGreaterThan(0)
+  fail = true
+  await page.clock.fastForward(2000)
+  await expect(page.getByText(translations.fr.paymentReturnUX.error, { exact: true })).toBeVisible()
+  await expect(page.getByText(translations.fr.activities.already_registered, { exact: true })).toHaveCount(0)
+  fail = false
+  await page.clock.fastForward(31000)
+  const stopped = reads
+  await page.clock.fastForward(10000)
+  expect(reads).toBe(stopped)
+  await expect(page.getByRole('button', { name: 'Vérifier auprès de Stripe', exact: true })).toBeVisible()
+  expect(state.writes).toEqual([])
+})
+
+test('activity return rechecks on focus after bounded polling and shows confirmed registration', async ({ page }) => {
+  const state = await setup(page, { pending: true })
+  await page.clock.install()
+  await page.goto('/paiement/succes?session_id=cs_existing')
+  await expect.poll(() => state.reads).toBe(1)
+  await page.clock.fastForward(31000)
+  const stopped = state.reads
+  await page.clock.fastForward(10000)
+  expect(state.reads).toBe(stopped)
+  await expect(page.getByRole('button', { name: 'Vérifier maintenant', exact: true })).toBeVisible()
+  state.paid = true
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await expect(page.getByRole('heading', { name: 'Paiement confirmé', exact: true })).toBeVisible()
+  await expect(page.getByText(translations.fr.paymentReturnUX.activity, { exact: true })).toBeVisible()
+  expect(state.writes).toEqual([])
+})
+
+for (const path of ['/activites', '/dashboard']) test(`pending activity refreshes in ${path} after backend confirmation`, async ({ page }) => {
+  const state = await setup(page, { pending: true })
+  await page.route(url => url.pathname === '/api/activites', route => route.fulfill({ json: [{ ...state.activity,
+    statutInscription: state.paid ? 'PAYEE' : 'EN_ATTENTE_PAIEMENT' }] }))
+  await page.route('**/api/membre/dashboard', route => route.fulfill({ json: {
+    inscriptions: [{ id: 7, activiteTitre: activity.titre, activiteStatut: 'PUBLIEE', activiteId: 42,
+      statut: state.paid ? 'PAYEE' : 'EN_ATTENTE_PAIEMENT' }], projets: [], notifications: [],
+  } }))
+  await page.clock.install()
+  await page.goto(path)
+  await expect(page.getByText(translations.fr.activityEditor.paymentPending, { exact: path !== '/activites' }).first()).toBeVisible()
+  state.paid = true
+  await page.clock.fastForward(2000)
+  await expect(page.getByText(translations.fr.activityEditor.paymentPending, { exact: path !== '/activites' })).toHaveCount(0)
+  const finalLabel = path === '/activites' ? translations.fr.activities.already_registered : translations.fr.memberDashboard.statuses.subscription.PAYEE
+  await expect(page.getByText(finalLabel, { exact: path !== '/activites' }).first()).toBeVisible()
+  expect(state.writes).toEqual([])
+})

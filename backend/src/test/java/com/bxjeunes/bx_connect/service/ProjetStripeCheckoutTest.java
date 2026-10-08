@@ -50,8 +50,10 @@ class ProjetStripeCheckoutTest {
             new ProjetParticipationPaiementService.RecoverySnapshot(ProjetPaiementResponse.from(payment),"cs_fixture"));
         var remote=new Session(); remote.setId("cs_fixture"); remote.setStatus("complete"); remote.setPaymentStatus("paid");
         doReturn(remote).when(checkout).retrieve("cs_fixture");
-        payment.setStatut(StatutPaiement.PAYE);
-        when(payments.recover(3L,"member",remote)).thenReturn(ProjetPaiementResponse.from(payment));
+        when(payments.recover(3L,"member",remote)).thenAnswer(invocation -> {
+            payment.setStatut(StatutPaiement.PAYE);
+            return ProjetPaiementResponse.from(payment);
+        });
         assertThat(checkout.checkout(2L,"member").statut()).isEqualTo(StatutPaiement.PAYE);
         verify(checkout,never()).create(any(),anyString());
         verify(payments).recover(3L,"member",remote);
@@ -75,8 +77,10 @@ class ProjetStripeCheckoutTest {
                 new ProjetParticipationPaiementService.RecoverySnapshot(ProjetPaiementResponse.from(payment),"cs_fixture"));
         var remote = new Session(); remote.setId("cs_fixture");
         doReturn(remote).when(checkout).retrieve("cs_fixture");
-        payment.setStatut(StatutPaiement.PAYE);
-        when(payments.recover(3L,"member",remote)).thenReturn(ProjetPaiementResponse.from(payment));
+        when(payments.recover(3L,"member",remote)).thenAnswer(invocation -> {
+            payment.setStatut(StatutPaiement.PAYE);
+            return ProjetPaiementResponse.from(payment);
+        });
         assertThat(checkout.checkout(2L,"member").statut()).isEqualTo(StatutPaiement.PAYE);
         verify(payments,never()).prepare(any(),any());
         verify(checkout,never()).create(any(),anyString());
@@ -92,5 +96,13 @@ class ProjetStripeCheckoutTest {
         var order = inOrder(payments);
         order.verify(payments).reconcile(8L,expired);
         order.verify(payments).prepare(2L,"member");
+    }
+    @Test void rejoiningWithConfirmedPaymentNeverCreatesOrRetrievesCheckout() throws Exception {
+        payment.setStatut(StatutPaiement.PAYE);
+        payment.setNumeroRecu("BX-PROJET-3");
+        assertThat(checkout.checkout(2L, "member").numeroRecu()).isEqualTo("BX-PROJET-3");
+        verify(checkout, never()).create(any(), anyString());
+        verify(checkout, never()).retrieve(anyString());
+        verify(payments, never()).recover(any(), any(), any());
     }
 }

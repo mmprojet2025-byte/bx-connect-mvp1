@@ -42,6 +42,8 @@ public class ProjetStripeCheckoutService {
             }
         }
         var p = payments.prepare(projectId, email);
+        if (p.getStatut() == com.bxjeunes.bx_connect.entity.StatutPaiement.PAYE)
+            return ProjetPaiementResponse.from(p);
         if (p.getStripeSessionId() != null) {
             var verified = recover(p.getId(), email);
             if (verified.statut() == com.bxjeunes.bx_connect.entity.StatutPaiement.PAYE

@@ -38,6 +38,9 @@ class ProjetTypesMigrationTest {
         var detailsMigration = Flyway.configure().dataSource(mysql.getJdbcUrl(), mysql.getUsername(), mysql.getPassword()).target("14").load();
         assertThat(detailsMigration.migrate().migrationsExecuted).isEqualTo(1);
         assertThat(detailsMigration.migrate().migrationsExecuted).isZero();
+        var withdrawalMigration = Flyway.configure().dataSource(mysql.getJdbcUrl(), mysql.getUsername(), mysql.getPassword()).target("15").load();
+        assertThat(withdrawalMigration.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(withdrawalMigration.migrate().migrationsExecuted).isZero();
         try (var connection = DriverManager.getConnection(mysql.getJdbcUrl(), mysql.getUsername(), mysql.getPassword());
              var statement = connection.createStatement();
              var rows = statement.executeQuery("SELECT id,titre,visibilite,statut,prix_participation,capacite,date_execution,date_limite_participation,image_url FROM projets ORDER BY id")) {
@@ -51,10 +54,12 @@ class ProjetTypesMigrationTest {
                 assertThat(rows.getBigDecimal("prix_participation")).isEqualByComparingTo("0.00");
             }
             assertThat(count).isEqualTo(4);
-            try (var participation = statement.executeQuery("SELECT user_id,projet_id FROM participations_projets")) {
+            try (var participation = statement.executeQuery("SELECT user_id,projet_id,date_participation,date_retrait FROM participations_projets")) {
                 assertThat(participation.next()).isTrue();
                 assertThat(participation.getInt("user_id")).isEqualTo(1);
                 assertThat(participation.getInt("projet_id")).isEqualTo(3);
+                assertThat(participation.getTimestamp("date_participation")).isNotNull();
+                assertThat(participation.getObject("date_retrait")).isNull();
                 assertThat(participation.next()).isFalse();
             }
         }

@@ -342,6 +342,11 @@
     "locationMapAria": "Kaart van de activiteitlocatie"
   },
   "projects": {
+    "leave": "Project verlaten",
+    "leaveConfirm": "Wil je dit project verlaten?",
+    "leaveNoRefund": "Als je hebt betaald, leidt het verlaten van het project niet tot een automatische terugbetaling. Je ontvangstbewijs blijft beschikbaar.",
+    "left": "Je hebt het project verlaten.",
+    "leaveError": "Het project verlaten is niet gelukt. Probeer opnieuw.",
     "view": "Bekijken",
     "catalogue": "Catalogus",
     "myProjects": "Mijn projecten",

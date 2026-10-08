@@ -20,7 +20,7 @@ class ProjetParticipationPaiementTest {
     final ParticipationProjetRepository participants = mock(ParticipationProjetRepository.class);
     final ProjetParticipationPaiementRepository payments = mock(ProjetParticipationPaiementRepository.class);
     final NotificationService notifications = mock(NotificationService.class);
-    final ProjetParticipationPaiementService service = new ProjetParticipationPaiementService(projects, users, memberships, participants, payments, notifications);
+    final ProjetParticipationPaiementService service = new ProjetParticipationPaiementService(projects, users, memberships, participants, payments, notifications, mock(AuditLogService.class));
     User member; Projet project; ProjetParticipationPaiement payment;
     @BeforeEach void setup() {
         member = new User(); member.setId(1L); member.setRole(Role.MEMBRE); member.setActif(true);
@@ -203,7 +203,7 @@ class ProjetParticipationPaiementTest {
 
     @Test void fullProjectRejectsCheckoutIncludingPendingReservations() {
         project.setCapacite(2);
-        when(participants.countByProjetId(2L)).thenReturn(1L);
+        when(participants.countByProjetIdAndDateRetraitIsNull(2L)).thenReturn(1L);
         when(participants.countPendingPayments(2L)).thenReturn(1L);
         assertThatThrownBy(() -> service.prepare(2L, member.getEmail())).hasMessageContaining("complet");
         verify(payments, never()).saveAndFlush(any());

@@ -50,7 +50,7 @@ export default function ActivityPaymentReturn() {
     if (session) check(controller.signal)
     return () => controller.abort()
   }, [session, check])
-  usePaymentPolling(Boolean(session) && state === 'paymentPending', check)
+  usePaymentPolling(Boolean(session) && ['paymentPending', 'paymentError'].includes(state), check, { recheckOnFocus: true })
   const key = { paymentPending: 'pending', paymentConfirmed: 'confirmed', paymentFailed: 'failed', paymentError: 'error' }[state]
   return <main className="mx-auto max-w-lg space-y-5 p-6">
     <h1 aria-live="polite" className="text-xl font-bold">{t(`paymentReturnUX.${key}`)}</h1>

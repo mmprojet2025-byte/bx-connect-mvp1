@@ -342,6 +342,11 @@
     "locationMapAria": "Carte de localisation de l’activité"
   },
   "projects": {
+    "leave": "Quitter le projet",
+    "leaveConfirm": "Voulez-vous quitter ce projet ?",
+    "leaveNoRefund": "Si vous avez payé, quitter le projet ne déclenche aucun remboursement automatique. Votre reçu reste disponible.",
+    "left": "Vous avez quitté le projet.",
+    "leaveError": "Impossible de quitter le projet. Réessayez.",
     "view": "Voir",
     "catalogue": "Catalogue",
     "myProjects": "Mes projets",
