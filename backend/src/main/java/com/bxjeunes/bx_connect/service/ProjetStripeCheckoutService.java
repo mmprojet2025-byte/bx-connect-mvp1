@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service;
 @Service
 @ConditionalOnProperty(name="features.payments.stripe.enabled", havingValue="true")
 public class ProjetStripeCheckoutService {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ProjetStripeCheckoutService.class);
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private java.time.Clock clock = java.time.Clock.systemUTC();
     private final ProjetParticipationPaiementService payments;
     @Value("${stripe.success-url}") private String successUrl;
     public ProjetStripeCheckoutService(ProjetParticipationPaiementService payments) { this.payments = payments; }
@@ -26,7 +29,21 @@ public class ProjetStripeCheckoutService {
     }
 
     public ProjetPaiementResponse checkout(Long projectId, String email) throws StripeException {
+        var existing = payments.currentAttempt(projectId, email);
+        if (existing != null && existing.sessionId() != null) {
+            var verified = recover(existing.id(), email);
+            if (verified.statut() != com.bxjeunes.bx_connect.entity.StatutPaiement.ANNULE) return verified;
+        }
+        for (var expired : payments.expiredStripeAttempts(projectId, email)) {
+            try { payments.reconcile(expired.id(), retrieve(expired.sessionId())); }
+            catch (StripeException | IllegalArgumentException failure) {
+                log.warn("Stripe project reservation could not be verified: payment={}, error={}",
+                        expired.id(), failure.getClass().getSimpleName());
+            }
+        }
         var p = payments.prepare(projectId, email);
+        if (p.getStatut() == com.bxjeunes.bx_connect.entity.StatutPaiement.PAYE)
+            return ProjetPaiementResponse.from(p);
         if (p.getStripeSessionId() != null) {
             var verified = recover(p.getId(), email);
             if (verified.statut() == com.bxjeunes.bx_connect.entity.StatutPaiement.PAYE
@@ -38,7 +55,7 @@ public class ProjetStripeCheckoutService {
             } else return verified;
         }
         // Never reuse an uncertain old attempt after Stripe's idempotency retention window.
-        if (p.getExpiresAt() <= System.currentTimeMillis()/1000 + 1800)
+        if (p.getExpiresAt() == null || p.getExpiresAt() <= clock.instant().getEpochSecond() + 1800)
             throw new IllegalArgumentException("Paiement en cours de vérification. Réessayez après confirmation de son expiration.");
         java.net.URI configured = java.net.URI.create(successUrl);
         String root = configured.getScheme() + "://" + configured.getRawAuthority();
@@ -55,7 +72,9 @@ public class ProjetStripeCheckoutService {
                     .setProductData(SessionCreateParams.LineItem.PriceData.ProductData.builder()
                         .setName("Participation — " + p.getTitreProjet()).build()).build()).build())
             .build();
-        return payments.attach(p.getId(), create(params, p.getRequestKey()));
+        var session = create(params, p.getRequestKey());
+        payments.attach(p.getId(), session);
+        return payments.recover(p.getId(), email, session);
     }
     Session create(SessionCreateParams params, String key) throws StripeException {
         return Session.create(params, RequestOptions.builder().setIdempotencyKey("project-" + key).build());

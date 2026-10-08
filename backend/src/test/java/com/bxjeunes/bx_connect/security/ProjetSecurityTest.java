@@ -154,7 +154,7 @@ class ProjetSecurityTest {
         p.setVisibilite(VisibiliteProjet.PUBLIC);
         when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
         when(projetRepository.findByIdForUpdate(42L)).thenReturn(Optional.of(p));
-        when(participationRepository.existsByUserIdAndProjetId(membre.getId(), 42L)).thenReturn(true);
+        when(participationRepository.existsByUserIdAndProjetIdAndDateRetraitIsNull(membre.getId(), 42L)).thenReturn(true);
         assertThatThrownBy(() -> projetService.rejoindrProjet(42L, membre.getEmail()))
                 .hasMessage("Vous participez déjà à ce projet");
         verify(participationRepository, never()).save(any());
@@ -850,7 +850,7 @@ class ProjetSecurityTest {
         when(userRepository.findByEmail(membre.getEmail())).thenReturn(Optional.of(membre));
         when(membreGroupeRepository.findFirstByUserIdAndStatut(membre.getId(), StatutMembre.ACCEPTE))
                 .thenReturn(Optional.of(adhesion(membre, groupe)));
-        when(participationRepository.existsByUserIdAndProjetId(membre.getId(), 42L)).thenReturn(false);
+        when(participationRepository.existsByUserIdAndProjetIdAndDateRetraitIsNull(membre.getId(), 42L)).thenReturn(false);
         when(participationRepository.save(any(ParticipationProjet.class))).thenAnswer(inv -> inv.getArgument(0));
 
         projetService.rejoindrProjet(42L, membre.getEmail());

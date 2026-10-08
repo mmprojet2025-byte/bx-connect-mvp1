@@ -1,4 +1,5 @@
-import { useMemo, useState, useEffect } from 'react';
+import usePaymentPolling from '../../hooks/usePaymentPolling'
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
@@ -57,6 +58,15 @@ export default function Activites() {
     fetchActivites({ t, setActivites, setError, setLoading });
     fetchOptions();
   }, [t]);
+
+  const refreshPendingActivities = useCallback(async signal => {
+    try {
+      const { data } = await api.get('/activites', { signal });
+      if (!signal?.aborted) { setActivites(data); setError(''); }
+    } catch { if (!signal?.aborted) setError(t('activities.error_load')); }
+  }, [t]);
+  usePaymentPolling(isMembre && activites.some(a => a.statutInscription === 'EN_ATTENTE_PAIEMENT'),
+    refreshPendingActivities, { recheckOnFocus: true });
 
   const fetchOptions = async () => {
     try {

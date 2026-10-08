@@ -84,6 +84,23 @@ public class StripeController {
         }
     }
 
+    // Recovery of an existing activity payment, verified server-to-server with Stripe.
+    @PostMapping("/activites/paiements/{paymentId}/verifier")
+    @PreAuthorize("hasRole('MEMBRE')")
+    public ResponseEntity<?> recupererPaiementActivite(@PathVariable Long paymentId, Authentication auth) {
+        try {
+            return ResponseEntity.ok(stripeService.recupererPaiementActivite(paymentId, auth.getName()));
+        } catch (AccessDeniedException e) {
+            throw e;
+        } catch (StripeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .body(Map.of("message", "Vérification Stripe indisponible. Ne payez pas à nouveau."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Impossible de vérifier ce paiement. Ne payez pas à nouveau et contactez l'organisateur."));
+        }
+    }
+
     // ─── Webhook Stripe (appelé automatiquement par Stripe) ──────────────────
     // POST /api/stripe/webhook
     // ⚠️ Route publique — Stripe envoie les événements ici

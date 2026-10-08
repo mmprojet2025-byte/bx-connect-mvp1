@@ -44,6 +44,7 @@ import static org.mockito.ArgumentMatchers.any;
 class GroupeSecurityTest {
 
     @Mock private GroupeRepository groupeRepository;
+    @Mock private com.bxjeunes.bx_connect.repository.ActiviteRepository activiteRepository;
     @Mock private MembreGroupeRepository membreGroupeRepository;
     @Mock private UserRepository userRepository;
     @Mock private NotificationService notificationService;

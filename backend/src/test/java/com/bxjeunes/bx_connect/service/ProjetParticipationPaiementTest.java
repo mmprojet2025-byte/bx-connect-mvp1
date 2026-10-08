@@ -20,7 +20,7 @@ class ProjetParticipationPaiementTest {
     final ParticipationProjetRepository participants = mock(ParticipationProjetRepository.class);
     final ProjetParticipationPaiementRepository payments = mock(ProjetParticipationPaiementRepository.class);
     final NotificationService notifications = mock(NotificationService.class);
-    final ProjetParticipationPaiementService service = new ProjetParticipationPaiementService(projects, users, memberships, participants, payments, notifications);
+    final ProjetParticipationPaiementService service = new ProjetParticipationPaiementService(projects, users, memberships, participants, payments, notifications, mock(AuditLogService.class));
     User member; Projet project; ProjetParticipationPaiement payment;
     @BeforeEach void setup() {
         member = new User(); member.setId(1L); member.setRole(Role.MEMBRE); member.setActif(true);
@@ -52,14 +52,22 @@ class ProjetParticipationPaiementTest {
         verify(participants,times(1)).save(any());
         verify(notifications,times(1)).creer(any(),anyString(),anyString(),eq("RECU_PROJET"),anyString());
     }
-    @Test void unpaidOpenCanResumeOnlyTheExistingSessionAndExpiredStaysPending() {
+    @Test void replayDoesNotReplaceAnAlreadyRecordedRefund() {
+        payment.setStripeSessionId("cs_project_test"); payment.setStatut(StatutPaiement.REMBOURSE);
+        assertThat(service.recover(3L, member.getEmail(), session()).statut()).isEqualTo(StatutPaiement.REMBOURSE);
+        service.handle(session(), true);
+        assertThat(payment.getStatut()).isEqualTo(StatutPaiement.REMBOURSE);
+        verify(participants, never()).save(any());
+        verify(notifications, never()).creer(any(), anyString(), anyString(), anyString(), anyString());
+    }
+    @Test void unpaidOpenCanResumeOnlyTheExistingSessionAndVerifiedExpirationReleasesIt() {
         payment.setStripeSessionId("cs_project_test");
         var s=session();s.setStatus("open");s.setPaymentStatus("unpaid");
         s.setExpiresAt(System.currentTimeMillis()/1000+600);s.setUrl("https://checkout.stripe.com/existing");
         assertThat(service.recover(3L,member.getEmail(),s).checkoutUrl()).isEqualTo(s.getUrl());
         s.setStatus("expired");
         assertThat(service.recover(3L,member.getEmail(),s).checkoutUrl()).isNull();
-        assertThat(payment.getStatut()).isEqualTo(StatutPaiement.EN_ATTENTE);
+        assertThat(payment.getStatut()).isEqualTo(StatutPaiement.ANNULE);
         verify(participants,never()).save(any());
     }
     @Test void recoveryRejectsOtherOwnerAndMismatchedSessionAmountCurrencyOrReference() {
@@ -195,7 +203,7 @@ class ProjetParticipationPaiementTest {
 
     @Test void fullProjectRejectsCheckoutIncludingPendingReservations() {
         project.setCapacite(2);
-        when(participants.countByProjetId(2L)).thenReturn(1L);
+        when(participants.countByProjetIdAndDateRetraitIsNull(2L)).thenReturn(1L);
         when(participants.countPendingPayments(2L)).thenReturn(1L);
         assertThatThrownBy(() -> service.prepare(2L, member.getEmail())).hasMessageContaining("complet");
         verify(payments, never()).saveAndFlush(any());

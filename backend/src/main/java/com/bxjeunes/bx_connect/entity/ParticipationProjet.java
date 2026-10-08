@@ -23,6 +23,9 @@ public class ParticipationProjet {
     @Column(nullable = false)
     private LocalDateTime dateParticipation = LocalDateTime.now();
 
+    // Null means active; the row and original joining date are retained after withdrawal.
+    private LocalDateTime dateRetrait;
+
     @Column(length = 200)
     private String roleProjet; // ex: "Développeur", "Designer", "Coordinateur"
 
@@ -49,6 +52,12 @@ public class ParticipationProjet {
 
     public LocalDateTime getDateParticipation() { return dateParticipation; }
     public void setDateParticipation(LocalDateTime dateParticipation) { this.dateParticipation = dateParticipation; }
+
+    public LocalDateTime getDateRetrait() { return dateRetrait; }
+    public void setDateRetrait(LocalDateTime dateRetrait) { this.dateRetrait = dateRetrait; }
+
+    @Transient
+    public boolean isActive() { return dateRetrait == null; }
 
     public String getRoleProjet() { return roleProjet; }
     public void setRoleProjet(String roleProjet) { this.roleProjet = roleProjet; }

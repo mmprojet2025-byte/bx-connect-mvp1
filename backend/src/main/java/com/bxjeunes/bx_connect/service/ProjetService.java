@@ -601,14 +601,16 @@ public class ProjetService {
         if (projet.getPrixParticipation().signum() > 0) {
             throw new AccessDeniedException("Ce projet nécessite un paiement avant de participer.");
         }
-        if (participationRepository.existsByUserIdAndProjetId(user.getId(), projetId)) {
+        if (participationRepository.existsByUserIdAndProjetIdAndDateRetraitIsNull(user.getId(), projetId)) {
             throw new RuntimeException("Vous participez déjà à ce projet");
         }
 
         ProjetParticipationRules.checkOpen(projet);
         ProjetParticipationRules.checkCapacity(projet,
-                participationRepository.countByProjetId(projetId) + participationRepository.countPendingPayments(projetId));
-        ParticipationProjet participation = new ParticipationProjet(user, projet);
+                participationRepository.countByProjetIdAndDateRetraitIsNull(projetId) + participationRepository.countPendingPayments(projetId));
+        ParticipationProjet participation = participationRepository.findByUserIdAndProjetId(user.getId(), projetId)
+                .orElseGet(() -> new ParticipationProjet(user, projet));
+        participation.setDateRetrait(null);
         participationRepository.save(participation);
         if (projet.getPorteur() != null && !projet.getPorteur().getId().equals(user.getId())) {
             notificationService.creer(
@@ -620,6 +622,24 @@ public class ProjetService {
         }
         auditerAction(user, "PROJECT_JOINED", projet, "Participation au projet creee.",
                 metadata("groupeId", idGroupe(projet), "porteurId", idPorteur(projet), "membreId", user.getId()));
+    }
+
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+    public void quitterProjet(Long projetId, String emailUser) {
+        User user = userRepository.findByEmail(emailUser).orElseThrow();
+        if (user.getRole() != Role.MEMBRE || !user.isActif()) {
+            throw new AccessDeniedException("Seuls les membres actifs peuvent quitter leur participation.");
+        }
+        Projet projet = projetRepository.findByIdForUpdate(projetId).orElseThrow();
+        ParticipationProjet participation = participationRepository.findByUserIdAndProjetId(user.getId(), projetId)
+                .orElseThrow(() -> new AccessDeniedException("Vous ne participez pas à ce projet."));
+        if (!participation.isActive()) return;
+        participation.setDateRetrait(LocalDateTime.now());
+        participationRepository.save(participation);
+        // This audit must persist with the withdrawal, including across later rejoining.
+        auditLogService.logAction(user, "PROJECT_LEFT", TARGET_PROJECT, projetId, projet.getTitre(), null,
+                "Participation retiree sans remboursement automatique.",
+                metadata("participationId", participation.getId(), "membreId", user.getId()));
     }
 
     // ─── Commenter un projet (M27) ────────────────────────────────────────────
@@ -700,7 +720,7 @@ public class ProjetService {
     public List<ProjetResponse> mesProjetsParticipation(String emailUser) {
         User user = userRepository.findByEmail(emailUser)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
-        return participationRepository.findByUserId(user.getId())
+        return participationRepository.findByUserIdAndDateRetraitIsNull(user.getId())
                 .stream()
                 .map(p -> ProjetResponse.fromEntity(p.getProjet()))
                 .collect(Collectors.toList());

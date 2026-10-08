@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,6 +29,7 @@ class ActiviteVisibilityTest {
     @Mock ActiviteRepository activities;
     @Mock UserRepository users;
     @Mock InscriptionRepository inscriptions;
+    @Mock SoutienFinancierRepository payments;
     @Mock NotificationService notifications;
     @Mock AuditLogService audit;
     ActiviteService service;
@@ -38,6 +40,7 @@ class ActiviteVisibilityTest {
     @BeforeEach
     void setup() {
         service = new ActiviteService(activities, users, inscriptions, notifications, audit, mock(com.bxjeunes.bx_connect.repository.GroupeRepository.class), org.mockito.Mockito.mock(com.bxjeunes.bx_connect.repository.MembreGroupeRepository.class));
+        ReflectionTestUtils.setField(service, "paiements", payments);
         owner = user(1L, Role.REFERENT);
         publique = activity(10L, VisibiliteActivite.PUBLIC);
         membres = activity(11L, VisibiliteActivite.MEMBRES);
@@ -192,6 +195,85 @@ class ActiviteVisibilityTest {
         when(activities.findByStatut(StatutActivite.PUBLIEE)).thenReturn(List.of(publique, membres));
         assertThat(partner.activitesSoutienOuverts(false)).extracting(row -> row.get("id")).containsExactly(10L);
         assertThat(partner.activitesSoutienOuverts(true)).extracting(row -> row.get("id")).containsExactly(10L, 11L);
+    }
+
+    @Test
+    void paidCancelledRegistrationIsExplicitInDetailAndCatalogueWithoutChangingHistory() {
+        User member = user(2L, Role.MEMBRE);
+        var payment = registrationPayment(member, StatutInscription.ANNULEE, StatutPaiement.PAYE);
+        when(users.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
+        when(activities.findById(10L)).thenReturn(Optional.of(publique));
+        when(activities.findByStatut(StatutActivite.PUBLIEE)).thenReturn(List.of(publique));
+        when(inscriptions.findByMembreIdAndActiviteIdOrderByDateInscriptionDesc(2L, 10L))
+                .thenReturn(List.of(payment.getInscription()));
+        when(payments.findByActiviteId(10L)).thenReturn(List.of(payment));
+
+        for (var response : List.of(service.getById(10L, member.getEmail()), service.listerPubliees(member.getEmail()).get(0))) {
+            assertThat(response.isInscrit()).isFalse();
+            assertThat(response.isPeutSInscrire()).isFalse();
+            assertThat(response.getRaisonIndisponible()).isEqualTo("PAID_REGISTRATION_CANCELLED");
+            assertThat(response.getInscriptionId()).isNull();
+            assertThat(response.getStatutInscription()).isNull();
+            assertThat(response.getPaiementActiviteId()).isNull();
+        }
+        assertThat(payment.getStatutPaiement()).isEqualTo(StatutPaiement.PAYE);
+        assertThat(payment.getInscription().getStatut()).isEqualTo(StatutInscription.ANNULEE);
+        verify(payments, never()).save(any());
+        verify(payments, never()).delete(any());
+        verify(inscriptions, never()).save(any());
+        verify(inscriptions, never()).delete(any());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = StatutInscription.class, names = {"PAYEE", "EN_ATTENTE_PAIEMENT"})
+    void activeRegistrationKeepsItsRealState(StatutInscription status) {
+        User member = user(2L, Role.MEMBRE);
+        var payment = registrationPayment(member, status,
+                status == StatutInscription.PAYEE ? StatutPaiement.PAYE : StatutPaiement.EN_ATTENTE);
+        when(users.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
+        when(activities.findById(10L)).thenReturn(Optional.of(publique));
+        when(inscriptions.findByMembreIdAndActiviteIdOrderByDateInscriptionDesc(2L, 10L))
+                .thenReturn(List.of(payment.getInscription()));
+        if (status == StatutInscription.EN_ATTENTE_PAIEMENT) {
+            when(payments.findByActiviteId(10L)).thenReturn(List.of(payment));
+        }
+        var response = service.getById(10L, member.getEmail());
+        assertThat(response.isInscrit()).isTrue();
+        assertThat(response.isPeutSInscrire()).isFalse();
+        assertThat(response.getRaisonIndisponible()).isEqualTo("DEJA_INSCRIT");
+        assertThat(response.getStatutInscription()).isEqualTo(status);
+        assertThat(response.getPaiementActiviteId()).isEqualTo(status == StatutInscription.PAYEE ? null : 30L);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"pending", "cancelled", "refunded", "otherMember", "noRegistration"})
+    void unrelatedPaymentDoesNotClaimMemberHasPaidAndCancelled(String scenario) {
+        User member = user(2L, Role.MEMBRE);
+        var payment = registrationPayment("otherMember".equals(scenario) ? user(4L, Role.MEMBRE) : member,
+                StatutInscription.ANNULEE, StatutPaiement.PAYE);
+        if ("pending".equals(scenario)) payment.setStatutPaiement(StatutPaiement.EN_ATTENTE);
+        if ("cancelled".equals(scenario)) payment.setStatutPaiement(StatutPaiement.ANNULE);
+        if ("refunded".equals(scenario)) payment.setStatutPaiement(StatutPaiement.REMBOURSE);
+        if ("noRegistration".equals(scenario)) payment.setInscription(null);
+        when(users.findByEmail(member.getEmail())).thenReturn(Optional.of(member));
+        when(activities.findById(10L)).thenReturn(Optional.of(publique));
+        when(payments.findByActiviteId(10L)).thenReturn(List.of(payment));
+
+        var response = service.getById(10L, member.getEmail());
+        assertThat(response.isInscrit()).isFalse();
+        assertThat(response.isPeutSInscrire()).isTrue();
+        assertThat(response.getRaisonIndisponible()).isNull();
+    }
+
+    private SoutienFinancier registrationPayment(User member, StatutInscription registrationStatus, StatutPaiement paymentStatus) {
+        publique.setGratuite(false);
+        publique.setPrix(java.math.BigDecimal.TEN);
+        Inscription inscription = new Inscription();
+        inscription.setId(20L); inscription.setMembre(member); inscription.setActivite(publique); inscription.setStatut(registrationStatus);
+        SoutienFinancier payment = new SoutienFinancier();
+        payment.setId(30L); payment.setDonateur(member); payment.setActivite(publique); payment.setInscription(inscription);
+        payment.setFournisseur("STRIPE"); payment.setStatutPaiement(paymentStatus);
+        return payment;
     }
 
     private Activite activity(Long id, VisibiliteActivite visibility) {

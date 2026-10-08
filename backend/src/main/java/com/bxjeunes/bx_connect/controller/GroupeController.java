@@ -5,6 +5,7 @@ import com.bxjeunes.bx_connect.dto.GroupePublicResponse;
 import com.bxjeunes.bx_connect.dto.GroupeResponse;
 import com.bxjeunes.bx_connect.dto.MembreGroupeResponse;
 import com.bxjeunes.bx_connect.dto.PagedResponse;
+import com.bxjeunes.bx_connect.dto.admin.AdminGroupeRequest;
 import com.bxjeunes.bx_connect.service.GroupeService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -54,13 +55,13 @@ public class GroupeController {
         return ResponseEntity.ok(groupeService.getMembresAdminOuReferent(id, auth.getName()));
     }
 
-    // REFERENT / ADMIN
+    // Compatibility alias: the same administrative creation workflow, never a proposal.
     @PostMapping
-    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN')")
-    public ResponseEntity<GroupeResponse> proposerGroupe(
-            @Valid @RequestBody GroupeRequest request, Authentication auth) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<GroupeResponse> creerGroupe(
+            @Valid @RequestBody AdminGroupeRequest request, Authentication auth) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(groupeService.proposerGroupe(request, auth.getName()));
+                .body(groupeService.creerGroupeParAdmin(request, auth.getName()));
     }
 
     // SECURITE : auth.getName() transmis — GroupeService verifie le perimetre
@@ -87,7 +88,7 @@ public class GroupeController {
 
     // SECURITE : auth.getName() transmis — verifie que le referent gere bien ce groupe
     @PatchMapping("/adhesions/{id}/accepter")
-    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN')")
+    @PreAuthorize("hasRole('REFERENT')")
     public ResponseEntity<MembreGroupeResponse> accepterAdhesion(
             @PathVariable Long id, Authentication auth) {
         return ResponseEntity.ok(groupeService.accepterAdhesion(id, auth.getName()));
@@ -95,7 +96,7 @@ public class GroupeController {
 
     // SECURITE : auth.getName() transmis — verifie que le referent gere bien ce groupe
     @PatchMapping("/adhesions/{id}/refuser")
-    @PreAuthorize("hasAnyRole('REFERENT', 'ADMIN')")
+    @PreAuthorize("hasRole('REFERENT')")
     public ResponseEntity<MembreGroupeResponse> refuserAdhesion(
             @PathVariable Long id, Authentication auth) {
         return ResponseEntity.ok(groupeService.refuserAdhesion(id, auth.getName()));

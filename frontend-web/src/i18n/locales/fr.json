@@ -96,9 +96,9 @@
     "visualSolidarityDescription": "Des projets collectifs qui transforment les idées en actions utiles.",
     "visualSolidarityAlt": "Projet solidaire BX-Connect",
     "recentActivitiesEyebrow": "Événements",
-    "recentActivitiesTitle": "Activités récentes",
+    "recentActivitiesTitle": "Activités à venir",
     "viewAllActivities": "Voir toutes les activités",
-    "noRecentActivities": "Aucune activité récente pour le moment.",
+    "noRecentActivities": "Aucune activité à venir pour le moment.",
     "activitiesLoadError": "Impossible de charger les activités pour le moment.",
     "publicGroupsEyebrow": "Communautés",
     "publicGroupsTitle": "Groupes à découvrir",
@@ -326,6 +326,8 @@
     "done": "Terminé",
     "full": "Complet",
     "unavailableReasons": {
+      "PAID_REGISTRATION_CANCELLED": "Paiement effectué — inscription annulée",
+      "PAYMENT_WINDOW_CLOSED": "Il est trop tard pour ouvrir un nouveau paiement Stripe : un délai de 31 minutes avant la clôture des inscriptions est nécessaire.",
       "COMPLETE": "Activité complète",
       "PASSEE": "Activité déjà passée",
       "ANNULEE": "Activité annulée",
@@ -341,6 +343,11 @@
     "locationMapAria": "Carte de localisation de l’activité"
   },
   "projects": {
+    "leave": "Quitter le projet",
+    "leaveConfirm": "Voulez-vous quitter ce projet ?",
+    "leaveNoRefund": "Si vous avez payé, quitter le projet ne déclenche aucun remboursement automatique. Votre reçu reste disponible.",
+    "left": "Vous avez quitté le projet.",
+    "leaveError": "Impossible de quitter le projet. Réessayez.",
     "view": "Voir",
     "catalogue": "Catalogue",
     "myProjects": "Mes projets",
@@ -2274,8 +2281,8 @@
     "amount": "Montant",
     "paid": "Payé",
     "viewHistory": "Voir l’historique des paiements",
-    "cancelTitle": "Paiement annulé",
-    "cancelMessage": "Vous avez annulé le paiement. Aucun montant n’a été débité. Vous pouvez réessayer à tout moment.",
+    "cancelTitle": "Retour du paiement",
+    "cancelMessage": "Vous avez quitté le paiement. Ce retour ne permet pas de connaître son état : vérifiez le paiement avant toute nouvelle tentative.",
     "checkoutUrlMissing": "URL de paiement non reçue.",
     "stripeTitle": "Soutenir via Stripe",
     "chooseAmount": "Choisir un montant",
@@ -3127,6 +3134,7 @@
     "legacyGroup": "Activité historique sans groupe"
   },
   "activityEditor": {
+    "noAutomaticRefund": "Annuler votre inscription ne déclenche pas de remboursement automatique. Contactez l’organisateur pour toute question de remboursement.",
     "information": "Informations",
     "datePlace": "Date et lieu",
     "date": "Date",
@@ -3160,6 +3168,7 @@
     "paymentPending": "Paiement en attente de confirmation",
     "paymentConfirmed": "Paiement confirmé",
     "paymentError": "Le paiement est indisponible. Réessayez ou contactez l’organisateur.",
+    "paymentWindowClosed": "Il est trop tard pour ouvrir un nouveau paiement Stripe : un délai de 31 minutes avant la clôture des inscriptions est nécessaire.",
     "checkPayment": "Vérifier le paiement",
     "backActivities": "Retour aux activités"
   },
@@ -3198,7 +3207,8 @@
     "budgetHelp": "Le budget demandé sert à l’analyse du projet. Le prix de participation est payé par chaque participant.",
     "payJoin": "Payer et participer",
     "invoices": "Mes factures",
-    "invoiceHelp": "Reçus des participations aux projets. Le retour de Stripe ne confirme pas le paiement : actualisez pour consulter la confirmation.",
+    "invoiceTitle": "Mes factures — projets",
+    "invoiceHelp": "Reçus de paiement des participations aux projets uniquement. Les paiements d’activités ne figurent pas dans cet écran. La confirmation du paiement est vérifiée auprès du serveur.",
     "transactions": "Transactions et reçus",
     "empty": "Aucune transaction pour le moment.",
     "unavailable": "Données indisponibles.",
@@ -3227,6 +3237,8 @@
     "full": "Complet"
   },
   "paymentReturnUX": {
+  "activityCancelled": "Votre paiement est confirmé, mais votre inscription reste annulée. Contactez l’organisateur pour toute question.",
+  "closed": "La session de paiement est expirée ou clôturée. Consultez la fiche avant de réessayer.",
   "pending": "Paiement en cours de confirmation",
   "wait": "La confirmation Stripe peut prendre quelques secondes. Vérification automatique pendant 30 secondes ; vous pouvez ensuite vérifier manuellement.",
   "check": "Vérifier maintenant",

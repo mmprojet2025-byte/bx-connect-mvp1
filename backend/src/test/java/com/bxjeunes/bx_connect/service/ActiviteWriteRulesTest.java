@@ -32,6 +32,8 @@ class ActiviteWriteRulesTest {
 
     @BeforeEach
     void setup() {
+        when(activities.findGroupeIdById(anyLong())).thenAnswer(call -> activities
+                .findByIdForUpdate(call.getArgument(0)).map(Activite::getGroupe).map(Groupe::getId));
         admin = user(1L, Role.ADMIN);
         referent = user(2L, Role.REFERENT);
         other = user(3L, Role.REFERENT);

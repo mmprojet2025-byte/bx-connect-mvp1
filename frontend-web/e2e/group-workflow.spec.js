@@ -100,16 +100,71 @@ test('archived membership does not block requesting a current group', async ({ p
   await expect.poll(() => writes.some(w => w.path === '/api/groupes/10/rejoindre')).toBe(true)
 })
 
-test('project creation selects the current membership instead of an archived historical group', async ({ page }) => {
-  const { writes } = await setup(page, 'MEMBRE')
+test('ADMIN keeps archived groups read-only in the card and management drawer', async ({ page }) => {
+  const { group, writes } = await setup(page)
+  group.statut = 'ARCHIVE'; group.actif = false
+  await page.goto('/admin/groupes')
+  await expect(page.locator('details select')).toBeDisabled()
+  await page.getByRole('button', { name: 'Gérer', exact: true }).click()
+  await expect(page.locator('aside select')).toBeDisabled()
+  await expect(page.locator('aside').getByRole('button', { name: 'Modifier', exact: true })).toHaveCount(0)
+  await expect(page.locator('aside').getByRole('button', { name: 'Archiver le groupe', exact: true })).toHaveCount(0)
+  expect(writes).toEqual([])
+})
+
+test('REFERENT can read archived memberships without changing them or their group', async ({ page }) => {
+  const { group, writes } = await setup(page, 'REFERENT')
+  group.statut = 'ARCHIVE'; group.actif = false
+  await page.goto('/referent/membres')
+  await expect(page.getByText('alice@example.org').filter({ visible: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Désactiver', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Réactiver', exact: true })).toHaveCount(0)
+  await page.goto('/referent/groupes')
+  await expect(page.getByRole('heading', { name: group.nom, exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Modifier', exact: true })).toHaveCount(0)
+  expect(writes).toEqual([])
+})
+
+test('project creation saves a draft for the current group, then submits it explicitly', async ({ page }) => {
+  await setup(page, 'MEMBRE')
+  const writes = []
+  let project = null
   await page.route('**/api/groupes/mes-adhesions', route => route.fulfill({ json: [
     { groupeId: 99, statut: 'ACCEPTE', groupeActif: false },
     { groupeId: 10, statut: 'ACCEPTE', groupeActif: true },
   ] }))
+  await page.route(url => url.pathname.startsWith('/api/projets'), async route => {
+    const req = route.request(), path = new URL(req.url()).pathname
+    if (req.method() === 'POST' && path === '/api/projets') {
+      writes.push({ path, method: req.method(), data: req.postDataJSON() })
+      project = { ...req.postDataJSON(), id: 42, statut: 'BROUILLON', groupeNom: 'Groupe actuel' }
+      return route.fulfill({ json: project })
+    }
+    if (req.method() === 'PATCH' && path === '/api/projets/42/soumettre') {
+      writes.push({ path, method: req.method() })
+      project.statut = 'SOUMIS'
+      return route.fulfill({ json: project })
+    }
+    if (path === '/api/projets/mes-projets') return route.fulfill({ json: project ? [project] : [] })
+    if (req.method() !== 'GET') throw new Error(`Unexpected project mutation: ${req.method()} ${path}`)
+    return route.fulfill({ json: [] })
+  })
   await page.goto('/projets')
   await page.locator('header').getByRole('button', { name: translations.fr.ux.projects.propose, exact: true }).click()
   await page.locator('#project-title').fill('Projet du groupe actuel')
   await page.locator('form textarea').fill('Description du projet')
-  await page.getByRole('button', { name: translations.fr.projects.submit_project, exact: true }).click()
-  await expect.poll(() => writes.find(w => w.path === '/api/projets')?.data?.groupeId).toBe(10)
+  await page.locator('form').getByRole('button', { name: translations.fr.projects.saveDraft, exact: true }).click()
+  const card = page.locator('article').filter({ has: page.getByRole('heading', { name: 'Projet du groupe actuel', exact: true }) })
+  await expect(card).toContainText(translations.fr.statuses.BROUILLON)
+  await expect(page.getByRole('button', { name: translations.fr.projects.myProjects, exact: true })).toHaveAttribute('aria-pressed', 'true')
+  expect(writes).toHaveLength(1)
+  expect(writes[0]).toMatchObject({ path: '/api/projets', method: 'POST', data: { groupeId: 10 } })
+  expect(project.statut).toBe('BROUILLON')
+  await card.getByRole('button', { name: translations.fr.projects.submit_draft, exact: true }).click()
+  await expect(card).toContainText(translations.fr.statuses.SOUMIS)
+  await expect(card.getByRole('button', { name: translations.fr.projects.submit_draft, exact: true })).toHaveCount(0)
+  expect(writes.map(({ method, path }) => ({ method, path }))).toEqual([
+    { method: 'POST', path: '/api/projets' },
+    { method: 'PATCH', path: '/api/projets/42/soumettre' },
+  ])
 })

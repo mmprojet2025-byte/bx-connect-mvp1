@@ -508,7 +508,7 @@ export default function AdminGroupes() {
                   <select
                     value={g.referentId || ''}
                     onChange={e => handleAssignerReferent(g.id, e.target.value)}
-                    disabled={assigningId === g.id || referentsActifs.length === 0}
+                    disabled={g.statut === 'ARCHIVE' || assigningId === g.id || referentsActifs.length === 0}
                     className="mt-3 w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-gray-100"
                   >
                     <option value="">{t('admin.selectReferent')}</option>
@@ -698,7 +698,7 @@ function GroupFollowUpDrawer({
               <select
                 value={groupe.referentId || ''}
                 onChange={event => onAssign(event.target.value)}
-                disabled={assigning || referentsActifs.length === 0}
+                disabled={groupe.statut === 'ARCHIVE' || assigning || referentsActifs.length === 0}
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-slate-100"
               >
                 <option value="">{t('admin.selectReferent')}</option>

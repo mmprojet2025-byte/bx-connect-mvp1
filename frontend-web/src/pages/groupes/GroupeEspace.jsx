@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -26,6 +26,7 @@ const TABS = [
 export default function GroupeEspace() {
   const { id } = useParams()
   const location = useLocation()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const { isAuthenticated, isMembre } = useAuth()
   const { t, i18n } = useTranslation()
@@ -122,7 +123,7 @@ export default function GroupeEspace() {
         {loading ? (
           <LoadingState label={t('common.loading')} />
         ) : error ? (
-          <ErrorState title={t('common.loadErrorTitle')} description={error} actionLabel={t('groups.view_groups')} action={() => window.history.back()} />
+          <ErrorState title={t('common.loadErrorTitle')} description={error} actionLabel={t('groups.view_groups')} action={() => navigate('/groupes')} />
         ) : groupe && (
           <>
             <header className="mb-5 rounded-xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-900/5">

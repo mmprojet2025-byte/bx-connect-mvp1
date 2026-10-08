@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
 @DataJpaTest(showSql=false)
 @AutoConfigureTestDatabase(replace=AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-@Import({ProjetParticipationPaiementService.class, ProjetService.class})
+@Import({ProjetParticipationPaiementService.class, ProjetService.class, AuditLogService.class})
 @Testcontainers
 @Transactional(propagation=Propagation.NOT_SUPPORTED)
 class ProjetPaiementMySqlTest {
@@ -36,7 +36,7 @@ class ProjetPaiementMySqlTest {
     }
     @Autowired ProjetParticipationPaiementService service;
     @Autowired ProjetService projectService;
-    @MockitoBean AuditLogService auditLog;
+    @Autowired AuditLogRepository auditLogs;
     @Autowired UserRepository users;
     @Autowired ProjetRepository projects;
     @Autowired ProjetParticipationPaiementRepository payments;
@@ -139,5 +139,80 @@ class ProjetPaiementMySqlTest {
         assertThat(saved.getImageUrl()).isEqualTo(p.getImageUrl());
         assertThatThrownBy(()->projectService.rejoindrProjet(p.getId(),u.getEmail())).hasMessageContaining("clôturées");
         assertThat(participations.findByProjetId(p.getId())).isEmpty();
+    }
+
+    @Test void freeWithdrawalPreservesHistoryReleasesCapacityAndAllowsOneRejoin() {
+        var u=member(); var other=member(); var p=project(u); p.setPrixParticipation(BigDecimal.ZERO); p.setCapacite(1); projects.saveAndFlush(p);
+        projectService.rejoindrProjet(p.getId(), u.getEmail());
+        var before=participations.findByUserIdAndProjetId(u.getId(),p.getId()).orElseThrow();
+        projectService.quitterProjet(p.getId(),u.getEmail());
+        projectService.quitterProjet(p.getId(),u.getEmail());
+        var retired=participations.findById(before.getId()).orElseThrow();
+        assertThat(retired.getDateRetrait()).isNotNull();
+        assertThat(retired.getDateParticipation()).isEqualTo(before.getDateParticipation());
+        assertThat(projectService.mesProjetsParticipation(u.getEmail())).isEmpty();
+        assertThat(projectService.getProjet(p.getId()).getNombreParticipants()).isZero();
+        assertThat(auditLogs.findAll().stream().filter(a -> "PROJECT_LEFT".equals(a.getAction()) && p.getId().equals(a.getCibleId()))).hasSize(1);
+        projectService.rejoindrProjet(p.getId(),other.getEmail());
+        assertThatThrownBy(() -> projectService.rejoindrProjet(p.getId(),u.getEmail())).hasMessageContaining("complet");
+        projectService.quitterProjet(p.getId(),other.getEmail());
+        projectService.rejoindrProjet(p.getId(),u.getEmail());
+        assertThat(participations.findByUserIdAndProjetId(u.getId(),p.getId()).orElseThrow().getId()).isEqualTo(before.getId());
+        assertThat(participations.countByProjetIdAndDateRetraitIsNull(p.getId())).isEqualTo(1);
+        assertThat(projectService.getProjet(p.getId()).getNombreParticipants()).isEqualTo(1);
+        assertThat(participations.findByProjetId(p.getId())).hasSize(2); // both historical rows remain
+    }
+
+    @Test void paidWithdrawalKeepsReceiptPaymentAndDoesNotReactivateOnWebhookReplay() throws Exception {
+        var u=member(); var p=project(u); p.setCapacite(1); projects.saveAndFlush(p);
+        var payment=service.prepare(p.getId(),u.getEmail()); var session=remote(payment);
+        service.handle(session,true);
+        var receipt=service.receipt(payment.getId(),u.getEmail());
+        var participation=participations.findByUserIdAndProjetId(u.getId(),p.getId()).orElseThrow();
+        projectService.quitterProjet(p.getId(),u.getEmail());
+        service.handle(session,true);
+        service.recover(payment.getId(),u.getEmail(),session);
+        assertThat(participations.countByProjetIdAndDateRetraitIsNull(p.getId())).isZero();
+        assertThat(service.receipt(payment.getId(),u.getEmail())).isEqualTo(receipt);
+        assertThat(projectService.getProjet(p.getId()).getNombreParticipants()).isZero();
+        try (var pool=Executors.newFixedThreadPool(2)) {
+            var start=new CountDownLatch(1);
+            Callable<Boolean> rejoin=()->{start.await(); try { service.prepare(p.getId(),u.getEmail()); return true; }
+                catch (IllegalArgumentException e) { assertThat(e).hasMessageContaining("déjà"); return false; }};
+            var a=pool.submit(rejoin); var b=pool.submit(rejoin); start.countDown();
+            assertThat(List.of(a.get(15,TimeUnit.SECONDS),b.get(15,TimeUnit.SECONDS))).containsExactlyInAnyOrder(true,false);
+        }
+        assertThat(participations.findByProjetId(p.getId())).hasSize(1);
+        assertThat(participations.findById(participation.getId()).orElseThrow().isActive()).isTrue();
+        assertThat(payments.findByProjetIdOrderByDateCreationDesc(p.getId())).hasSize(1);
+        assertThat(service.receipt(payment.getId(),u.getEmail())).isEqualTo(receipt);
+    }
+
+    @Test void paidRejoinStillChecksCapacityDeadlineAndProjectStatus() {
+        var u=member(); var other=member(); var p=project(u); p.setCapacite(1); projects.saveAndFlush(p);
+        var paid=service.prepare(p.getId(),u.getEmail()); service.handle(remote(paid),true);
+        projectService.quitterProjet(p.getId(),u.getEmail());
+        var reserved=service.prepare(p.getId(),other.getEmail());
+        assertThatThrownBy(() -> service.prepare(p.getId(),u.getEmail())).hasMessageContaining("complet");
+        var expired=remote(reserved); expired.setStatus("expired"); expired.setPaymentStatus("unpaid"); service.handle(expired,false);
+        var current=projects.findById(p.getId()).orElseThrow();
+        current.setDateLimiteParticipation(java.time.LocalDate.now().minusDays(1)); current=projects.saveAndFlush(current);
+        assertThatThrownBy(() -> service.prepare(p.getId(),u.getEmail())).hasMessageContaining("clôturées");
+        current.setDateLimiteParticipation(null); current.setStatut(StatutProjet.TERMINE); projects.saveAndFlush(current);
+        assertThatThrownBy(() -> service.prepare(p.getId(),u.getEmail())).hasMessageContaining("pas ouvert");
+        assertThat(participations.countByProjetIdAndDateRetraitIsNull(p.getId())).isZero();
+        assertThat(service.receipt(paid.getId(),u.getEmail()).statut()).isEqualTo(StatutPaiement.PAYE);
+    }
+
+    @Test void withdrawingNeverAffectsAnotherMemberOrTheProject() {
+        var u=member(); var other=member(); var p=project(u); p.setPrixParticipation(BigDecimal.ZERO); projects.saveAndFlush(p);
+        projectService.rejoindrProjet(p.getId(),u.getEmail());
+        assertThatThrownBy(() -> projectService.quitterProjet(p.getId(),other.getEmail()))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        other.setRole(Role.ADMIN); users.saveAndFlush(other);
+        assertThatThrownBy(() -> projectService.quitterProjet(p.getId(),other.getEmail()))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        assertThat(participations.countByProjetIdAndDateRetraitIsNull(p.getId())).isEqualTo(1);
+        assertThat(projects.findById(p.getId()).orElseThrow().getStatut()).isEqualTo(StatutProjet.APPROUVE);
     }
 }

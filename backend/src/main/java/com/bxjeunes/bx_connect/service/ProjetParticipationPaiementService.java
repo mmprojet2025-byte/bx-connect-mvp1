@@ -13,6 +13,8 @@ import java.util.*;
 @Service
 @Transactional(isolation = Isolation.READ_COMMITTED)
 public class ProjetParticipationPaiementService {
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private java.time.Clock clock = java.time.Clock.systemUTC();
     @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager entityManager;
     private final ProjetRepository projects;
     private final UserRepository users;
@@ -20,9 +22,10 @@ public class ProjetParticipationPaiementService {
     private final ParticipationProjetRepository participations;
     private final ProjetParticipationPaiementRepository payments;
     private final NotificationService notifications;
+    private final AuditLogService auditLog;
     public ProjetParticipationPaiementService(ProjetRepository p, UserRepository u, MembreGroupeRepository m,
-            ParticipationProjetRepository r, ProjetParticipationPaiementRepository pay, NotificationService n) {
-        projects=p; users=u; memberships=m; participations=r; payments=pay; notifications=n;
+            ParticipationProjetRepository r, ProjetParticipationPaiementRepository pay, NotificationService n, AuditLogService audit) {
+        projects=p; users=u; memberships=m; participations=r; payments=pay; notifications=n; auditLog=audit;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_COMMITTED)
@@ -37,23 +40,35 @@ public class ProjetParticipationPaiementService {
                     .map(m -> m.getGroupe().getId().equals(project.getGroupe().getId())).orElse(false) == false))
             throw new AccessDeniedException("Une adhésion active au groupe concerné est requise.");
         if (project.getPrixParticipation().signum() <= 0) throw new IllegalArgumentException("Ce projet est gratuit.");
-        if (participations.existsByUserIdAndProjetId(user.getId(), projectId))
+        if (participations.existsByUserIdAndProjetIdAndDateRetraitIsNull(user.getId(), projectId))
             throw new IllegalArgumentException("Vous participez déjà à ce projet.");
         ProjetParticipationRules.checkOpen(project);
         var existing = payments.findByProjetIdOrderByDateCreationDesc(projectId).stream()
                 .filter(p -> p.getMembre().getId().equals(user.getId())).toList();
-        if (existing.stream().anyMatch(p -> p.getStatut() == StatutPaiement.PAYE))
-            throw new IllegalArgumentException("Cette participation a déjà été payée.");
+        var paid = existing.stream().filter(p -> p.getStatut() == StatutPaiement.PAYE).findFirst();
+        if (paid.isPresent()) {
+            // Rejoining consumes a seat, but never changes the already confirmed payment or receipt.
+            ProjetParticipationRules.checkCapacity(project,
+                    participations.countByProjetIdAndDateRetraitIsNull(projectId) + participations.countPendingPayments(projectId));
+            var previous = participations.findByUserIdAndProjetId(user.getId(), projectId)
+                    .filter(p -> !p.isActive())
+                    .orElseThrow(() -> new IllegalArgumentException("Cette participation a déjà été payée."));
+            previous.setDateRetrait(null);
+            participations.save(previous);
+            auditLog.logAction(user, "PROJECT_REJOINED", "PROJECT", projectId, project.getTitre(), null,
+                    "Participation reactivee avec le paiement deja confirme, sans nouveau debit.");
+            return paid.get();
+        }
         var pending = existing.stream().filter(p -> p.getStatut() == StatutPaiement.EN_ATTENTE).findFirst();
         if (pending.isPresent()) return pending.get();
         ProjetParticipationRules.checkCapacity(project,
-                participations.countByProjetId(projectId) + participations.countPendingPayments(projectId));
+                participations.countByProjetIdAndDateRetraitIsNull(projectId) + participations.countPendingPayments(projectId));
         var payment = new ProjetParticipationPaiement();
         payment.setProjet(project); payment.setMembre(user);
         payment.setMontant(project.getPrixParticipation()); payment.setDevise("EUR");
         payment.setStatut(StatutPaiement.EN_ATTENTE);
         payment.setRequestKey(UUID.randomUUID().toString());
-        payment.setExpiresAt(System.currentTimeMillis()/1000 + 3600);
+        payment.setExpiresAt(clock.instant().getEpochSecond() + 3600);
         payment.setDateCreation(LocalDateTime.now());
         payment.setTitreProjet(project.getTitre());
         payment.setNomParticipant(user.getPrenom() + " " + user.getNom());
@@ -91,6 +106,37 @@ public class ProjetParticipationPaiementService {
     }
 
     public record RecoverySnapshot(ProjetPaiementResponse payment, String sessionId) {}
+    public record StripeAttempt(Long id, String sessionId) {}
+
+    @Transactional(readOnly = true)
+    public StripeAttempt currentAttempt(Long projectId, String email) {
+        var u = user(email);
+        if (u.getRole() != Role.MEMBRE || !u.isActif()) throw new AccessDeniedException("Participation réservée aux membres actifs.");
+        return payments.findByProjetIdOrderByDateCreationDesc(projectId).stream()
+                .filter(p -> p.getMembre().getId().equals(u.getId()) && p.getStatut() == StatutPaiement.EN_ATTENTE)
+                .findFirst().map(p -> new StripeAttempt(p.getId(), p.getStripeSessionId())).orElse(null);
+    }
+
+    public List<StripeAttempt> expiredStripeAttempts(Long projectId, String email) {
+        var u = user(email);
+        var project = projects.findByIdForUpdate(projectId).orElseThrow();
+        if (u.getRole() != Role.MEMBRE || !u.isActif()) throw new AccessDeniedException("Participation réservée aux membres actifs.");
+        if (project.getVisibilite() != VisibiliteProjet.PUBLIC
+                && (project.getGroupe() == null || memberships.findFirstByUserIdAndStatut(u.getId(), StatutMembre.ACCEPTE)
+                    .map(m -> m.getGroupe().getId().equals(project.getGroupe().getId())).orElse(false) == false))
+            throw new AccessDeniedException("Une adhésion active au groupe concerné est requise.");
+        return payments.findByProjetIdOrderByDateCreationDesc(projectId).stream()
+                .filter(p -> p.getStatut() == StatutPaiement.EN_ATTENTE && p.getStripeSessionId() != null && p.getExpiresAt() != null
+                        && p.getExpiresAt() <= clock.instant().getEpochSecond())
+                .limit(20).map(p -> new StripeAttempt(p.getId(), p.getStripeSessionId())).toList();
+    }
+
+    public void reconcile(Long paymentId, Session session) {
+        var p = lock(paymentId);
+        verifySession(p, session);
+        if ("complete".equals(session.getStatus()) && "paid".equals(session.getPaymentStatus())) handle(session, true);
+        else if ("expired".equals(session.getStatus()) && "unpaid".equals(session.getPaymentStatus())) handle(session, false);
+    }
 
     @Transactional(readOnly = true)
     public RecoverySnapshot recoverySnapshot(Long id, String email) {
@@ -113,11 +159,13 @@ public class ProjetParticipationPaiementService {
         verifySession(p, session);
         if ("complete".equals(session.getStatus()) && "paid".equals(session.getPaymentStatus())) {
             handle(session, true);
+        } else if ("expired".equals(session.getStatus()) && "unpaid".equals(session.getPaymentStatus())) {
+            handle(session, false);
         }
         var dto = ProjetPaiementResponse.from(p);
         boolean resumable = p.getStatut() == StatutPaiement.EN_ATTENTE
                 && "open".equals(session.getStatus()) && "unpaid".equals(session.getPaymentStatus())
-                && session.getExpiresAt() != null && session.getExpiresAt() > System.currentTimeMillis() / 1000;
+                && session.getExpiresAt() != null && session.getExpiresAt() > clock.instant().getEpochSecond();
         return new ProjetPaiementResponse(dto.id(), dto.projetId(), dto.titreProjet(), dto.participant(),
                 dto.montant(), dto.devise(), dto.statut(), dto.dateCreation(), dto.datePaiement(),
                 dto.numeroRecu(), resumable ? session.getUrl() : null);
@@ -132,8 +180,9 @@ public class ProjetParticipationPaiementService {
         if (completed && (!"paid".equals(session.getPaymentStatus()) || !"complete".equals(session.getStatus())
                 || session.getPaymentIntent() == null))
             throw new IllegalArgumentException("Paiement non confirmé.");
-        if (!completed && !"expired".equals(session.getStatus())) throw new IllegalArgumentException("Session non expirée.");
-        if (p.getStatut() == StatutPaiement.PAYE) return;
+        if (!completed && (!"expired".equals(session.getStatus()) || "paid".equals(session.getPaymentStatus())))
+            throw new IllegalArgumentException("Session non expirée.");
+        if (p.getStatut() == StatutPaiement.PAYE || p.getStatut() == StatutPaiement.REMBOURSE) return;
         p.setStripeSessionId(session.getId());
         if (!completed) {
             p.setStatut(StatutPaiement.ANNULE); p.setCheckoutUrl(null); payments.save(p); return;
@@ -145,8 +194,12 @@ public class ProjetParticipationPaiementService {
         p.setNumeroRecu("BX-PROJET-" + p.getId());
         p.setStripePaymentIntentId(session.getPaymentIntent());
         p.setCheckoutUrl(null);
-        if (!participations.existsByUserIdAndProjetId(p.getMembre().getId(), p.getProjet().getId()))
-            participations.save(new ParticipationProjet(p.getMembre(), p.getProjet()));
+        if (!participations.existsByUserIdAndProjetIdAndDateRetraitIsNull(p.getMembre().getId(), p.getProjet().getId())) {
+            var participation = participations.findByUserIdAndProjetId(p.getMembre().getId(), p.getProjet().getId())
+                    .orElseGet(() -> new ParticipationProjet(p.getMembre(), p.getProjet()));
+            participation.setDateRetrait(null);
+            participations.save(participation);
+        }
         payments.save(p);
         notifications.creer(p.getMembre(), "Reçu de paiement disponible",
                 "Votre participation au projet « " + p.getTitreProjet() + " » est payée. Votre reçu est disponible dans Mes factures.",

@@ -41,6 +41,27 @@ class GroupeMembershipEndpointTest {
         verify(groups).verifierDemandeDansGroupe(20L,10L);
         verify(groups).changerAppartenance(20L,"ref@test.be",false);
     }
+    @ParameterizedTest @ValueSource(strings={"ADMIN","MEMBRE","SUPER_ADMIN","PARTENAIRE"})
+    void legacyMembershipDecisionsAreAlsoReservedToReferents(String role) throws Exception {
+        for (String action : new String[]{"accepter","refuser"}) {
+            mvc.perform(patch("/api/groupes/adhesions/20/"+action).with(user("actor").roles(role)))
+                    .andExpect(status().isForbidden());
+        }
+        verifyNoInteractions(groups);
+    }
+    @ParameterizedTest @ValueSource(strings={"REFERENT","MEMBRE","SUPER_ADMIN","PARTENAIRE"})
+    void legacyGroupCreationRejectsNonAdmins(String role) throws Exception {
+        mvc.perform(post("/api/groupes").with(user("actor").roles(role))
+                .contentType("application/json").content("{\"nom\":\"Groupe\",\"referentId\":1}"))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(groups);
+    }
+    @Test void legacyCreationUsesTheSameAdministrativeService() throws Exception {
+        mvc.perform(post("/api/groupes").with(user("admin@test.be").roles("ADMIN"))
+                .contentType("application/json").content("{\"nom\":\"Groupe\",\"referentId\":1}"))
+                .andExpect(status().isCreated());
+        verify(groups).creerGroupeParAdmin(argThat(request -> request.getNom().equals("Groupe") && request.getReferentId().equals(1L)), eq("admin@test.be"));
+    }
     @Test void referentCannotArchiveGroup() throws Exception {
         mvc.perform(delete("/api/groupes/10").with(user("ref@test.be").roles("REFERENT"))).andExpect(status().isForbidden());
         verifyNoInteractions(groups);

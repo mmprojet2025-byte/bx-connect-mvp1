@@ -51,8 +51,8 @@ test('rejects localhost for deployment builds', () => {
 })
 
 test('Vite refuses a deployment build without VITE_API_BASE_URL', () => {
-  const env = { ...process.env }
-  delete env.VITE_API_BASE_URL
+  // Une valeur vide explicite prime sur les .env que Vite charge ensuite.
+  const env = { ...process.env, VITE_API_BASE_URL: '', SENTRY_AUTH_TOKEN: '' }
 
   const result = spawnSync(process.execPath, [viteCli, 'build'], {
     cwd: frontendRoot,
@@ -76,7 +76,7 @@ test('a Railway deployment bundle contains no localhost API URL', () => {
       [viteCli, 'build', '--outDir', outDir, '--emptyOutDir'],
       {
         cwd: frontendRoot,
-        env: { ...process.env, VITE_API_BASE_URL: railwayApiUrl },
+        env: { ...process.env, VITE_API_BASE_URL: railwayApiUrl, SENTRY_AUTH_TOKEN: '' },
         encoding: 'utf8',
       },
     )

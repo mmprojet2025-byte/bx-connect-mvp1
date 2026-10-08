@@ -1,4 +1,7 @@
 import { test, expect } from '@playwright/test'
+import { Buffer } from 'node:buffer'
+
+const token = `header.${Buffer.from(JSON.stringify({ exp: 4102444800 })).toString('base64url')}.signature`
 
 const activity = {
   id: 42,
@@ -17,10 +20,10 @@ const group = {
 }
 
 async function mockApi(page) {
-  await page.route('**/api/**', async route => {
+  await page.route(url => url.pathname.startsWith('/api/'), async route => {
     const pathname = new URL(route.request().url()).pathname
     if (pathname === '/api/auth/login') {
-      await route.fulfill({ json: { token: 'test-token', prenom: 'Test', nom: 'Member', email: 'member@example.test', role: 'MEMBRE' } })
+      await route.fulfill({ json: { token, prenom: 'Test', nom: 'Member', email: 'member@example.test', role: 'MEMBRE' } })
       return
     }
     if (pathname === '/api/activites/42') {
@@ -48,24 +51,28 @@ test.beforeEach(async ({ page }) => {
 
 test('revient à l’activité après connexion depuis une inscription visiteur', async ({ page }) => {
   await page.goto('/activites/42?source=public')
-  await page.getByRole('button', { name: /connectez-vous/i }).click()
+  await page.getByRole('button', { name: "Se connecter pour s'inscrire", exact: true }).click()
   await expect(page).toHaveURL('/login')
 
   await signIn(page)
 
   await expect(page).toHaveURL('/activites/42?source=public')
   await expect(page.getByRole('heading', { name: 'Atelier public', exact: true })).toBeVisible()
+  await page.reload()
+  await expect(page).toHaveURL('/activites/42?source=public')
 })
 
 test('revient à la fiche groupe après connexion depuis une demande d’adhésion visiteur', async ({ page }) => {
   await page.goto('/groupes/7?tab=infos')
-  await page.locator('a[href="/login"]').first().click()
+  await page.locator('main a[href="/login"]').click()
   await expect(page).toHaveURL('/login')
 
   await signIn(page)
 
   await expect(page).toHaveURL('/groupes/7?tab=infos')
   await expect(page.getByRole('heading', { name: 'Groupe public', exact: true })).toBeVisible()
+  await page.reload()
+  await expect(page).toHaveURL('/groupes/7?tab=infos')
 })
 
 test('une connexion directe conserve la destination normale du rôle', async ({ page }) => {

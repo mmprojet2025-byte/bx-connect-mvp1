@@ -356,4 +356,26 @@ class ProjetEndpointSecurityTest {
         mockMvc.perform(patch("/api/projets/referent/1/valider"))
                 .andExpect(status().isForbidden());
     }
+    @Test
+    @WithMockUser(username = "member@example.org", roles = "MEMBRE")
+    void withdrawalUsesOnlyAuthenticatedMemberEvenWithForgedUserParameter() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/projets/42/participation")
+                .param("userId", "999")).andExpect(status().isNoContent());
+        verify(projetService).quitterProjet(42L, "member@example.org");
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"ADMIN", "REFERENT", "PARTENAIRE", "SUPER_ADMIN"})
+    void otherRolesCannotWithdrawAMember(String role) throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/projets/42/participation")
+                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("other").roles(role)))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(projetService);
+    }
+
+    @Test void anonymousCannotWithdraw() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/projets/42/participation"))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(projetService);
+    }
 }

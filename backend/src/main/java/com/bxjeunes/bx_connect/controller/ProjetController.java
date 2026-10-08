@@ -239,6 +239,13 @@ public class ProjetController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
+    @DeleteMapping("/{id}/participation")
+    @PreAuthorize("hasRole('MEMBRE')")
+    public ResponseEntity<Void> quitterProjet(@PathVariable Long id, Authentication authentication) {
+        projetService.quitterProjet(id, authentication.getName());
+        return ResponseEntity.noContent().build();
+    }
+
     // ─── POST /api/projets/{id}/commentaires — Commenter un projet (M27) ─────
 
     @PostMapping("/{id}/commentaires")

@@ -12,6 +12,16 @@ test('returns a member to an allowed public activity or group', () => {
   assert.equal(getPostAuthDestination('/groupes/7?tab=infos', 'MEMBRE'), '/groupes/7?tab=infos')
 })
 
+test('returns members to the selected public project without allowing private routes or other roles', () => {
+  assert.equal(getPostAuthDestination('/projets', 'MEMBRE'), '/projets')
+  assert.equal(getPostAuthDestination('/projets/42?source=catalogue#details', 'MEMBRE'), '/projets/42?source=catalogue#details')
+  assert.equal(getPostAuthDestination('/projets/42/modifier', 'MEMBRE'), '/dashboard')
+  assert.equal(getPostAuthDestination('/projets/../admin/projets', 'MEMBRE'), '/dashboard')
+  assert.equal(getPostAuthDestination('/projets/42', 'ADMIN'), '/admin/dashboard')
+  assert.equal(getPostAuthDestination('/projets/42', 'REFERENT'), '/referent/dashboard')
+  assert.equal(getPostAuthDestination('/projets/42', 'SUPER_ADMIN'), '/super-admin/dashboard')
+})
+
 test('rejects external and malformed return destinations', () => {
   assert.equal(getPostAuthDestination('https://site-malveillant.example', 'MEMBRE'), '/dashboard')
   assert.equal(getPostAuthDestination('//site-malveillant.example', 'MEMBRE'), '/dashboard')

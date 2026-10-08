@@ -96,9 +96,9 @@
     "visualSolidarityDescription": "Collectieve projecten die ideeën omzetten in nuttige acties.",
     "visualSolidarityAlt": "BX-Connect solidariteitsproject",
     "recentActivitiesEyebrow": "Evenementen",
-    "recentActivitiesTitle": "Recente activiteiten",
+    "recentActivitiesTitle": "Komende activiteiten",
     "viewAllActivities": "Alle activiteiten bekijken",
-    "noRecentActivities": "Momenteel geen recente activiteit.",
+    "noRecentActivities": "Momenteel geen komende activiteiten.",
     "activitiesLoadError": "De activiteiten kunnen momenteel niet worden geladen.",
     "publicGroupsEyebrow": "Gemeenschappen",
     "publicGroupsTitle": "Groepen om te ontdekken",
@@ -326,6 +326,8 @@
     "done": "Afgelopen",
     "full": "Volzet",
     "unavailableReasons": {
+      "PAID_REGISTRATION_CANCELLED": "Betaling uitgevoerd — inschrijving geannuleerd",
+      "PAYMENT_WINDOW_CLOSED": "Het is te laat om een nieuwe Stripe-betaling te starten: er moeten nog minstens 31 minuten zijn voordat de inschrijvingen sluiten.",
       "COMPLETE": "Activiteit volzet",
       "PASSEE": "Activiteit is al voorbij",
       "ANNULEE": "Activiteit geannuleerd",
@@ -341,6 +343,11 @@
     "locationMapAria": "Kaart van de activiteitlocatie"
   },
   "projects": {
+    "leave": "Project verlaten",
+    "leaveConfirm": "Wil je dit project verlaten?",
+    "leaveNoRefund": "Als je hebt betaald, leidt het verlaten van het project niet tot een automatische terugbetaling. Je ontvangstbewijs blijft beschikbaar.",
+    "left": "Je hebt het project verlaten.",
+    "leaveError": "Het project verlaten is niet gelukt. Probeer opnieuw.",
     "view": "Bekijken",
     "catalogue": "Catalogus",
     "myProjects": "Mijn projecten",
@@ -2274,8 +2281,8 @@
     "amount": "Bedrag",
     "paid": "Betaald",
     "viewHistory": "Betaalgeschiedenis bekijken",
-    "cancelTitle": "Betaling geannuleerd",
-    "cancelMessage": "Je hebt de betaling geannuleerd. Er werd geen bedrag aangerekend. Je kunt later opnieuw proberen.",
+    "cancelTitle": "Terug van de betaling",
+    "cancelMessage": "U hebt de betaalpagina verlaten. Deze terugkeer bevestigt de betaalstatus niet: controleer de betaling voordat u opnieuw probeert.",
     "checkoutUrlMissing": "Betalings-URL niet ontvangen.",
     "stripeTitle": "Steunen via Stripe",
     "chooseAmount": "Kies een bedrag",
@@ -3127,6 +3134,7 @@
     "legacyGroup": "Historische activiteit zonder groep"
   },
   "activityEditor": {
+    "noAutomaticRefund": "Het annuleren van uw inschrijving leidt niet tot een automatische terugbetaling. Neem voor vragen over terugbetaling contact op met de organisator.",
     "information": "Informatie",
     "datePlace": "Datum en locatie",
     "date": "Datum",
@@ -3160,6 +3168,7 @@
     "paymentPending": "Betaling wacht op bevestiging",
     "paymentConfirmed": "Betaling bevestigd",
     "paymentError": "Betalen is niet beschikbaar. Probeer opnieuw of neem contact op met de organisator.",
+    "paymentWindowClosed": "Het is te laat om een nieuwe Stripe-betaling te starten: er moeten nog minstens 31 minuten zijn voordat de inschrijvingen sluiten.",
     "checkPayment": "Betaling controleren",
     "backActivities": "Terug naar activiteiten"
   },
@@ -3198,7 +3207,8 @@
     "budgetHelp": "Het aangevraagde budget dient voor de projectbeoordeling. Elke deelnemer betaalt de deelnameprijs.",
     "payJoin": "Betalen en deelnemen",
     "invoices": "Mijn facturen",
-    "invoiceHelp": "Betalingsbewijzen voor projectdeelname. Terugkeren van Stripe bevestigt de betaling niet: vernieuw om de bevestiging te controleren.",
+    "invoiceTitle": "Mijn facturen — projecten",
+    "invoiceHelp": "Alleen betalingsbewijzen voor projectdeelnames. Betalingen voor activiteiten staan niet op dit scherm. De betalingsbevestiging wordt bij de server gecontroleerd.",
     "transactions": "Transacties en betalingsbewijzen",
     "empty": "Nog geen transacties.",
     "unavailable": "Gegevens niet beschikbaar.",
@@ -3227,6 +3237,8 @@
     "full": "Volzet"
   },
   "paymentReturnUX": {
+  "activityCancelled": "Uw betaling is bevestigd, maar uw inschrijving blijft geannuleerd. Neem bij vragen contact op met de organisator.",
+  "closed": "De betaalsessie is verlopen of afgesloten. Bekijk de detailpagina voordat u opnieuw probeert.",
   "pending": "Betaling wordt bevestigd",
   "wait": "De bevestiging door Stripe kan enkele seconden duren. Automatische controles duren 30 seconden; daarna kunt u handmatig controleren.",
   "check": "Nu controleren",

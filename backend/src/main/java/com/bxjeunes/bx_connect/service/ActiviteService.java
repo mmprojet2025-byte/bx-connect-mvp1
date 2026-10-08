@@ -40,6 +40,12 @@ import java.util.stream.Collectors;
 @Service
 @Transactional(readOnly = true)
 public class ActiviteService {
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private java.time.Clock clock = java.time.Clock.systemUTC();
+    @org.springframework.beans.factory.annotation.Value("${features.payments.stripe.enabled:false}")
+    private boolean stripeEnabled;
+    @org.springframework.beans.factory.annotation.Value("${features.payments.paypal.enabled:false}")
+    private boolean paypalEnabled;
 
     private static final Logger log = LoggerFactory.getLogger(ActiviteService.class);
     @org.springframework.beans.factory.annotation.Autowired
@@ -217,8 +223,7 @@ public class ActiviteService {
     // ─── Modifier une activité ────────────────────────────────────────────────
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public ActiviteResponse modifier(Long id, ActiviteRequest request, String emailUser) {
-        Activite activite = activiteRepository.findByIdForUpdate(id)
-                .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
+        Activite activite = verrouillerPourGestion(id, request.isGroupeFourni() ? request.getGroupeId() : null);
         User acteur = verifierDroitGestion(activite, emailUser);
         validerDonneesActivite(request);
         if (activite.getStatut() == StatutActivite.ANNULEE || activite.getStatut() == StatutActivite.TERMINEE)
@@ -262,8 +267,7 @@ public class ActiviteService {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public ActiviteResponse changerStatut(Long id, StatutActivite nouveauStatut,
                                          VisibiliteActivite visibilite, String emailUser) {
-        Activite activite = activiteRepository.findByIdForUpdate(id)
-                .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
+        Activite activite = verrouillerPourGestion(id, null);
         User acteur = verifierDroitGestion(activite, emailUser);
         StatutActivite ancienStatut = activite.getStatut();
         validerTransition(activite, nouveauStatut);
@@ -308,10 +312,9 @@ public class ActiviteService {
     }
 
     // ─── Supprimer une activité ───────────────────────────────────────────────
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void supprimer(Long id, String emailUser) {
-        Activite activite = activiteRepository.findByIdForUpdate(id)
-                .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
+        Activite activite = verrouillerPourGestion(id, null);
         User acteur = verifierDroitGestion(activite, emailUser);
         if (activite.getStatut() != StatutActivite.BROUILLON
                 || !inscriptionRepository.findByActiviteId(id).isEmpty()
@@ -319,6 +322,22 @@ public class ActiviteService {
             throw new ActivityRuleException("Cette activité possède un historique. Utilisez l'annulation.");
         activiteRepository.delete(activite);
         auditerAction(acteur, "ACTIVITY_DELETED", activite, "Activite supprimee.");
+    }
+
+    private Activite verrouillerPourGestion(Long id, Long nouveauGroupeId) {
+        // Match group reassignment/creation: groups (ordered), then activity. A scalar read
+        // avoids caching an activity with the previous assignee before waiting for the locks.
+        Long groupeId = activiteRepository.findGroupeIdById(id).orElse(null);
+        java.util.stream.Stream.of(groupeId, nouveauGroupeId).filter(Objects::nonNull)
+                .distinct().sorted().forEach(groupId -> groupeRepository.findByIdForUpdate(groupId)
+                    .orElseThrow(() -> new IllegalArgumentException("Groupe introuvable : " + groupId)));
+        Activite activite = activiteRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new RuntimeException("Activité introuvable : " + id));
+        Long groupeActuel = activite.getGroupe() == null ? null : activite.getGroupe().getId();
+        if (!Objects.equals(groupeId, groupeActuel)) {
+            throw new ActivityRuleException("Le groupe de cette activité a changé. Rechargez la fiche avant de réessayer.");
+        }
+        return activite;
     }
 
     private User verifierDroitGestion(Activite activite, String emailUser) {
@@ -412,7 +431,7 @@ public class ActiviteService {
             if (request.isReferentFourni() && !Objects.equals(request.getReferentAssigneId(), referent.getId())) {
                 throw new ActivityRuleException("Le référent assigné doit être le référent réel du groupe.");
             }
-            // No reassignment endpoint in this lot, including when the group's referent changed.
+            // A group reassignment synchronizes this relationship atomically in GroupeService.
             if (!creation && !changementGroupe && !Objects.equals(ancienReferent, referent.getId())) {
                 throw new AccessDeniedException("L'affectation ne correspond plus au référent actuel du groupe.");
             }
@@ -599,6 +618,9 @@ public class ActiviteService {
                 && (paiements == null || paiements.findByActiviteId(activite.getId()).isEmpty());
         response.setTarifModifiable(editablePrice);
         response.setSupprimable(editablePrice);
+        response.setStripeCheckoutDisponible(!activite.isGratuite()
+                && activite.getStatut() == StatutActivite.PUBLIEE && ActivityCheckoutWindow.canOpen(activite, clock));
+        if (!activite.isGratuite()) response.setStripeCheckoutDateLimite(ActivityCheckoutWindow.checkoutDeadline(activite));
         return response;
     }
 
@@ -630,7 +652,29 @@ public class ActiviteService {
             response.setStatutInscription(inscriptionActive.getStatut());
             response.setPeutSInscrire(false);
             response.setRaisonIndisponible("DEJA_INSCRIT");
+            if (inscriptionActive.getStatut() == StatutInscription.EN_ATTENTE_PAIEMENT && paiements != null) {
+                final Long memberId = utilisateur.getId();
+                response.setPaiementActiviteId(paiements.findByActiviteId(activite.getId()).stream()
+                        .filter(p -> p.getDonateur().getId().equals(memberId) && "STRIPE".equals(p.getFournisseur())
+                                && p.getStatutPaiement() == com.bxjeunes.bx_connect.entity.StatutPaiement.EN_ATTENTE)
+                        .map(com.bxjeunes.bx_connect.entity.SoutienFinancier::getId).findFirst().orElse(null));
+            }
             return;
+        }
+
+        if (utilisateur != null && utilisateur.getRole() == Role.MEMBRE && paiements != null) {
+            final Long memberId = utilisateur.getId();
+            boolean paidRegistrationCancelled = paiements.findByActiviteId(activite.getId()).stream()
+                    .anyMatch(p -> p.getDonateur().getId().equals(memberId)
+                            && p.getStatutPaiement() == com.bxjeunes.bx_connect.entity.StatutPaiement.PAYE
+                            && p.getInscription() != null
+                            && p.getInscription().getStatut() == StatutInscription.ANNULEE);
+            if (paidRegistrationCancelled) {
+                response.setInscrit(false);
+                response.setPeutSInscrire(false);
+                response.setRaisonIndisponible("PAID_REGISTRATION_CANCELLED");
+                return;
+            }
         }
 
         String raison = raisonInscriptionIndisponible(activite, utilisateur);
@@ -652,16 +696,18 @@ public class ActiviteService {
         if (activite.getStatut() != StatutActivite.PUBLIEE) {
             return "NON_PUBLIEE";
         }
-        if (activite.getDateLimiteInscription() != null && !activite.getDateLimiteInscription().isAfter(LocalDateTime.now())) {
+        LocalDateTime now = ActivityCheckoutWindow.now(clock);
+        if (activite.getDateLimiteInscription() != null && !activite.getDateLimiteInscription().isAfter(now)) {
             return "DATE_LIMITE";
         }
-        LocalDateTime now = LocalDateTime.now();
         if (activite.getDateDebut() == null || !activite.getDateDebut().isAfter(now)) {
             return "PASSEE";
         }
         if (activite.getCapaciteMax() > 0 && responseComplete(activite)) {
             return "COMPLETE";
         }
+        if (!activite.isGratuite() && stripeEnabled && !paypalEnabled && !ActivityCheckoutWindow.canOpen(activite, clock))
+            return "PAYMENT_WINDOW_CLOSED";
         return null;
     }
 

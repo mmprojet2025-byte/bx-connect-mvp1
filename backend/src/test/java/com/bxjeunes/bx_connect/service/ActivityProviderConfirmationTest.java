@@ -30,8 +30,10 @@ class ActivityProviderConfirmationTest {
         activity.setDateDebut(LocalDateTime.now().plusDays(1)); activity.setCapaciteMax(1);
         var registration = new Inscription(); registration.setMembre(user); registration.setActivite(activity); registration.setStatut(StatutInscription.EN_ATTENTE_PAIEMENT);
         payment.setId(3L); payment.setActivite(activity); payment.setDonateur(user); payment.setMontant(BigDecimal.TEN);
+        payment.setFournisseur("STRIPE"); payment.setStripeSessionId("cs_test_activity");
         payment.setInscription(registration); payment.setActivityRequestKey(UUID.randomUUID().toString());
         when(activities.findByIdForUpdate(2L)).thenReturn(Optional.of(activity));
+        when(payments.findById(3L)).thenReturn(Optional.of(payment));
         when(payments.findByIdForUpdate(3L)).thenReturn(Optional.of(payment));
         when(payments.findByStripeSessionId("cs_test_activity")).thenReturn(Optional.of(payment));
         when(payments.findByPaypalPaymentId("pp_test_activity")).thenReturn(Optional.of(payment));
@@ -139,7 +141,7 @@ class ActivityProviderConfirmationTest {
     }
 
     @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(strings = {"unpaid", "amount", "currency", "missingAmount", "metadata", "missingMetadata", "session"})
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"unpaid", "amount", "currency", "missingAmount", "metadata", "missingMetadata", "session", "mode", "status", "intent"})
     void newerEventStillRejectsInvalidRemotePayment(String invalid) throws Exception {
         var remote = stripeSession();
         switch (invalid) {
@@ -150,6 +152,9 @@ class ActivityProviderConfirmationTest {
             case "metadata" -> remote.setMetadata(Map.of("activity_payment_id", "999"));
             case "missingMetadata" -> remote.setMetadata(null);
             case "session" -> remote.setId("cs_other");
+            case "mode" -> remote.setMode("subscription");
+            case "status" -> remote.setStatus("open");
+            case "intent" -> remote.setPaymentIntent(null);
         }
         doReturn(remote).when(stripe).lireSessionExterne("cs_test_activity");
         assertThatThrownBy(() -> signed(newerPayload())).isInstanceOf(IllegalArgumentException.class);
@@ -217,7 +222,7 @@ class ActivityProviderConfirmationTest {
     }
 
     @Test void newerEventCanFindTheReservationByVerifiedMetadata() throws Exception {
-        payment.setFournisseur("STRIPE");
+        payment.setFournisseur("STRIPE"); payment.setStripeSessionId(null);
         when(payments.findByStripeSessionId("cs_test_activity")).thenReturn(Optional.empty());
         when(payments.findById(3L)).thenReturn(Optional.of(payment));
         doReturn(stripeSession()).when(stripe).lireSessionExterne("cs_test_activity");
@@ -237,9 +242,182 @@ class ActivityProviderConfirmationTest {
         verify(registrations, never()).save(any());
     }
 
+    @Test void activityMetadataCannotConfirmAnotherKindOfPayment() throws Exception {
+        payment.setActivite(null);
+        assertThatThrownBy(() -> webhook("checkout.session.completed", "paid", 1000))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(payment.getStatutPaiement()).isEqualTo(StatutPaiement.EN_ATTENTE);
+        verify(registrations, never()).save(any());
+        verify(payments, never()).save(any());
+    }
+
+    @Test void missedWebhookCanBeRecoveredRepeatedlyWithoutAnotherCheckout() throws Exception {
+        doReturn(stripeSession()).when(stripe).lireSessionExterne("cs_test_activity");
+        var recovered = stripe.recupererPaiementActivite(3L, "owner@test.invalid");
+        var paidAt = recovered.getDatePaiement();
+        assertThat(recovered.getStatutPaiement()).isEqualTo(StatutPaiement.PAYE);
+        assertThat(recovered.getCheckoutUrl()).isNull();
+        assertThat(payment.getInscription().getStatut()).isEqualTo(StatutInscription.PAYEE);
+        assertThat(stripe.recupererPaiementActivite(3L, "owner@test.invalid").getStatutInscription())
+                .isEqualTo(StatutInscription.PAYEE);
+        webhook("checkout.session.completed", "paid", 1000);
+        webhook("checkout.session.expired", "unpaid", 1000);
+        assertThat(payment.getDatePaiement()).isEqualTo(paidAt);
+        verify(registrations, times(1)).save(any());
+        verify(stripe, times(1)).lireSessionExterne("cs_test_activity");
+        verify(stripe, never()).creerSessionActiviteExterne(any(), any());
+    }
+
+    @Test void delayedPaidWebhookConfirmsTheReservedPaymentAfterRegistrationDeadline() throws Exception {
+        activity.setDateLimiteInscription(LocalDateTime.now().minusDays(1));
+        webhook("checkout.session.completed", "paid", 1000);
+        assertThat(payment.getStatutPaiement()).isEqualTo(StatutPaiement.PAYE);
+        assertThat(payment.getInscription().getStatut()).isEqualTo(StatutInscription.PAYEE);
+    }
+
+    @Test void duplicateSuccessNeverReactivatesACancelledPaidRegistration() throws Exception {
+        payment.setStatutPaiement(StatutPaiement.PAYE);
+        payment.getInscription().setStatut(StatutInscription.ANNULEE);
+        assertThat(stripe.recupererPaiementActivite(3L, "owner@test.invalid").getStatutInscription())
+                .isEqualTo(StatutInscription.ANNULEE);
+        webhook("checkout.session.completed", "paid", 1000);
+        assertThat(payment.getStatutPaiement()).isEqualTo(StatutPaiement.PAYE);
+        assertThat(payment.getInscription().getStatut()).isEqualTo(StatutInscription.ANNULEE);
+        verify(registrations, never()).save(any());
+        verify(stripe, never()).lireSessionExterne(any());
+    }
+
+    @Test void oldSuccessfulSessionDoesNotUndoARecordedRefund() throws Exception {
+        payment.setStatutPaiement(StatutPaiement.REMBOURSE);
+        payment.getInscription().setStatut(StatutInscription.ANNULEE);
+        doReturn(stripeSession()).when(stripe).lireSessionExterne("cs_test_activity");
+        stripe.recupererPaiementActivite(3L, "owner@test.invalid");
+        webhook("checkout.session.completed", "paid", 1000);
+        assertThat(payment.getStatutPaiement()).isEqualTo(StatutPaiement.REMBOURSE);
+        assertThat(payment.getInscription().getStatut()).isEqualTo(StatutInscription.ANNULEE);
+        verify(registrations, never()).save(any());
+    }
+
+    @Test void unpaidRemoteSessionRemainsPendingWithoutCreatingPayment() throws Exception {
+        var remote = stripeSession(); remote.setStatus("open"); remote.setPaymentStatus("unpaid");
+        doReturn(remote).when(stripe).lireSessionExterne("cs_test_activity");
+        assertThat(stripe.recupererPaiementActivite(3L, "owner@test.invalid").getStatutPaiement())
+                .isEqualTo(StatutPaiement.EN_ATTENTE);
+        verify(registrations, never()).save(any());
+        verify(payments, never()).save(any());
+        verify(stripe, never()).creerSessionActiviteExterne(any(), any());
+    }
+
+    @Test void readingLocalStateNeverExposesAStaleCheckoutUrl() throws Exception {
+        payment.setCheckoutUrl("https://checkout.stripe.com/stored");
+        assertThat(stripe.verifierSession("cs_test_activity", "owner@test.invalid").getCheckoutUrl()).isNull();
+        verify(stripe, never()).lireSessionExterne(any());
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"open", "complete", "expired", "past"})
+    void resumeIsOfferedOnlyForAServerVerifiedOpenUnpaidFutureSession(String state) throws Exception {
+        var remote = stripeSession(); remote.setStatus("past".equals(state) ? "open" : state);
+        remote.setPaymentStatus("complete".equals(state) ? "paid" : "unpaid");
+        remote.setExpiresAt(System.currentTimeMillis()/1000 + ("past".equals(state) ? -1 : 3600));
+        remote.setUrl("https://checkout.stripe.com/verified");
+        payment.setCheckoutUrl("https://checkout.stripe.com/stale");
+        doReturn(remote).when(stripe).lireSessionExterne("cs_test_activity");
+        var response = stripe.recupererPaiementActivite(3L, "owner@test.invalid");
+        assertThat(response.getCheckoutUrl()).isEqualTo("open".equals(state) ? remote.getUrl() : null);
+        assertThat(response.getStatutPaiement()).isEqualTo("complete".equals(state) ? StatutPaiement.PAYE
+                : "expired".equals(state) ? StatutPaiement.ANNULE : StatutPaiement.EN_ATTENTE);
+        verify(stripe, never()).creerSessionActiviteExterne(any(), any());
+    }
+
+    @Test void existingPaidCheckoutIsRecoveredEvenAfterTheRegistrationDeadline() throws Exception {
+        activity.setDateLimiteInscription(LocalDateTime.now().minusDays(1));
+        when(payments.findByActiviteId(2L)).thenReturn(List.of(payment));
+        var users = (UserRepository) ReflectionTestUtils.getField(stripe, "userRepository");
+        when(users.findByEmail("owner@test.invalid")).thenReturn(Optional.of(payment.getDonateur()));
+        doReturn(stripeSession()).when(stripe).lireSessionExterne("cs_test_activity");
+        var request = new com.bxjeunes.bx_connect.dto.PaiementRequest(); request.setActiviteId(2L); request.setMontant(BigDecimal.TEN);
+        assertThat(stripe.creerSessionCheckout(request).getStatutPaiement()).isEqualTo(StatutPaiement.PAYE);
+        verify(stripe, never()).creerSessionActiviteExterne(any(), any());
+    }
+
+    @Test void unknownOldAttemptDoesNotCreateAnotherCheckout() throws Exception {
+        payment.setStripeSessionId(null); payment.setCheckoutExpiresAt(System.currentTimeMillis()/1000 - 1);
+        when(payments.findByActiviteId(2L)).thenReturn(List.of(payment));
+        var users = (UserRepository) ReflectionTestUtils.getField(stripe, "userRepository");
+        when(users.findByEmail("owner@test.invalid")).thenReturn(Optional.of(payment.getDonateur()));
+        var request = new com.bxjeunes.bx_connect.dto.PaiementRequest(); request.setActiviteId(2L); request.setMontant(BigDecimal.TEN);
+        assertThatThrownBy(() -> stripe.creerSessionCheckout(request)).isInstanceOf(com.bxjeunes.bx_connect.exception.ActivityRuleException.class)
+                .extracting(e -> ((com.bxjeunes.bx_connect.exception.ActivityRuleException)e).getCode()).isEqualTo("PAYMENT_UNCERTAIN");
+        verify(stripe, never()).creerSessionActiviteExterne(any(), any());
+        assertThat(payment.getStatutPaiement()).isEqualTo(StatutPaiement.EN_ATTENTE);
+    }
+
+    @Test void cancellationCannotUndoAPaymentThatStripeAlreadyConfirmed() throws Exception {
+        doReturn(stripeSession()).when(stripe).lireSessionExterne("cs_test_activity");
+        stripe.annulerPaiementActivite(3L);
+        assertThat(payment.getStatutPaiement()).isEqualTo(StatutPaiement.PAYE);
+        assertThat(payment.getInscription().getStatut()).isEqualTo(StatutInscription.PAYEE);
+        verify(stripe, never()).expirerSessionExterne(any());
+    }
+
+    @Test void checkoutCompletingDuringCancellationIsReconciledInsteadOfReleased() throws Exception {
+        var open = stripeSession(); open.setStatus("open"); open.setPaymentStatus("unpaid");
+        doReturn(open, stripeSession()).when(stripe).lireSessionExterne("cs_test_activity");
+        doThrow(new com.stripe.exception.ApiConnectionException("Concurrent Checkout completion"))
+                .when(stripe).expirerSessionExterne(open);
+        stripe.annulerPaiementActivite(3L);
+        assertThat(payment.getStatutPaiement()).isEqualTo(StatutPaiement.PAYE);
+        assertThat(payment.getInscription().getStatut()).isEqualTo(StatutInscription.PAYEE);
+    }
+
+    @Test void recoveryWithoutSessionFailsBeforeCallingStripe() throws Exception {
+        payment.setStripeSessionId(null);
+        assertThatThrownBy(() -> stripe.recupererPaiementActivite(3L, "owner@test.invalid"))
+                .hasMessageContaining("Aucune session Stripe exploitable");
+        verify(stripe, never()).lireSessionExterne(any());
+        verify(registrations, never()).save(any());
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"foreign", "inactive", "role"})
+    void recoveryRequiresActiveMemberOwnerBeforeCallingStripe(String invalid) throws Exception {
+        if ("inactive".equals(invalid)) payment.getDonateur().setActif(false);
+        if ("role".equals(invalid)) payment.getDonateur().setRole(Role.ADMIN);
+        assertThatThrownBy(() -> stripe.recupererPaiementActivite(3L,
+                "foreign".equals(invalid) ? "other@test.invalid" : "owner@test.invalid"))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        verify(stripe, never()).lireSessionExterne(any());
+        verify(registrations, never()).save(any());
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"amount", "currency", "reference", "session", "mode", "intent", "registrationActivity", "registrationMember", "provider"})
+    void recoveryRejectsInconsistentProviderAndLocalData(String invalid) throws Exception {
+        var remote = stripeSession();
+        switch (invalid) {
+            case "amount" -> remote.setAmountTotal(1L);
+            case "currency" -> remote.setCurrency("usd");
+            case "reference" -> remote.setMetadata(Map.of("activity_payment_id", "999"));
+            case "session" -> remote.setId("cs_other");
+            case "mode" -> remote.setMode("subscription");
+            case "intent" -> remote.setPaymentIntent(null);
+            case "registrationActivity" -> { var other = new Activite(); other.setId(99L); payment.getInscription().setActivite(other); }
+            case "registrationMember" -> { var other = new User(); other.setId(99L); payment.getInscription().setMembre(other); }
+            case "provider" -> payment.setFournisseur("PAYPAL");
+        }
+        doReturn(remote).when(stripe).lireSessionExterne("cs_test_activity");
+        assertThatThrownBy(() -> stripe.recupererPaiementActivite(3L, "owner@test.invalid"))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(payment.getStatutPaiement()).isEqualTo(StatutPaiement.EN_ATTENTE);
+        verify(registrations, never()).save(any());
+        verify(payments, never()).save(any());
+    }
+
     private com.stripe.model.checkout.Session stripeSession() {
         var session = new com.stripe.model.checkout.Session();
         session.setId("cs_test_activity"); session.setPaymentStatus("paid");
+        session.setStatus("complete"); session.setMode("payment"); session.setPaymentIntent("pi_test_activity");
         session.setCurrency("eur"); session.setAmountTotal(1000L);
         session.setMetadata(Map.of("activity_payment_id", "3"));
         return session;
@@ -256,8 +434,9 @@ class ActivityProviderConfirmationTest {
         return new Payment().setState("approved").setTransactions(List.of(transaction));
     }
     private void webhook(String type,String status,long amount) throws Exception {
+        String sessionState = "checkout.session.expired".equals(type) ? "expired" : "complete";
         String payload = "{\"id\":\"evt_test\",\"object\":\"event\",\"api_version\":\"" + com.stripe.Stripe.API_VERSION
-                + "\",\"type\":\""+type+"\",\"data\":{\"object\":{\"id\":\"cs_test_activity\",\"object\":\"checkout.session\",\"payment_status\":\""+status+"\",\"metadata\":{\"activity_payment_id\":\"3\"},\"currency\":\"eur\",\"amount_total\":"+amount+"}}}";
+                + "\",\"type\":\""+type+"\",\"data\":{\"object\":{\"id\":\"cs_test_activity\",\"object\":\"checkout.session\",\"status\":\""+sessionState+"\",\"mode\":\"payment\",\"payment_intent\":\"pi_test_activity\",\"payment_status\":\""+status+"\",\"metadata\":{\"activity_payment_id\":\"3\"},\"currency\":\"eur\",\"amount_total\":"+amount+"}}}";
         signed(payload);
     }
     private void signed(String payload) throws Exception {

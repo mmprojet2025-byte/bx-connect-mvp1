@@ -78,6 +78,7 @@ class StripeSessionSecurityTest {
                 stripeService.verifierSession("cs_test_123", "proprietaire@test.be");
 
         assertThat(response.getStatutPaiement()).isEqualTo(StatutPaiement.EN_ATTENTE);
+        assertThat(response.getId()).isEqualTo(10L);
         verify(soutienRepo, never()).save(any(SoutienFinancier.class));
     }
 }

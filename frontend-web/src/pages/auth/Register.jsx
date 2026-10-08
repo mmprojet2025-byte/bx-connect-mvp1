@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { startTransition, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTranslation } from 'react-i18next'
@@ -48,8 +48,10 @@ export default function Register() {
         legalVersion: LEGAL_VERSION,
       })
       const { token, prenom, nom, email, role } = res.data
-      login(token, { prenom, nom, email, role })
-      navigate(getPostAuthDestination(location.state?.returnTo, role))
+      startTransition(() => {
+        login(token, { prenom, nom, email, role })
+        navigate(getPostAuthDestination(location.state?.returnTo, role))
+      })
     } catch (err) {
       setErreur(formatAuthError(err, t('auth.error_register'), t))
     } finally { setLoading(false) }

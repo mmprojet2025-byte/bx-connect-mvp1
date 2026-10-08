@@ -8,6 +8,7 @@ import com.bxjeunes.bx_connect.dto.PagedResponse;
 import com.bxjeunes.bx_connect.dto.admin.AdminGroupeRequest;
 import com.bxjeunes.bx_connect.entity.*;
 import com.bxjeunes.bx_connect.repository.GroupeRepository;
+import com.bxjeunes.bx_connect.repository.ActiviteRepository;
 import com.bxjeunes.bx_connect.repository.MembreGroupeRepository;
 import com.bxjeunes.bx_connect.repository.UserRepository;
 import com.bxjeunes.bx_connect.util.PaginationUtils;
@@ -35,17 +36,20 @@ public class GroupeService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
+    private final ActiviteRepository activiteRepository;
 
     public GroupeService(GroupeRepository groupeRepository,
                          MembreGroupeRepository membreGroupeRepository,
                          UserRepository userRepository,
                          NotificationService notificationService,
-                         AuditLogService auditLogService) {
+                         AuditLogService auditLogService,
+                         ActiviteRepository activiteRepository) {
         this.groupeRepository = groupeRepository;
         this.membreGroupeRepository = membreGroupeRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
         this.auditLogService = auditLogService;
+        this.activiteRepository = activiteRepository;
     }
 
     public List<GroupeResponse> listerGroupes() {
@@ -110,28 +114,6 @@ public class GroupeService {
         return GroupePublicResponse.fromEntity(groupe);
     }
 
-    public GroupeResponse proposerGroupe(GroupeRequest request, String emailReferent) {
-        User referent = userRepository.findByEmail(emailReferent)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
-        Groupe groupe = new Groupe();
-        groupe.setNom(request.getNom());
-        groupe.setDescription(request.getDescription());
-        groupe.setCategorie(request.getCategorie());
-        groupe.setTheme(request.getTheme());
-        groupe.setObjectif(request.getObjectif());
-        appliquerLocalisation(groupe, request);
-        groupe.setCapaciteMax(request.getCapaciteMax());
-        groupe.setReferent(referent);
-        groupe.setStatut(StatutGroupe.EN_ATTENTE);
-        groupe.setActif(false);
-        Groupe saved = groupeRepository.save(groupe);
-        notificationService.creer(referent, "Groupe soumis",
-            "Votre groupe attend la validation.", "VALIDATION_GROUPE");
-        auditerStatut(referent, "GROUP_SUBMITTED", saved, null, saved.getStatut().name(),
-                "Groupe soumis pour validation.", metadata("referentId", referent.getId()));
-        return GroupeResponse.fromEntity(saved);
-    }
-
     public GroupeResponse creerGroupeParAdmin(AdminGroupeRequest request) {
         return creerGroupeParAdmin(request, null);
     }
@@ -166,12 +148,17 @@ public class GroupeService {
     public GroupeResponse assignerReferent(Long groupeId, Long referentId, String emailAdmin) {
         Groupe groupe = groupeRepository.findByIdForUpdate(groupeId)
                 .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + groupeId));
+        if (groupe.getStatut() == StatutGroupe.ARCHIVE) {
+            throw new IllegalArgumentException("Un groupe archivé ne peut plus changer de référent.");
+        }
         User admin = chargerUtilisateurOptionnel(emailAdmin);
         User ancienReferent = groupe.getReferent();
         User referent = getReferent(referentId);
 
         groupe.setReferent(referent);
         Groupe saved = groupeRepository.save(groupe);
+        // Same transaction, including historical activities: responsible person is not the author.
+        activiteRepository.assignerReferentDuGroupe(groupeId, referent);
         auditerAction(admin, "GROUP_REFERENT_ASSIGNED", saved,
                 "Referent assigne au groupe.",
                 metadata(
@@ -189,10 +176,12 @@ public class GroupeService {
         User user = userRepository.findByEmail(emailUser)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
 
-        if (user.getRole() == Role.REFERENT &&
-            !groupe.getReferent().getId().equals(user.getId())) {
+        if (!user.isActif() || (user.getRole() != Role.ADMIN
+                && (user.getRole() != Role.REFERENT || groupe.getReferent() == null
+                || !groupe.getReferent().getId().equals(user.getId())))) {
             throw new AccessDeniedException("Vous n'etes pas le referent de ce groupe.");
         }
+        verifierGroupeNonArchive(groupe);
 
         groupe.setNom(request.getNom());
         groupe.setDescription(request.getDescription());
@@ -220,10 +209,7 @@ public class GroupeService {
         verrouillerMembre(mg.getUser());
         Groupe groupe = groupeRepository.findByIdForUpdate(mg.getGroupe().getId())
                 .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + mg.getGroupe().getId()));
-        if (referent.getRole() == Role.REFERENT &&
-            !groupe.getReferent().getId().equals(referent.getId())) {
-            throw new AccessDeniedException("Vous n'etes pas le referent de ce groupe.");
-        }
+        verifierGestionMembres(groupe, referent);
         verifierGroupeDisponible(groupe);
         if (mg.getStatut() != StatutMembre.EN_ATTENTE) {
             throw new RuntimeException("Cette demande d'adhésion n'est plus en attente.");
@@ -265,10 +251,7 @@ public class GroupeService {
         verrouillerMembre(mg.getUser());
         Groupe groupe = groupeRepository.findByIdForUpdate(mg.getGroupe().getId())
                 .orElseThrow(() -> new RuntimeException("Groupe introuvable : " + mg.getGroupe().getId()));
-        if (referent.getRole() == Role.REFERENT &&
-            !groupe.getReferent().getId().equals(referent.getId())) {
-            throw new AccessDeniedException("Vous n'etes pas le referent de ce groupe.");
-        }
+        verifierGestionMembres(groupe, referent);
 
         verifierGroupeDisponible(groupe);
         if (mg.getStatut() != StatutMembre.EN_ATTENTE) {
@@ -415,7 +398,9 @@ public class GroupeService {
         }
         MembreGroupe mg = membreGroupeRepository.findByUserIdAndGroupeId(membre.getId(), groupeId)
                 .orElseThrow(() -> new RuntimeException("Vous n'etes pas membre de ce groupe."));
-        Groupe groupe = mg.getGroupe();
+        mg = membreGroupeRepository.findByIdForUpdate(mg.getId()).orElseThrow();
+        Groupe groupe = groupeRepository.findByIdForUpdate(groupeId).orElseThrow();
+        verifierGroupeNonArchive(groupe);
         StatutMembre ancienStatut = mg.getStatut();
         if (mg.getStatut() == StatutMembre.QUITTE) return;
         mg.setStatut(StatutMembre.QUITTE);
@@ -502,9 +487,7 @@ public class GroupeService {
         verrouillerMembre(mg.getUser());
         Groupe groupe = groupeRepository.findByIdForUpdate(mg.getGroupe().getId()).orElseThrow();
         User acteur = userRepository.findByEmail(emailReferent).orElseThrow();
-        if (acteur.getRole() != Role.REFERENT || !groupe.getReferent().getId().equals(acteur.getId())) {
-            throw new AccessDeniedException("Vous n'êtes pas le référent de ce groupe.");
-        }
+        verifierGestionMembres(groupe, acteur);
         verifierGroupeDisponible(groupe);
         StatutMembre attendu = reactiver ? StatutMembre.SUSPENDU : StatutMembre.ACCEPTE;
         if (mg.getStatut() != attendu) throw new IllegalArgumentException("Transition d'appartenance invalide.");
@@ -525,6 +508,19 @@ public class GroupeService {
 
     private void verrouillerMembre(User membre) {
         userRepository.findByIdForUpdate(membre.getId()).orElseThrow(() -> new IllegalArgumentException("Membre introuvable."));
+    }
+
+    private void verifierGestionMembres(Groupe groupe, User acteur) {
+        if (!acteur.isActif() || acteur.getRole() != Role.REFERENT || groupe.getReferent() == null
+                || !groupe.getReferent().getId().equals(acteur.getId())) {
+            throw new AccessDeniedException("Vous n'etes pas le referent de ce groupe.");
+        }
+    }
+
+    private void verifierGroupeNonArchive(Groupe groupe) {
+        if (groupe.getStatut() == StatutGroupe.ARCHIVE) {
+            throw new IllegalArgumentException("Un groupe archivé reste en lecture seule.");
+        }
     }
 
     private void verifierGroupeDisponible(Groupe groupe) {
@@ -582,8 +578,12 @@ public class GroupeService {
         if (email == null || email.isBlank()) {
             return null;
         }
-        return userRepository.findByEmail(email)
+        User admin = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+        if (!admin.isActif() || admin.getRole() != Role.ADMIN) {
+            throw new AccessDeniedException("Cette opération est réservée à un ADMIN actif.");
+        }
+        return admin;
     }
 
     private void auditerAction(User acteur, String action, Groupe groupe, String details, String metadataJson) {

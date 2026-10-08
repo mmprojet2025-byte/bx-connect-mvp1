@@ -1,3 +1,4 @@
+import usePaymentPolling from '../../hooks/usePaymentPolling'
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -39,6 +40,15 @@ export default function Dashboard() {
   }, [t])
 
   useEffect(() => { fetchDashboard() }, [fetchDashboard])
+
+  const refreshPendingActivities = useCallback(async signal => {
+    try {
+      const { data } = await api.get('/membre/dashboard', { signal });
+      if (!signal?.aborted) { setDashboard(data); setError(''); }
+    } catch { if (!signal?.aborted) setError(t('memberDashboard.errorLoad')); }
+  }, [t])
+  usePaymentPolling(Boolean(dashboard?.inscriptions?.some(i => i.statut === 'EN_ATTENTE_PAIEMENT')),
+    refreshPendingActivities, { recheckOnFocus: true })
 
   const groupe = dashboard?.groupe
   const referent = dashboard?.referent

@@ -195,7 +195,11 @@ class ActivityPaymentPolicyTest {
             var p = (com.bxjeunes.bx_connect.entity.SoutienFinancier) call.getArgument(0); p.setId(90L); stored.set(p); return p;
         });
         when(soutienRepo.findByIdForUpdate(90L)).thenAnswer(call -> Optional.of(stored.get()));
+        when(soutienRepo.findById(90L)).thenAnswer(call -> Optional.of(stored.get()));
         var session = new Session(); session.setId("cs_activity"); session.setUrl("https://checkout.stripe.com/test");
+        session.setMode("payment"); session.setStatus("open"); session.setPaymentStatus("unpaid");
+        session.setCurrency("eur"); session.setAmountTotal(100L); session.setExpiresAt(System.currentTimeMillis()/1000+3600);
+        session.setMetadata(java.util.Map.of("activity_payment_id", "90"));
         org.mockito.Mockito.doReturn(session).when(stripeService).creerSessionActiviteExterne(any(), any());
         var request = activityRequest(); request.setMontant(BigDecimal.ONE);
         var result = stripeService.creerSessionCheckout(request);

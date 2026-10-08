@@ -96,9 +96,9 @@
     "visualSolidarityDescription": "Collective projects that turn ideas into useful action.",
     "visualSolidarityAlt": "BX-Connect solidarity project",
     "recentActivitiesEyebrow": "Events",
-    "recentActivitiesTitle": "Recent activities",
+    "recentActivitiesTitle": "Upcoming activities",
     "viewAllActivities": "View all activities",
-    "noRecentActivities": "No recent activity at the moment.",
+    "noRecentActivities": "No upcoming activities at the moment.",
     "activitiesLoadError": "Activities cannot be loaded at the moment.",
     "publicGroupsEyebrow": "Communities",
     "publicGroupsTitle": "Groups to discover",
@@ -326,6 +326,8 @@
     "done": "Finished",
     "full": "Full",
     "unavailableReasons": {
+      "PAID_REGISTRATION_CANCELLED": "Payment completed — registration cancelled",
+      "PAYMENT_WINDOW_CLOSED": "It is too late to start a new Stripe payment: at least 31 minutes are needed before registrations close.",
       "COMPLETE": "Activity full",
       "PASSEE": "Activity already passed",
       "ANNULEE": "Activity cancelled",
@@ -341,6 +343,11 @@
     "locationMapAria": "Activity location map"
   },
   "projects": {
+    "leave": "Leave project",
+    "leaveConfirm": "Do you want to leave this project?",
+    "leaveNoRefund": "If you have paid, leaving the project does not trigger an automatic refund. Your receipt remains available.",
+    "left": "You have left the project.",
+    "leaveError": "Unable to leave the project. Please try again.",
     "view": "View",
     "catalogue": "Catalogue",
     "myProjects": "My projects",
@@ -2274,8 +2281,8 @@
     "amount": "Amount",
     "paid": "Paid",
     "viewHistory": "View payment history",
-    "cancelTitle": "Payment cancelled",
-    "cancelMessage": "You cancelled the payment. No amount was charged. You can try again at any time.",
+    "cancelTitle": "Return from payment",
+    "cancelMessage": "You left the payment page. Returning here does not confirm its status: check the payment before trying again.",
     "checkoutUrlMissing": "Payment URL not received.",
     "stripeTitle": "Support via Stripe",
     "chooseAmount": "Choose an amount",
@@ -3127,6 +3134,7 @@
     "legacyGroup": "Historical activity without a group"
   },
   "activityEditor": {
+    "noAutomaticRefund": "Cancelling your registration does not issue an automatic refund. Contact the organiser with any refund questions.",
     "information": "Information",
     "datePlace": "Date and location",
     "date": "Date",
@@ -3160,6 +3168,7 @@
     "paymentPending": "Payment awaiting confirmation",
     "paymentConfirmed": "Payment confirmed",
     "paymentError": "Payment is unavailable. Retry or contact the organiser.",
+    "paymentWindowClosed": "It is too late to start a new Stripe payment: at least 31 minutes are needed before registrations close.",
     "checkPayment": "Check payment",
     "backActivities": "Back to activities"
   },
@@ -3198,7 +3207,8 @@
     "budgetHelp": "The requested budget is for project review. The participation price is paid by each participant.",
     "payJoin": "Pay and join",
     "invoices": "My invoices",
-    "invoiceHelp": "Project participation receipts. Returning from Stripe does not confirm payment: refresh to check confirmation.",
+    "invoiceTitle": "My invoices — projects",
+    "invoiceHelp": "Payment receipts for project participation only. Activity payments are not listed here. Payment confirmation is checked with the server.",
     "transactions": "Transactions and receipts",
     "empty": "No transactions yet.",
     "unavailable": "Data unavailable.",
@@ -3227,6 +3237,8 @@
     "full": "Full"
   },
   "paymentReturnUX": {
+  "activityCancelled": "Your payment is confirmed, but your registration remains cancelled. Contact the organiser if you have questions.",
+  "closed": "The payment session has expired or closed. Check the details page before trying again.",
   "pending": "Payment confirmation in progress",
   "wait": "Stripe confirmation may take a few seconds. Automatic checks run for 30 seconds; you can then check manually.",
   "check": "Check now",
