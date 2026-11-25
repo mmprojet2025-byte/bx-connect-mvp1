@@ -187,9 +187,7 @@ Consultez [SECURITY.md](SECURITY.md) avant de signaler une vulnérabilité. Ne p
 
 **MVP initial terminé et validé techniquement en environnement local ; mise en production encore à réaliser.**
 
-Le futur lien public du dépôt est :
-
-<https://github.com/mmprojet2025-byte/bx-connect-mvp1>
+Dépôt public : <https://github.com/mmprojet2025-byte/bx-connect-mvp1>
 
 ## Licence
 
